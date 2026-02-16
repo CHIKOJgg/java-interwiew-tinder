@@ -17,7 +17,9 @@ export const validateTelegramWebAppData = (initData, botToken) => {
     let hash;
 
     for (const param of params) {
-      const [key, value] = param.split('=');
+      const index = param.indexOf('=');
+      const key = param.substring(0, index);
+      const value = param.substring(index + 1);
 
       if (key === 'hash') {
         hash = value;
@@ -52,6 +54,11 @@ export const validateTelegramWebAppData = (initData, botToken) => {
     if (!data.user) return null;
 
     const user = JSON.parse(decodeURIComponent(data.user));
+    console.log('INIT:', initData);
+    console.log('BOT:', botToken.slice(0, 10));
+    console.log('CHECK STRING:', dataCheckString);
+    console.log('CALC:', calculatedHash);
+    console.log('HASH:', hash);
 
     return {
       telegram_id: user.id,

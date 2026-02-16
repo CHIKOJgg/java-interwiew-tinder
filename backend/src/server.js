@@ -2,7 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import pool from './config/database.js';
-import { validateTelegramWebAppData, mockValidation } from './utils/telegram.js';
+import {
+  validateTelegramWebAppData,
+  mockValidation,
+} from './utils/telegram.js';
 import { generateExplanation } from './services/aiService.js';
 
 dotenv.config();
@@ -58,7 +61,12 @@ app.post('/api/auth/login', async (req, res) => {
          first_name = EXCLUDED.first_name,
          last_name = EXCLUDED.last_name
        RETURNING *`,
-      [userData.telegram_id, userData.username, userData.first_name, userData.last_name]
+      [
+        userData.telegram_id,
+        userData.username,
+        userData.first_name,
+        userData.last_name,
+      ],
     );
 
     const user = result.rows[0];
@@ -70,8 +78,8 @@ app.post('/api/auth/login', async (req, res) => {
         telegram_id: user.telegram_id,
         username: user.username,
         first_name: user.first_name,
-        last_name: user.last_name
-      }
+        last_name: user.last_name,
+      },
     });
   } catch (error) {
     console.error('Error in /auth/login:', error);
@@ -97,14 +105,14 @@ app.get('/api/questions/feed', async (req, res) => {
        WHERE up.id IS NULL OR up.status = 'unknown'
        ORDER BY RANDOM()
        LIMIT $2`,
-      [userId, limit]
+      [userId, limit],
     );
 
-    const questions = result.rows.map(row => ({
+    const questions = result.rows.map((row) => ({
       id: row.id,
       category: row.category,
       question: row.question_text,
-      shortAnswer: row.short_answer
+      shortAnswer: row.short_answer,
     }));
 
     console.log(`📚 Sent ${questions.length} questions to user ${userId}`);
@@ -122,11 +130,15 @@ app.post('/api/questions/swipe', async (req, res) => {
     const { userId, questionId, status } = req.body;
 
     if (!userId || !questionId || !status) {
-      return res.status(400).json({ error: 'userId, questionId, and status are required' });
+      return res
+        .status(400)
+        .json({ error: 'userId, questionId, and status are required' });
     }
 
     if (!['known', 'unknown'].includes(status)) {
-      return res.status(400).json({ error: 'status must be "known" or "unknown"' });
+      return res
+        .status(400)
+        .json({ error: 'status must be "known" or "unknown"' });
     }
 
     // Insert or update progress
@@ -137,10 +149,12 @@ app.post('/api/questions/swipe', async (req, res) => {
        DO UPDATE SET 
          status = EXCLUDED.status,
          updated_at = CURRENT_TIMESTAMP`,
-      [userId, questionId, status]
+      [userId, questionId, status],
     );
 
-    console.log(`✅ Recorded swipe: user=${userId}, question=${questionId}, status=${status}`);
+    console.log(
+      `✅ Recorded swipe: user=${userId}, question=${questionId}, status=${status}`,
+    );
 
     res.json({ success: true });
   } catch (error) {
@@ -161,7 +175,7 @@ app.post('/api/questions/explain', async (req, res) => {
     // Get question from database
     const result = await pool.query(
       'SELECT id, question_text, short_answer, cached_explanation FROM questions WHERE id = $1',
-      [questionId]
+      [questionId],
     );
 
     if (result.rows.length === 0) {
@@ -173,9 +187,9 @@ app.post('/api/questions/explain', async (req, res) => {
     // Check if we have cached explanation
     if (question.cached_explanation) {
       console.log(`💾 Using cached explanation for question ${questionId}`);
-      return res.json({ 
+      return res.json({
         explanation: question.cached_explanation,
-        cached: true 
+        cached: true,
       });
     }
 
@@ -183,20 +197,22 @@ app.post('/api/questions/explain', async (req, res) => {
     console.log(`🤖 Generating AI explanation for question ${questionId}...`);
     const explanation = await generateExplanation(
       question.question_text,
-      question.short_answer
+      question.short_answer,
     );
 
     // Cache the explanation
     await pool.query(
       'UPDATE questions SET cached_explanation = $1 WHERE id = $2',
-      [explanation, questionId]
+      [explanation, questionId],
     );
 
-    console.log(`✅ Generated and cached explanation for question ${questionId}`);
+    console.log(
+      `✅ Generated and cached explanation for question ${questionId}`,
+    );
 
-    res.json({ 
+    res.json({
       explanation,
-      cached: false 
+      cached: false,
     });
   } catch (error) {
     console.error('Error in /questions/explain:', error);
@@ -220,16 +236,18 @@ app.get('/api/stats', async (req, res) => {
          COUNT(*) as total_seen
        FROM user_progress
        WHERE user_id = $1`,
-      [userId]
+      [userId],
     );
 
-    const totalQuestions = await pool.query('SELECT COUNT(*) as total FROM questions');
+    const totalQuestions = await pool.query(
+      'SELECT COUNT(*) as total FROM questions',
+    );
 
     const stats = {
       known: parseInt(result.rows[0].known_count),
       unknown: parseInt(result.rows[0].unknown_count),
       totalSeen: parseInt(result.rows[0].total_seen),
-      totalQuestions: parseInt(totalQuestions.rows[0].total)
+      totalQuestions: parseInt(totalQuestions.rows[0].total),
     };
 
     res.json(stats);
@@ -239,9 +257,29 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`
+// // Start server
+// app.listen(PORT, () => {
+//   console.log(`
+// ╔════════════════════════════════════════════════╗
+// ║   🚀 Java Interview Tinder Backend Started   ║
+// ╠════════════════════════════════════════════════╣
+// ║   Port: ${PORT.toString().padEnd(39)} ║
+// ║   Mode: ${(isDev ? 'Development' : 'Production').padEnd(39)} ║
+// ║   Database: ${(process.env.DATABASE_URL ? '✅ Connected' : '❌ Not configured').padEnd(32)} ║
+// ║   OpenRouter: ${(process.env.OPENROUTER_API_KEY ? '✅ Configured' : '❌ Not configured').padEnd(30)} ║
+// ╚════════════════════════════════════════════════╝
+//   `);
+// });
+// Старый код (закомментируйте):
+// app.listen(PORT, () => {
+//   console.log(`Server started on port ${PORT}`);
+// });
+
+// Новый код для Vercel:
+// Для локальной разработки
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`
 ╔════════════════════════════════════════════════╗
 ║   🚀 Java Interview Tinder Backend Started   ║
 ╠════════════════════════════════════════════════╣
@@ -250,8 +288,12 @@ app.listen(PORT, () => {
 ║   Database: ${(process.env.DATABASE_URL ? '✅ Connected' : '❌ Not configured').padEnd(32)} ║
 ║   OpenRouter: ${(process.env.OPENROUTER_API_KEY ? '✅ Configured' : '❌ Not configured').padEnd(30)} ║
 ╚════════════════════════════════════════════════╝
-  `);
-});
+    `);
+  });
+}
+
+// Экспорт для Vercel
+export default app;
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {

@@ -10,22 +10,34 @@ export const validateTelegramWebAppData = (initData, botToken) => {
   try {
     if (!botToken) return null;
 
-    const urlParams = new URLSearchParams(initData);
-    const hash = urlParams.get('hash');
+    // 1️⃣ Разбиваем вручную, НЕ через URLSearchParams
+    const params = initData.split('&');
+
+    const data = {};
+    let hash;
+
+    for (const param of params) {
+      const [key, value] = param.split('=');
+
+      if (key === 'hash') {
+        hash = value;
+      } else {
+        data[key] = value;
+      }
+    }
+
     if (!hash) return null;
 
-    urlParams.delete('hash');
-
-    // 1️⃣ Формируем data_check_string
-    const dataCheckString = Array.from(urlParams.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, value]) => `${key}=${value}`)
+    // 2️⃣ Формируем data_check_string из RAW значений
+    const dataCheckString = Object.keys(data)
+      .sort()
+      .map((key) => `${key}=${data[key]}`)
       .join('\n');
 
-    // 2️⃣ secret_key = SHA256(botToken)
-    const secretKey = crypto.createHash('sha256').update(botToken).digest(); // raw buffer
+    // 3️⃣ secret_key = SHA256(botToken)
+    const secretKey = crypto.createHash('sha256').update(botToken).digest();
 
-    // 3️⃣ HMAC_SHA256(secret_key, dataCheckString)
+    // 4️⃣ HMAC
     const calculatedHash = crypto
       .createHmac('sha256', secretKey)
       .update(dataCheckString)
@@ -36,11 +48,10 @@ export const validateTelegramWebAppData = (initData, botToken) => {
       return null;
     }
 
-    // 4️⃣ Парсим пользователя
-    const userParam = urlParams.get('user');
-    if (!userParam) return null;
+    // 5️⃣ Теперь декодируем user
+    if (!data.user) return null;
 
-    const user = JSON.parse(userParam);
+    const user = JSON.parse(decodeURIComponent(data.user));
 
     return {
       telegram_id: user.id,
@@ -49,7 +60,7 @@ export const validateTelegramWebAppData = (initData, botToken) => {
       last_name: user.last_name || null,
     };
   } catch (error) {
-    console.error('Error validating Telegram data:', error);
+    console.error('Validation error:', error);
     return null;
   }
 };

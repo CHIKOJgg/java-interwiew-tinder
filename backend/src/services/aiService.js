@@ -2,7 +2,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'google/gemini-2.0-flash-lite-preview-02-05:free';
+const OPENROUTER_MODEL =
+  process.env.OPENROUTER_MODEL ||
+  'google/gemini-2.0-flash-lite-preview-02-05:free';
 
 const SYSTEM_PROMPT = `Ты — опытный ментор по Java (Senior Developer). Твоя задача — объяснить пользователю концепцию максимально просто и кратко.
 
@@ -37,30 +39,34 @@ export const generateExplanation = async (questionText, shortAnswer) => {
 
 Пользователь не знает этого и нуждается в подробном объяснении с примерами.`;
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://github.com/java-interview-tinder',
-        'X-Title': 'Java Interview Tinder'
+    const response = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://github.com/java-interview-tinder',
+          'X-Title': 'Java Interview Tinder',
+        },
+        body: JSON.stringify({
+          model: OPENROUTER_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content: SYSTEM_PROMPT,
+            },
+            {
+              role: 'user',
+              content: userPrompt,
+            },
+          ],
+          timeout: 7000,
+          max_tokens: 1000,
+          temperature: 0.7,
+        }),
       },
-      body: JSON.stringify({
-        model: OPENROUTER_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: SYSTEM_PROMPT
-          },
-          {
-            role: 'user',
-            content: userPrompt
-          }
-        ],
-        max_tokens: 1000,
-        temperature: 0.7
-      })
-    });
+    );
 
     if (!response.ok) {
       const errorText = await response.text();

@@ -17,11 +17,21 @@ const isDev = process.env.NODE_ENV === 'development';
 // Middleware
 app.use(
   cors({
-    origin: [
-      'http://localhost:5173',
-      'https://java-interwiew-tinder-4vld.vercel.app/', // ЗАМЕНИТЕ на настоящий URL!
-    ],
+    origin: function (origin, callback) {
+      // Разрешить localhost и все vercel.app домены
+      if (
+        !origin ||
+        origin.includes('localhost') ||
+        origin.includes('vercel.app')
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
 app.use(express.json());
@@ -265,26 +275,7 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// // Start server
-// app.listen(PORT, () => {
-//   console.log(`
-// ╔════════════════════════════════════════════════╗
-// ║   🚀 Java Interview Tinder Backend Started   ║
-// ╠════════════════════════════════════════════════╣
-// ║   Port: ${PORT.toString().padEnd(39)} ║
-// ║   Mode: ${(isDev ? 'Development' : 'Production').padEnd(39)} ║
-// ║   Database: ${(process.env.DATABASE_URL ? '✅ Connected' : '❌ Not configured').padEnd(32)} ║
-// ║   OpenRouter: ${(process.env.OPENROUTER_API_KEY ? '✅ Configured' : '❌ Not configured').padEnd(30)} ║
-// ╚════════════════════════════════════════════════╝
-//   `);
-// });
-// Старый код (закомментируйте):
-// app.listen(PORT, () => {
-//   console.log(`Server started on port ${PORT}`);
-// });
-
-// Новый код для Vercel:
-// Для локальной разработки
+// Start server (only in local development)
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`
@@ -298,20 +289,20 @@ if (process.env.NODE_ENV !== 'production') {
 ╚════════════════════════════════════════════════╝
     `);
   });
+
+  // Graceful shutdown
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, closing server...');
+    await pool.end();
+    process.exit(0);
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received, closing server...');
+    await pool.end();
+    process.exit(0);
+  });
 }
 
-// Экспорт для Vercel
+// Export for Vercel serverless
 export default app;
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, closing server...');
-  await pool.end();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, closing server...');
-  await pool.end();
-  process.exit(0);
-});

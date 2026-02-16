@@ -1,8 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 class ApiClient {
   constructor() {
-    this.baseUrl = API_BASE_URL;
+    // Убираем trailing slash если есть
+    this.baseUrl = API_BASE_URL.replace(/\/$/, '');
     this.userId = null;
   }
 
@@ -11,8 +13,10 @@ class ApiClient {
   }
 
   async request(endpoint, options = {}) {
-    const url = `${this.baseUrl}${endpoint}`;
-    
+    // Убеждаемся что endpoint начинается с /
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${this.baseUrl}${cleanEndpoint}`;
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -40,11 +44,11 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ initData }),
     });
-    
+
     if (response.user) {
       this.setUserId(response.user.telegram_id);
     }
-    
+
     return response;
   }
 
@@ -53,8 +57,10 @@ class ApiClient {
     if (!this.userId) {
       throw new Error('User not authenticated');
     }
-    
-    return await this.request(`/questions/feed?userId=${this.userId}&limit=${limit}`);
+
+    return await this.request(
+      `/questions/feed?userId=${this.userId}&limit=${limit}`,
+    );
   }
 
   async recordSwipe(questionId, status) {

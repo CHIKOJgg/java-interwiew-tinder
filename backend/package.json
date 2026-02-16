@@ -7,10 +7,14 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "init-db": "node src/scripts/init-db.js",
-    "seed-db": "node src/scripts/seed-db.js"
+    "vercel-build": "echo 'Build completed'"
   },
-  "keywords": ["telegram", "mini-app", "java", "interview"],
+  "keywords": [
+    "telegram",
+    "mini-app",
+    "java",
+    "interview"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {

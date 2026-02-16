@@ -1,0 +1,59 @@
+.header {
+  background: var(--tg-theme-bg-color, #fff);
+  border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.header-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.header-title h1 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.header-title svg {
+  color: var(--tg-theme-button-color, #3390ec);
+}
+
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stats-text {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.stats-text strong {
+  color: var(--tg-theme-button-color, #3390ec);
+  font-weight: 600;
+}
+
+.progress-bar {
+  height: 6px;
+  background: var(--tg-theme-hint-color, #e0e0e0);
+  border-radius: 3px;
+  overflow: hidden;
+  opacity: 0.3;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--tg-theme-button-color, #3390ec);
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}

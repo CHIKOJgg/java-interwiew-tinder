@@ -15,7 +15,11 @@ export const validateTelegramWebAppData = (initData, botToken) => {
 
     const data = {};
     let hash;
-
+    console.log('INIT:', initData);
+    console.log('BOT:', botToken.slice(0, 10));
+    console.log('CHECK STRING:', dataCheckString);
+    console.log('CALC:', calculatedHash);
+    console.log('HASH:', hash);
     for (const param of params) {
       const index = param.indexOf('=');
       const key = param.substring(0, index);
@@ -27,7 +31,11 @@ export const validateTelegramWebAppData = (initData, botToken) => {
         data[key] = value;
       }
     }
-
+    console.log('INIT:', initData);
+    console.log('BOT:', botToken.slice(0, 10));
+    console.log('CHECK STRING:', dataCheckString);
+    console.log('CALC:', calculatedHash);
+    console.log('HASH:', hash);
     if (!hash) return null;
 
     // 2️⃣ Формируем data_check_string из RAW значений
@@ -35,7 +43,11 @@ export const validateTelegramWebAppData = (initData, botToken) => {
       .sort()
       .map((key) => `${key}=${data[key]}`)
       .join('\n');
-
+    console.log('INIT:', initData);
+    console.log('BOT:', botToken.slice(0, 10));
+    console.log('CHECK STRING:', dataCheckString);
+    console.log('CALC:', calculatedHash);
+    console.log('HASH:', hash);
     // 3️⃣ secret_key = SHA256(botToken)
     const secretKey = crypto.createHash('sha256').update(botToken).digest();
 
@@ -44,7 +56,11 @@ export const validateTelegramWebAppData = (initData, botToken) => {
       .createHmac('sha256', secretKey)
       .update(dataCheckString)
       .digest('hex');
-
+    console.log('INIT:', initData);
+    console.log('BOT:', botToken.slice(0, 10));
+    console.log('CHECK STRING:', dataCheckString);
+    console.log('CALC:', calculatedHash);
+    console.log('HASH:', hash);
     if (calculatedHash !== hash) {
       console.log('Hash mismatch');
       return null;

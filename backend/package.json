@@ -1,0 +1,23 @@
+{
+  "name": "java-interview-tinder-backend",
+  "version": "1.0.0",
+  "description": "Backend for Java Interview Tinder Telegram Mini App",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "init-db": "node src/scripts/init-db.js",
+    "seed-db": "node src/scripts/seed-db.js"
+  },
+  "keywords": ["telegram", "mini-app", "java", "interview"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1",
+    "crypto": "^1.0.1"
+  }
+}

@@ -15,7 +15,15 @@ const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV === 'development';
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      'http://localhost:5173',
+      'https://java-interwiew-tinder-4vld.vercel.app/', // ЗАМЕНИТЕ на настоящий URL!
+    ],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 // Request logging

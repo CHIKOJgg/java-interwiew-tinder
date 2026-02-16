@@ -2,7 +2,7 @@ import crypto from 'crypto';
 
 export const validateTelegramWebAppData = (initData, botToken) => {
   try {
-    if (!botToken) return null;
+    if (!botToken || !initData) return null;
 
     const params = initData.split('&');
 
@@ -28,7 +28,7 @@ export const validateTelegramWebAppData = (initData, botToken) => {
       .map((key) => `${key}=${data[key]}`)
       .join('\n');
 
-    // 🔐 CORRECT SECRET KEY
+    // 🔐 Telegram correct secret key
     const secretKey = crypto
       .createHmac('sha256', 'WebAppData')
       .update(botToken)

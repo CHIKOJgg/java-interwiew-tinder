@@ -59,3 +59,39 @@ export const validateTelegramWebAppData = (initData, botToken) => {
     return null;
   }
 };
+
+/**
+ * Mock validation for development (when BOT_TOKEN is not set)
+ */
+export const mockValidation = (initData) => {
+  try {
+    const urlParams = new URLSearchParams(initData);
+    const userParam = urlParams.get('user');
+
+    if (!userParam) {
+      // Return mock user for development
+      return {
+        telegram_id: 123456789,
+        username: 'dev_user',
+        first_name: 'Dev',
+        last_name: 'User',
+      };
+    }
+
+    const user = JSON.parse(userParam);
+    return {
+      telegram_id: user.id,
+      username: user.username || null,
+      first_name: user.first_name || null,
+      last_name: user.last_name || null,
+    };
+  } catch (error) {
+    // Return mock user on any error in dev mode
+    return {
+      telegram_id: 123456789,
+      username: 'dev_user',
+      first_name: 'Dev',
+      last_name: 'User',
+    };
+  }
+};

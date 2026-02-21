@@ -41,10 +41,13 @@ const CategorySelection = ({ onComplete }) => {
   };
 
   const toggleCategory = (categoryName) => {
+    console.log('🔘 Category clicked:', categoryName);
     setSelectedCategories((prev) => {
       if (prev.includes(categoryName)) {
+        console.log('   ➖ Removing category');
         return prev.filter((c) => c !== categoryName);
       } else {
+        console.log('   ➕ Adding category');
         return [...prev, categoryName];
       }
     });

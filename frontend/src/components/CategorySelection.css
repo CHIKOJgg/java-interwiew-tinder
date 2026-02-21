@@ -93,6 +93,11 @@
   flex: 1;
   position: relative;
   z-index: 2;
+  overflow-y: auto;
+  max-height: calc(100vh - 300px);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: 20px;
 }
 
 .category-card {
@@ -103,14 +108,13 @@
   background: white;
   border: 2px solid #dee2e6;
   border-radius: 12px;
+  cursor: pointer !important;
   transition: all 0.2s;
   user-select: none;
-  pointer-events: auto;
   pointer-events: auto !important;
-  cursor: pointer !important;
-  z-index: 999 !important;
   position: relative;
-  touch-action: manipulation;
+  z-index: 100 !important;
+  touch-action: manipulation !important;
 }
 
 .category-card:hover {

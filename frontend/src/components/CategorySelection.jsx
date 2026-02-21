@@ -112,12 +112,36 @@ const CategorySelection = ({ onComplete }) => {
             <div
               key={category.name}
               className={`category-card ${isSelected ? 'selected' : ''}`}
-              onClick={() => toggleCategory(category.name)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔘 onClick fired for:', category.name);
+                toggleCategory(category.name);
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('📱 onTouchEnd fired for:', category.name);
+                toggleCategory(category.name);
+              }}
+              onMouseDown={(e) => {
+                console.log('🖱️ onMouseDown fired for:', category.name);
+              }}
+              style={{
+                touchAction: 'manipulation',
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+                zIndex: 100,
+                position: 'relative',
+              }}
             >
-              <div className="category-checkbox">
+              <div
+                className="category-checkbox"
+                style={{ pointerEvents: 'none' }}
+              >
                 {isSelected && <Check size={20} />}
               </div>
-              <div className="category-info">
+              <div className="category-info" style={{ pointerEvents: 'none' }}>
                 <div className="category-name">{category.name}</div>
                 <div className="category-count">{category.count} вопросов</div>
               </div>

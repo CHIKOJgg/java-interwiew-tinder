@@ -388,9 +388,9 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // Start server (only in local development)
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`
+// Start server
+app.listen(PORT, () => {
+  console.log(`
 ╔════════════════════════════════════════════════╗
 ║   🚀 Java Interview Tinder Backend Started   ║
 ╠════════════════════════════════════════════════╣
@@ -399,22 +399,21 @@ if (process.env.NODE_ENV !== 'production') {
 ║   Database: ${(process.env.DATABASE_URL ? '✅ Connected' : '❌ Not configured').padEnd(32)} ║
 ║   OpenRouter: ${(process.env.OPENROUTER_API_KEY ? '✅ Configured' : '❌ Not configured').padEnd(30)} ║
 ╚════════════════════════════════════════════════╝
-    `);
-  });
+  `);
+});
 
-  // Graceful shutdown
-  process.on('SIGTERM', async () => {
-    console.log('SIGTERM received, closing server...');
-    await pool.end();
-    process.exit(0);
-  });
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, closing server...');
+  await pool.end();
+  process.exit(0);
+});
 
-  process.on('SIGINT', async () => {
-    console.log('SIGINT received, closing server...');
-    await pool.end();
-    process.exit(0);
-  });
-}
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, closing server...');
+  await pool.end();
+  process.exit(0);
+});
 
 // Export for Vercel serverless
 export default app;

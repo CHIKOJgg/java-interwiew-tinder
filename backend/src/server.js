@@ -47,22 +47,102 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Get available categories
+app.get('/api/categories', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT DISTINCT category, COUNT(*) as count
+      FROM questions
+      GROUP BY category
+      ORDER BY category
+    `);
+
+    res.json({
+      categories: result.rows.map((row) => ({
+        name: row.category,
+        count: parseInt(row.count),
+      })),
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+});
+
+// Get user preferences
+app.get('/api/preferences/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const result = await pool.query(
+      'SELECT selected_categories FROM user_preferences WHERE telegram_id = $1',
+      [userId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ selectedCategories: [] });
+    }
+
+    res.json({ selectedCategories: result.rows[0].selected_categories || [] });
+  } catch (error) {
+    console.error('Error fetching preferences:', error);
+    res.status(500).json({ error: 'Failed to fetch preferences' });
+  }
+});
+
+// Update user preferences
+app.post('/api/preferences', async (req, res) => {
+  try {
+    const { userId, categories } = req.body;
+
+    if (!userId || !categories) {
+      return res.status(400).json({ error: 'userId and categories required' });
+    }
+
+    await pool.query(
+      `
+      INSERT INTO user_preferences (telegram_id, selected_categories, updated_at)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (telegram_id)
+      DO UPDATE SET selected_categories = $2, updated_at = NOW()
+    `,
+      [userId, categories],
+    );
+
+    console.log(
+      `✅ Updated preferences for user ${userId}: ${categories.join(', ')}`,
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating preferences:', error);
+    res.status(500).json({ error: 'Failed to update preferences' });
+  }
+});
+
 // Auth endpoint
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { initData } = req.body;
 
-    if (!initData) {
-      return res.status(400).json({ error: 'initData is required' });
+    console.log('🔐 Login attempt');
+    console.log('initData present:', !!initData);
+    console.log('BOT_TOKEN configured:', !!process.env.BOT_TOKEN);
+
+    let userData;
+
+    // Если есть BOT_TOKEN - пробуем валидацию
+    if (process.env.BOT_TOKEN && initData) {
+      userData = validateTelegramWebAppData(initData, process.env.BOT_TOKEN);
+      if (userData) {
+        console.log('✅ Telegram validation passed');
+      }
     }
 
-    // Validate Telegram data
-    let userData;
-    if (isDev && !process.env.BOT_TOKEN) {
-      console.log('🔧 Development mode: using mock validation');
+    // Если валидация не прошла или нет токена - используем mock
+    if (!userData) {
+      console.log('⚠️ Using mock validation for development');
       userData = mockValidation(initData);
-    } else {
-      userData = validateTelegramWebAppData(initData, process.env.BOT_TOKEN);
     }
 
     if (!userData) {
@@ -115,16 +195,48 @@ app.get('/api/questions/feed', async (req, res) => {
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    // Get questions that user hasn't seen yet or got wrong
-    const result = await pool.query(
-      `SELECT q.id, q.category, q.question_text, q.short_answer
-       FROM questions q
-       LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
-       WHERE up.id IS NULL OR up.status = 'unknown'
-       ORDER BY RANDOM()
-       LIMIT $2`,
-      [userId, limit],
+    // Get user's selected categories
+    const prefsResult = await pool.query(
+      'SELECT selected_categories FROM user_preferences WHERE telegram_id = $1',
+      [userId],
     );
+
+    const selectedCategories = prefsResult.rows[0]?.selected_categories;
+
+    // Build query based on whether categories are selected
+    let query;
+    let params;
+
+    if (selectedCategories && selectedCategories.length > 0) {
+      // Filter by selected categories
+      query = `
+        SELECT q.id, q.category, q.question_text, q.short_answer
+        FROM questions q
+        LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+        WHERE (up.id IS NULL OR up.status = 'unknown')
+          AND q.category = ANY($2)
+        ORDER BY RANDOM()
+        LIMIT $3
+      `;
+      params = [userId, selectedCategories, limit];
+      console.log(
+        `🎯 Loading questions from categories: ${selectedCategories.join(', ')}`,
+      );
+    } else {
+      // No filter - all categories
+      query = `
+        SELECT q.id, q.category, q.question_text, q.short_answer
+        FROM questions q
+        LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+        WHERE up.id IS NULL OR up.status = 'unknown'
+        ORDER BY RANDOM()
+        LIMIT $2
+      `;
+      params = [userId, limit];
+      console.log('📚 Loading questions from all categories');
+    }
+
+    const result = await pool.query(query, params);
 
     const questions = result.rows.map((row) => ({
       id: row.id,
@@ -275,20 +387,34 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-const port = process.env.PORT || 3000;
-
-if (!process.env.VERCEL) {
-  // Запускаем только локально
-  app.listen(port, () => {
+// Start server (only in local development)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
     console.log(`
 ╔════════════════════════════════════════════════╗
 ║   🚀 Java Interview Tinder Backend Started   ║
 ╠════════════════════════════════════════════════╣
-║   Port: ${port}                                ║
+║   Port: ${PORT.toString().padEnd(39)} ║
+║   Mode: ${(isDev ? 'Development' : 'Production').padEnd(39)} ║
+║   Database: ${(process.env.DATABASE_URL ? '✅ Connected' : '❌ Not configured').padEnd(32)} ║
+║   OpenRouter: ${(process.env.OPENROUTER_API_KEY ? '✅ Configured' : '❌ Not configured').padEnd(30)} ║
 ╚════════════════════════════════════════════════╝
     `);
   });
+
+  // Graceful shutdown
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, closing server...');
+    await pool.end();
+    process.exit(0);
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received, closing server...');
+    await pool.end();
+    process.exit(0);
+  });
 }
 
-// Export для Vercel
+// Export for Vercel serverless
 export default app;

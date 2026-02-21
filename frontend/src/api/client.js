@@ -93,6 +93,33 @@ class ApiClient {
 
     return await this.request(`/stats?userId=${this.userId}`);
   }
+
+  // Categories
+  async getCategories() {
+    return await this.request('/categories');
+  }
+
+  async getPreferences() {
+    if (!this.userId) {
+      throw new Error('User not authenticated');
+    }
+
+    return await this.request(`/preferences/${this.userId}`);
+  }
+
+  async updatePreferences(categories) {
+    if (!this.userId) {
+      throw new Error('User not authenticated');
+    }
+
+    return await this.request('/preferences', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: this.userId,
+        categories,
+      }),
+    });
+  }
 }
 
 export default new ApiClient();

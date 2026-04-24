@@ -6,7 +6,7 @@ import {
   validateTelegramWebAppData,
   mockValidation,
 } from './utils/telegram.js';
-import { generateExplanation } from './services/aiService.js';
+import { generateExplanation, generateTestOptions } from './services/aiService.js';
 
 dotenv.config();
 
@@ -210,7 +210,7 @@ app.get('/api/questions/feed', async (req, res) => {
     if (selectedCategories && selectedCategories.length > 0) {
       // Filter by selected categories
       query = `
-        SELECT q.id, q.category, q.question_text, q.short_answer
+        SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer, q.options
         FROM questions q
         LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
         WHERE (up.id IS NULL OR up.status = 'unknown')
@@ -225,7 +225,7 @@ app.get('/api/questions/feed', async (req, res) => {
     } else {
       // No filter - all categories
       query = `
-        SELECT q.id, q.category, q.question_text, q.short_answer
+        SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer, q.options
         FROM questions q
         LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
         WHERE up.id IS NULL OR up.status = 'unknown'
@@ -238,12 +238,37 @@ app.get('/api/questions/feed', async (req, res) => {
 
     const result = await pool.query(query, params);
 
-    const questions = result.rows.map((row) => ({
-      id: row.id,
-      category: row.category,
-      question: row.question_text,
-      shortAnswer: row.short_answer,
-    }));
+    const questions = [];
+    for (const row of result.rows) {
+      let options = row.options;
+
+      // If options are missing, generate them via AI
+      if (!options || options.length === 0) {
+        console.log(`🤖 Generating options for question ${row.id}...`);
+        const incorrectOptions = await generateTestOptions(
+          row.question_text,
+          row.short_answer,
+        );
+        options = [row.short_answer, ...incorrectOptions];
+        // Shuffle options
+        options.sort(() => Math.random() - 0.5);
+
+        // Save to DB
+        await pool.query('UPDATE questions SET options = $1 WHERE id = $2', [
+          options,
+          row.id,
+        ]);
+      }
+
+      questions.push({
+        id: row.id,
+        category: row.category,
+        difficulty: row.difficulty,
+        question: row.question_text,
+        shortAnswer: row.short_answer,
+        options: options,
+      });
+    }
 
     console.log(`📚 Sent ${questions.length} questions to user ${userId}`);
 
@@ -289,6 +314,57 @@ app.post('/api/questions/swipe', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Error in /questions/swipe:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Record test answer
+app.post('/api/questions/test-answer', async (req, res) => {
+  try {
+    const { userId, questionId, answer } = req.body;
+
+    if (!userId || !questionId || !answer) {
+      return res
+        .status(400)
+        .json({ error: 'userId, questionId, and answer are required' });
+    }
+
+    // Get correct answer
+    const result = await pool.query(
+      'SELECT short_answer FROM questions WHERE id = $1',
+      [questionId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Question not found' });
+    }
+
+    const correctAnswer = result.rows[0].short_answer;
+    const isCorrect = answer === correctAnswer;
+    const status = isCorrect ? 'known' : 'unknown';
+
+    // Record progress
+    await pool.query(
+      `INSERT INTO user_progress (user_id, question_id, status, updated_at)
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, question_id)
+       DO UPDATE SET 
+         status = EXCLUDED.status,
+         updated_at = CURRENT_TIMESTAMP`,
+      [userId, questionId, status],
+    );
+
+    console.log(
+      `✅ Recorded test result: user=${userId}, question=${questionId}, correct=${isCorrect}`,
+    );
+
+    res.json({
+      success: true,
+      isCorrect,
+      correctAnswer,
+    });
+  } catch (error) {
+    console.error('Error in /questions/test-answer:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

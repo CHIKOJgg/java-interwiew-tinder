@@ -11,6 +11,7 @@ const useStore = create((set, get) => ({
   questions: [],
   currentIndex: 0,
   isLoadingQuestions: false,
+  learningMode: 'swipe', // 'swipe' or 'test'
 
   // Stats state
   stats: {
@@ -103,6 +104,46 @@ const useStore = create((set, get) => ({
     }
   },
 
+  submitTestAnswer: async (questionId, answer) => {
+    try {
+      const response = await apiClient.submitTestAnswer(questionId, answer);
+      
+      // Update stats
+      const status = response.isCorrect ? 'known' : 'unknown';
+      const currentStats = get().stats;
+      set({ 
+        stats: {
+          ...currentStats,
+          [status]: currentStats[status] + 1,
+          totalSeen: currentStats.totalSeen + 1
+        }
+      });
+
+      // If incorrect, show explanation
+      if (!response.isCorrect) {
+        await get().loadExplanation(questionId);
+      } else {
+        // Move to next question if correct
+        set({ currentIndex: get().currentIndex + 1 });
+      }
+
+      // Load more questions if running low
+      if (get().questions.length - get().currentIndex <= 3) {
+        await get().loadQuestions();
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Submit answer error:', error);
+      throw error;
+    }
+  },
+
+  setLearningMode: (mode) => {
+    set({ learningMode: mode, currentIndex: 0 });
+    get().loadQuestions();
+  },
+
   loadExplanation: async (questionId) => {
     try {
       set({ isLoadingExplanation: true, showExplanation: true });
@@ -121,10 +162,16 @@ const useStore = create((set, get) => ({
   },
 
   closeExplanation: () => {
+    const { learningMode, currentIndex } = get();
     set({ 
       showExplanation: false,
       currentExplanation: null 
     });
+    
+    // В режиме теста переходим к следующему вопросу после закрытия объяснения
+    if (learningMode === 'test') {
+      set({ currentIndex: currentIndex + 1 });
+    }
   },
 
   getCurrentQuestion: () => {

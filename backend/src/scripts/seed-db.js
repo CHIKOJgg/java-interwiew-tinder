@@ -9,24 +9,48 @@ const questions = [
     question: 'В чем разница между == и equals() в Java?',
     short_answer:
       '== сравнивает ссылки на объекты, equals() сравнивает содержимое объектов. Для примитивов == сравнивает значения.',
+    options: [
+      '== сравнивает ссылки, equals() сравнивает содержимое',
+      '== сравнивает содержимое, equals() сравнивает ссылки',
+      'Нет никакой разницы, это синонимы',
+      '== используется только для строк, equals() для всех остальных объектов',
+    ],
   },
   {
     category: 'Java Core',
     question: 'Что такое контракт equals() и hashCode()?',
     short_answer:
       'Если два объекта равны по equals(), их hashCode() должны быть одинаковыми. Обратное не обязательно.',
+    options: [
+      'Если объекты равны по equals, их хеш-коды должны быть равны',
+      'Если хеш-коды равны, объекты обязаны быть равны по equals',
+      'Хеш-код должен быть уникальным для каждого объекта',
+      'Контракта не существует, это просто рекомендация',
+    ],
   },
   {
     category: 'Java Core',
     question: 'Что такое immutable объекты и зачем они нужны?',
     short_answer:
       'Неизменяемые объекты, состояние которых нельзя изменить после создания. Безопасны для многопоточности, кэширования.',
+    options: [
+      'Объекты, состояние которых нельзя изменить после создания',
+      'Объекты, которые нельзя удалить из памяти',
+      'Объекты, которые автоматически синхронизируются',
+      'Объекты, не имеющие методов',
+    ],
   },
   {
     category: 'Java Core',
     question: 'В чем разница между String, StringBuilder и StringBuffer?',
     short_answer:
       'String - immutable. StringBuilder - mutable, не потокобезопасен. StringBuffer - mutable, потокобезопасен (медленнее).',
+    options: [
+      'String - immutable, StringBuilder - не потокобезопасен, StringBuffer - потокобезопасен',
+      'StringBuilder быстрее String, но медленнее StringBuffer',
+      'StringBuffer - immutable, остальные - mutable',
+      'Разницы нет, это устаревшие классы',
+    ],
   },
   {
     category: 'Java Core',
@@ -2514,9 +2538,15 @@ const seedDatabase = async () => {
     // Insert questions
     for (const q of questions) {
       await client.query(
-        `INSERT INTO questions (category, question_text, short_answer) 
-         VALUES ($1, $2, $3)`,
-        [q.category, q.question, q.short_answer],
+        `INSERT INTO questions (category, difficulty, question_text, short_answer, options) 
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          q.category,
+          q.difficulty || 'Junior',
+          q.question,
+          q.short_answer,
+          q.options || null,
+        ],
       );
     }
 

@@ -78,6 +78,21 @@ class ApiClient {
     });
   }
 
+  async submitTestAnswer(questionId, answer) {
+    if (!this.userId) {
+      throw new Error('User not authenticated');
+    }
+
+    return await this.request('/questions/test-answer', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: this.userId,
+        questionId,
+        answer,
+      }),
+    });
+  }
+
   async getExplanation(questionId) {
     return await this.request('/questions/explain', {
       method: 'POST',

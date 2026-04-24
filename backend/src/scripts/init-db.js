@@ -23,13 +23,25 @@ const initDatabase = async () => {
       CREATE TABLE IF NOT EXISTS questions (
         id SERIAL PRIMARY KEY,
         category VARCHAR(100) NOT NULL,
+        difficulty VARCHAR(20) DEFAULT 'Junior',
         question_text TEXT NOT NULL,
         short_answer TEXT NOT NULL,
+        options TEXT[],
         cached_explanation TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     console.log('✅ Table "questions" created');
+
+    // Create user_preferences table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_preferences (
+        telegram_id BIGINT PRIMARY KEY REFERENCES users(telegram_id) ON DELETE CASCADE,
+        selected_categories TEXT[],
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Table "user_preferences" created');
 
     // Create user_progress table
     await client.query(`

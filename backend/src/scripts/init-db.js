@@ -13,6 +13,8 @@ const initDatabase = async () => {
         username VARCHAR(255),
         first_name VARCHAR(255),
         last_name VARCHAR(255),
+        resume_text TEXT,
+        parsed_resume_data JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);

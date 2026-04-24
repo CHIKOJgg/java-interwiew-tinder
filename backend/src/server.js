@@ -6,7 +6,7 @@ import {
   validateTelegramWebAppData,
   mockValidation,
 } from './utils/telegram.js';
-import { generateExplanation, generateTestOptions, generateBuggyCode, generateBlitzStatement, evaluateInterviewAnswer, generateCodeCompletion } from './services/aiService.js';
+import { generateExplanation, generateTestOptions, generateBuggyCode, generateBlitzStatement, evaluateInterviewAnswer, generateCodeCompletion, analyzeResume } from './services/aiService.js';
 
 dotenv.config();
 
@@ -120,6 +120,55 @@ app.post('/api/preferences', async (req, res) => {
   }
 });
 
+// Resume Analysis
+app.post('/api/user/analyze-resume', async (req, res) => {
+  try {
+    const { userId, resumeText } = req.body;
+
+    if (!userId || !resumeText) {
+      return res.status(400).json({ error: 'userId and resumeText are required' });
+    }
+
+    console.log(`🤖 Analyzing resume for user ${userId}...`);
+    const parsedData = await analyzeResume(resumeText);
+
+    // Save to DB
+    await pool.query(
+      `UPDATE users 
+       SET resume_text = $1, parsed_resume_data = $2 
+       WHERE telegram_id = $3`,
+      [resumeText, parsedData, userId]
+    );
+
+    res.json({
+      success: true,
+      parsedData
+    });
+  } catch (error) {
+    console.error('Error in /user/analyze-resume:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/user/resume/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await pool.query(
+      'SELECT resume_text, parsed_resume_data FROM users WHERE telegram_id = $1',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error in /user/resume/:userId:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Auth endpoint
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -177,6 +226,8 @@ app.post('/api/auth/login', async (req, res) => {
         username: user.username,
         first_name: user.first_name,
         last_name: user.last_name,
+        resume_text: user.resume_text,
+        parsed_resume_data: user.parsed_resume_data,
       },
     });
   } catch (error) {

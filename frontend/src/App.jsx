@@ -8,6 +8,7 @@ import BlitzMode from './components/BlitzMode';
 import MockInterviewMode from './components/MockInterviewMode';
 import ConceptLinker from './components/ConceptLinker';
 import CodeCompletionMode from './components/CodeCompletionMode';
+import ResumeAnalyzer from './components/ResumeAnalyzer';
 import ExplanationModal from './components/ExplanationModal';
 import CategorySelection from './components/CategorySelection';
 import useStore from './store/useStore';
@@ -32,6 +33,7 @@ function App() {
   } = useStore();
 
   const [showCategorySelection, setShowCategorySelection] = useState(false);
+  const [showResumeAnalyzer, setShowResumeAnalyzer] = useState(false);
   const cardRefs = useRef([]);
 
   useEffect(() => {
@@ -110,9 +112,16 @@ function App() {
     return <CategorySelection onComplete={handleCategorySelectionComplete} />;
   }
 
+  if (showResumeAnalyzer) {
+    return <ResumeAnalyzer onBack={() => setShowResumeAnalyzer(false)} />;
+  }
+
   return (
     <div className="app">
-      <Header onSettingsClick={() => setShowCategorySelection(true)} />
+      <Header 
+        onSettingsClick={() => setShowCategorySelection(true)} 
+        onResumeClick={() => setShowResumeAnalyzer(true)}
+      />
 
       <div className="card-container">
         {hasMoreQuestions() ? (

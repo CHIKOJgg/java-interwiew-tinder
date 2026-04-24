@@ -33,6 +33,39 @@
   color: var(--tg-theme-button-color, #3390ec);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mode-switcher {
+  display: flex;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  padding: 4px;
+  border-radius: 10px;
+  gap: 4px;
+}
+
+.mode-button {
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 6px;
+  color: var(--tg-theme-hint-color, #999);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.mode-button.active {
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-button-color, #3390ec);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .settings-button {
   background: var(--tg-theme-button-color, #3390ec);
   border: none;

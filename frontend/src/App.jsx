@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Header from './components/Header';
 import QuestionCard from './components/QuestionCard';
 import SwipeButtons from './components/SwipeButtons';
+import TestMode from './components/TestMode';
 import ExplanationModal from './components/ExplanationModal';
 import CategorySelection from './components/CategorySelection';
 import useStore from './store/useStore';
@@ -22,6 +23,7 @@ function App() {
     closeExplanation,
     hasMoreQuestions,
     loadQuestions,
+    learningMode,
   } = useStore();
 
   const [showCategorySelection, setShowCategorySelection] = useState(false);
@@ -109,28 +111,34 @@ function App() {
 
       <div className="card-container">
         {hasMoreQuestions() ? (
-          <div className="card-stack">
-            {questions
-              .slice(currentIndex, currentIndex + 3)
-              .map((question, index) => (
-                <div
-                  key={question.id}
-                  className="card-wrapper"
-                  style={{
-                    zIndex: 3 - index,
-                    transform: `scale(${1 - index * 0.05}) translateY(${index * -10}px)`,
-                    opacity: 1 - index * 0.3,
-                  }}
-                >
-                  <QuestionCard
-                    ref={(el) => (cardRefs.current[currentIndex + index] = el)}
-                    question={question}
-                    onSwipe={index === 0 ? handleSwipe : null}
-                    canSwipe={index === 0}
-                  />
-                </div>
-              ))}
-          </div>
+          learningMode === 'swipe' ? (
+            <div className="card-stack">
+              {questions
+                .slice(currentIndex, currentIndex + 3)
+                .map((question, index) => (
+                  <div
+                    key={question.id}
+                    className="card-wrapper"
+                    style={{
+                      zIndex: 3 - index,
+                      transform: `scale(${1 - index * 0.05}) translateY(${index * -10}px)`,
+                      opacity: 1 - index * 0.3,
+                    }}
+                  >
+                    <QuestionCard
+                      ref={(el) =>
+                        (cardRefs.current[currentIndex + index] = el)
+                      }
+                      question={question}
+                      onSwipe={index === 0 ? handleSwipe : null}
+                      canSwipe={index === 0}
+                    />
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <TestMode />
+          )
         ) : (
           <div className="completion-screen">
             <CheckCircle size={64} color="#51cf66" />
@@ -146,11 +154,13 @@ function App() {
         )}
       </div>
 
-      <SwipeButtons
-        onSwipeLeft={() => handleButtonSwipe('left')}
-        onSwipeRight={() => handleButtonSwipe('right')}
-        disabled={!hasMoreQuestions()}
-      />
+      {learningMode === 'swipe' && (
+        <SwipeButtons
+          onSwipeLeft={() => handleButtonSwipe('left')}
+          onSwipeRight={() => handleButtonSwipe('right')}
+          disabled={!hasMoreQuestions()}
+        />
+      )}
 
       <ExplanationModal
         isOpen={showExplanation}

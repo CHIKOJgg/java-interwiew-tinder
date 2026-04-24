@@ -17,6 +17,12 @@ const categoryColors = {
   Database: '#00b894',
 };
 
+const difficultyColors = {
+  Junior: '#51cf66',
+  Middle: '#fcc419',
+  Senior: '#ff6b6b',
+};
+
 const QuestionCard = ({ question, onSwipe, canSwipe = true }) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -80,11 +86,21 @@ const QuestionCard = ({ question, onSwipe, canSwipe = true }) => {
         <div className="card-inner">
           {/* Front side */}
           <div className="card-face card-front">
-            <div
-              className="category-badge"
-              style={{ background: categoryColor }}
-            >
-              {question.category}
+            <div className="badges-container">
+              <div
+                className="category-badge"
+                style={{ background: categoryColor }}
+              >
+                {question.category}
+              </div>
+              <div
+                className="difficulty-badge"
+                style={{
+                  background: difficultyColors[question.difficulty] || '#999',
+                }}
+              >
+                {question.difficulty}
+              </div>
             </div>
             <div className="question-content">
               <h2>{question.question}</h2>
@@ -97,11 +113,21 @@ const QuestionCard = ({ question, onSwipe, canSwipe = true }) => {
 
           {/* Back side */}
           <div className="card-face card-back">
-            <div
-              className="category-badge"
-              style={{ background: categoryColor }}
-            >
-              {question.category}
+            <div className="badges-container">
+              <div
+                className="category-badge"
+                style={{ background: categoryColor }}
+              >
+                {question.category}
+              </div>
+              <div
+                className="difficulty-badge"
+                style={{
+                  background: difficultyColors[question.difficulty] || '#999',
+                }}
+              >
+                {question.difficulty}
+              </div>
             </div>
             <div className="answer-content">
               <div className="answer-label">Краткий ответ:</div>

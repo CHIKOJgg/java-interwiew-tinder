@@ -27,6 +27,9 @@ const initDatabase = async () => {
         question_text TEXT NOT NULL,
         short_answer TEXT NOT NULL,
         options TEXT[],
+        bug_hunting_data JSONB,
+        blitz_data JSONB,
+        code_completion_data JSONB,
         cached_explanation TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );

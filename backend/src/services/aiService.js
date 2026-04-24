@@ -20,10 +20,35 @@ const SYSTEM_PROMPT = `Ты — опытный ментор по Java (Senior De
 - Пример кода (если применимо)
 - Практический совет или распространенная ошибка
 
-Для генерации тестов:
-- Сгенерируй 3 неправильных, но правдоподобных варианта ответа
-- Ответы должны быть короткими и по существу
 - Язык: Русский`;
+
+/**
+ * Helper to parse JSON from AI response, handling markdown blocks
+ * @param {string} content 
+ * @returns {any}
+ */
+const parseAIResponse = (content) => {
+  try {
+    // Try simple parse first
+    return JSON.parse(content);
+  } catch (e) {
+    try {
+      // Look for JSON block in markdown
+      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || 
+                        content.match(/```\s*([\s\S]*?)\s*```/) ||
+                        content.match(/\{[\s\S]*\}/) ||
+                        content.match(/\[[\s\S]*\]/);
+      
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[1] || jsonMatch[0]);
+      }
+      throw new Error('No JSON found in response');
+    } catch (innerError) {
+      console.error('Failed to parse AI response:', content);
+      throw innerError;
+    }
+  }
+};
 
 /**
  * Generate AI explanation for a Java question
@@ -144,7 +169,9 @@ export const generateTestOptions = async (questionText, correctAnswer) => {
 
     const data = await response.json();
     const content = data.choices[0]?.message?.content;
-    const options = JSON.parse(content.match(/\[.*\]/s)[0]);
+    const options = parseAIResponse(content);
+
+    return Array.isArray(options) ? options : [];
 
     return options;
   } catch (error) {
@@ -154,6 +181,318 @@ export const generateTestOptions = async (questionText, correctAnswer) => {
       'Ошибка генерации варианта 2',
       'Ошибка генерации варианта 3',
     ];
+  }
+};
+
+/**
+ * Generate a buggy code snippet for "Bug Hunting" mode
+ * @param {string} questionText
+ * @param {string} topic
+ * @returns {Promise<Object>}
+ */
+export const generateBuggyCode = async (questionText, topic) => {
+  try {
+    if (!OPENROUTER_API_KEY) {
+      return {
+        code: 'public void test() {\n  List<String> list = new ArrayList<>();\n  list.add("a");\n  for(String s : list) {\n    if(s.equals("a")) list.remove(s);\n  }\n}',
+        bug: 'ConcurrentModificationException при удалении во время итерации',
+        options: [
+          'ConcurrentModificationException',
+          'NullPointerException',
+          'Код скомпилируется и выполнится успешно',
+          'Ошибка компиляции',
+        ],
+      };
+    }
+
+    const userPrompt = `Создай задачу "Bug Hunting" на тему: "${topic}" (основываясь на вопросе: "${questionText}").
+Сгенерируй короткий, реалистичный фрагмент кода на Java, содержащий ровно ОДНУ логическую ошибку или ошибку времени выполнения.
+
+Ответ дай СТРОГО в формате JSON:
+{
+  "code": "код с ошибкой",
+  "bug": "краткое описание ошибки (правильный ответ)",
+  "options": ["краткое описание ошибки (правильный ответ)", "неправильный 1", "неправильный 2", "неправильный 3"]
+}
+
+Варианты ответов в массиве "options" должны быть перемешаны.
+Один из вариантов должен СТРОГО совпадать со значением поля "bug".
+
+Требования:
+- Код должен быть читаемым
+- Варианты ответов должны быть технически грамотными
+- Язык описания и вариантов: Русский`;
+
+    const response = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: OPENROUTER_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a senior Java developer. Return ONLY valid JSON.',
+            },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.6,
+        }),
+      },
+    );
+
+    if (!response.ok) throw new Error('API error');
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    const result = parseAIResponse(content);
+
+    return result;
+
+    return result;
+  } catch (error) {
+    console.error('Error generating buggy code:', error);
+    return {
+      code: '// Ошибка генерации кода',
+      bug: 'Не удалось сгенерировать задачу',
+      options: ['Ошибка', 'Ошибка', 'Ошибка', 'Ошибка'],
+    };
+  }
+};
+
+/**
+ * Generate a True/False statement for "Blitz Mode"
+ * @param {string} questionText
+ * @param {string} topic
+ * @returns {Promise<Object>}
+ */
+export const generateBlitzStatement = async (questionText, topic) => {
+  try {
+    if (!OPENROUTER_API_KEY) {
+      const isTrue = Math.random() > 0.5;
+      return {
+        statement: isTrue 
+          ? 'String в Java является неизменяемым (immutable) типом данных.'
+          : 'Метод finalize() гарантированно вызывается перед удалением объекта GC.',
+        isCorrect: isTrue,
+      };
+    }
+
+    const userPrompt = `Создай задачу для "Blitz Mode" на тему: "${topic}" (основываясь на: "${questionText}").
+Сгенерируй одно короткое утверждение о Java, которое может быть либо ИСТИННЫМ, либо ЛОЖНЫМ.
+
+Ответ дай СТРОГО в формате JSON:
+{
+  "statement": "текст утверждения",
+  "isCorrect": true/false (true если утверждение верно, false если нет)
+}
+
+Требования:
+- Утверждение должно быть коротким (до 100 символов)
+- Оно должно проверять конкретный технический факт
+- Язык: Русский`;
+
+    const response = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: OPENROUTER_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a senior Java developer. Return ONLY valid JSON.',
+            },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.7,
+        }),
+      },
+    );
+
+    if (!response.ok) throw new Error('API error');
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    const result = parseAIResponse(content);
+
+    return result;
+
+    return result;
+  } catch (error) {
+    console.error('Error generating blitz statement:', error);
+    return {
+      statement: 'Java — это объектно-ориентированный язык.',
+      isCorrect: true,
+    };
+  }
+};
+
+/**
+ * Evaluate an interview answer
+ * @param {string} question
+ * @param {string} answer
+ * @returns {Promise<Object>}
+ */
+export const evaluateInterviewAnswer = async (question, answer) => {
+  try {
+    if (!OPENROUTER_API_KEY) {
+      return {
+        score: 8,
+        feedback:
+          'Это хороший ответ! Вы правильно упомянули основные моменты. Для идеального ответа можно было бы добавить пример из практики.',
+        correctVersion: 'Правильный ответ обычно включает детали о...',
+      };
+    }
+
+    const userPrompt = `Вопрос интервью: "${question}"
+Ответ кандидата: "${answer}"
+
+Оцени ответ кандидата как опытный Java интервьюер. 
+Дай конструктивную обратную связь и оценку от 1 до 10.
+
+Ответ дай СТРОГО в формате JSON:
+{
+  "score": число от 1 до 10,
+  "feedback": "твоя обратная связь на русском языке",
+  "correctVersion": "как бы ответил Senior разработчик"
+}
+
+Требования к фидбеку:
+- Будь строгим, но справедливым
+- Укажи, что было пропущено
+- Язык: Русский`;
+
+    const response = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: OPENROUTER_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a senior Java technical interviewer. Return ONLY valid JSON.',
+            },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.5,
+        }),
+      },
+    );
+
+    if (!response.ok) throw new Error('API error');
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    const result = parseAIResponse(content);
+
+    return result;
+
+    return result;
+  } catch (error) {
+    console.error('Error evaluating interview answer:', error);
+    return {
+      score: 5,
+      feedback: 'Не удалось провести оценку. Попробуйте еще раз.',
+      correctVersion: 'N/A',
+    };
+  }
+};
+
+/**
+ * Generate a code completion puzzle
+ * @param {string} questionText
+ * @param {string} topic
+ * @returns {Promise<Object>}
+ */
+export const generateCodeCompletion = async (questionText, topic) => {
+  try {
+    if (!OPENROUTER_API_KEY) {
+      return {
+        snippet: 'List<String> list = names.stream()\n  .filter(s -> s.startsWith("A"))\n  .___\n  .collect(Collectors.toList());',
+        correctPart: 'map(String::toUpperCase)',
+        options: [
+          'map(String::toUpperCase)',
+          'forEach(System.out::println)',
+          'sorted()',
+          'distinct()',
+        ],
+      };
+    }
+
+    const userPrompt = `Создай задачу "Code Completion" на тему: "${topic}" (основываясь на: "${questionText}").
+Сгенерируй короткий фрагмент кода на Java, в котором пропущена одна логическая часть (используй "___" как заполнитель).
+
+Ответ дай СТРОГО в формате JSON:
+{
+  "snippet": "код с заполнением ___",
+  "correctPart": "правильный фрагмент кода",
+  "options": ["правильный фрагмент кода", "неправильный 1", "неправильный 2", "неправильный 3"]
+}
+
+Варианты в "options" должны быть перемешаны.
+Один из вариантов должен СТРОГО совпадать с "correctPart".
+
+Требования:
+- Код должен быть современным (Java 8+)
+- Пропущенная часть должна быть существенной (например, метод Stream API, условие, ключевое слово)
+- Язык: Русский`;
+
+    const response = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: OPENROUTER_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a senior Java developer. Return ONLY valid JSON.',
+            },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.6,
+        }),
+      },
+    );
+
+    if (!response.ok) throw new Error('API error');
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    const result = parseAIResponse(content);
+
+    return result;
+
+    return result;
+  } catch (error) {
+    console.error('Error generating code completion:', error);
+    return {
+      snippet: '// Ошибка генерации',
+      correctPart: 'void',
+      options: ['void', 'int', 'String', 'boolean'],
+    };
   }
 };
 

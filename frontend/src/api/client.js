@@ -93,6 +93,58 @@ class ApiClient {
     });
   }
 
+  async submitBugHuntAnswer(questionId, answer) {
+    if (!this.userId) {
+      throw new Error('User not authenticated');
+    }
+
+    return await this.request('/questions/bug-hunt-answer', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: this.userId,
+        questionId,
+        answer,
+      }),
+    });
+  }
+
+  async submitBlitzAnswer(questionId, answer) {
+    if (!this.userId) {
+      throw new Error('User not authenticated');
+    }
+
+    return await this.request('/questions/blitz-answer', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: this.userId,
+        questionId,
+        answer: !!answer,
+      }),
+    });
+  }
+
+  async evaluateInterviewAnswer(question, answer) {
+    return await this.request('/questions/interview-evaluate', {
+      method: 'POST',
+      body: JSON.stringify({ question, answer }),
+    });
+  }
+
+  async submitCodeCompletionAnswer(questionId, answer) {
+    if (!this.userId) {
+      throw new Error('User not authenticated');
+    }
+
+    return await this.request('/questions/code-completion-answer', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: this.userId,
+        questionId,
+        answer,
+      }),
+    });
+  }
+
   async getExplanation(questionId) {
     return await this.request('/questions/explain', {
       method: 'POST',

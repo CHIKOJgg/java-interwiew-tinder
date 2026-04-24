@@ -145,6 +145,24 @@ class ApiClient {
     });
   }
 
+  async analyzeResume(resumeText) {
+    if (!this.userId) {
+      throw new Error('User not authenticated');
+    }
+
+    return await this.request('/user/analyze-resume', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: this.userId,
+        resumeText,
+      }),
+    });
+  }
+
+  async getUserResume() {
+    return await this.request(`/user/resume/${this.userId}`);
+  }
+
   async getExplanation(questionId) {
     return await this.request('/questions/explain', {
       method: 'POST',

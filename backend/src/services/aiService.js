@@ -497,6 +497,76 @@ export const generateCodeCompletion = async (questionText, topic) => {
 };
 
 /**
+ * Analyze resume text and extract structured data
+ * @param {string} resumeText
+ * @returns {Promise<Object>}
+ */
+export const analyzeResume = async (resumeText) => {
+  try {
+    if (!OPENROUTER_API_KEY) {
+      return {
+        skills: ['Java', 'Spring Boot', 'PostgreSQL'],
+        experienceLevel: 'Middle',
+        strengths: ['Микросервисы', 'SQL'],
+        improvementAreas: ['Алгоритмы', 'Testing'],
+        suggestedQuestions: [
+          'Как работает Hibernate Dirty Checking?',
+          'Разница между Kafka и RabbitMQ?',
+        ],
+      };
+    }
+
+    const userPrompt = `Проанализируй резюме разработчика Java и извлеки структурированную информацию. 
+Резюме: "${resumeText}"
+
+Ответ дай СТРОГО в формате JSON:
+{
+  "skills": ["список", "технических", "навыков"],
+  "experienceLevel": "Junior/Middle/Senior",
+  "strengths": ["сильные стороны"],
+  "improvementAreas": ["что стоит подтянуть"],
+  "suggestedQuestions": ["3-4 специфичных вопроса для интервью на основе этого опыта"]
+}
+
+Язык: Русский`;
+
+    const response = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: OPENROUTER_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a senior technical recruiter and Java expert. Return ONLY valid JSON.',
+            },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.3,
+        }),
+      },
+    );
+
+    if (!response.ok) throw new Error('API error');
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    const result = parseAIResponse(content);
+
+    return result;
+  } catch (error) {
+    console.error('Error analyzing resume:', error);
+    throw error;
+  }
+};
+
+/**
  * Mock explanation for development/fallback
  */
 const getMockExplanation = (questionText, shortAnswer) => {

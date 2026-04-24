@@ -1,9 +1,9 @@
 import React from 'react';
-import { TrendingUp, Settings, Layout, GraduationCap, Bug, Zap, Mic, Link, Braces } from 'lucide-react';
+import { TrendingUp, Settings, Layout, GraduationCap, Bug, Zap, Mic, Link, Braces, FileText } from 'lucide-react';
 import useStore from '../store/useStore';
 import './Header.css';
 
-const Header = ({ onSettingsClick }) => {
+const Header = ({ onSettingsClick, onResumeClick }) => {
   const { stats, learningMode, setLearningMode } = useStore();
   const progress =
     stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
@@ -68,6 +68,15 @@ const Header = ({ onSettingsClick }) => {
                 <Braces size={18} />
               </button>
             </div>
+            {onResumeClick && (
+              <button
+                className="settings-button"
+                onClick={onResumeClick}
+                title="Анализ резюме"
+              >
+                <FileText size={20} />
+              </button>
+            )}
             {onSettingsClick && (
               <button
                 className="settings-button"

@@ -26,9 +26,12 @@ const useStore = create((set, get) => ({
   blitzTimeLeft: 60,
   isBlitzActive: false,
 
-  // Interview state
   interviewHistory: [], // { role: 'interviewer'|'candidate', content: string, evaluation?: object }
   isEvaluatingInterview: false,
+
+  // Resume state
+  resumeData: null,
+  isAnalyzingResume: false,
 
   // Explanation modal
   showExplanation: false,
@@ -331,6 +334,22 @@ const useStore = create((set, get) => ({
         get().startInterview();
       }
     });
+  },
+
+  analyzeResume: async (resumeText) => {
+    try {
+      set({ isAnalyzingResume: true });
+      const response = await apiClient.analyzeResume(resumeText);
+      set({ 
+        resumeData: response.parsedData,
+        isAnalyzingResume: false 
+      });
+      return response.parsedData;
+    } catch (error) {
+      console.error('Analyze resume error:', error);
+      set({ isAnalyzingResume: false });
+      throw error;
+    }
   },
 
   loadExplanation: async (questionId) => {

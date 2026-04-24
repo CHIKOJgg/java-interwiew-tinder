@@ -6,7 +6,7 @@ import {
   validateTelegramWebAppData,
   mockValidation,
 } from './utils/telegram.js';
-import { generateExplanation, generateTestOptions } from './services/aiService.js';
+import { generateExplanation, generateTestOptions, generateBuggyCode, generateBlitzStatement, evaluateInterviewAnswer, generateCodeCompletion } from './services/aiService.js';
 
 dotenv.config();
 
@@ -188,7 +188,7 @@ app.post('/api/auth/login', async (req, res) => {
 // Get question feed
 app.get('/api/questions/feed', async (req, res) => {
   try {
-    const { userId } = req.query;
+    const { userId, mode } = req.query;
     const limit = parseInt(req.query.limit) || 10;
 
     if (!userId) {
@@ -210,7 +210,7 @@ app.get('/api/questions/feed', async (req, res) => {
     if (selectedCategories && selectedCategories.length > 0) {
       // Filter by selected categories
       query = `
-        SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer, q.options
+        SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer, q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data
         FROM questions q
         LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
         WHERE (up.id IS NULL OR up.status = 'unknown')
@@ -225,7 +225,7 @@ app.get('/api/questions/feed', async (req, res) => {
     } else {
       // No filter - all categories
       query = `
-        SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer, q.options
+        SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer, q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data
         FROM questions q
         LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
         WHERE up.id IS NULL OR up.status = 'unknown'
@@ -260,6 +260,61 @@ app.get('/api/questions/feed', async (req, res) => {
         ]);
       }
 
+      let bugHuntingData = row.bug_hunting_data;
+      const isBugHuntRequest = req.query.mode === 'bug-hunting';
+
+      // If bug hunting mode and data is missing, generate it
+      if (isBugHuntRequest && (!bugHuntingData || !bugHuntingData.code)) {
+        console.log(`🤖 Generating bug hunting data for question ${row.id}...`);
+        bugHuntingData = await generateBuggyCode(
+          row.question_text,
+          row.category,
+        );
+
+        // Save to DB
+        await pool.query(
+          'UPDATE questions SET bug_hunting_data = $1 WHERE id = $2',
+          [bugHuntingData, row.id],
+        );
+      }
+
+      let blitzData = row.blitz_data;
+      const isBlitzRequest = req.query.mode === 'blitz';
+
+      if (isBlitzRequest && (!blitzData || !blitzData.statement)) {
+        console.log(`🤖 Generating blitz data for question ${row.id}...`);
+        blitzData = await generateBlitzStatement(
+          row.question_text,
+          row.category,
+        );
+
+        // Save to DB
+        await pool.query('UPDATE questions SET blitz_data = $1 WHERE id = $2', [
+          blitzData,
+          row.id,
+        ]);
+      }
+
+      let codeCompletionData = row.code_completion_data;
+      const isCodeCompletionRequest = req.query.mode === 'code-completion';
+
+      if (
+        isCodeCompletionRequest &&
+        (!codeCompletionData || !codeCompletionData.snippet)
+      ) {
+        console.log(`🤖 Generating code completion for question ${row.id}...`);
+        codeCompletionData = await generateCodeCompletion(
+          row.question_text,
+          row.category,
+        );
+
+        // Save to DB
+        await pool.query(
+          'UPDATE questions SET code_completion_data = $1 WHERE id = $2',
+          [codeCompletionData, row.id],
+        );
+      }
+
       questions.push({
         id: row.id,
         category: row.category,
@@ -267,6 +322,9 @@ app.get('/api/questions/feed', async (req, res) => {
         question: row.question_text,
         shortAnswer: row.short_answer,
         options: options,
+        bugHuntingData: bugHuntingData,
+        blitzData: blitzData,
+        codeCompletionData: codeCompletionData,
       });
     }
 
@@ -365,6 +423,170 @@ app.post('/api/questions/test-answer', async (req, res) => {
     });
   } catch (error) {
     console.error('Error in /questions/test-answer:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Record bug hunt answer
+app.post('/api/questions/bug-hunt-answer', async (req, res) => {
+  try {
+    const { userId, questionId, answer } = req.body;
+
+    if (!userId || !questionId || !answer) {
+      return res
+        .status(400)
+        .json({ error: 'userId, questionId, and answer are required' });
+    }
+
+    // Get correct bug description
+    const result = await pool.query(
+      'SELECT bug_hunting_data FROM questions WHERE id = $1',
+      [questionId],
+    );
+
+    if (result.rows.length === 0 || !result.rows[0].bug_hunting_data) {
+      return res.status(404).json({ error: 'Bug hunt data not found' });
+    }
+
+    const correctBug = result.rows[0].bug_hunting_data.bug;
+    const isCorrect = answer === correctBug;
+    const status = isCorrect ? 'known' : 'unknown';
+
+    // Record progress
+    await pool.query(
+      `INSERT INTO user_progress (user_id, question_id, status, updated_at)
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, question_id)
+       DO UPDATE SET 
+         status = EXCLUDED.status,
+         updated_at = CURRENT_TIMESTAMP`,
+      [userId, questionId, status],
+    );
+
+    console.log(
+      `✅ Recorded bug hunt result: user=${userId}, question=${questionId}, correct=${isCorrect}`,
+    );
+
+    res.json({
+      success: true,
+      isCorrect,
+      correctAnswer: correctBug,
+    });
+  } catch (error) {
+    console.error('Error in /questions/bug-hunt-answer:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Record blitz answer
+app.post('/api/questions/blitz-answer', async (req, res) => {
+  try {
+    const { userId, questionId, answer } = req.body;
+
+    if (!userId || !questionId === undefined || answer === undefined) {
+      return res
+        .status(400)
+        .json({ error: 'userId, questionId, and answer are required' });
+    }
+
+    // Get correct statement result
+    const result = await pool.query(
+      'SELECT blitz_data FROM questions WHERE id = $1',
+      [questionId],
+    );
+
+    if (result.rows.length === 0 || !result.rows[0].blitz_data) {
+      return res.status(404).json({ error: 'Blitz data not found' });
+    }
+
+    const isActuallyCorrect = result.rows[0].blitz_data.isCorrect;
+    const isCorrect = answer === isActuallyCorrect;
+    const status = isCorrect ? 'known' : 'unknown';
+
+    // Record progress
+    await pool.query(
+      `INSERT INTO user_progress (user_id, question_id, status, updated_at)
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, question_id)
+       DO UPDATE SET 
+         status = EXCLUDED.status,
+         updated_at = CURRENT_TIMESTAMP`,
+      [userId, questionId, status],
+    );
+
+    res.json({
+      success: true,
+      isCorrect,
+      correctAnswer: isActuallyCorrect,
+    });
+  } catch (error) {
+    console.error('Error in /questions/blitz-answer:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Record code completion answer
+app.post('/api/questions/code-completion-answer', async (req, res) => {
+  try {
+    const { userId, questionId, answer } = req.body;
+
+    if (!userId || !questionId || !answer) {
+      return res
+        .status(400)
+        .json({ error: 'userId, questionId, and answer are required' });
+    }
+
+    // Get correct code part
+    const result = await pool.query(
+      'SELECT code_completion_data FROM questions WHERE id = $1',
+      [questionId],
+    );
+
+    if (result.rows.length === 0 || !result.rows[0].code_completion_data) {
+      return res.status(404).json({ error: 'Code completion data not found' });
+    }
+
+    const correctPart = result.rows[0].code_completion_data.correctPart;
+    const isCorrect = answer === correctPart;
+    const status = isCorrect ? 'known' : 'unknown';
+
+    // Record progress
+    await pool.query(
+      `INSERT INTO user_progress (user_id, question_id, status, updated_at)
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, question_id)
+       DO UPDATE SET 
+         status = EXCLUDED.status,
+         updated_at = CURRENT_TIMESTAMP`,
+      [userId, questionId, status],
+    );
+
+    res.json({
+      success: true,
+      isCorrect,
+      correctAnswer: correctPart,
+    });
+  } catch (error) {
+    console.error('Error in /questions/code-completion-answer:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Evaluate mock interview answer
+app.post('/api/questions/interview-evaluate', async (req, res) => {
+  try {
+    const { question, answer } = req.body;
+
+    if (!question || !answer) {
+      return res
+        .status(400)
+        .json({ error: 'question and answer are required' });
+    }
+
+    const evaluation = await evaluateInterviewAnswer(question, answer);
+    res.json(evaluation);
+  } catch (error) {
+    console.error('Error in /questions/interview-evaluate:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Settings, Layout, GraduationCap } from 'lucide-react';
+import { TrendingUp, Settings, Layout, GraduationCap, Bug, Zap, Mic, Link, Braces } from 'lucide-react';
 import useStore from '../store/useStore';
 import './Header.css';
 
@@ -31,6 +31,41 @@ const Header = ({ onSettingsClick }) => {
                 title="Режим теста"
               >
                 <GraduationCap size={18} />
+              </button>
+              <button
+                className={`mode-button ${learningMode === 'bug-hunting' ? 'active' : ''}`}
+                onClick={() => setLearningMode('bug-hunting')}
+                title="Охота на баги"
+              >
+                <Bug size={18} />
+              </button>
+              <button
+                className={`mode-button ${learningMode === 'blitz' ? 'active' : ''}`}
+                onClick={() => setLearningMode('blitz')}
+                title="Блиц-режим"
+              >
+                <Zap size={18} />
+              </button>
+              <button
+                className={`mode-button ${learningMode === 'mock-interview' ? 'active' : ''}`}
+                onClick={() => setLearningMode('mock-interview')}
+                title="Мок-интервью"
+              >
+                <Mic size={18} />
+              </button>
+              <button
+                className={`mode-button ${learningMode === 'concept-linker' ? 'active' : ''}`}
+                onClick={() => setLearningMode('concept-linker')}
+                title="Связи понятий"
+              >
+                <Link size={18} />
+              </button>
+              <button
+                className={`mode-button ${learningMode === 'code-completion' ? 'active' : ''}`}
+                onClick={() => setLearningMode('code-completion')}
+                title="Завершение кода"
+              >
+                <Braces size={18} />
               </button>
             </div>
             {onSettingsClick && (

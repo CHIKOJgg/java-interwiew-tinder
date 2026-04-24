@@ -20,6 +20,15 @@ const useStore = create((set, get) => ({
     totalSeen: 0,
     totalQuestions: 0,
   },
+  
+  // Blitz state
+  blitzScore: 0,
+  blitzTimeLeft: 60,
+  isBlitzActive: false,
+
+  // Interview state
+  interviewHistory: [], // { role: 'interviewer'|'candidate', content: string, evaluation?: object }
+  isEvaluatingInterview: false,
 
   // Explanation modal
   showExplanation: false,
@@ -49,15 +58,24 @@ const useStore = create((set, get) => ({
     }
   },
 
-  loadQuestions: async () => {
+  loadQuestions: async (append = false) => {
     try {
-      set({ isLoadingQuestions: true });
-      const response = await apiClient.getQuestionsFeed(10);
-      set({ 
-        questions: response.questions,
-        currentIndex: 0,
-        isLoadingQuestions: false 
-      });
+      if (!append) set({ isLoadingQuestions: true });
+      const mode = get().learningMode;
+      const response = await apiClient.request(`/questions/feed?userId=${apiClient.userId}&limit=10&mode=${mode}`);
+      
+      if (append) {
+        set((state) => ({ 
+          questions: [...state.questions, ...response.questions],
+          isLoadingQuestions: false 
+        }));
+      } else {
+        set({ 
+          questions: response.questions,
+          currentIndex: 0,
+          isLoadingQuestions: false 
+        });
+      }
     } catch (error) {
       console.error('Load questions error:', error);
       set({ isLoadingQuestions: false });
@@ -97,7 +115,7 @@ const useStore = create((set, get) => ({
 
       // Load more questions if running low
       if (get().questions.length - get().currentIndex <= 3) {
-        await get().loadQuestions();
+        await get().loadQuestions(true);
       }
     } catch (error) {
       console.error('Swipe error:', error);
@@ -129,7 +147,7 @@ const useStore = create((set, get) => ({
 
       // Load more questions if running low
       if (get().questions.length - get().currentIndex <= 3) {
-        await get().loadQuestions();
+        await get().loadQuestions(true);
       }
 
       return response;
@@ -139,9 +157,180 @@ const useStore = create((set, get) => ({
     }
   },
 
-  setLearningMode: (mode) => {
-    set({ learningMode: mode, currentIndex: 0 });
+  submitBugHuntAnswer: async (questionId, answer) => {
+    try {
+      const response = await apiClient.submitBugHuntAnswer(questionId, answer);
+      
+      const status = response.isCorrect ? 'known' : 'unknown';
+      const currentStats = get().stats;
+      set({ 
+        stats: {
+          ...currentStats,
+          [status]: currentStats[status] + 1,
+          totalSeen: currentStats.totalSeen + 1
+        }
+      });
+
+      if (!response.isCorrect) {
+        await get().loadExplanation(questionId);
+      } else {
+        set({ currentIndex: get().currentIndex + 1 });
+      }
+
+      if (get().questions.length - get().currentIndex <= 3) {
+        await get().loadQuestions(true);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Submit bug hunt answer error:', error);
+      throw error;
+    }
+  },
+
+  submitBlitzAnswer: async (questionId, answer) => {
+    try {
+      const response = await apiClient.submitBlitzAnswer(questionId, answer);
+      
+      if (response.isCorrect) {
+        set((state) => ({ blitzScore: state.blitzScore + 1 }));
+      }
+      
+      // Always move to next question in Blitz
+      set((state) => ({ currentIndex: state.currentIndex + 1 }));
+
+      if (get().questions.length - get().currentIndex <= 3) {
+        await get().loadQuestions(true);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Submit blitz answer error:', error);
+      throw error;
+    }
+  },
+
+  submitInterviewAnswer: async (question, answer) => {
+    try {
+      set({ isEvaluatingInterview: true });
+      
+      const evaluation = await apiClient.evaluateInterviewAnswer(question, answer);
+      
+      const newMessage = { 
+        role: 'candidate', 
+        content: answer, 
+        evaluation 
+      };
+      
+      set((state) => ({
+        interviewHistory: [...state.interviewHistory, newMessage],
+        isEvaluatingInterview: false
+      }));
+
+      return evaluation;
+    } catch (error) {
+      console.error('Submit interview answer error:', error);
+      set({ isEvaluatingInterview: false });
+      throw error;
+    }
+  },
+
+  addInterviewerMessage: (content) => {
+    set((state) => ({
+      interviewHistory: [...state.interviewHistory, { role: 'interviewer', content }]
+    }));
+  },
+
+  nextInterviewQuestion: () => {
+    const nextIndex = get().currentIndex + 1;
+    set({ currentIndex: nextIndex });
+    
+    const nextQuestion = get().questions[nextIndex];
+    if (nextQuestion) {
+      get().addInterviewerMessage(nextQuestion.question);
+    } else {
+      get().loadQuestions(true).then(() => {
+        const q = get().questions[get().currentIndex];
+        if (q) get().addInterviewerMessage(q.question);
+      });
+    }
+  },
+
+  startInterview: () => {
+    const currentQuestion = get().questions[get().currentIndex];
+    if (currentQuestion) {
+      set({ interviewHistory: [{ role: 'interviewer', content: currentQuestion.question }] });
+    }
+  },
+
+  submitCodeCompletionAnswer: async (questionId, answer) => {
+    try {
+      const response = await apiClient.submitCodeCompletionAnswer(questionId, answer);
+      
+      const status = response.isCorrect ? 'known' : 'unknown';
+      const currentStats = get().stats;
+      set({ 
+        stats: {
+          ...currentStats,
+          [status]: currentStats[status] + 1,
+          totalSeen: currentStats.totalSeen + 1
+        }
+      });
+
+      if (!response.isCorrect) {
+        await get().loadExplanation(questionId);
+      } else {
+        set({ currentIndex: get().currentIndex + 1 });
+      }
+
+      if (get().questions.length - get().currentIndex <= 3) {
+        await get().loadQuestions(true);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Submit code completion error:', error);
+      throw error;
+    }
+  },
+
+  startBlitz: () => {
+    set({ 
+      blitzScore: 0, 
+      blitzTimeLeft: 60, 
+      isBlitzActive: true,
+      currentIndex: 0 
+    });
     get().loadQuestions();
+  },
+
+  stopBlitz: () => {
+    set({ isBlitzActive: false });
+  },
+
+  decrementBlitzTime: () => {
+    set((state) => {
+      const newTime = state.blitzTimeLeft - 1;
+      if (newTime <= 0) {
+        return { blitzTimeLeft: 0, isBlitzActive: false };
+      }
+      return { blitzTimeLeft: newTime };
+    });
+  },
+
+  setLearningMode: (mode) => {
+    set({ 
+      learningMode: mode, 
+      currentIndex: 0,
+      isBlitzActive: false,
+      interviewHistory: []
+    });
+    
+    get().loadQuestions().then(() => {
+      if (mode === 'mock-interview') {
+        get().startInterview();
+      }
+    });
   },
 
   loadExplanation: async (questionId) => {
@@ -168,8 +357,8 @@ const useStore = create((set, get) => ({
       currentExplanation: null 
     });
     
-    // В режиме теста переходим к следующему вопросу после закрытия объяснения
-    if (learningMode === 'test') {
+    // В режиме теста, охоты на баги или завершения кода переходим к следующему вопросу
+    if (learningMode === 'test' || learningMode === 'bug-hunting' || learningMode === 'code-completion') {
       set({ currentIndex: currentIndex + 1 });
     }
   },

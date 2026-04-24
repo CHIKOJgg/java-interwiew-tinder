@@ -3,6 +3,11 @@ import Header from './components/Header';
 import QuestionCard from './components/QuestionCard';
 import SwipeButtons from './components/SwipeButtons';
 import TestMode from './components/TestMode';
+import BugHuntingMode from './components/BugHuntingMode';
+import BlitzMode from './components/BlitzMode';
+import MockInterviewMode from './components/MockInterviewMode';
+import ConceptLinker from './components/ConceptLinker';
+import CodeCompletionMode from './components/CodeCompletionMode';
 import ExplanationModal from './components/ExplanationModal';
 import CategorySelection from './components/CategorySelection';
 import useStore from './store/useStore';
@@ -136,8 +141,18 @@ function App() {
                   </div>
                 ))}
             </div>
-          ) : (
+          ) : learningMode === 'test' ? (
             <TestMode />
+          ) : learningMode === 'bug-hunting' ? (
+            <BugHuntingMode />
+          ) : learningMode === 'blitz' ? (
+            <BlitzMode />
+          ) : learningMode === 'mock-interview' ? (
+            <MockInterviewMode />
+          ) : learningMode === 'concept-linker' ? (
+            <ConceptLinker />
+          ) : (
+            <CodeCompletionMode />
           )
         ) : (
           <div className="completion-screen">

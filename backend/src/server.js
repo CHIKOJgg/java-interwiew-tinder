@@ -289,84 +289,72 @@ app.get('/api/questions/feed', async (req, res) => {
 
     const result = await pool.query(query, params);
 
-    const questions = [];
-    for (const row of result.rows) {
+    const isBugHuntRequest = req.query.mode === 'bug-hunting';
+    const isBlitzRequest = req.query.mode === 'blitz';
+    const isCodeCompletionRequest = req.query.mode === 'code-completion';
+
+    // Process all questions in parallel instead of sequentially
+    const questions = await Promise.all(result.rows.map(async (row) => {
       let options = row.options;
-
-      // If options are missing, generate them via AI
-      if (!options || options.length === 0) {
-        console.log(`🤖 Generating options for question ${row.id}...`);
-        const incorrectOptions = await generateTestOptions(
-          row.question_text,
-          row.short_answer,
-        );
-        options = [row.short_answer, ...incorrectOptions];
-        // Shuffle options
-        options.sort(() => Math.random() - 0.5);
-
-        // Save to DB
-        await pool.query('UPDATE questions SET options = $1 WHERE id = $2', [
-          options,
-          row.id,
-        ]);
-      }
-
       let bugHuntingData = row.bug_hunting_data;
-      const isBugHuntRequest = req.query.mode === 'bug-hunting';
+      let blitzData = row.blitz_data;
+      let codeCompletionData = row.code_completion_data;
 
-      // If bug hunting mode and data is missing, generate it
-      if (isBugHuntRequest && (!bugHuntingData || !bugHuntingData.code)) {
-        console.log(`🤖 Generating bug hunting data for question ${row.id}...`);
-        bugHuntingData = await generateBuggyCode(
-          row.question_text,
-          row.category,
-        );
+      // Run all needed AI generations in parallel for this question
+      const tasks = [];
 
-        // Save to DB
-        await pool.query(
-          'UPDATE questions SET bug_hunting_data = $1 WHERE id = $2',
-          [bugHuntingData, row.id],
+      if (!options || options.length === 0) {
+        tasks.push(
+          generateTestOptions(row.question_text, row.short_answer)
+            .then(async (incorrectOptions) => {
+              console.log(`🤖 Generated options for question ${row.id}`);
+              options = [row.short_answer, ...incorrectOptions].sort(() => Math.random() - 0.5);
+              await pool.query('UPDATE questions SET options = $1 WHERE id = $2', [options, row.id]);
+            })
+            .catch((err) => console.error(`Error generating options for ${row.id}:`, err))
         );
       }
 
-      let blitzData = row.blitz_data;
-      const isBlitzRequest = req.query.mode === 'blitz';
+      if (isBugHuntRequest && (!bugHuntingData || !bugHuntingData.code)) {
+        tasks.push(
+          generateBuggyCode(row.question_text, row.category)
+            .then(async (data) => {
+              console.log(`🤖 Generated bug hunting data for question ${row.id}`);
+              bugHuntingData = data;
+              await pool.query('UPDATE questions SET bug_hunting_data = $1 WHERE id = $2', [data, row.id]);
+            })
+            .catch((err) => console.error(`Error generating bug hunting for ${row.id}:`, err))
+        );
+      }
 
       if (isBlitzRequest && (!blitzData || !blitzData.statement)) {
-        console.log(`🤖 Generating blitz data for question ${row.id}...`);
-        blitzData = await generateBlitzStatement(
-          row.question_text,
-          row.category,
-        );
-
-        // Save to DB
-        await pool.query('UPDATE questions SET blitz_data = $1 WHERE id = $2', [
-          blitzData,
-          row.id,
-        ]);
-      }
-
-      let codeCompletionData = row.code_completion_data;
-      const isCodeCompletionRequest = req.query.mode === 'code-completion';
-
-      if (
-        isCodeCompletionRequest &&
-        (!codeCompletionData || !codeCompletionData.snippet)
-      ) {
-        console.log(`🤖 Generating code completion for question ${row.id}...`);
-        codeCompletionData = await generateCodeCompletion(
-          row.question_text,
-          row.category,
-        );
-
-        // Save to DB
-        await pool.query(
-          'UPDATE questions SET code_completion_data = $1 WHERE id = $2',
-          [codeCompletionData, row.id],
+        tasks.push(
+          generateBlitzStatement(row.question_text, row.category)
+            .then(async (data) => {
+              console.log(`🤖 Generated blitz data for question ${row.id}`);
+              blitzData = data;
+              await pool.query('UPDATE questions SET blitz_data = $1 WHERE id = $2', [data, row.id]);
+            })
+            .catch((err) => console.error(`Error generating blitz for ${row.id}:`, err))
         );
       }
 
-      questions.push({
+      if (isCodeCompletionRequest && (!codeCompletionData || !codeCompletionData.snippet)) {
+        tasks.push(
+          generateCodeCompletion(row.question_text, row.category)
+            .then(async (data) => {
+              console.log(`🤖 Generated code completion for question ${row.id}`);
+              codeCompletionData = data;
+              await pool.query('UPDATE questions SET code_completion_data = $1 WHERE id = $2', [data, row.id]);
+            })
+            .catch((err) => console.error(`Error generating code completion for ${row.id}:`, err))
+        );
+      }
+
+      // Wait for all AI tasks for this question to complete in parallel
+      await Promise.all(tasks);
+
+      return {
         id: row.id,
         category: row.category,
         difficulty: row.difficulty,
@@ -376,8 +364,8 @@ app.get('/api/questions/feed', async (req, res) => {
         bugHuntingData: bugHuntingData,
         blitzData: blitzData,
         codeCompletionData: codeCompletionData,
-      });
-    }
+      };
+    }));
 
     console.log(`📚 Sent ${questions.length} questions to user ${userId}`);
 

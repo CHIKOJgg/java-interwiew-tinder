@@ -5,8 +5,6 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  position: relative;
-  z-index: 1;
 }
 
 .category-selection.loading {
@@ -17,110 +15,97 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #4ecdc4;
+  border: 4px solid rgba(0, 0, 0, 0.08);
+  border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
+  to {
     transform: rotate(360deg);
   }
 }
 
 .category-header {
   text-align: center;
-  margin-bottom: 24px;
-  position: relative;
-  z-index: 2;
+  margin-bottom: 20px;
 }
 
 .category-header h1 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #2d3436;
-  margin: 0 0 8px 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--tg-theme-text-color, #2d3436);
+  margin: 0 0 6px;
 }
 
 .category-header p {
-  font-size: 16px;
-  color: #636e72;
+  font-size: 15px;
+  color: var(--tg-theme-hint-color, #868e96);
   margin: 0;
 }
 
 .category-actions {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  position: relative;
-  z-index: 2;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .action-btn {
   flex: 1;
-  padding: 10px 16px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
+  padding: 10px 14px;
+  /* Bug 5 fix: was hardcoded white bg + grey border */
+  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
   font-size: 14px;
-  font-weight: 500;
-  color: #495057;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #495057);
   cursor: pointer;
   transition: all 0.2s;
-  pointer-events: auto;
-  position: relative;
-  z-index: 3;
 }
 
 .action-btn:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
+  background: rgba(0, 0, 0, 0.07);
+  border-color: rgba(0, 0, 0, 0.15);
 }
 
 .action-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .categories-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
   flex: 1;
-  position: relative;
-  z-index: 2;
   overflow-y: auto;
   max-height: calc(100vh - 300px);
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding-bottom: 20px;
+  padding-bottom: 16px;
 }
 
+/* Bug 6 fix: was hardcoded background: white */
 .category-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
-  background: white;
-  border: 2px solid #dee2e6;
-  border-radius: 12px;
-  cursor: pointer !important;
+  padding: 14px 16px;
+  background: var(--tg-theme-bg-color, #fff);
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  cursor: pointer;
   transition: all 0.2s;
   user-select: none;
-  pointer-events: auto !important;
-  position: relative;
-  z-index: 100 !important;
-  touch-action: manipulation !important;
+  touch-action: manipulation;
 }
 
 .category-card:hover {
-  border-color: #4ecdc4;
+  border-color: #667eea;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.15);
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.18);
 }
 
 .category-card:active {
@@ -128,15 +113,16 @@
 }
 
 .category-card.selected {
-  background: linear-gradient(135deg, #4ecdc4 0%, #44a197 100%);
-  border-color: #4ecdc4;
-  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(118, 75, 162, 0.35);
 }
 
 .category-checkbox {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #dee2e6;
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(0, 0, 0, 0.15);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -147,9 +133,9 @@
 }
 
 .category-card.selected .category-checkbox {
-  background: white;
-  border-color: white;
-  color: #4ecdc4;
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
 }
 
 .category-info {
@@ -158,53 +144,60 @@
 }
 
 .category-name {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 3px;
+  color: var(--tg-theme-text-color, #2d3436);
+}
+
+.category-card.selected .category-name {
+  color: #fff;
 }
 
 .category-count {
-  font-size: 13px;
-  opacity: 0.8;
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #868e96);
 }
 
+.category-card.selected .category-count {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Bug 5 fix: footer was hardcoded background: white */
 .category-footer {
   position: sticky;
   bottom: 0;
-  background: white;
-  padding: 16px 0;
-  border-top: 1px solid #dee2e6;
+  background: var(--tg-theme-bg-color, #fff);
+  padding: 14px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
   margin-top: auto;
   z-index: 10;
 }
 
 .selected-count {
   text-align: center;
-  font-size: 14px;
-  color: #636e72;
-  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #868e96);
+  margin-bottom: 10px;
 }
 
 .start-button {
   width: 100%;
-  padding: 16px;
-  background: linear-gradient(135deg, #4ecdc4 0%, #44a197 100%);
+  padding: 15px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
-  border-radius: 12px;
-  color: white;
-  font-size: 18px;
-  font-weight: 600;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
-  pointer-events: auto;
-  position: relative;
-  z-index: 11;
+  box-shadow: 0 4px 14px rgba(118, 75, 162, 0.35);
 }
 
 .start-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(78, 205, 196, 0.4);
+  box-shadow: 0 6px 18px rgba(118, 75, 162, 0.45);
 }
 
 .start-button:active:not(:disabled) {
@@ -212,34 +205,26 @@
 }
 
 .start-button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
-/* Мобильная адаптация */
 @media (max-width: 600px) {
   .category-selection {
-    padding: 16px;
+    padding: 14px;
   }
 
   .category-header h1 {
-    font-size: 24px;
-  }
-
-  .category-header p {
-    font-size: 14px;
+    font-size: 22px;
   }
 
   .categories-grid {
     grid-template-columns: 1fr;
   }
 
-  .category-footer {
-    padding: 12px 0;
-  }
-
   .start-button {
-    padding: 14px;
+    padding: 13px;
     font-size: 16px;
   }
 }

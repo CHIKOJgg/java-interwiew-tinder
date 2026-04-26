@@ -20,11 +20,11 @@
 
 .app-loading .spinner {
   animation: spin 1s linear infinite;
-  color: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-color, #5c7cfa);
 }
 
 .app-loading p {
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tg-theme-hint-color, #868e96);
   font-size: 14px;
 }
 
@@ -68,14 +68,37 @@
 .completion-screen h2 {
   font-size: 24px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--tg-theme-text-color, #2d3436);
   margin: 0;
 }
 
 .completion-screen p {
   font-size: 16px;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tg-theme-hint-color, #868e96);
   margin: 0;
+}
+
+/* Bug 1 fix: restart button was completely unstyled */
+.restart-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(118, 75, 162, 0.35);
+}
+
+.restart-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(118, 75, 162, 0.45);
+}
+
+.restart-button:active {
+  transform: scale(0.97);
 }
 
 @media (max-height: 700px) {
@@ -87,5 +110,23 @@
 @media (max-height: 600px) {
   .card-stack {
     height: 350px;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

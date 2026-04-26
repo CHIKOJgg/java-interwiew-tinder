@@ -4,14 +4,14 @@ import { Bug, Check, X, Loader2, Code } from 'lucide-react';
 import './BugHuntingMode.css';
 
 const BugHuntingMode = () => {
-  const { 
-    questions, 
-    currentIndex, 
-    submitBugHuntAnswer, 
+  const {
+    questions,
+    currentIndex,
+    submitBugHuntAnswer,
     isLoadingQuestions,
-    hasMoreQuestions 
+    hasMoreQuestions
   } = useStore();
-  
+
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null);
@@ -63,7 +63,7 @@ const BugHuntingMode = () => {
   if (!hasMoreQuestions()) return null;
 
   if (!bugData) {
-     return (
+    return (
       <div className="bug-mode-loading">
         <Loader2 className="spinner" size={48} />
         <p>Подготовка кода...</p>
@@ -100,7 +100,7 @@ const BugHuntingMode = () => {
           {bugData.options?.map((option, index) => {
             let optionClass = 'option-item';
             if (selectedOption === option) optionClass += ' selected';
-            
+
             if (result) {
               if (option === result.correctAnswer) {
                 optionClass += ' correct';
@@ -149,7 +149,7 @@ const BugHuntingMode = () => {
                 <span>Неверно. Посмотрите объяснение.</span>
               </div>
             )}
-            
+
             {result.isCorrect && (
               <button className="next-bug-button" onClick={handleNext}>
                 Следующая задача

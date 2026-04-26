@@ -35,30 +35,41 @@
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .topic-badge {
   font-size: 12px;
   font-weight: 600;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--tg-theme-hint-color, #868e96);
 }
 
+/* Dark code block — intentionally dark background, no theme needed */
 .code-container {
-  background: #1e1e1e;
+  background: #1a1a2e;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .code-header {
-  background: #2d2d2d;
+  background: #16213e;
   padding: 8px 16px;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #aaa;
+  color: #7f8c8d;
   font-size: 12px;
   font-family: monospace;
+}
+
+/* Traffic-light dots */
+.code-header::before {
+  content: '● ● ●';
+  letter-spacing: 4px;
+  font-size: 10px;
+  color: #e74c3c;
+  text-shadow: 18px 0 #f1c40f, 36px 0 #2ecc71;
 }
 
 .code-block {
@@ -69,17 +80,16 @@
 
 .code-block code {
   font-family: 'Fira Code', 'Courier New', monospace;
-  font-size: 14px;
-  color: #d4d4d4;
-  line-height: 1.5;
+  font-size: 13px;
+  color: #abb2bf;
+  line-height: 1.6;
   white-space: pre;
 }
 
 .bug-instruction {
   font-size: 15px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #333);
-  margin-top: 8px;
+  color: var(--tg-theme-text-color, #2d3436);
 }
 
 .options-list {
@@ -89,7 +99,7 @@
 }
 
 .option-item {
-  background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
   border: 2px solid transparent;
   border-radius: 12px;
   padding: 14px 18px;
@@ -98,21 +108,21 @@
   font-weight: 500;
   color: var(--tg-theme-text-color, #2d3436);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .option-item:hover:not(:disabled) {
-  background: #f1f3f5;
+  border-color: #fa5252;
   transform: translateY(-1px);
 }
 
 .option-item.selected {
-  background: #edf2ff;
-  border-color: #4c6ef5;
-  color: #1c7ed6;
+  background: #fff5f5;
+  border-color: #fa5252;
+  color: #e03131;
 }
 
 .option-item.correct {
@@ -128,37 +138,42 @@
 }
 
 .submit-bug-button {
-  margin-top: 10px;
-  background: #fa5252;
-  color: white;
+  margin-top: 6px;
+  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+  color: #fff;
   border: none;
   border-radius: 16px;
   padding: 16px;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(250, 82, 82, 0.3);
+  box-shadow: 0 4px 14px rgba(245, 87, 108, 0.35);
 }
 
 .submit-bug-button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
 }
 
+.submit-bug-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 .bug-result-feedback {
-  margin-top: 10px;
+  margin-top: 6px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   animation: fadeIn 0.3s ease-out;
 }
 
-.feedback-correct, .feedback-incorrect {
+.feedback-correct,
+.feedback-incorrect {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,14 +195,21 @@
 }
 
 .next-bug-button {
-  background: #2d3436;
-  color: white;
+  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+  color: #fff;
   border: none;
   border-radius: 12px;
   padding: 14px;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.25);
+}
+
+.next-bug-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .bug-mode-loading {
@@ -200,7 +222,29 @@
   color: #fa5252;
 }
 
+/* Bug 13 fix: unified spinner name */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

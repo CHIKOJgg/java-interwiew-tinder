@@ -4,9 +4,9 @@ import { User, MessageSquare, Send, Loader2, Star, ChevronRight } from 'lucide-r
 import './MockInterviewMode.css';
 
 const MockInterviewMode = () => {
-  const { 
-    interviewHistory, 
-    isEvaluatingInterview, 
+  const {
+    interviewHistory,
+    isEvaluatingInterview,
     submitInterviewAnswer,
     nextInterviewQuestion,
     isLoadingQuestions
@@ -30,7 +30,7 @@ const MockInterviewMode = () => {
     const currentQuestion = interviewHistory[interviewHistory.length - 1]?.content;
     const currentAnswer = answer;
     setAnswer('');
-    
+
     await submitInterviewAnswer(currentQuestion, currentAnswer);
   };
 
@@ -47,7 +47,7 @@ const MockInterviewMode = () => {
             </div>
             <div className="message-bubble">
               <div className="message-content">{msg.content}</div>
-              
+
               {msg.evaluation && (
                 <div className="evaluation-card">
                   <div className="evaluation-header">
@@ -73,7 +73,7 @@ const MockInterviewMode = () => {
             </div>
           </div>
         ))}
-        
+
         {isEvaluatingInterview && (
           <div className="message-group interviewer">
             <div className="message-avatar">
@@ -85,7 +85,7 @@ const MockInterviewMode = () => {
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -102,9 +102,9 @@ const MockInterviewMode = () => {
             }
           }}
         />
-        <button 
-          type="submit" 
-          className="send-btn" 
+        <button
+          type="submit"
+          className="send-btn"
           disabled={!canAnswer || !answer.trim() || isEvaluatingInterview}
         >
           {isEvaluatingInterview ? <Loader2 className="spinner" size={20} /> : <Send size={20} />}

@@ -522,7 +522,7 @@ app.post('/api/questions/blitz-answer', async (req, res) => {
   try {
     const { userId, questionId, answer } = req.body;
 
-    if (!userId || !questionId === undefined || answer === undefined) {
+    if (!userId || questionId === undefined || answer === undefined) {
       return res
         .status(400)
         .json({ error: 'userId, questionId, and answer are required' });

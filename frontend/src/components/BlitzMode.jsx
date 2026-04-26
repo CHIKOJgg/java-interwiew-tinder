@@ -4,11 +4,11 @@ import { Timer, Zap, Check, X, Trophy, Play } from 'lucide-react';
 import './BlitzMode.css';
 
 const BlitzMode = () => {
-  const { 
-    questions, 
-    currentIndex, 
-    blitzScore, 
-    blitzTimeLeft, 
+  const {
+    questions,
+    currentIndex,
+    blitzScore,
+    blitzTimeLeft,
     isBlitzActive,
     startBlitz,
     decrementBlitzTime,
@@ -19,14 +19,12 @@ const BlitzMode = () => {
   const [feedback, setFeedback] = useState(null); // 'correct' | 'incorrect'
 
   useEffect(() => {
-    let timer;
-    if (isBlitzActive && blitzTimeLeft > 0) {
-      timer = setInterval(() => {
-        decrementBlitzTime();
-      }, 1000);
-    }
+    if (!isBlitzActive) return;
+    const timer = setInterval(() => {
+      decrementBlitzTime();
+    }, 1000);
     return () => clearInterval(timer);
-  }, [isBlitzActive, blitzTimeLeft, decrementBlitzTime]);
+  }, [isBlitzActive, decrementBlitzTime]);
 
   const handleAnswer = async (answer) => {
     if (!isBlitzActive || feedback) return;
@@ -37,7 +35,7 @@ const BlitzMode = () => {
     try {
       const response = await submitBlitzAnswer(currentQuestion.id, answer);
       setFeedback(response.isCorrect ? 'correct' : 'incorrect');
-      
+
       // Short delay for feedback before next question
       setTimeout(() => {
         setFeedback(null);
@@ -108,18 +106,18 @@ const BlitzMode = () => {
             <h2 className="blitz-statement">
               {blitzData?.statement || 'Загрузка...'}
             </h2>
-            
+
             <div className="blitz-actions">
-              <button 
-                className="blitz-btn false-btn" 
+              <button
+                className="blitz-btn false-btn"
                 onClick={() => handleAnswer(false)}
                 disabled={feedback}
               >
                 <X size={24} />
                 <span>Ложь</span>
               </button>
-              <button 
-                className="blitz-btn true-btn" 
+              <button
+                className="blitz-btn true-btn"
                 onClick={() => handleAnswer(true)}
                 disabled={feedback}
               >
@@ -132,9 +130,9 @@ const BlitzMode = () => {
       </div>
 
       <div className="blitz-progress">
-        <div 
-          className="blitz-progress-fill" 
-          style={{ width: `${(blitzTimeLeft / 60) * 100}%` }} 
+        <div
+          className="blitz-progress-fill"
+          style={{ width: `${(blitzTimeLeft / 60) * 100}%` }}
         />
       </div>
     </div>

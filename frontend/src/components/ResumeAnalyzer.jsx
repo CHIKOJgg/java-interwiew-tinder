@@ -4,10 +4,11 @@ import { FileText, Search, Star, AlertCircle, ListChecks, Loader2, Sparkles } fr
 import './ResumeAnalyzer.css';
 
 const ResumeAnalyzer = ({ onBack }) => {
-  const { 
-    analyzeResume, 
-    isAnalyzingResume, 
-    resumeData 
+  const {
+    analyzeResume,
+    isAnalyzingResume,
+    resumeData,
+    clearResumeData
   } = useStore();
 
   const [resumeText, setResumeText] = useState('');
@@ -38,8 +39,8 @@ const ResumeAnalyzer = ({ onBack }) => {
                 rows={12}
               />
             </div>
-            <button 
-              className="analyze-btn" 
+            <button
+              className="analyze-btn"
               onClick={handleAnalyze}
               disabled={!resumeText.trim() || isAnalyzingResume}
             >
@@ -114,7 +115,7 @@ const ResumeAnalyzer = ({ onBack }) => {
               </div>
             </div>
 
-            <button className="reset-analyzer-btn" onClick={() => setResumeText('')}>
+            <button className="reset-analyzer-btn" onClick={() => { setResumeText(''); clearResumeData(); }}>
               Проанализировать другое резюме
             </button>
           </div>

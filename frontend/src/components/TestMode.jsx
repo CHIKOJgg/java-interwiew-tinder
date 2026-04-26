@@ -1,22 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
 import { Check, X, Loader2 } from 'lucide-react';
 import './TestMode.css';
 
 const TestMode = () => {
-  const { 
-    questions, 
-    currentIndex, 
-    submitTestAnswer, 
+  const {
+    questions,
+    currentIndex,
+    submitTestAnswer,
     isLoadingQuestions,
-    hasMoreQuestions 
+    hasMoreQuestions
   } = useStore();
-  
+
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null); // { isCorrect, correctAnswer }
 
   const currentQuestion = questions[currentIndex];
+
+  // Reset local state when question changes (e.g. after explanation modal closes)
+  useEffect(() => {
+    setSelectedOption(null);
+    setResult(null);
+  }, [currentIndex]);
 
   const handleOptionSelect = (option) => {
     if (result || isSubmitting) return;
@@ -66,14 +72,14 @@ const TestMode = () => {
         <div className="test-category">
           {currentQuestion.category} • {currentQuestion.difficulty}
         </div>
-        
+
         <h2 className="test-question">{currentQuestion.question}</h2>
 
         <div className="options-list">
           {currentQuestion.options?.map((option, index) => {
             let optionClass = 'option-item';
             if (selectedOption === option) optionClass += ' selected';
-            
+
             if (result) {
               if (option === result.correctAnswer) {
                 optionClass += ' correct';
@@ -122,7 +128,7 @@ const TestMode = () => {
                 <span>Не совсем...</span>
               </div>
             )}
-            
+
             {result.isCorrect && (
               <button className="next-test-button" onClick={handleNext}>
                 Следующий вопрос

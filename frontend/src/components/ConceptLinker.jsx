@@ -4,13 +4,15 @@ import { Link, CheckCircle2, RefreshCw, Loader2, Sparkles } from 'lucide-react';
 import './ConceptLinker.css';
 
 const ConceptLinker = () => {
-  const { 
-    questions, 
-    currentIndex, 
+  const {
+    questions,
+    currentIndex,
     isLoadingQuestions,
     hasMoreQuestions,
-    loadQuestions 
+    loadQuestions
   } = useStore();
+
+  const LEVEL_SIZE = 5;
 
   const [terms, setTerms] = useState([]);
   const [definitions, setDefinitions] = useState([]);
@@ -23,8 +25,8 @@ const ConceptLinker = () => {
   // Initialize a "level" with 5 questions
   useEffect(() => {
     if (questions.length > 0) {
-      const levelQuestions = questions.slice(currentIndex, currentIndex + 5);
-      
+      const levelQuestions = questions.slice(currentIndex, currentIndex + LEVEL_SIZE);
+
       const newTerms = levelQuestions.map(q => ({
         id: q.id,
         text: q.question.length > 50 ? q.question.substring(0, 50) + '...' : q.question
@@ -60,7 +62,7 @@ const ConceptLinker = () => {
       setMatches(newMatches);
       setSelectedTerm(null);
       setSelectedDef(null);
-      
+
       if (newMatches.length === terms.length) {
         setIsLevelComplete(true);
       }
@@ -107,7 +109,7 @@ const ConceptLinker = () => {
               const isWrong = wrongMatch?.termId === term.id;
 
               return (
-                <div 
+                <div
                   key={term.id}
                   className={`linker-item term-item ${isMatched ? 'matched' : ''} ${isSelected ? 'selected' : ''} ${isWrong ? 'wrong' : ''}`}
                   onClick={() => handleTermClick(term.id)}
@@ -126,7 +128,7 @@ const ConceptLinker = () => {
               const isWrong = wrongMatch?.defId === def.id;
 
               return (
-                <div 
+                <div
                   key={def.id}
                   className={`linker-item def-item ${isMatched ? 'matched' : ''} ${isSelected ? 'selected' : ''} ${isWrong ? 'wrong' : ''}`}
                   onClick={() => handleDefClick(def.id)}
@@ -144,7 +146,14 @@ const ConceptLinker = () => {
               <Sparkles size={48} className="sparkles-icon" />
               <h2>Все связи установлены!</h2>
               <p>Вы отлично разбираетесь в этих концепциях.</p>
-              <button className="next-level-btn" onClick={() => loadQuestions()}>
+              <button className="next-level-btn" onClick={() => {
+                // Advance by the level size; load more questions if running low
+                const nextIndex = currentIndex + LEVEL_SIZE;
+                useStore.setState({ currentIndex: nextIndex });
+                if (questions.length - nextIndex <= LEVEL_SIZE) {
+                  loadQuestions(true);
+                }
+              }}>
                 <span>Следующий набор</span>
                 <RefreshCw size={18} />
               </button>

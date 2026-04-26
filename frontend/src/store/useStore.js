@@ -20,7 +20,7 @@ const useStore = create((set, get) => ({
     totalSeen: 0,
     totalQuestions: 0,
   },
-  
+
   // Blitz state
   blitzScore: 0,
   blitzTimeLeft: 60,
@@ -43,16 +43,16 @@ const useStore = create((set, get) => ({
     try {
       set({ isLoading: true });
       const response = await apiClient.login(initData);
-      set({ 
-        user: response.user, 
+      set({
+        user: response.user,
         isAuthenticated: true,
-        isLoading: false 
+        isLoading: false
       });
-      
+
       // Load initial questions and stats
       await get().loadQuestions();
       await get().loadStats();
-      
+
       return response.user;
     } catch (error) {
       console.error('Login error:', error);
@@ -66,17 +66,17 @@ const useStore = create((set, get) => ({
       if (!append) set({ isLoadingQuestions: true });
       const mode = get().learningMode;
       const response = await apiClient.request(`/questions/feed?userId=${apiClient.userId}&limit=10&mode=${mode}`);
-      
+
       if (append) {
-        set((state) => ({ 
+        set((state) => ({
           questions: [...state.questions, ...response.questions],
-          isLoadingQuestions: false 
+          isLoadingQuestions: false
         }));
       } else {
-        set({ 
+        set({
           questions: response.questions,
           currentIndex: 0,
-          isLoadingQuestions: false 
+          isLoadingQuestions: false
         });
       }
     } catch (error) {
@@ -96,13 +96,13 @@ const useStore = create((set, get) => ({
 
   swipeCard: async (questionId, direction) => {
     const status = direction === 'right' ? 'known' : 'unknown';
-    
+
     try {
       await apiClient.recordSwipe(questionId, status);
-      
+
       // Update stats
       const currentStats = get().stats;
-      set({ 
+      set({
         stats: {
           ...currentStats,
           [status]: currentStats[status] + 1,
@@ -128,11 +128,11 @@ const useStore = create((set, get) => ({
   submitTestAnswer: async (questionId, answer) => {
     try {
       const response = await apiClient.submitTestAnswer(questionId, answer);
-      
+
       // Update stats
       const status = response.isCorrect ? 'known' : 'unknown';
       const currentStats = get().stats;
-      set({ 
+      set({
         stats: {
           ...currentStats,
           [status]: currentStats[status] + 1,
@@ -163,10 +163,10 @@ const useStore = create((set, get) => ({
   submitBugHuntAnswer: async (questionId, answer) => {
     try {
       const response = await apiClient.submitBugHuntAnswer(questionId, answer);
-      
+
       const status = response.isCorrect ? 'known' : 'unknown';
       const currentStats = get().stats;
-      set({ 
+      set({
         stats: {
           ...currentStats,
           [status]: currentStats[status] + 1,
@@ -194,11 +194,11 @@ const useStore = create((set, get) => ({
   submitBlitzAnswer: async (questionId, answer) => {
     try {
       const response = await apiClient.submitBlitzAnswer(questionId, answer);
-      
+
       if (response.isCorrect) {
         set((state) => ({ blitzScore: state.blitzScore + 1 }));
       }
-      
+
       // Always move to next question in Blitz
       set((state) => ({ currentIndex: state.currentIndex + 1 }));
 
@@ -216,15 +216,15 @@ const useStore = create((set, get) => ({
   submitInterviewAnswer: async (question, answer) => {
     try {
       set({ isEvaluatingInterview: true });
-      
+
       const evaluation = await apiClient.evaluateInterviewAnswer(question, answer);
-      
-      const newMessage = { 
-        role: 'candidate', 
-        content: answer, 
-        evaluation 
+
+      const newMessage = {
+        role: 'candidate',
+        content: answer,
+        evaluation
       };
-      
+
       set((state) => ({
         interviewHistory: [...state.interviewHistory, newMessage],
         isEvaluatingInterview: false
@@ -247,7 +247,7 @@ const useStore = create((set, get) => ({
   nextInterviewQuestion: () => {
     const nextIndex = get().currentIndex + 1;
     set({ currentIndex: nextIndex });
-    
+
     const nextQuestion = get().questions[nextIndex];
     if (nextQuestion) {
       get().addInterviewerMessage(nextQuestion.question);
@@ -269,10 +269,10 @@ const useStore = create((set, get) => ({
   submitCodeCompletionAnswer: async (questionId, answer) => {
     try {
       const response = await apiClient.submitCodeCompletionAnswer(questionId, answer);
-      
+
       const status = response.isCorrect ? 'known' : 'unknown';
       const currentStats = get().stats;
-      set({ 
+      set({
         stats: {
           ...currentStats,
           [status]: currentStats[status] + 1,
@@ -298,11 +298,11 @@ const useStore = create((set, get) => ({
   },
 
   startBlitz: () => {
-    set({ 
-      blitzScore: 0, 
-      blitzTimeLeft: 60, 
+    set({
+      blitzScore: 0,
+      blitzTimeLeft: 60,
       isBlitzActive: true,
-      currentIndex: 0 
+      currentIndex: 0
     });
     get().loadQuestions();
   },
@@ -322,13 +322,15 @@ const useStore = create((set, get) => ({
   },
 
   setLearningMode: (mode) => {
-    set({ 
-      learningMode: mode, 
+    set({
+      learningMode: mode,
       currentIndex: 0,
       isBlitzActive: false,
+      blitzTimeLeft: 60,   // always reset so start screen shows on re-entry
+      blitzScore: 0,
       interviewHistory: []
     });
-    
+
     get().loadQuestions().then(() => {
       if (mode === 'mock-interview') {
         get().startInterview();
@@ -340,9 +342,9 @@ const useStore = create((set, get) => ({
     try {
       set({ isAnalyzingResume: true });
       const response = await apiClient.analyzeResume(resumeText);
-      set({ 
+      set({
         resumeData: response.parsedData,
-        isAnalyzingResume: false 
+        isAnalyzingResume: false
       });
       return response.parsedData;
     } catch (error) {
@@ -352,30 +354,34 @@ const useStore = create((set, get) => ({
     }
   },
 
+  clearResumeData: () => {
+    set({ resumeData: null });
+  },
+
   loadExplanation: async (questionId) => {
     try {
       set({ isLoadingExplanation: true, showExplanation: true });
       const response = await apiClient.getExplanation(questionId);
-      set({ 
+      set({
         currentExplanation: response.explanation,
-        isLoadingExplanation: false 
+        isLoadingExplanation: false
       });
     } catch (error) {
       console.error('Load explanation error:', error);
-      set({ 
+      set({
         isLoadingExplanation: false,
-        currentExplanation: 'Ошибка загрузки объяснения. Попробуйте позже.' 
+        currentExplanation: 'Ошибка загрузки объяснения. Попробуйте позже.'
       });
     }
   },
 
   closeExplanation: () => {
     const { learningMode, currentIndex } = get();
-    set({ 
+    set({
       showExplanation: false,
-      currentExplanation: null 
+      currentExplanation: null
     });
-    
+
     // В режиме теста, охоты на баги или завершения кода переходим к следующему вопросу
     if (learningMode === 'test' || learningMode === 'bug-hunting' || learningMode === 'code-completion') {
       set({ currentIndex: currentIndex + 1 });

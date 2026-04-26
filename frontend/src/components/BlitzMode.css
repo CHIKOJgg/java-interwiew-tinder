@@ -5,7 +5,7 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   height: calc(100vh - 180px);
 }
 
@@ -15,11 +15,12 @@
   align-items: center;
 }
 
-.blitz-timer, .blitz-current-score {
+.blitz-timer,
+.blitz-current-score {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
   padding: 8px 16px;
   border-radius: 12px;
   font-weight: 700;
@@ -30,9 +31,10 @@
   color: #4c6ef5;
 }
 
-.blitz-timer .low-time {
+.blitz-timer.low-time {
   color: #fa5252;
-  animation: pulse 0.5s infinite;
+  background: #fff5f5;
+  animation: pulse 0.6s ease-in-out infinite;
 }
 
 .blitz-current-score {
@@ -42,7 +44,7 @@
 .blitz-card {
   background: var(--tg-theme-bg-color, #fff);
   border-radius: 24px;
-  padding: 40px 24px;
+  padding: 36px 24px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
@@ -50,19 +52,19 @@
   text-align: center;
   gap: 24px;
   border: 2px solid transparent;
-  transition: all 0.2s;
+  transition: border-color 0.2s, background 0.2s;
   flex: 1;
   justify-content: center;
 }
 
 .blitz-card.correct {
   border-color: #40c057;
-  background: #ebfbee;
+  background: #f4fef6;
 }
 
 .blitz-card.incorrect {
   border-color: #fa5252;
-  background: #fff5f5;
+  background: #fff8f8;
 }
 
 .blitz-topic {
@@ -74,18 +76,18 @@
 }
 
 .blitz-statement {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.35;
   color: var(--tg-theme-text-color, #2d3436);
-  min-height: 100px;
+  min-height: 80px;
   display: flex;
   align-items: center;
 }
 
 .blitz-actions {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
 }
 
@@ -93,38 +95,47 @@
   flex: 1;
   border: none;
   border-radius: 16px;
-  padding: 20px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   transition: all 0.2s;
-  color: white;
+  color: #fff;
   font-weight: 700;
   font-size: 16px;
 }
 
 .false-btn {
-  background: #fa5252;
+  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+  box-shadow: 0 4px 14px rgba(245, 87, 108, 0.35);
 }
 
 .true-btn {
-  background: #40c057;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  box-shadow: 0 4px 14px rgba(64, 192, 87, 0.35);
 }
 
 .blitz-btn:hover:not(:disabled) {
   transform: translateY(-4px);
-  filter: brightness(1.1);
+  filter: brightness(1.08);
 }
 
 .blitz-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
+}
+
+.blitz-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .blitz-progress {
   height: 8px;
-  background: #e9ecef;
+  background: var(--tg-theme-secondary-bg-color, #e9ecef);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -133,10 +144,12 @@
   height: 100%;
   background: linear-gradient(to right, #4c6ef5, #764ba2);
   transition: width 1s linear;
+  border-radius: 4px;
 }
 
-/* Start Screen */
-.blitz-start-screen, .blitz-results-screen {
+/* Bug 3 fix: start/results cards used hardcoded background: white */
+.blitz-start-screen,
+.blitz-results-screen {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -144,8 +157,9 @@
   padding: 20px;
 }
 
-.blitz-start-card, .blitz-results-card {
-  background: white;
+.blitz-start-card,
+.blitz-results-card {
+  background: var(--tg-theme-bg-color, #fff);
   border-radius: 24px;
   padding: 48px 32px;
   text-align: center;
@@ -158,52 +172,122 @@
   max-width: 400px;
 }
 
-.zap-icon { color: #fab005; animation: bounce 2s infinite; }
-.trophy-icon { color: #fab005; }
+.blitz-start-card h2,
+.blitz-results-card h2 {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--tg-theme-text-color, #2d3436);
+}
 
-.start-blitz-button, .retry-blitz-button {
-  background: #2d3436;
-  color: white;
+.blitz-start-card p,
+.blitz-results-card p {
+  color: var(--tg-theme-hint-color, #868e96);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Bug 4 fix: Zap icon used as spinner but had no animation */
+.zap-icon {
+  color: #fab005;
+  animation: bounce 2s infinite;
+}
+
+.trophy-icon {
+  color: #fab005;
+}
+
+.start-blitz-button,
+.retry-blitz-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
   border: none;
   border-radius: 16px;
-  padding: 18px 32px;
-  font-size: 18px;
+  padding: 16px 32px;
+  font-size: 17px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
   transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(118, 75, 162, 0.35);
 }
 
-.start-blitz-button:hover { background: #000; transform: scale(1.05); }
+.start-blitz-button:hover,
+.retry-blitz-button:hover {
+  transform: scale(1.04);
+  box-shadow: 0 6px 18px rgba(118, 75, 162, 0.45);
+}
 
 .final-score {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
 }
 
 .final-score strong {
-  font-size: 64px;
-  color: #764ba2;
+  font-size: 72px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
 }
 
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-  40% {transform: translateY(-20px);}
-  60% {transform: translateY(-10px);}
-}
-
+/* Bug 4 fix: unified spinner */
 .blitz-loading {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 200px;
+  gap: 16px;
+  color: #4c6ef5;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes bounce {
+
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+
+  40% {
+    transform: translateY(-16px);
+  }
+
+  60% {
+    transform: translateY(-8px);
+  }
 }

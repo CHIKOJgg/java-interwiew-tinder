@@ -9,7 +9,8 @@ const CodeCompletionMode = () => {
     currentIndex, 
     submitCodeCompletionAnswer, 
     isLoadingQuestions,
-    hasMoreQuestions 
+    hasMoreQuestions,
+    fetchGeneration
   } = useStore();
   
   const [selectedOption, setSelectedOption] = useState(null);
@@ -22,7 +23,12 @@ const CodeCompletionMode = () => {
   useEffect(() => {
     setSelectedOption(null);
     setResult(null);
-  }, [currentIndex]);
+    
+    // Trigger generation if missing
+    if (currentQuestion && !completionData) {
+      fetchGeneration('code', currentQuestion.id);
+    }
+  }, [currentIndex, currentQuestion, completionData, fetchGeneration]);
 
   const handleOptionSelect = (option) => {
     if (result || isSubmitting) return;

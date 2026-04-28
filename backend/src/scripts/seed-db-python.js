@@ -1,4 +1,4 @@
-const pythonQuestions = [
+export const pythonQuestions = [
     // ==================== PYTHON CORE (55 вопросов) ====================
     {
         category: 'Python Core',

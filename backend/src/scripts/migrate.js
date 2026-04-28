@@ -183,6 +183,9 @@ const migrations = [
       CREATE INDEX IF NOT EXISTS idx_questions_cat_diff ON questions(category, difficulty);
       CREATE INDEX IF NOT EXISTS idx_user_progress_uid_qid ON user_progress(user_id, question_id);
       CREATE INDEX IF NOT EXISTS idx_user_progress_uid_status ON user_progress(user_id, status);
+      
+      -- Add unique constraint for idempotent seeding
+      ALTER TABLE questions ADD CONSTRAINT unique_question_lang UNIQUE (question_text, language);
     `
   },
 
@@ -208,6 +211,30 @@ const migrations = [
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS selected_language VARCHAR(20) DEFAULT 'Java';
+    `
+  },
+
+  // ── 012: Unique constraint for questions ───────────────────────────
+  {
+    id: '012_unique_questions',
+    sql: `
+      DELETE FROM questions q1 USING questions q2 
+      WHERE q1.id > q2.id 
+      AND q1.question_text = q2.question_text 
+      AND q1.language = q2.language;
+      
+      ALTER TABLE questions DROP CONSTRAINT IF EXISTS unique_question_lang;
+      ALTER TABLE questions ADD CONSTRAINT unique_question_lang UNIQUE (question_text, language);
+    `
+  },
+
+  // ── 013: User subscription columns ─────────────────────────────────
+  {
+    id: '013_user_subscription_cols',
+    sql: `
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan VARCHAR(20) DEFAULT 'free' REFERENCES subscription_plans(id);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP;
+      CREATE INDEX IF NOT EXISTS idx_users_subscription ON users(subscription_plan);
     `
   }
 ];

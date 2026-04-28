@@ -5,8 +5,8 @@ import './Header.css';
 
 const LANG_LABELS = { Java: '☕ Java', Python: '🐍 Python', TypeScript: '🔷 TS' };
 
-const Header = ({ onSettingsClick, onResumeClick }) => {
-  const { stats, learningMode, setLearningMode, language, setLanguage, loadQuestions } = useStore();
+const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick }) => {
+  const { stats, learningMode, setLearningMode, language, setLanguage, loadQuestions, user } = useStore();
   const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
 
   const handleLanguageChange = (e) => {
@@ -79,6 +79,15 @@ const Header = ({ onSettingsClick, onResumeClick }) => {
                 <Braces size={18} />
               </button>
             </div>
+            {onSubscriptionClick && (
+              <button
+                className={`settings-button ${user?.plan !== 'free' ? 'premium-badge' : ''}`}
+                onClick={onSubscriptionClick}
+                title="Подписка"
+              >
+                <Star size={20} fill={user?.plan !== 'free' ? "#ffd43b" : "none"} />
+              </button>
+            )}
             {onResumeClick && (
               <button
                 className="settings-button"

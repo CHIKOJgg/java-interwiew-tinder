@@ -9,6 +9,8 @@
     "dev": "node --watch src/server.js",
     "init-db": "node src/scripts/init-db.js",
     "seed-db": "node src/scripts/seed-db.js",
+    "migrate": "node src/scripts/migrate.js",
+    "worker": "node src/worker.js",
     "vercel-build": "echo 'Build completed'"
   },
   "keywords": [

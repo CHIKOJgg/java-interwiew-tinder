@@ -11,6 +11,7 @@ import CodeCompletionMode from './components/CodeCompletionMode';
 import ResumeAnalyzer from './components/ResumeAnalyzer';
 import ExplanationModal from './components/ExplanationModal';
 import CategorySelection from './components/CategorySelection';
+import SubscriptionPlans from './components/SubscriptionPlans';
 import { SkeletonCard } from './components/Skeleton';
 import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
@@ -36,6 +37,7 @@ function App() {
 
   const [showCategorySelection, setShowCategorySelection] = useState(false);
   const [showResumeAnalyzer, setShowResumeAnalyzer] = useState(false);
+  const [showSubscriptions, setShowSubscriptions] = useState(false);
   const cardRefs = useRef([]);
 
   useEffect(() => {
@@ -119,12 +121,17 @@ function App() {
   if (showResumeAnalyzer) {
     return <ResumeAnalyzer onBack={() => setShowResumeAnalyzer(false)} />;
   }
+  
+  if (showSubscriptions) {
+    return <SubscriptionPlans onBack={() => setShowSubscriptions(false)} />;
+  }
 
   return (
     <div className="app">
       <Header 
         onSettingsClick={() => setShowCategorySelection(true)} 
         onResumeClick={() => setShowResumeAnalyzer(true)}
+        onSubscriptionClick={() => setShowSubscriptions(true)}
       />
 
       <div className="card-container">

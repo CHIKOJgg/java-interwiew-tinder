@@ -57,12 +57,14 @@ const useStore = create((set, get) => ({
       set({ isLoading: true });
       const response = await apiClient.login(initData);
       const user = response.user;
+      const lang = user.language || 'Java';
+      apiClient.setLanguage(lang);
 
       set({
         user,
         isAuthenticated: true,
         isLoading: false,
-        language: user.language || 'Java'
+        language: lang
       });
 
       // Load initial data (small batch)
@@ -279,6 +281,44 @@ const useStore = create((set, get) => ({
     } catch (error) {
       set({ isAnalyzingResume: false });
       throw error;
+    }
+  },
+
+  fetchGeneration: async (type, questionId) => {
+    const question = get().questions.find(q => q.id === questionId);
+    if (!question) return;
+
+    // Map frontend types to backend modes
+    const typeMap = {
+      test: 'options',
+      bug: 'bugHuntingData',
+      blitz: 'blitzData',
+      code: 'codeCompletionData'
+    };
+    const dataKey = typeMap[type];
+
+    try {
+      const response = await apiClient.requestGeneration(
+        type, 
+        question.question, 
+        question.shortAnswer, 
+        question.category
+      );
+
+      if (response.status === 'ready' && response.data) {
+        set(state => ({
+          questions: state.questions.map(q => 
+            q.id === questionId ? { ...q, [dataKey]: response.data, options: type === 'test' ? response.data : q.options } : q
+          )
+        }));
+        return response.data;
+      } else if (response.status === 'pending') {
+        // Retry after 2 seconds
+        await new Promise(r => setTimeout(r, 2000));
+        return get().fetchGeneration(type, questionId);
+      }
+    } catch (error) {
+      console.error(`Fetch generation error (${type}):`, error);
     }
   },
 

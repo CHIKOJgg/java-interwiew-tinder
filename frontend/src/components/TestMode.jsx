@@ -9,7 +9,8 @@ const TestMode = () => {
     currentIndex,
     submitTestAnswer,
     isLoadingQuestions,
-    hasMoreQuestions
+    hasMoreQuestions,
+    fetchGeneration
   } = useStore();
 
   const [selectedOption, setSelectedOption] = useState(null);
@@ -22,7 +23,12 @@ const TestMode = () => {
   useEffect(() => {
     setSelectedOption(null);
     setResult(null);
-  }, [currentIndex]);
+    
+    // Trigger generation if options are missing
+    if (currentQuestion && (!currentQuestion.options || currentQuestion.options.length === 0)) {
+      fetchGeneration('test', currentQuestion.id);
+    }
+  }, [currentIndex, currentQuestion, fetchGeneration]);
 
   const handleOptionSelect = (option) => {
     if (result || isSubmitting) return;

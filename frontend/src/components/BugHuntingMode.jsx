@@ -9,7 +9,8 @@ const BugHuntingMode = () => {
     currentIndex,
     submitBugHuntAnswer,
     isLoadingQuestions,
-    hasMoreQuestions
+    hasMoreQuestions,
+    fetchGeneration
   } = useStore();
 
   const [selectedOption, setSelectedOption] = useState(null);
@@ -22,7 +23,12 @@ const BugHuntingMode = () => {
   useEffect(() => {
     setSelectedOption(null);
     setResult(null);
-  }, [currentIndex]);
+    
+    // Trigger generation if missing
+    if (currentQuestion && !bugData) {
+      fetchGeneration('bug', currentQuestion.id);
+    }
+  }, [currentIndex, currentQuestion, bugData, fetchGeneration]);
 
   const handleOptionSelect = (option) => {
     if (result || isSubmitting) return;

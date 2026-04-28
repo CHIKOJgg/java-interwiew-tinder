@@ -44,9 +44,14 @@ const processJob = async (job) => {
 
 const runWorker = async () => {
   await initQueueTable();
-  console.log('👷 Background worker started');
+  console.log('👷 Background worker started with concurrency = 3');
 
-  while (true) {
+  const CONCURRENCY = 3;
+  let activeJobs = 0;
+
+  const pollAndProcess = async () => {
+    if (activeJobs >= CONCURRENCY) return;
+
     try {
       const { rows } = await pool.query(`
         UPDATE ai_jobs SET status = 'processing', started_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
@@ -59,15 +64,22 @@ const runWorker = async () => {
       `);
 
       if (rows.length > 0) {
-        await processJob(rows[0]);
-      } else {
-        await new Promise(r => setTimeout(r, 2000));
+        activeJobs++;
+        processJob(rows[0]).finally(() => {
+          activeJobs--;
+          pollAndProcess(); // immediately check for next
+        });
+        pollAndProcess(); // try to fill concurrency
       }
     } catch (err) {
-      console.error('Worker error:', err.message);
-      await new Promise(r => setTimeout(r, 5000));
+      console.error('Worker polling error:', err.message);
     }
-  }
+  };
+
+  // Poll every 2 seconds if not active
+  setInterval(() => {
+    if (activeJobs < CONCURRENCY) pollAndProcess();
+  }, 2000);
 };
 
 runWorker();

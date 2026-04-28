@@ -89,9 +89,6 @@ const BlitzMode = () => {
     );
   }
 
-  const currentQuestion = questions[currentIndex];
-  const blitzData = currentQuestion?.blitzData;
-
   return (
     <div className="blitz-mode">
       <div className="blitz-header">

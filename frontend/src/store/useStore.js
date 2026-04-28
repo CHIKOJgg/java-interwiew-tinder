@@ -1,32 +1,39 @@
 import { create } from 'zustand';
 import apiClient from '../api/client';
 
+// ─── Offline Cache Helpers ───────────────────────────────────────────
+const CACHE_KEY = 'interview_tinder_cache';
+function saveToLocal(key, data) {
+  try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch (e) {}
+}
+function loadFromLocal(key) {
+  try { return JSON.parse(localStorage.getItem(`${CACHE_KEY}_${key}`)); } catch (e) { return null; }
+}
+
 const useStore = create((set, get) => ({
   // Auth state
   user: null,
   isAuthenticated: false,
   isLoading: true,
+  language: 'Java',
 
   // Questions state
   questions: [],
   currentIndex: 0,
   isLoadingQuestions: false,
-  learningMode: 'swipe', // 'swipe' or 'test'
+  _loadingLock: false,      // prevents duplicate loadQuestions
+  learningMode: 'swipe',
 
   // Stats state
-  stats: {
-    known: 0,
-    unknown: 0,
-    totalSeen: 0,
-    totalQuestions: 0,
-  },
+  stats: { known: 0, unknown: 0, totalSeen: 0, totalQuestions: 0 },
 
   // Blitz state
   blitzScore: 0,
   blitzTimeLeft: 60,
   isBlitzActive: false,
 
-  interviewHistory: [], // { role: 'interviewer'|'candidate', content: string, evaluation?: object }
+  // Interview state
+  interviewHistory: [],
   isEvaluatingInterview: false,
 
   // Resume state
@@ -38,22 +45,31 @@ const useStore = create((set, get) => ({
   currentExplanation: null,
   isLoadingExplanation: false,
 
-  // Actions
+  // ─── Actions ─────────────────────────────────────────────────────
+
+  setLanguage: (language) => {
+    apiClient.setLanguage(language);
+    set({ language });
+  },
+
   login: async (initData) => {
     try {
       set({ isLoading: true });
       const response = await apiClient.login(initData);
+      const user = response.user;
+
       set({
-        user: response.user,
+        user,
         isAuthenticated: true,
-        isLoading: false
+        isLoading: false,
+        language: user.language || 'Java'
       });
 
-      // Load initial questions and stats
+      // Load initial data (small batch)
       await get().loadQuestions();
-      await get().loadStats();
+      get().loadStats();  // non-blocking
 
-      return response.user;
+      return user;
     } catch (error) {
       console.error('Login error:', error);
       set({ isLoading: false });
@@ -62,26 +78,43 @@ const useStore = create((set, get) => ({
   },
 
   loadQuestions: async (append = false) => {
+    // Loading lock — prevent duplicate calls
+    if (get()._loadingLock) return;
+    set({ _loadingLock: true });
+
     try {
       if (!append) set({ isLoadingQuestions: true });
       const mode = get().learningMode;
-      const response = await apiClient.request(`/questions/feed?userId=${apiClient.userId}&limit=10&mode=${mode}`);
+      const response = await apiClient.getQuestionsFeed(5, mode);
 
       if (append) {
-        set((state) => ({
+        set(state => ({
           questions: [...state.questions, ...response.questions],
-          isLoadingQuestions: false
+          isLoadingQuestions: false,
+          _loadingLock: false
         }));
       } else {
         set({
           questions: response.questions,
           currentIndex: 0,
-          isLoadingQuestions: false
+          isLoadingQuestions: false,
+          _loadingLock: false
         });
       }
+
+      // Save to local storage for offline
+      saveToLocal(`questions_${mode}`, response.questions);
     } catch (error) {
       console.error('Load questions error:', error);
-      set({ isLoadingQuestions: false });
+      // Fallback to offline cache
+      if (!append) {
+        const cached = loadFromLocal(`questions_${get().learningMode}`);
+        if (cached?.length > 0) {
+          set({ questions: cached, currentIndex: 0, isLoadingQuestions: false, _loadingLock: false });
+          return;
+        }
+      }
+      set({ isLoadingQuestions: false, _loadingLock: false });
     }
   },
 
@@ -89,314 +122,188 @@ const useStore = create((set, get) => ({
     try {
       const stats = await apiClient.getStats();
       set({ stats });
+      saveToLocal('stats', stats);
     } catch (error) {
-      console.error('Load stats error:', error);
+      const cached = loadFromLocal('stats');
+      if (cached) set({ stats: cached });
     }
   },
 
   swipeCard: async (questionId, direction) => {
     const status = direction === 'right' ? 'known' : 'unknown';
 
-    try {
-      await apiClient.recordSwipe(questionId, status);
+    // Optimistic UI — advance immediately
+    const currentStats = get().stats;
+    set({
+      stats: { ...currentStats, [status]: currentStats[status] + 1, totalSeen: currentStats.totalSeen + 1 },
+      currentIndex: get().currentIndex + 1
+    });
 
-      // Update stats
-      const currentStats = get().stats;
-      set({
-        stats: {
-          ...currentStats,
-          [status]: currentStats[status] + 1,
-          totalSeen: currentStats.totalSeen + 1
-        },
-        currentIndex: get().currentIndex + 1
-      });
+    // Fire and forget
+    apiClient.recordSwipe(questionId, status).catch(console.error);
 
-      // If swiped left, show explanation
-      if (direction === 'left') {
-        await get().loadExplanation(questionId);
-      }
+    if (direction === 'left') {
+      get().loadExplanation(questionId);
+    }
 
-      // Load more questions if running low
-      if (get().questions.length - get().currentIndex <= 3) {
-        await get().loadQuestions(true);
-      }
-    } catch (error) {
-      console.error('Swipe error:', error);
+    // Load more when running low (lazy)
+    if (get().questions.length - get().currentIndex <= 2) {
+      get().loadQuestions(true);
     }
   },
 
   submitTestAnswer: async (questionId, answer) => {
     try {
       const response = await apiClient.submitTestAnswer(questionId, answer);
-
-      // Update stats
       const status = response.isCorrect ? 'known' : 'unknown';
       const currentStats = get().stats;
-      set({
-        stats: {
-          ...currentStats,
-          [status]: currentStats[status] + 1,
-          totalSeen: currentStats.totalSeen + 1
-        }
-      });
+      set({ stats: { ...currentStats, [status]: currentStats[status] + 1, totalSeen: currentStats.totalSeen + 1 } });
 
-      // If incorrect, show explanation
       if (!response.isCorrect) {
-        await get().loadExplanation(questionId);
+        get().loadExplanation(questionId);
       } else {
-        // Move to next question if correct
         set({ currentIndex: get().currentIndex + 1 });
       }
 
-      // Load more questions if running low
-      if (get().questions.length - get().currentIndex <= 3) {
-        await get().loadQuestions(true);
-      }
-
+      if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
       return response;
-    } catch (error) {
-      console.error('Submit answer error:', error);
-      throw error;
-    }
+    } catch (error) { console.error('Submit answer error:', error); throw error; }
   },
 
   submitBugHuntAnswer: async (questionId, answer) => {
     try {
       const response = await apiClient.submitBugHuntAnswer(questionId, answer);
-
       const status = response.isCorrect ? 'known' : 'unknown';
       const currentStats = get().stats;
-      set({
-        stats: {
-          ...currentStats,
-          [status]: currentStats[status] + 1,
-          totalSeen: currentStats.totalSeen + 1
-        }
-      });
-
-      if (!response.isCorrect) {
-        await get().loadExplanation(questionId);
-      } else {
-        set({ currentIndex: get().currentIndex + 1 });
-      }
-
-      if (get().questions.length - get().currentIndex <= 3) {
-        await get().loadQuestions(true);
-      }
-
+      set({ stats: { ...currentStats, [status]: currentStats[status] + 1, totalSeen: currentStats.totalSeen + 1 } });
+      if (!response.isCorrect) get().loadExplanation(questionId);
+      else set({ currentIndex: get().currentIndex + 1 });
+      if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
       return response;
-    } catch (error) {
-      console.error('Submit bug hunt answer error:', error);
-      throw error;
-    }
+    } catch (error) { throw error; }
   },
 
   submitBlitzAnswer: async (questionId, answer) => {
     try {
       const response = await apiClient.submitBlitzAnswer(questionId, answer);
-
-      if (response.isCorrect) {
-        set((state) => ({ blitzScore: state.blitzScore + 1 }));
-      }
-
-      // Always move to next question in Blitz
-      set((state) => ({ currentIndex: state.currentIndex + 1 }));
-
-      if (get().questions.length - get().currentIndex <= 3) {
-        await get().loadQuestions(true);
-      }
-
+      if (response.isCorrect) set(s => ({ blitzScore: s.blitzScore + 1 }));
+      set(s => ({ currentIndex: s.currentIndex + 1 }));
+      if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
       return response;
-    } catch (error) {
-      console.error('Submit blitz answer error:', error);
-      throw error;
-    }
+    } catch (error) { throw error; }
   },
 
   submitInterviewAnswer: async (question, answer) => {
     try {
       set({ isEvaluatingInterview: true });
-
       const evaluation = await apiClient.evaluateInterviewAnswer(question, answer);
-
-      const newMessage = {
-        role: 'candidate',
-        content: answer,
-        evaluation
-      };
-
-      set((state) => ({
-        interviewHistory: [...state.interviewHistory, newMessage],
+      set(s => ({
+        interviewHistory: [...s.interviewHistory, { role: 'candidate', content: answer, evaluation }],
         isEvaluatingInterview: false
       }));
-
       return evaluation;
     } catch (error) {
-      console.error('Submit interview answer error:', error);
       set({ isEvaluatingInterview: false });
       throw error;
     }
   },
 
   addInterviewerMessage: (content) => {
-    set((state) => ({
-      interviewHistory: [...state.interviewHistory, { role: 'interviewer', content }]
-    }));
+    set(s => ({ interviewHistory: [...s.interviewHistory, { role: 'interviewer', content }] }));
   },
 
   nextInterviewQuestion: () => {
     const nextIndex = get().currentIndex + 1;
     set({ currentIndex: nextIndex });
-
-    const nextQuestion = get().questions[nextIndex];
-    if (nextQuestion) {
-      get().addInterviewerMessage(nextQuestion.question);
-    } else {
-      get().loadQuestions(true).then(() => {
-        const q = get().questions[get().currentIndex];
-        if (q) get().addInterviewerMessage(q.question);
-      });
-    }
+    const q = get().questions[nextIndex];
+    if (q) get().addInterviewerMessage(q.question);
+    else get().loadQuestions(true).then(() => {
+      const nq = get().questions[get().currentIndex];
+      if (nq) get().addInterviewerMessage(nq.question);
+    });
   },
 
   startInterview: () => {
-    const currentQuestion = get().questions[get().currentIndex];
-    if (currentQuestion) {
-      set({ interviewHistory: [{ role: 'interviewer', content: currentQuestion.question }] });
-    }
+    const q = get().questions[get().currentIndex];
+    if (q) set({ interviewHistory: [{ role: 'interviewer', content: q.question }] });
   },
 
   submitCodeCompletionAnswer: async (questionId, answer) => {
     try {
       const response = await apiClient.submitCodeCompletionAnswer(questionId, answer);
-
       const status = response.isCorrect ? 'known' : 'unknown';
       const currentStats = get().stats;
-      set({
-        stats: {
-          ...currentStats,
-          [status]: currentStats[status] + 1,
-          totalSeen: currentStats.totalSeen + 1
-        }
-      });
-
-      if (!response.isCorrect) {
-        await get().loadExplanation(questionId);
-      } else {
-        set({ currentIndex: get().currentIndex + 1 });
-      }
-
-      if (get().questions.length - get().currentIndex <= 3) {
-        await get().loadQuestions(true);
-      }
-
+      set({ stats: { ...currentStats, [status]: currentStats[status] + 1, totalSeen: currentStats.totalSeen + 1 } });
+      if (!response.isCorrect) get().loadExplanation(questionId);
+      else set({ currentIndex: get().currentIndex + 1 });
+      if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
       return response;
-    } catch (error) {
-      console.error('Submit code completion error:', error);
-      throw error;
-    }
+    } catch (error) { throw error; }
   },
 
   startBlitz: () => {
-    set({
-      blitzScore: 0,
-      blitzTimeLeft: 60,
-      isBlitzActive: true,
-      currentIndex: 0
-    });
+    set({ blitzScore: 0, blitzTimeLeft: 60, isBlitzActive: true, currentIndex: 0 });
     get().loadQuestions();
   },
 
-  stopBlitz: () => {
-    set({ isBlitzActive: false });
-  },
+  stopBlitz: () => set({ isBlitzActive: false }),
 
   decrementBlitzTime: () => {
-    set((state) => {
-      const newTime = state.blitzTimeLeft - 1;
-      if (newTime <= 0) {
-        return { blitzTimeLeft: 0, isBlitzActive: false };
-      }
-      return { blitzTimeLeft: newTime };
+    set(s => {
+      const t = s.blitzTimeLeft - 1;
+      return t <= 0 ? { blitzTimeLeft: 0, isBlitzActive: false } : { blitzTimeLeft: t };
     });
   },
 
   setLearningMode: (mode) => {
+    const prevMode = get().learningMode;
     set({
-      learningMode: mode,
-      currentIndex: 0,
-      isBlitzActive: false,
-      blitzTimeLeft: 60,   // always reset so start screen shows on re-entry
-      blitzScore: 0,
-      interviewHistory: []
+      learningMode: mode, currentIndex: 0,
+      isBlitzActive: false, blitzTimeLeft: 60, blitzScore: 0, interviewHistory: []
     });
 
-    get().loadQuestions().then(() => {
-      if (mode === 'mock-interview') {
-        get().startInterview();
-      }
-    });
+    // Don't reload if switching back to a mode that already has data
+    if (mode !== prevMode) {
+      get().loadQuestions().then(() => {
+        if (mode === 'mock-interview') get().startInterview();
+      });
+    }
   },
 
   analyzeResume: async (resumeText) => {
     try {
       set({ isAnalyzingResume: true });
       const response = await apiClient.analyzeResume(resumeText);
-      set({
-        resumeData: response.parsedData,
-        isAnalyzingResume: false
-      });
+      set({ resumeData: response.parsedData, isAnalyzingResume: false });
       return response.parsedData;
     } catch (error) {
-      console.error('Analyze resume error:', error);
       set({ isAnalyzingResume: false });
       throw error;
     }
   },
 
-  clearResumeData: () => {
-    set({ resumeData: null });
-  },
+  clearResumeData: () => set({ resumeData: null }),
 
   loadExplanation: async (questionId) => {
     try {
       set({ isLoadingExplanation: true, showExplanation: true });
       const response = await apiClient.getExplanation(questionId);
-      set({
-        currentExplanation: response.explanation,
-        isLoadingExplanation: false
-      });
+      set({ currentExplanation: response.explanation, isLoadingExplanation: false });
     } catch (error) {
-      console.error('Load explanation error:', error);
-      set({
-        isLoadingExplanation: false,
-        currentExplanation: 'Ошибка загрузки объяснения. Попробуйте позже.'
-      });
+      set({ isLoadingExplanation: false, currentExplanation: 'Ошибка загрузки объяснения. Попробуйте позже.' });
     }
   },
 
   closeExplanation: () => {
     const { learningMode, currentIndex } = get();
-    set({
-      showExplanation: false,
-      currentExplanation: null
-    });
-
-    // В режиме теста, охоты на баги или завершения кода переходим к следующему вопросу
-    if (learningMode === 'test' || learningMode === 'bug-hunting' || learningMode === 'code-completion') {
+    set({ showExplanation: false, currentExplanation: null });
+    if (['test', 'bug-hunting', 'code-completion'].includes(learningMode)) {
       set({ currentIndex: currentIndex + 1 });
     }
   },
 
-  getCurrentQuestion: () => {
-    const state = get();
-    return state.questions[state.currentIndex];
-  },
-
-  hasMoreQuestions: () => {
-    const state = get();
-    return state.currentIndex < state.questions.length;
-  }
+  getCurrentQuestion: () => get().questions[get().currentIndex],
+  hasMoreQuestions: () => get().currentIndex < get().questions.length
 }));
 
 export default useStore;

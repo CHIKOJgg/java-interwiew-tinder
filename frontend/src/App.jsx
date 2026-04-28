@@ -11,14 +11,16 @@ import CodeCompletionMode from './components/CodeCompletionMode';
 import ResumeAnalyzer from './components/ResumeAnalyzer';
 import ExplanationModal from './components/ExplanationModal';
 import CategorySelection from './components/CategorySelection';
+import { SkeletonCard } from './components/Skeleton';
 import useStore from './store/useStore';
-import { Loader2, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import './App.css';
 
 function App() {
   const {
     isAuthenticated,
     isLoading,
+    isLoadingQuestions,
     questions,
     currentIndex,
     showExplanation,
@@ -90,9 +92,11 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="app-loading">
-        <Loader2 className="spinner" size={48} />
-        <p>Загрузка...</p>
+      <div className="app">
+        <div className="skeleton-loading-screen">
+          <SkeletonCard />
+          <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>Загрузка...</p>
+        </div>
       </div>
     );
   }
@@ -124,7 +128,9 @@ function App() {
       />
 
       <div className="card-container">
-        {hasMoreQuestions() ? (
+        {isLoadingQuestions ? (
+          <SkeletonCard />
+        ) : hasMoreQuestions() ? (
           learningMode === 'swipe' ? (
             <div className="card-stack">
               {questions

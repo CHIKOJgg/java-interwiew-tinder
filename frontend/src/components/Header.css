@@ -33,6 +33,24 @@
   color: var(--tg-theme-button-color, #5c7cfa);
 }
 
+.lang-select {
+  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #2d3436);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.lang-select:focus {
+  border-color: var(--tg-theme-button-color, #5c7cfa);
+  box-shadow: 0 0 0 2px rgba(92, 124, 250, 0.2);
+}
+
 .header-actions {
   display: flex;
   align-items: center;

@@ -3,10 +3,16 @@ import { TrendingUp, Settings, Layout, GraduationCap, Bug, Zap, Mic, Link, Brace
 import useStore from '../store/useStore';
 import './Header.css';
 
+const LANG_LABELS = { Java: '☕ Java', Python: '🐍 Python', TypeScript: '🔷 TS' };
+
 const Header = ({ onSettingsClick, onResumeClick }) => {
-  const { stats, learningMode, setLearningMode } = useStore();
-  const progress =
-    stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
+  const { stats, learningMode, setLearningMode, language, setLanguage, loadQuestions } = useStore();
+  const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
+
+  const handleLanguageChange = (e) => {
+    setLanguage(e.target.value);
+    loadQuestions();
+  };
 
   return (
     <header className="header">
@@ -14,7 +20,12 @@ const Header = ({ onSettingsClick, onResumeClick }) => {
         <div className="header-top">
           <div className="header-title">
             <TrendingUp size={24} />
-            <h1>Java Interview Tinder</h1>
+            <h1>Interview Tinder</h1>
+            <select className="lang-select" value={language} onChange={handleLanguageChange}>
+              {Object.entries(LANG_LABELS).map(([id, label]) => (
+                <option key={id} value={id}>{label}</option>
+              ))}
+            </select>
           </div>
           <div className="header-actions">
             <div className="mode-switcher">

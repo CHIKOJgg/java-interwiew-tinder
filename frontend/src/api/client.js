@@ -1,39 +1,30 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 class ApiClient {
   constructor() {
-    // Убираем trailing slash если есть
     this.baseUrl = API_BASE_URL.replace(/\/$/, '');
     this.userId = null;
+    this.language = 'Java';
   }
 
-  setUserId(userId) {
-    this.userId = userId;
-  }
+  setUserId(userId) { this.userId = userId; }
+  setLanguage(language) { this.language = language; }
 
   async request(endpoint, options = {}) {
-    // Убеждаемся что endpoint начинается с /
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `${this.baseUrl}${cleanEndpoint}`;
-
     try {
       const response = await fetch(url, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers: { 'Content-Type': 'application/json', ...options.headers },
       });
-
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.error || `HTTP ${response.status}`);
       }
-
       return await response.json();
     } catch (error) {
-      console.error(`API Error [${endpoint}]:`, error);
+      console.error(`API Error [${cleanEndpoint}]:`, error);
       throw error;
     }
   }
@@ -44,167 +35,101 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ initData }),
     });
-
     if (response.user) {
       this.setUserId(response.user.telegram_id);
+      if (response.user.language) this.setLanguage(response.user.language);
     }
-
     return response;
   }
 
-  // Questions
-  async getQuestionsFeed(limit = 10) {
-    if (!this.userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return await this.request(
-      `/questions/feed?userId=${this.userId}&limit=${limit}`,
-    );
+  // Questions — lazy loading (3-5 cards)
+  async getQuestionsFeed(limit = 5, mode = 'swipe') {
+    if (!this.userId) throw new Error('User not authenticated');
+    return this.request(`/questions/feed?userId=${this.userId}&limit=${limit}&mode=${mode}&language=${this.language}`);
   }
 
-  async recordSwipe(questionId, status) {
-    if (!this.userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return await this.request('/questions/swipe', {
+  // Generation polling
+  async requestGeneration(type, questionText, shortAnswer, category) {
+    return this.request(`/generate/${type}`, {
       method: 'POST',
-      body: JSON.stringify({
-        userId: this.userId,
-        questionId,
-        status,
-      }),
+      body: JSON.stringify({ questionText, shortAnswer, category, userId: this.userId, language: this.language }),
+    });
+  }
+
+  // Answer recording (all idempotent)
+  async recordSwipe(questionId, status) {
+    return this.request('/questions/swipe', {
+      method: 'POST',
+      body: JSON.stringify({ userId: this.userId, questionId, status }),
     });
   }
 
   async submitTestAnswer(questionId, answer) {
-    if (!this.userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return await this.request('/questions/test-answer', {
+    return this.request('/questions/test-answer', {
       method: 'POST',
-      body: JSON.stringify({
-        userId: this.userId,
-        questionId,
-        answer,
-      }),
+      body: JSON.stringify({ userId: this.userId, questionId, answer }),
     });
   }
 
   async submitBugHuntAnswer(questionId, answer) {
-    if (!this.userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return await this.request('/questions/bug-hunt-answer', {
+    return this.request('/questions/bug-hunt-answer', {
       method: 'POST',
-      body: JSON.stringify({
-        userId: this.userId,
-        questionId,
-        answer,
-      }),
+      body: JSON.stringify({ userId: this.userId, questionId, answer }),
     });
   }
 
   async submitBlitzAnswer(questionId, answer) {
-    if (!this.userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return await this.request('/questions/blitz-answer', {
+    return this.request('/questions/blitz-answer', {
       method: 'POST',
-      body: JSON.stringify({
-        userId: this.userId,
-        questionId,
-        answer: !!answer,
-      }),
+      body: JSON.stringify({ userId: this.userId, questionId, answer: !!answer }),
     });
   }
 
   async evaluateInterviewAnswer(question, answer) {
-    return await this.request('/questions/interview-evaluate', {
+    return this.request('/questions/interview-evaluate', {
       method: 'POST',
-      body: JSON.stringify({ question, answer }),
+      body: JSON.stringify({ question, answer, language: this.language }),
     });
   }
 
   async submitCodeCompletionAnswer(questionId, answer) {
-    if (!this.userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return await this.request('/questions/code-completion-answer', {
+    return this.request('/questions/code-completion-answer', {
       method: 'POST',
-      body: JSON.stringify({
-        userId: this.userId,
-        questionId,
-        answer,
-      }),
+      body: JSON.stringify({ userId: this.userId, questionId, answer }),
     });
   }
 
   async analyzeResume(resumeText) {
-    if (!this.userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return await this.request('/user/analyze-resume', {
+    return this.request('/user/analyze-resume', {
       method: 'POST',
-      body: JSON.stringify({
-        userId: this.userId,
-        resumeText,
-      }),
+      body: JSON.stringify({ userId: this.userId, resumeText, language: this.language }),
     });
   }
 
-  async getUserResume() {
-    return await this.request(`/user/resume/${this.userId}`);
-  }
+  async getUserResume() { return this.request(`/user/resume/${this.userId}`); }
 
   async getExplanation(questionId) {
-    return await this.request('/questions/explain', {
+    return this.request('/questions/explain', {
       method: 'POST',
       body: JSON.stringify({ questionId }),
     });
   }
 
-  // Statistics
-  async getStats() {
-    if (!this.userId) {
-      throw new Error('User not authenticated');
-    }
+  async getStats() { return this.request(`/stats?userId=${this.userId}&language=${this.language}`); }
+  async getCategories() { return this.request(`/categories?language=${this.language}`); }
+  async getLanguages() { return this.request('/languages'); }
+  async getPreferences() { return this.request(`/preferences/${this.userId}`); }
 
-    return await this.request(`/stats?userId=${this.userId}`);
-  }
-
-  // Categories
-  async getCategories() {
-    return await this.request('/categories');
-  }
-
-  async getPreferences() {
-    if (!this.userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return await this.request(`/preferences/${this.userId}`);
-  }
-
-  async updatePreferences(categories) {
-    if (!this.userId) {
-      throw new Error('User not authenticated');
-    }
-
-    return await this.request('/preferences', {
+  async updatePreferences(categories, language) {
+    return this.request('/preferences', {
       method: 'POST',
-      body: JSON.stringify({
-        userId: this.userId,
-        categories,
-      }),
+      body: JSON.stringify({ userId: this.userId, categories, language: language || this.language }),
     });
   }
+
+  // Subscription
+  async getPlans() { return this.request('/subscription/plans'); }
+  async getSubscriptionStatus() { return this.request(`/subscription/status/${this.userId}`); }
 }
 
 export default new ApiClient();

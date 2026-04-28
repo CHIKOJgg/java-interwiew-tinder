@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { X, Loader2 } from 'lucide-react';
+import { X } from 'lucide-react';
+import { SkeletonExplanation } from './Skeleton';
 import './ExplanationModal.css';
 
 const ExplanationModal = ({ isOpen, explanation, isLoading, onClose }) => {
@@ -18,10 +19,7 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose }) => {
 
         <div className="modal-body">
           {isLoading ? (
-            <div className="loading-container">
-              <Loader2 className="spinner" size={40} />
-              <p>AI генерирует объяснение...</p>
-            </div>
+            <SkeletonExplanation />
           ) : (
             <div className="explanation-content">
               <ReactMarkdown

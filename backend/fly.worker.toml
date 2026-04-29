@@ -1,4 +1,4 @@
-app = "java-interwiew-tinder-ams-qg"
+app = "interview-tinder-worker"
 primary_region = "fra"
 
 [build]
@@ -12,3 +12,4 @@ primary_region = "fra"
 [[vm]]
   size = "shared-cpu-1x"
   memory = "256mb"
+  processes = ["worker"]

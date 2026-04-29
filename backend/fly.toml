@@ -1,4 +1,4 @@
-app = "interwiew-tinder-backend"
+app = "java-interwiew-tinder"
 primary_region = "fra"
 
 [build]

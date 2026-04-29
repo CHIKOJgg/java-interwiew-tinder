@@ -1,4 +1,4 @@
-const newQuestions = [
+export const newQuestions = [
     // ==================== JAVA CORE (25 новых вопросов) ====================
     {
         category: 'Java Core',

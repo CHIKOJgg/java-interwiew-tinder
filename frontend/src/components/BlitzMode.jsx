@@ -13,7 +13,8 @@ const BlitzMode = () => {
     startBlitz,
     decrementBlitzTime,
     submitBlitzAnswer,
-    isLoadingQuestions
+    isLoadingQuestions,
+    fetchGeneration
   } = useStore();
 
   const [feedback, setFeedback] = useState(null); // 'correct' | 'incorrect'
@@ -25,6 +26,15 @@ const BlitzMode = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, [isBlitzActive, decrementBlitzTime]);
+  
+  const currentQuestion = questions[currentIndex];
+  const blitzData = currentQuestion?.blitzData;
+
+  useEffect(() => {
+    if (isBlitzActive && currentQuestion && !blitzData) {
+      fetchGeneration('blitz', currentQuestion.id);
+    }
+  }, [isBlitzActive, currentIndex, currentQuestion, blitzData, fetchGeneration]);
 
   const handleAnswer = async (answer) => {
     if (!isBlitzActive || feedback) return;
@@ -78,9 +88,6 @@ const BlitzMode = () => {
       </div>
     );
   }
-
-  const currentQuestion = questions[currentIndex];
-  const blitzData = currentQuestion?.blitzData;
 
   return (
     <div className="blitz-mode">

@@ -8,6 +8,8 @@ import { enqueueJob } from './services/queueService.js';
 import { getLanguage, getAvailableLanguages, getCategories } from './services/languageRegistry.js';
 import { requestLogger, validateBody, sanitizeBody } from './middleware/logging.js';
 import { rateLimit, requireEntitlement, trackEvent } from './middleware/rateLimiter.js';
+import { billingService } from './services/billingService.js';
+import { metricsService } from './services/metricsService.js';
 
 dotenv.config();
 
@@ -144,7 +146,7 @@ app.post('/api/preferences', validateBody({ userId: { required: true }, categori
 });
 
 // ─── Question Feed (static data only, no AI blocking) ────────────────
-app.get('/api/questions/feed', async (req, res) => {
+app.get('/api/questions/feed', requireEntitlement('language'), async (req, res) => {
   try {
     const { userId } = req.query;
     const language = req.query.language || 'Java';
@@ -171,10 +173,18 @@ app.get('/api/questions/feed', async (req, res) => {
 
     const result = await pool.query(query, params);
 
-    const questions = result.rows.map(row => {
-      // Fire-and-forget background generation
-      enqueueJob('explanation', { questionText: row.question_text, shortAnswer: row.short_answer, userId, language }).catch(() => {});
-      enqueueJob('test', { questionText: row.question_text, shortAnswer: row.short_answer, userId, language }).catch(() => {});
+    const questions = await Promise.all(result.rows.map(async (row) => {
+      // Fire-and-forget background generation check/enqueue
+      const checkAndEnqueue = async (type) => {
+        const cached = await checkCache(row.question_text, type === 'test' ? 'test' : 'explanation', null, language);
+        if (!cached) {
+          enqueueJob(type, { questionText: row.question_text, shortAnswer: row.short_answer, userId, language }).catch(() => {});
+        }
+      };
+
+      checkAndEnqueue('explanation');
+      checkAndEnqueue('test');
+
       return {
         id: row.id, category: row.category, difficulty: row.difficulty,
         question: row.question_text, shortAnswer: row.short_answer,
@@ -182,7 +192,7 @@ app.get('/api/questions/feed', async (req, res) => {
         blitzData: row.blitz_data || null, codeCompletionData: row.code_completion_data || null,
         language: row.language || 'Java'
       };
-    });
+    }));
 
     res.json({ questions });
   } catch (error) {
@@ -192,7 +202,17 @@ app.get('/api/questions/feed', async (req, res) => {
 });
 
 // ─── Generation Endpoints (non-blocking, cache-first) ────────────────
-app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => {
+app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res, next) => {
+  const { type } = req.params;
+  const modeMap = {
+    explanation: 'swipe', // explanation belongs to basic swipe
+    test: 'test',
+    blitz: 'blitz',
+    bug: 'bug-hunting',
+    code: 'code-completion'
+  };
+  requireEntitlement('mode', modeMap[type])(req, res, next);
+}, async (req, res) => {
   try {
     const { type } = req.params;
     const { questionText, shortAnswer, category, userId, language = 'Java' } = req.body;
@@ -304,7 +324,7 @@ app.post('/api/questions/code-completion-answer', validateBody({ userId: { requi
 });
 
 // ─── Interview Evaluation ────────────────────────────────────────────
-app.post('/api/questions/interview-evaluate', rateLimit('interview'), async (req, res) => {
+app.post('/api/questions/interview-evaluate', rateLimit('interview'), requireEntitlement('interview'), async (req, res) => {
   try {
     const { question, answer, language = 'Java' } = req.body;
     if (!question || !answer) return res.status(400).json({ error: 'question and answer are required' });
@@ -332,7 +352,7 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
 });
 
 // ─── Resume Analysis ─────────────────────────────────────────────────
-app.post('/api/user/analyze-resume', rateLimit('resume'), async (req, res) => {
+app.post('/api/user/analyze-resume', rateLimit('resume'), requireEntitlement('resume'), async (req, res) => {
   try {
     const { userId, resumeText, language = 'Java' } = req.body;
     if (!userId || !resumeText) return res.status(400).json({ error: 'userId and resumeText are required' });
@@ -370,6 +390,44 @@ app.get('/api/subscription/status/:userId', async (req, res) => {
     if (rows.length === 0) return res.json({ plan: 'free', status: 'active' });
     res.json(rows[0]);
   } catch (error) { res.json({ plan: 'free', status: 'active' }); }
+});
+
+app.post('/api/subscription/subscribe', validateBody({ userId: { required: true }, planId: { required: true } }), async (req, res) => {
+  try {
+    const { userId, planId } = req.body;
+    const result = await billingService.createSubscription(userId, planId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/subscription/history/:userId', async (req, res) => {
+  try {
+    const history = await billingService.getHistory(req.params.userId);
+    res.json({ history });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Admin Endpoints ─────────────────────────────────────────────────
+app.get('/api/admin/metrics', async (req, res) => {
+  try {
+    const metrics = await metricsService.getSystemOverview();
+    res.json(metrics);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/admin/clear-cache', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM ai_cache');
+    res.json({ success: true, message: 'AI Cache cleared' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // ─── Stats ───────────────────────────────────────────────────────────

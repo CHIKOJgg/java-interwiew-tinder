@@ -1,4 +1,4 @@
-app = "java-interview-tinder-ams-qg"
+app = "java-interwiew-tinder-ams-qg"
 primary_region = "fra"
 
 [build]

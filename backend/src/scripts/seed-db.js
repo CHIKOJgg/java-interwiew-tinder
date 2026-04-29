@@ -2536,21 +2536,24 @@ const seedDatabase = async () => {
     console.log('🗑️  Cleared existing data');
 
     // Insert questions
+    let insertedCount = 0;
     for (const q of questions) {
-      await client.query(
-        `INSERT INTO questions (category, difficulty, question_text, short_answer, options) 
-         VALUES ($1, $2, $3, $4, $5)`,
+      const result = await client.query(
+        `INSERT INTO questions (category, difficulty, question_text, short_answer, options, language) 
+     VALUES ($1, $2, $3, $4, $5, $6) 
+     ON CONFLICT (question_text, language) DO NOTHING`,
         [
           q.category,
           q.difficulty || 'Junior',
           q.question,
           q.short_answer,
           q.options || null,
+          'Java'
         ],
       );
+      if (result.rowCount > 0) insertedCount++;
     }
-
-    console.log(`✅ Inserted ${questions.length} questions`);
+    console.log(`✅ Inserted ${insertedCount} out of ${questions.length} questions (skipped duplicates)`);
 
     // Show statistics
     const stats = await client.query(`

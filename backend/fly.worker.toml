@@ -12,4 +12,3 @@ primary_region = "fra"
 [[vm]]
   size = "shared-cpu-1x"
   memory = "256mb"
-  processes = ["worker"]

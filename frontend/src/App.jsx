@@ -17,6 +17,44 @@ import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
 import './App.css';
 
+// ─── Robust Telegram initData getter ────────────────────────────────
+// tg.initData can be empty string on first render before WebApp is ready.
+// We retry up to 10 times with 200ms delay to get real initData.
+function getTelegramInitData() {
+  return new Promise((resolve) => {
+    const tg = window.Telegram?.WebApp;
+
+    if (!tg) {
+      // Not in Telegram — use mock data for dev/browser preview
+      resolve('user=%7B%22id%22%3A123456789%2C%22first_name%22%3A%22Dev%22%2C%22username%22%3A%22dev_user%22%7D');
+      return;
+    }
+
+    tg.ready();
+    tg.expand();
+
+    // If initData is already populated, return immediately
+    if (tg.initData && tg.initData.length > 0) {
+      resolve(tg.initData);
+      return;
+    }
+
+    // Otherwise poll until it's available (max 2 seconds)
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      if (tg.initData && tg.initData.length > 0) {
+        clearInterval(interval);
+        resolve(tg.initData);
+      } else if (attempts >= 10) {
+        clearInterval(interval);
+        // Last resort: use whatever we have (even empty — backend will reject gracefully)
+        resolve(tg.initData || '');
+      }
+    }, 200);
+  });
+}
+
 function App() {
   const {
     isAuthenticated,
@@ -38,40 +76,31 @@ function App() {
   const [showCategorySelection, setShowCategorySelection] = useState(false);
   const [showResumeAnalyzer, setShowResumeAnalyzer] = useState(false);
   const [showSubscriptions, setShowSubscriptions] = useState(false);
+  const [authError, setAuthError] = useState(null);
   const cardRefs = useRef([]);
 
   useEffect(() => {
-    // Initialize Telegram WebApp
-    if (window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
+    let cancelled = false;
 
-      // Try to authenticate
-      const initData =
-        tg.initData ||
-        'user=%7B%22id%22%3A123456789%2C%22first_name%22%3A%22Dev%22%2C%22username%22%3A%22dev_user%22%7D';
+    getTelegramInitData().then((initData) => {
+      if (cancelled) return;
       login(initData)
         .then(() => {
-          // После успешной авторизации показываем выбор категорий
-          setShowCategorySelection(true);
+          if (!cancelled) setShowCategorySelection(true);
         })
-        .catch(console.error);
-    } else {
-      // Development mode: mock auth
-      const mockInitData =
-        'user=%7B%22id%22%3A123456789%2C%22first_name%22%3A%22Dev%22%2C%22username%22%3A%22dev_user%22%7D';
-      login(mockInitData)
-        .then(() => {
-          setShowCategorySelection(true);
-        })
-        .catch(console.error);
-    }
-  }, [login]);
+        .catch((err) => {
+          if (!cancelled) {
+            console.error('Login failed:', err);
+            setAuthError(err?.message || 'Auth failed');
+          }
+        });
+    });
+
+    return () => { cancelled = true; };
+  }, []); // ← empty deps, runs once
 
   const handleCategorySelectionComplete = () => {
     setShowCategorySelection(false);
-    // Перезагружаем вопросы с учетом выбранных категорий
     loadQuestions();
   };
 
@@ -83,7 +112,6 @@ function App() {
   };
 
   const handleButtonSwipe = (direction) => {
-    // Trigger programmatic swipe on the top card
     if (cardRefs.current[currentIndex]) {
       const card = cardRefs.current[currentIndex];
       if (card && card.swipe) {
@@ -92,6 +120,7 @@ function App() {
     }
   };
 
+  // ─── Loading screen ──────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="app">
@@ -103,17 +132,19 @@ function App() {
     );
   }
 
+  // ─── Auth error ──────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
       <div className="app-loading">
-        <p>
-          Ошибка авторизации. Пожалуйста, откройте приложение через Telegram.
-        </p>
+        <p>Ошибка авторизации. Пожалуйста, откройте приложение через Telegram.</p>
+        {authError && (
+          <p style={{ fontSize: 11, opacity: 0.5, marginTop: 8 }}>{authError}</p>
+        )}
       </div>
     );
   }
 
-  // Показываем экран выбора категорий
+  // ─── Category selection ──────────────────────────────────────────
   if (showCategorySelection) {
     return <CategorySelection onComplete={handleCategorySelectionComplete} />;
   }
@@ -121,15 +152,16 @@ function App() {
   if (showResumeAnalyzer) {
     return <ResumeAnalyzer onBack={() => setShowResumeAnalyzer(false)} />;
   }
-  
+
   if (showSubscriptions) {
     return <SubscriptionPlans onBack={() => setShowSubscriptions(false)} />;
   }
 
+  // ─── Main app ────────────────────────────────────────────────────
   return (
     <div className="app">
-      <Header 
-        onSettingsClick={() => setShowCategorySelection(true)} 
+      <Header
+        onSettingsClick={() => setShowCategorySelection(true)}
         onResumeClick={() => setShowResumeAnalyzer(true)}
         onSubscriptionClick={() => setShowSubscriptions(true)}
       />
@@ -153,9 +185,7 @@ function App() {
                     }}
                   >
                     <QuestionCard
-                      ref={(el) =>
-                        (cardRefs.current[currentIndex + index] = el)
-                      }
+                      ref={(el) => (cardRefs.current[currentIndex + index] = el)}
                       question={question}
                       onSwipe={index === 0 ? handleSwipe : null}
                       canSwipe={index === 0}

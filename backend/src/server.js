@@ -20,8 +20,14 @@ const isDev = process.env.NODE_ENV === 'development';
 // ─── Global Middleware ───────────────────────────────────────────────
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || origin.includes('localhost') || origin.includes('vercel.app')) cb(null, true);
-    else cb(new Error('Not allowed by CORS'));
+    // Allow requests with no origin (mobile apps, curl, Telegram WebApp internal)
+    if (!origin) return cb(null, true);
+    const allowed = ['localhost', 'vercel.app', 'pages.dev', 'workers.dev', 'fly.dev', 'telegram.org', 'web.telegram.org'];
+    if (allowed.some(d => origin.includes(d))) return cb(null, true);
+    // Allow any custom domain set via env var
+    if (process.env.ALLOWED_ORIGIN && origin.includes(process.env.ALLOWED_ORIGIN)) return cb(null, true);
+    console.warn(`CORS blocked origin: ${origin}`);
+    cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -92,8 +98,8 @@ app.post('/api/auth/login', async (req, res) => {
         [user.telegram_id]
       );
       preload.rows.forEach(q => {
-        enqueueJob('explanation', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => {});
-        enqueueJob('test', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => {});
+        enqueueJob('explanation', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => { });
+        enqueueJob('test', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => { });
       });
     } catch (e) { console.error('Preload error:', e.message); }
 
@@ -139,7 +145,7 @@ app.post('/api/preferences', validateBody({ userId: { required: true }, categori
       [userId, categories, language || 'Java']
     );
     if (language) {
-      await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => {});
+      await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => { });
     }
     res.json({ success: true });
   } catch (error) { res.status(500).json({ error: 'Failed to update preferences' }); }
@@ -178,7 +184,7 @@ app.get('/api/questions/feed', requireEntitlement('language'), async (req, res) 
       const checkAndEnqueue = async (type) => {
         const cached = await checkCache(row.question_text, type === 'test' ? 'test' : 'explanation', null, language);
         if (!cached) {
-          enqueueJob(type, { questionText: row.question_text, shortAnswer: row.short_answer, userId, language }).catch(() => {});
+          enqueueJob(type, { questionText: row.question_text, shortAnswer: row.short_answer, userId, language }).catch(() => { });
         }
       };
 
@@ -346,7 +352,7 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
     if (question.cached_explanation) return res.json({ explanation: question.cached_explanation, cached: true });
 
     const explanation = await generateExplanation(question.question_text, question.short_answer, null, question.language || 'Java');
-    await pool.query('UPDATE questions SET cached_explanation = $1 WHERE id = $2', [explanation, questionId]).catch(() => {});
+    await pool.query('UPDATE questions SET cached_explanation = $1 WHERE id = $2', [explanation, questionId]).catch(() => { });
     res.json({ explanation, cached: false });
   } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
 });
@@ -358,7 +364,7 @@ app.post('/api/user/analyze-resume', rateLimit('resume'), requireEntitlement('re
     if (!userId || !resumeText) return res.status(400).json({ error: 'userId and resumeText are required' });
 
     const parsedData = await analyzeResume(resumeText, userId, language);
-    await pool.query('UPDATE users SET resume_text = $1, parsed_resume_data = $2 WHERE telegram_id = $3', [resumeText, parsedData, userId]).catch(() => {});
+    await pool.query('UPDATE users SET resume_text = $1, parsed_resume_data = $2 WHERE telegram_id = $3', [resumeText, parsedData, userId]).catch(() => { });
     res.json({ success: true, parsedData });
   } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
 });

@@ -4,10 +4,10 @@ import apiClient from '../api/client';
 // ─── Offline Cache Helpers ───────────────────────────────────────────
 const CACHE_KEY = 'interview_tinder_cache';
 function saveToLocal(key, data) {
-  try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch (e) {}
+  try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch {}
 }
 function loadFromLocal(key) {
-  try { return JSON.parse(localStorage.getItem(`${CACHE_KEY}_${key}`)); } catch (e) { return null; }
+  try { return JSON.parse(localStorage.getItem(`${CACHE_KEY}_${key}`)); } catch { return null; }
 }
 
 const useStore = create((set, get) => ({
@@ -21,22 +21,22 @@ const useStore = create((set, get) => ({
   questions: [],
   currentIndex: 0,
   isLoadingQuestions: false,
-  _loadingLock: false,      // prevents duplicate loadQuestions
+  _loadingLock: false,
   learningMode: 'swipe',
 
-  // Stats state
+  // Stats
   stats: { known: 0, unknown: 0, totalSeen: 0, totalQuestions: 0 },
 
-  // Blitz state
+  // Blitz
   blitzScore: 0,
   blitzTimeLeft: 60,
   isBlitzActive: false,
 
-  // Interview state
+  // Interview
   interviewHistory: [],
   isEvaluatingInterview: false,
 
-  // Resume state
+  // Resume
   resumeData: null,
   isAnalyzingResume: false,
 
@@ -60,51 +60,46 @@ const useStore = create((set, get) => ({
       const lang = user.language || 'Java';
       apiClient.setLanguage(lang);
 
-      set({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-        language: lang
-      });
+      set({ user, isAuthenticated: true, isLoading: false, language: lang });
 
-      // Load initial data (small batch)
+      // Load questions BEFORE returning so screen transition never sees empty state
       await get().loadQuestions();
-      get().loadStats();  // non-blocking
+      get().loadStats(); // non-blocking
 
       return user;
     } catch (error) {
       console.error('Login error:', error);
-      set({ isLoading: false });
+      set({ isLoading: false, _loadingLock: false }); // always release lock on error
       throw error;
     }
   },
 
   loadQuestions: async (append = false) => {
-    // Loading lock — prevent duplicate calls
+    // Prevent duplicate concurrent calls
     if (get()._loadingLock) return;
     set({ _loadingLock: true });
 
     try {
       if (!append) set({ isLoadingQuestions: true });
+
       const mode = get().learningMode;
       const response = await apiClient.getQuestionsFeed(5, mode);
 
       if (append) {
-        set(state => ({
+        set((state) => ({
           questions: [...state.questions, ...response.questions],
           isLoadingQuestions: false,
-          _loadingLock: false
+          _loadingLock: false,
         }));
       } else {
         set({
           questions: response.questions,
           currentIndex: 0,
           isLoadingQuestions: false,
-          _loadingLock: false
+          _loadingLock: false,
         });
       }
 
-      // Save to local storage for offline
       saveToLocal(`questions_${mode}`, response.questions);
     } catch (error) {
       console.error('Load questions error:', error);
@@ -116,6 +111,7 @@ const useStore = create((set, get) => ({
           return;
         }
       }
+      // Always release lock — even on error — to prevent app from hanging
       set({ isLoadingQuestions: false, _loadingLock: false });
     }
   },
@@ -125,7 +121,7 @@ const useStore = create((set, get) => ({
       const stats = await apiClient.getStats();
       set({ stats });
       saveToLocal('stats', stats);
-    } catch (error) {
+    } catch {
       const cached = loadFromLocal('stats');
       if (cached) set({ stats: cached });
     }
@@ -133,22 +129,18 @@ const useStore = create((set, get) => ({
 
   swipeCard: async (questionId, direction) => {
     const status = direction === 'right' ? 'known' : 'unknown';
-
-    // Optimistic UI — advance immediately
     const currentStats = get().stats;
     set({
       stats: { ...currentStats, [status]: currentStats[status] + 1, totalSeen: currentStats.totalSeen + 1 },
-      currentIndex: get().currentIndex + 1
+      currentIndex: get().currentIndex + 1,
     });
 
-    // Fire and forget
     apiClient.recordSwipe(questionId, status).catch(console.error);
 
     if (direction === 'left') {
       get().loadExplanation(questionId);
     }
 
-    // Load more when running low (lazy)
     if (get().questions.length - get().currentIndex <= 2) {
       get().loadQuestions(true);
     }
@@ -160,16 +152,17 @@ const useStore = create((set, get) => ({
       const status = response.isCorrect ? 'known' : 'unknown';
       const currentStats = get().stats;
       set({ stats: { ...currentStats, [status]: currentStats[status] + 1, totalSeen: currentStats.totalSeen + 1 } });
-
       if (!response.isCorrect) {
         get().loadExplanation(questionId);
       } else {
         set({ currentIndex: get().currentIndex + 1 });
       }
-
       if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
       return response;
-    } catch (error) { console.error('Submit answer error:', error); throw error; }
+    } catch (error) {
+      console.error('Submit answer error:', error);
+      throw error;
+    }
   },
 
   submitBugHuntAnswer: async (questionId, answer) => {
@@ -188,8 +181,8 @@ const useStore = create((set, get) => ({
   submitBlitzAnswer: async (questionId, answer) => {
     try {
       const response = await apiClient.submitBlitzAnswer(questionId, answer);
-      if (response.isCorrect) set(s => ({ blitzScore: s.blitzScore + 1 }));
-      set(s => ({ currentIndex: s.currentIndex + 1 }));
+      if (response.isCorrect) set((s) => ({ blitzScore: s.blitzScore + 1 }));
+      set((s) => ({ currentIndex: s.currentIndex + 1 }));
       if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
       return response;
     } catch (error) { throw error; }
@@ -199,9 +192,9 @@ const useStore = create((set, get) => ({
     try {
       set({ isEvaluatingInterview: true });
       const evaluation = await apiClient.evaluateInterviewAnswer(question, answer);
-      set(s => ({
+      set((s) => ({
         interviewHistory: [...s.interviewHistory, { role: 'candidate', content: answer, evaluation }],
-        isEvaluatingInterview: false
+        isEvaluatingInterview: false,
       }));
       return evaluation;
     } catch (error) {
@@ -211,18 +204,21 @@ const useStore = create((set, get) => ({
   },
 
   addInterviewerMessage: (content) => {
-    set(s => ({ interviewHistory: [...s.interviewHistory, { role: 'interviewer', content }] }));
+    set((s) => ({ interviewHistory: [...s.interviewHistory, { role: 'interviewer', content }] }));
   },
 
   nextInterviewQuestion: () => {
     const nextIndex = get().currentIndex + 1;
     set({ currentIndex: nextIndex });
     const q = get().questions[nextIndex];
-    if (q) get().addInterviewerMessage(q.question);
-    else get().loadQuestions(true).then(() => {
-      const nq = get().questions[get().currentIndex];
-      if (nq) get().addInterviewerMessage(nq.question);
-    });
+    if (q) {
+      get().addInterviewerMessage(q.question);
+    } else {
+      get().loadQuestions(true).then(() => {
+        const nq = get().questions[get().currentIndex];
+        if (nq) get().addInterviewerMessage(nq.question);
+      });
+    }
   },
 
   startInterview: () => {
@@ -251,7 +247,7 @@ const useStore = create((set, get) => ({
   stopBlitz: () => set({ isBlitzActive: false }),
 
   decrementBlitzTime: () => {
-    set(s => {
+    set((s) => {
       const t = s.blitzTimeLeft - 1;
       return t <= 0 ? { blitzTimeLeft: 0, isBlitzActive: false } : { blitzTimeLeft: t };
     });
@@ -260,15 +256,20 @@ const useStore = create((set, get) => ({
   setLearningMode: (mode) => {
     const prevMode = get().learningMode;
     set({
-      learningMode: mode, currentIndex: 0,
-      isBlitzActive: false, blitzTimeLeft: 60, blitzScore: 0, interviewHistory: []
+      learningMode: mode,
+      currentIndex: 0,
+      isBlitzActive: false,
+      blitzTimeLeft: 60,
+      blitzScore: 0,
+      interviewHistory: [],
     });
 
-    // Don't reload if switching back to a mode that already has data
     if (mode !== prevMode) {
       get().loadQuestions().then(() => {
         if (mode === 'mock-interview') get().startInterview();
       });
+    } else if (mode === 'mock-interview') {
+      get().startInterview();
     }
   },
 
@@ -285,36 +286,25 @@ const useStore = create((set, get) => ({
   },
 
   fetchGeneration: async (type, questionId) => {
-    const question = get().questions.find(q => q.id === questionId);
+    const question = get().questions.find((q) => q.id === questionId);
     if (!question) return;
 
-    // Map frontend types to backend modes
-    const typeMap = {
-      test: 'options',
-      bug: 'bugHuntingData',
-      blitz: 'blitzData',
-      code: 'codeCompletionData'
-    };
+    const typeMap = { test: 'options', bug: 'bugHuntingData', blitz: 'blitzData', code: 'codeCompletionData' };
     const dataKey = typeMap[type];
 
     try {
-      const response = await apiClient.requestGeneration(
-        type, 
-        question.question, 
-        question.shortAnswer, 
-        question.category
-      );
-
+      const response = await apiClient.requestGeneration(type, question.question, question.shortAnswer, question.category);
       if (response.status === 'ready' && response.data) {
-        set(state => ({
-          questions: state.questions.map(q => 
-            q.id === questionId ? { ...q, [dataKey]: response.data, options: type === 'test' ? response.data : q.options } : q
-          )
+        set((state) => ({
+          questions: state.questions.map((q) =>
+            q.id === questionId
+              ? { ...q, [dataKey]: response.data, options: type === 'test' ? response.data : q.options }
+              : q
+          ),
         }));
         return response.data;
       } else if (response.status === 'pending') {
-        // Retry after 2 seconds
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 2000));
         return get().fetchGeneration(type, questionId);
       }
     } catch (error) {
@@ -329,7 +319,7 @@ const useStore = create((set, get) => ({
       set({ isLoadingExplanation: true, showExplanation: true });
       const response = await apiClient.getExplanation(questionId);
       set({ currentExplanation: response.explanation, isLoadingExplanation: false });
-    } catch (error) {
+    } catch {
       set({ isLoadingExplanation: false, currentExplanation: 'Ошибка загрузки объяснения. Попробуйте позже.' });
     }
   },
@@ -343,7 +333,7 @@ const useStore = create((set, get) => ({
   },
 
   getCurrentQuestion: () => get().questions[get().currentIndex],
-  hasMoreQuestions: () => get().currentIndex < get().questions.length
+  hasMoreQuestions: () => get().currentIndex < get().questions.length,
 }));
 
 export default useStore;

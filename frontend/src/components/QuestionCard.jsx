@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import TinderCard from 'react-tinder-card';
 import { RotateCcw } from 'lucide-react';
 import './QuestionCard.css';
@@ -23,10 +23,21 @@ const difficultyColors = {
   Senior: '#ff6b6b',
 };
 
-const QuestionCard = ({ question, onSwipe, canSwipe = true }) => {
+// forwardRef + useImperativeHandle exposes swipe() so App.jsx SwipeButtons work
+const QuestionCard = forwardRef(({ question, onSwipe, canSwipe = true }, ref) => {
   const [isFlipped, setIsFlipped] = useState(false);
+  const tinderRef = useRef(null);
 
-  // Для определения tap vs swipe на мобильном
+  // Expose swipe() to parent via ref
+  useImperativeHandle(ref, () => ({
+    swipe: (direction) => {
+      if (tinderRef.current && canSwipe) {
+        tinderRef.current.swipe(direction);
+      }
+    },
+  }));
+
+  // Touch tracking — distinguish tap vs swipe
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchStartTime = useRef(0);
@@ -41,39 +52,27 @@ const QuestionCard = ({ question, onSwipe, canSwipe = true }) => {
     const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX.current);
     const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
     const deltaTime = Date.now() - touchStartTime.current;
-
-    // Если движение маленькое (<10px) и быстрое (<300ms) - это tap, не свайп
     const isTap = deltaX < 10 && deltaY < 10 && deltaTime < 300;
-
-    if (isTap && canSwipe) {
-      setIsFlipped((prev) => !prev);
-    }
+    if (isTap && canSwipe) setIsFlipped((prev) => !prev);
   };
 
-  // Для десктопа - обычный клик
   const handleClick = (e) => {
-    // Проверяем что это не завершение свайпа (touch устройства обработаны выше)
-    if (e.pointerType === 'mouse' && canSwipe) {
-      setIsFlipped((prev) => !prev);
-    }
+    if (e.pointerType === 'mouse' && canSwipe) setIsFlipped((prev) => !prev);
   };
 
   const onCardSwipe = (direction) => {
-    setIsFlipped(false); // Сбрасываем flip при свайпе
-    if (onSwipe) {
-      onSwipe(direction);
-    }
+    setIsFlipped(false);
+    if (onSwipe) onSwipe(direction);
   };
 
   const categoryColor = categoryColors[question.category] || '#999';
 
   return (
     <TinderCard
+      ref={tinderRef}
       className="swipe-card"
       onSwipe={onCardSwipe}
-      preventSwipe={
-        !canSwipe ? ['up', 'down', 'left', 'right'] : ['up', 'down']
-      }
+      preventSwipe={!canSwipe ? ['up', 'down', 'left', 'right'] : ['up', 'down']}
       swipeRequirementType="position"
       swipeThreshold={80}
     >
@@ -84,23 +83,11 @@ const QuestionCard = ({ question, onSwipe, canSwipe = true }) => {
         onClick={handleClick}
       >
         <div className="card-inner">
-          {/* Front side */}
+          {/* Front */}
           <div className="card-face card-front">
             <div className="badges-container">
-              <div
-                className="category-badge"
-                style={{ background: categoryColor }}
-              >
-                {question.category}
-              </div>
-              <div
-                className="difficulty-badge"
-                style={{
-                  background: difficultyColors[question.difficulty] || '#999',
-                }}
-              >
-                {question.difficulty}
-              </div>
+              <div className="category-badge" style={{ background: categoryColor }}>{question.category}</div>
+              <div className="difficulty-badge" style={{ background: difficultyColors[question.difficulty] || '#999' }}>{question.difficulty}</div>
             </div>
             <div className="question-content">
               <h2>{question.question}</h2>
@@ -111,23 +98,11 @@ const QuestionCard = ({ question, onSwipe, canSwipe = true }) => {
             </div>
           </div>
 
-          {/* Back side */}
+          {/* Back */}
           <div className="card-face card-back">
             <div className="badges-container">
-              <div
-                className="category-badge"
-                style={{ background: categoryColor }}
-              >
-                {question.category}
-              </div>
-              <div
-                className="difficulty-badge"
-                style={{
-                  background: difficultyColors[question.difficulty] || '#999',
-                }}
-              >
-                {question.difficulty}
-              </div>
+              <div className="category-badge" style={{ background: categoryColor }}>{question.category}</div>
+              <div className="difficulty-badge" style={{ background: difficultyColors[question.difficulty] || '#999' }}>{question.difficulty}</div>
             </div>
             <div className="answer-content">
               <div className="answer-label">Краткий ответ:</div>
@@ -142,6 +117,8 @@ const QuestionCard = ({ question, onSwipe, canSwipe = true }) => {
       </div>
     </TinderCard>
   );
-};
+});
+
+QuestionCard.displayName = 'QuestionCard';
 
 export default QuestionCard;

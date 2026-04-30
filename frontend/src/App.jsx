@@ -17,10 +17,12 @@ import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
 import './App.css';
 
+// ─── Telegram init data helper ────────────────────────────────────────
 function getTelegramInitData() {
   return new Promise((resolve) => {
     const tg = window.Telegram?.WebApp;
     if (!tg) {
+      // Dev fallback
       resolve('user=%7B%22id%22%3A123456789%2C%22first_name%22%3A%22Dev%22%2C%22username%22%3A%22dev_user%22%7D');
       return;
     }
@@ -44,21 +46,22 @@ function getTelegramInitData() {
   });
 }
 
-// App has 4 possible top-level states:
-// 'loading'   → showing skeleton (auth in progress)
-// 'category'  → showing category selection screen
-// 'main'      → showing main card feed
+// ─── Screen state machine ─────────────────────────────────────────────
+// 'loading'   → auth in progress (skeleton shown)
+// 'category'  → category selection
+// 'main'      → card feed (questions guaranteed to be loaded before entering)
 // 'error'     → auth failed
+// 'resume'    → resume analyzer overlay
+// 'subscriptions' → subscription plans overlay
+
 function App() {
   const {
-    isAuthenticated,
-    isLoading,
-    isLoadingQuestions,
     questions,
     currentIndex,
     showExplanation,
     currentExplanation,
     isLoadingExplanation,
+    isLoadingQuestions,
     login,
     swipeCard,
     closeExplanation,
@@ -67,17 +70,17 @@ function App() {
     learningMode,
   } = useStore();
 
-  // 'loading' | 'category' | 'main' | 'error'
   const [screen, setScreen] = useState('loading');
   const [authError, setAuthError] = useState(null);
-  const [showResumeAnalyzer, setShowResumeAnalyzer] = useState(false);
-  const [showSubscriptions, setShowSubscriptions] = useState(false);
   const cardRefs = useRef([]);
 
+  // Auth on mount — only once
   useEffect(() => {
     let cancelled = false;
     getTelegramInitData().then((initData) => {
       if (cancelled) return;
+      // login() awaits loadQuestions() internally, so by the time this resolves
+      // questions are in the store. No render gap can occur.
       login(initData)
         .then(() => {
           if (!cancelled) setScreen('category');
@@ -91,11 +94,13 @@ function App() {
         });
     });
     return () => { cancelled = true; };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // After category selection: reload questions with the newly selected categories,
+  // then transition to main. isLoadingQuestions gates the card container.
   const handleCategorySelectionComplete = () => {
+    loadQuestions(); // non-blocking — isLoadingQuestions will show skeleton until done
     setScreen('main');
-    loadQuestions();
   };
 
   const handleSwipe = (direction) => {
@@ -104,6 +109,7 @@ function App() {
   };
 
   const handleButtonSwipe = (direction) => {
+    // cardRefs now work because QuestionCard uses forwardRef + useImperativeHandle
     if (cardRefs.current[currentIndex]?.swipe) {
       cardRefs.current[currentIndex].swipe(direction);
     }
@@ -111,7 +117,7 @@ function App() {
 
   // ─── Screens ─────────────────────────────────────────────────────
 
-  if (screen === 'loading' || isLoading) {
+  if (screen === 'loading') {
     return (
       <div className="app">
         <div className="skeleton-loading-screen">
@@ -135,12 +141,12 @@ function App() {
     return <CategorySelection onComplete={handleCategorySelectionComplete} />;
   }
 
-  if (showResumeAnalyzer) {
-    return <ResumeAnalyzer onBack={() => setShowResumeAnalyzer(false)} />;
+  if (screen === 'resume') {
+    return <ResumeAnalyzer onBack={() => setScreen('main')} />;
   }
 
-  if (showSubscriptions) {
-    return <SubscriptionPlans onBack={() => setShowSubscriptions(false)} />;
+  if (screen === 'subscriptions') {
+    return <SubscriptionPlans onBack={() => setScreen('main')} />;
   }
 
   // ─── Main app ────────────────────────────────────────────────────
@@ -148,8 +154,8 @@ function App() {
     <div className="app">
       <Header
         onSettingsClick={() => setScreen('category')}
-        onResumeClick={() => setShowResumeAnalyzer(true)}
-        onSubscriptionClick={() => setShowSubscriptions(true)}
+        onResumeClick={() => setScreen('resume')}
+        onSubscriptionClick={() => setScreen('subscriptions')}
       />
 
       <div className="card-container">

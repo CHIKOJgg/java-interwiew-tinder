@@ -1,5 +1,8 @@
 import React from 'react';
-import { TrendingUp, Settings, Layout, GraduationCap, Bug, Zap, Mic, Link, Braces, FileText } from 'lucide-react';
+import {
+  TrendingUp, Settings, Layout, GraduationCap, Bug,
+  Zap, Mic, Link, Braces, FileText, Star
+} from 'lucide-react';
 import useStore from '../store/useStore';
 import './Header.css';
 
@@ -29,89 +32,29 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick }) => {
           </div>
           <div className="header-actions">
             <div className="mode-switcher">
-              <button
-                className={`mode-button ${learningMode === 'swipe' ? 'active' : ''}`}
-                onClick={() => setLearningMode('swipe')}
-                title="Режим карточек"
-              >
-                <Layout size={18} />
-              </button>
-              <button
-                className={`mode-button ${learningMode === 'test' ? 'active' : ''}`}
-                onClick={() => setLearningMode('test')}
-                title="Режим теста"
-              >
-                <GraduationCap size={18} />
-              </button>
-              <button
-                className={`mode-button ${learningMode === 'bug-hunting' ? 'active' : ''}`}
-                onClick={() => setLearningMode('bug-hunting')}
-                title="Охота на баги"
-              >
-                <Bug size={18} />
-              </button>
-              <button
-                className={`mode-button ${learningMode === 'blitz' ? 'active' : ''}`}
-                onClick={() => setLearningMode('blitz')}
-                title="Блиц-режим"
-              >
-                <Zap size={18} />
-              </button>
-              <button
-                className={`mode-button ${learningMode === 'mock-interview' ? 'active' : ''}`}
-                onClick={() => setLearningMode('mock-interview')}
-                title="Мок-интервью"
-              >
-                <Mic size={18} />
-              </button>
-              <button
-                className={`mode-button ${learningMode === 'concept-linker' ? 'active' : ''}`}
-                onClick={() => setLearningMode('concept-linker')}
-                title="Связи понятий"
-              >
-                <Link size={18} />
-              </button>
-              <button
-                className={`mode-button ${learningMode === 'code-completion' ? 'active' : ''}`}
-                onClick={() => setLearningMode('code-completion')}
-                title="Завершение кода"
-              >
-                <Braces size={18} />
-              </button>
+              <button className={`mode-button ${learningMode === 'swipe' ? 'active' : ''}`} onClick={() => setLearningMode('swipe')} title="Режим карточек"><Layout size={18} /></button>
+              <button className={`mode-button ${learningMode === 'test' ? 'active' : ''}`} onClick={() => setLearningMode('test')} title="Режим теста"><GraduationCap size={18} /></button>
+              <button className={`mode-button ${learningMode === 'bug-hunting' ? 'active' : ''}`} onClick={() => setLearningMode('bug-hunting')} title="Охота на баги"><Bug size={18} /></button>
+              <button className={`mode-button ${learningMode === 'blitz' ? 'active' : ''}`} onClick={() => setLearningMode('blitz')} title="Блиц-режим"><Zap size={18} /></button>
+              <button className={`mode-button ${learningMode === 'mock-interview' ? 'active' : ''}`} onClick={() => setLearningMode('mock-interview')} title="Мок-интервью"><Mic size={18} /></button>
+              <button className={`mode-button ${learningMode === 'concept-linker' ? 'active' : ''}`} onClick={() => setLearningMode('concept-linker')} title="Связи понятий"><Link size={18} /></button>
+              <button className={`mode-button ${learningMode === 'code-completion' ? 'active' : ''}`} onClick={() => setLearningMode('code-completion')} title="Завершение кода"><Braces size={18} /></button>
             </div>
             {onSubscriptionClick && (
-              <button
-                className={`settings-button ${user?.plan !== 'free' ? 'premium-badge' : ''}`}
-                onClick={onSubscriptionClick}
-                title="Подписка"
-              >
-                <Star size={20} fill={user?.plan !== 'free' ? "#ffd43b" : "none"} />
+              <button className={`settings-button ${user?.plan !== 'free' ? 'premium-badge' : ''}`} onClick={onSubscriptionClick} title="Подписка">
+                <Star size={20} fill={user?.plan !== 'free' ? '#ffd43b' : 'none'} />
               </button>
             )}
             {onResumeClick && (
-              <button
-                className="settings-button"
-                onClick={onResumeClick}
-                title="Анализ резюме"
-              >
-                <FileText size={20} />
-              </button>
+              <button className="settings-button" onClick={onResumeClick} title="Анализ резюме"><FileText size={20} /></button>
             )}
             {onSettingsClick && (
-              <button
-                className="settings-button"
-                onClick={onSettingsClick}
-                aria-label="Настройки категорий"
-              >
-                <Settings size={20} />
-              </button>
+              <button className="settings-button" onClick={onSettingsClick} aria-label="Настройки категорий"><Settings size={20} /></button>
             )}
           </div>
         </div>
         <div className="stats-container">
-          <div className="stats-text">
-            Изучено: <strong>{stats.known}</strong> / {stats.totalQuestions}
-          </div>
+          <div className="stats-text">Изучено: <strong>{stats.known}</strong> / {stats.totalQuestions}</div>
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>

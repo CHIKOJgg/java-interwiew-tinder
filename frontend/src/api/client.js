@@ -42,7 +42,7 @@ class ApiClient {
     return response;
   }
 
-  // Questions — lazy loading (3-5 cards)
+  // Questions — lazy loading
   async getQuestionsFeed(limit = 5, mode = 'swipe') {
     if (!this.userId) throw new Error('User not authenticated');
     return this.request(`/questions/feed?userId=${this.userId}&limit=${limit}&mode=${mode}&language=${this.language}`);
@@ -56,7 +56,7 @@ class ApiClient {
     });
   }
 
-  // Answer recording (all idempotent)
+  // Answer recording
   async recordSwipe(questionId, status) {
     return this.request('/questions/swipe', {
       method: 'POST',
@@ -106,8 +106,6 @@ class ApiClient {
     });
   }
 
-  async getUserResume() { return this.request(`/user/resume/${this.userId}`); }
-
   async getExplanation(questionId) {
     return this.request('/questions/explain', {
       method: 'POST',
@@ -127,9 +125,15 @@ class ApiClient {
     });
   }
 
-  // Subscription
+  // Subscription — fixed method names to match backend routes
   async getPlans() { return this.request('/subscription/plans'); }
   async getSubscriptionStatus() { return this.request(`/subscription/status/${this.userId}`); }
+  async subscribe(planId) {
+    return this.request('/subscription/subscribe', {
+      method: 'POST',
+      body: JSON.stringify({ userId: this.userId, planId }),
+    });
+  }
 }
 
 export default new ApiClient();

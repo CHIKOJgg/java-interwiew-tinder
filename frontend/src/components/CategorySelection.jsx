@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Check } from 'lucide-react';
 import api from '../api/client';
 import './CategorySelection.css';
@@ -16,22 +16,16 @@ const CategorySelection = ({ onComplete }) => {
   const loadData = async () => {
     try {
       setLoading(true);
-
-      // Загружаем доступные категории
       const categoriesData = await api.getCategories();
       setCategories(categoriesData.categories || []);
 
-      // Загружаем сохраненные предпочтения
       try {
         const prefsData = await api.getPreferences();
-        if (
-          prefsData.selectedCategories &&
-          prefsData.selectedCategories.length > 0
-        ) {
+        if (prefsData.selectedCategories && prefsData.selectedCategories.length > 0) {
           setSelectedCategories(prefsData.selectedCategories);
         }
-      } catch (error) {
-        console.log('No saved preferences, using defaults');
+      } catch {
+        // No saved preferences, use defaults
       }
     } catch (error) {
       console.error('Error loading categories:', error);
@@ -40,33 +34,23 @@ const CategorySelection = ({ onComplete }) => {
     }
   };
 
-  const toggleCategory = (categoryName) => {
-    console.log('🔘 Category clicked:', categoryName);
-    setSelectedCategories((prev) => {
-      if (prev.includes(categoryName)) {
-        console.log('   ➖ Removing category');
-        return prev.filter((c) => c !== categoryName);
-      } else {
-        console.log('   ➕ Adding category');
-        return [...prev, categoryName];
-      }
-    });
-  };
+  // useCallback so the reference is stable — avoids re-renders
+  const toggleCategory = useCallback((categoryName) => {
+    setSelectedCategories((prev) =>
+      prev.includes(categoryName)
+        ? prev.filter((c) => c !== categoryName)
+        : [...prev, categoryName]
+    );
+  }, []);
 
-  const selectAll = () => {
-    setSelectedCategories(categories.map((c) => c.name));
-  };
-
-  const deselectAll = () => {
-    setSelectedCategories([]);
-  };
+  const selectAll = () => setSelectedCategories(categories.map((c) => c.name));
+  const deselectAll = () => setSelectedCategories([]);
 
   const handleSave = async () => {
     if (selectedCategories.length === 0) {
       alert('Выберите хотя бы одну категорию');
       return;
     }
-
     try {
       setSaving(true);
       await api.updatePreferences(selectedCategories);
@@ -82,7 +66,7 @@ const CategorySelection = ({ onComplete }) => {
   if (loading) {
     return (
       <div className="category-selection loading">
-        <div className="spinner"></div>
+        <div className="spinner" />
         <p>Загрузка категорий...</p>
       </div>
     );
@@ -96,56 +80,20 @@ const CategorySelection = ({ onComplete }) => {
       </div>
 
       <div className="category-actions">
-        <button onClick={selectAll} className="action-btn">
-          Выбрать все
-        </button>
-        <button onClick={deselectAll} className="action-btn">
-          Снять все
-        </button>
+        <button onClick={selectAll} className="action-btn">Выбрать все</button>
+        <button onClick={deselectAll} className="action-btn">Снять все</button>
       </div>
 
       <div className="categories-grid">
         {categories.map((category) => {
           const isSelected = selectedCategories.includes(category.name);
-
           return (
-            <div
+            <CategoryCard
               key={category.name}
-              className={`category-card ${isSelected ? 'selected' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🔘 onClick fired for:', category.name);
-                toggleCategory(category.name);
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('📱 onTouchEnd fired for:', category.name);
-                toggleCategory(category.name);
-              }}
-              onMouseDown={(e) => {
-                console.log('🖱️ onMouseDown fired for:', category.name);
-              }}
-              style={{
-                touchAction: 'manipulation',
-                pointerEvents: 'auto',
-                cursor: 'pointer',
-                zIndex: 100,
-                position: 'relative',
-              }}
-            >
-              <div
-                className="category-checkbox"
-                style={{ pointerEvents: 'none' }}
-              >
-                {isSelected && <Check size={20} />}
-              </div>
-              <div className="category-info" style={{ pointerEvents: 'none' }}>
-                <div className="category-name">{category.name}</div>
-                <div className="category-count">{category.count} вопросов</div>
-              </div>
-            </div>
+              category={category}
+              isSelected={isSelected}
+              onToggle={toggleCategory}
+            />
           );
         })}
       </div>
@@ -165,5 +113,32 @@ const CategorySelection = ({ onComplete }) => {
     </div>
   );
 };
+
+// Separate component prevents re-render of the whole grid on every toggle.
+// Uses pointer events only (no onTouchEnd + onClick double-fire).
+const CategoryCard = React.memo(({ category, isSelected, onToggle }) => {
+  const handlePointerUp = (e) => {
+    // Only fire for primary button / touch
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    onToggle(category.name);
+  };
+
+  return (
+    <div
+      className={`category-card ${isSelected ? 'selected' : ''}`}
+      onPointerUp={handlePointerUp}
+      style={{ touchAction: 'manipulation', cursor: 'pointer' }}
+    >
+      <div className="category-checkbox" style={{ pointerEvents: 'none' }}>
+        {isSelected && <Check size={20} />}
+      </div>
+      <div className="category-info" style={{ pointerEvents: 'none' }}>
+        <div className="category-name">{category.name}</div>
+        <div className="category-count">{category.count} вопросов</div>
+      </div>
+    </div>
+  );
+});
 
 export default CategorySelection;

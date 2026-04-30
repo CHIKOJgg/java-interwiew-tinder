@@ -6,8 +6,8 @@ import { getLanguage } from './languageRegistry.js';
 dotenv.config();
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const FAST_MODEL = "openrouter/fast-model";
-const QUALITY_MODEL = "openrouter/quality-model";
+const FAST_MODEL = "openrouter/free";
+const QUALITY_MODEL = "openrouter/free";
 const PROMPT_VERSION = "v1";
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -23,9 +23,9 @@ const parseAIResponse = (content) => {
   } catch (e) {
     try {
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) ||
-                        content.match(/```\s*([\s\S]*?)\s*```/) ||
-                        content.match(/\{[\s\S]*\}/) ||
-                        content.match(/\[[\s\S]*\]/);
+        content.match(/```\s*([\s\S]*?)\s*```/) ||
+        content.match(/\{[\s\S]*\}/) ||
+        content.match(/\[[\s\S]*\]/);
       if (jsonMatch) return JSON.parse(jsonMatch[1] || jsonMatch[0]);
       throw new Error('No JSON found in response');
     } catch (innerError) {

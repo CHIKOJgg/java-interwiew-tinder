@@ -13,7 +13,7 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = process.env.OPENROUTER_MODEL || 'openrouter/free';
 
 const PROMPT_VERSION = 'v1';
-const AI_TIMEOUT_MS  = parseInt(process.env.AI_TIMEOUT_MS || '45000'); // free models ~20-40s
+const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS || '3000'); // free models ~20-40s
 
 // Warn on startup if key is missing
 if (!OPENROUTER_API_KEY) {
@@ -29,13 +29,13 @@ function generateClusterId(text, language = 'Java') {
 
 function parseAIResponse(content) {
   // 1. Try direct parse
-  try { return JSON.parse(content); } catch {}
+  try { return JSON.parse(content); } catch { }
   // 2. Strip markdown fences
   const fenced = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenced) { try { return JSON.parse(fenced[1]); } catch {} }
+  if (fenced) { try { return JSON.parse(fenced[1]); } catch { } }
   // 3. Extract first {...} or [...]
   const obj = content.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-  if (obj) { try { return JSON.parse(obj[1]); } catch {} }
+  if (obj) { try { return JSON.parse(obj[1]); } catch { } }
   throw new Error('No JSON found in AI response: ' + content.substring(0, 120));
 }
 
@@ -115,7 +115,7 @@ async function callOpenRouter(messages, maxTokens = 500, temperature = 0.7) {
 // ─── Core call with cache + dedup ──────────────────────────────────────
 async function callAI(messages, { questionText, mode, language = 'Java', isJson = false, maxTokens = 500, temperature = 0.7 }) {
   const clusterId = generateClusterId(questionText, language);
-  const dedupKey  = `${clusterId}:${mode}:${language}`;
+  const dedupKey = `${clusterId}:${mode}:${language}`;
 
   // 1. DB cache
   const cached = await readCache(clusterId, mode, language);
@@ -153,7 +153,7 @@ export function generateExplanation(questionText, shortAnswer, _userId, language
   return callAI(
     [
       { role: 'system', content: lang.systemPrompt },
-      { role: 'user',   content: lang.prompts.explanation(questionText, shortAnswer) },
+      { role: 'user', content: lang.prompts.explanation(questionText, shortAnswer) },
     ],
     { questionText, mode: 'explanation', language, isJson: false, maxTokens: 600, temperature: 0.7 }
   );
@@ -164,7 +164,7 @@ export function generateTestOptions(questionText, correctAnswer, _userId, langua
   return callAI(
     [
       { role: 'system', content: 'Ответь ТОЛЬКО JSON массивом из 3 строк. Никакого текста, никакого Markdown.' },
-      { role: 'user',   content: lang.prompts.test(questionText, correctAnswer) },
+      { role: 'user', content: lang.prompts.test(questionText, correctAnswer) },
     ],
     { questionText, mode: 'test', language, isJson: true, maxTokens: 200, temperature: 0.5 }
   );
@@ -175,7 +175,7 @@ export function generateBuggyCode(questionText, topic, _userId, language = 'Java
   return callAI(
     [
       { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
-      { role: 'user',   content: lang.prompts.bug(questionText, topic) },
+      { role: 'user', content: lang.prompts.bug(questionText, topic) },
     ],
     { questionText, mode: 'bug', language, isJson: true, maxTokens: 400, temperature: 0.6 }
   );
@@ -186,7 +186,7 @@ export function generateBlitzStatement(questionText, topic, _userId, language = 
   return callAI(
     [
       { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
-      { role: 'user',   content: lang.prompts.blitz(questionText, topic) },
+      { role: 'user', content: lang.prompts.blitz(questionText, topic) },
     ],
     { questionText, mode: 'blitz', language, isJson: true, maxTokens: 150, temperature: 0.7 }
   );
@@ -197,9 +197,9 @@ export function evaluateInterviewAnswer(question, answer, _userId, language = 'J
   return callAI(
     [
       { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
-      { role: 'user',   content: lang.prompts.interview(question, answer) },
+      { role: 'user', content: lang.prompts.interview(question, answer) },
     ],
-    { questionText: `${question}|${answer}`, mode: 'interview', language, isJson: true, maxTokens: 300, temperature: 0.5 }
+    { questionText: `${question}|${answer}`, mode: 'interview', language, isJson: true, maxTokens: 600, temperature: 0.5 }
   );
 }
 
@@ -208,9 +208,9 @@ export function generateCodeCompletion(questionText, topic, _userId, language = 
   return callAI(
     [
       { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
-      { role: 'user',   content: lang.prompts.code(questionText, topic) },
+      { role: 'user', content: lang.prompts.code(questionText, topic) },
     ],
-    { questionText, mode: 'code', language, isJson: true, maxTokens: 400, temperature: 0.6 }
+    { questionText, mode: 'code', language, isJson: true, maxTokens: 600, temperature: 0.3 }
   );
 }
 
@@ -219,7 +219,7 @@ export function analyzeResume(resumeText, _userId, language = 'Java') {
   return callAI(
     [
       { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
-      { role: 'user',   content: lang.prompts.resume(resumeText) },
+      { role: 'user', content: lang.prompts.resume(resumeText) },
     ],
     { questionText: resumeText.substring(0, 300), mode: 'resume', language, isJson: true, maxTokens: 600, temperature: 0.3 }
   );

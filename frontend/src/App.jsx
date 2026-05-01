@@ -18,34 +18,41 @@ import { CheckCircle } from 'lucide-react';
 import './App.css';
 
 
-// ✅ FIXED Telegram init (mobile-safe)
 function getTelegramInitData() {
   return new Promise((resolve, reject) => {
-    const tg = window.Telegram?.WebApp;
-
-    // if (!tg) {
-    //   // dev fallback
-    //   resolve('user=%7B%22id%22%3A123456789%2C%22first_name%22%3A%22Dev%22%2C%22username%22%3A%22dev_user%22%7D');
-    //   return;
-    // }
-
-    tg.ready();
-    tg.expand();
-
     let attempts = 0;
     const maxAttempts = 50; // ~5 seconds
+    let isReadyCalled = false;
 
     const interval = setInterval(() => {
-      if (tg.initData && tg.initData.length > 0) {
-        clearInterval(interval);
-        resolve(tg.initData);
+      // 1. Check for the object inside the interval to handle async loading
+      const tg = window.Telegram?.WebApp;
+
+      if (tg) {
+        // 2. Only call ready/expand if tg exists, and only do it once
+        if (!isReadyCalled) {
+          try {
+            tg.ready();
+            tg.expand();
+            isReadyCalled = true;
+          } catch (err) {
+            console.warn('Error calling Telegram ready/expand:', err);
+          }
+        }
+
+        // 3. Check for initData
+        if (tg.initData && tg.initData.length > 0) {
+          clearInterval(interval);
+          resolve(tg.initData);
+          return;
+        }
       }
 
       attempts++;
 
       if (attempts >= maxAttempts) {
         clearInterval(interval);
-        reject(new Error('initData timeout'));
+        reject(new Error('Timeout: Could not load Telegram WebApp API or initData.'));
       }
     }, 100);
   });

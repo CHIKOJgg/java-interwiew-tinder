@@ -23,11 +23,11 @@ function getTelegramInitData() {
   return new Promise((resolve, reject) => {
     const tg = window.Telegram?.WebApp;
 
-    if (!tg) {
-      // dev fallback
-      resolve('user=%7B%22id%22%3A123456789%2C%22first_name%22%3A%22Dev%22%2C%22username%22%3A%22dev_user%22%7D');
-      return;
-    }
+    // if (!tg) {
+    //   // dev fallback
+    //   resolve('user=%7B%22id%22%3A123456789%2C%22first_name%22%3A%22Dev%22%2C%22username%22%3A%22dev_user%22%7D');
+    //   return;
+    // }
 
     tg.ready();
     tg.expand();

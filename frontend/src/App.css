@@ -1,6 +1,14 @@
+/* ─── FIX 3 (continued): .app needs explicit height, not just height: 100% ───
+   height: 100% only works if the parent (#root) has a defined height.
+   With min-height on #root (not height), children using height: 100% get 0.
+   Solution: use min-height: 100% AND flex: 1 so .app expands to fill #root.
+────────────────────────────────────────────────────────────────────────────── */
 .app {
   width: 100%;
-  height: 100%;
+  flex: 1;
+  /* grow to fill #root's flex container */
+  min-height: 100%;
+  /* ensure it's at least as tall as #root */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -8,7 +16,9 @@
 
 .app-loading {
   width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -78,7 +88,6 @@
   margin: 0;
 }
 
-/* Bug 1 fix: restart button was completely unstyled */
 .restart-button {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;

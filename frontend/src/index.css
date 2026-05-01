@@ -4,6 +4,20 @@
   box-sizing: border-box;
 }
 
+/* ─── FIX 3: Mobile height fix ───────────────────────────────────────────────
+   On mobile browsers (including Telegram WebView), 100vh can be unreliable
+   and height: 100% requires every ancestor to have an explicit height.
+   Using min-height: 100dvh (dynamic viewport height) on html/body/#root
+   ensures the app fills the screen correctly on iOS and Android.
+   The dvh unit falls back to vh on older browsers — both are better than
+   relying on a height: 100% chain that can collapse to 0.
+────────────────────────────────────────────────────────────────────────────── */
+html {
+  height: 100%;
+  /* dvh is supported in all modern mobile browsers; falls back to 100% */
+  min-height: -webkit-fill-available;
+}
+
 body {
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
@@ -12,16 +26,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: var(--tg-theme-bg-color, #f5f5f5);
   color: var(--tg-theme-text-color, #000);
-  /* Убираем overflow: hidden и position: fixed для скроллинга */
   width: 100%;
+  /* Use min-height instead of height so content can grow beyond viewport */
   min-height: 100vh;
+  min-height: 100dvh;
+  /* dynamic viewport height — handles mobile browser chrome */
+  min-height: -webkit-fill-available;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
 #root {
   width: 100%;
+  /* Match body: explicit height chain so children can use height: 100% */
   min-height: 100vh;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
   display: flex;
   flex-direction: column;
 }
@@ -61,7 +81,6 @@ textarea {
   outline: none;
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -79,12 +98,12 @@ textarea {
   background: rgba(0, 0, 0, 0.3);
 }
 
-/* Animation keyframes */
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -95,6 +114,7 @@ textarea {
   from {
     transform: translateY(100%);
   }
+
   to {
     transform: translateY(0);
   }
@@ -107,10 +127,12 @@ textarea {
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }

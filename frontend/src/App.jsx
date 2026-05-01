@@ -19,42 +19,35 @@ import './App.css';
 
 
 function getTelegramInitData() {
-  return new Promise((resolve, reject) => {
-    let attempts = 0;
-    const maxAttempts = 50; // ~5 seconds
-    let isReadyCalled = false;
+  return new Promise((resolve) => {
+    const tg = window.Telegram?.WebApp;
 
-    const interval = setInterval(() => {
-      // 1. Check for the object inside the interval to handle async loading
-      const tg = window.Telegram?.WebApp;
+    // ✅ 1. If Telegram not available → fallback (critical for mobile)
+    if (!tg) {
+      console.warn('Telegram WebApp not found → using fallback');
+      resolve('debug_user');
+      return;
+    }
 
-      if (tg) {
-        // 2. Only call ready/expand if tg exists, and only do it once
-        if (!isReadyCalled) {
-          try {
-            tg.ready();
-            tg.expand();
-            isReadyCalled = true;
-          } catch (err) {
-            console.warn('Error calling Telegram ready/expand:', err);
-          }
-        }
+    try {
+      tg.ready();
+      tg.expand();
+    } catch (e) {
+      console.warn('Telegram init error:', e);
+    }
 
-        // 3. Check for initData
-        if (tg.initData && tg.initData.length > 0) {
-          clearInterval(interval);
-          resolve(tg.initData);
-          return;
-        }
-      }
+    // ✅ 2. If initData exists → use immediately
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      console.log('Using initDataUnsafe');
+      resolve(tg.initData);
+      return;
+    }
 
-      attempts++;
-
-      if (attempts >= maxAttempts) {
-        clearInterval(interval);
-        reject(new Error('Timeout: Could not load Telegram WebApp API or initData.'));
-      }
-    }, 100);
+    // ✅ 3. Fallback timeout (DO NOT BLOCK UI)
+    setTimeout(() => {
+      console.warn('initData timeout → fallback mode');
+      resolve('debug_user');
+    }, 1500);
   });
 }
 

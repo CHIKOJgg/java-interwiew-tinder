@@ -17,102 +17,88 @@ import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
 import './App.css';
 
-// ─── Telegram init data helper ────────────────────────────────────────
+// ─── Screen state machine ─────────────────────────────────────────────
+// 'loading'       → auth in progress
+// 'category'      → pick question categories (also after language switch)
+// 'main'          → card feed
+// 'resume'        → resume analyzer overlay
+// 'subscriptions' → subscription management overlay
+// 'error'         → auth failed
+
+// ─── Telegram initData helper ─────────────────────────────────────────
 function getTelegramInitData() {
   return new Promise((resolve) => {
     const tg = window.Telegram?.WebApp;
     if (!tg) {
-      // Dev fallback
+      // Dev fallback — works with BOT_TOKEN='' in .env (mock validation)
       resolve('user=%7B%22id%22%3A123456789%2C%22first_name%22%3A%22Dev%22%2C%22username%22%3A%22dev_user%22%7D');
       return;
     }
     tg.ready();
     tg.expand();
-    if (tg.initData && tg.initData.length > 0) {
-      resolve(tg.initData);
-      return;
-    }
+    if (tg.initData?.length > 0) { resolve(tg.initData); return; }
     let attempts = 0;
-    const interval = setInterval(() => {
+    const iv = setInterval(() => {
       attempts++;
-      if (tg.initData && tg.initData.length > 0) {
-        clearInterval(interval);
-        resolve(tg.initData);
-      } else if (attempts >= 10) {
-        clearInterval(interval);
-        resolve(tg.initData || '');
-      }
+      if (tg.initData?.length > 0) { clearInterval(iv); resolve(tg.initData); }
+      else if (attempts >= 10)     { clearInterval(iv); resolve(tg.initData || ''); }
     }, 200);
   });
 }
 
-// ─── Screen state machine ─────────────────────────────────────────────
-// 'loading'   → auth in progress (skeleton shown)
-// 'category'  → category selection
-// 'main'      → card feed (questions guaranteed to be loaded before entering)
-// 'error'     → auth failed
-// 'resume'    → resume analyzer overlay
-// 'subscriptions' → subscription plans overlay
-
 function App() {
   const {
-    questions,
-    currentIndex,
-    showExplanation,
-    currentExplanation,
-    isLoadingExplanation,
+    questions, currentIndex,
+    showExplanation, currentExplanation, isLoadingExplanation,
     isLoadingQuestions,
-    login,
-    swipeCard,
-    closeExplanation,
-    hasMoreQuestions,
-    loadQuestions,
+    login, swipeCard, closeExplanation, hasMoreQuestions, loadQuestions,
     learningMode,
+    switchLanguage,
   } = useStore();
 
-  const [screen, setScreen] = useState('loading');
+  const [screen, setScreen]     = useState('loading');
   const [authError, setAuthError] = useState(null);
   const cardRefs = useRef([]);
 
-  // Auth on mount — only once
+  // ─── Auth on mount ────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     getTelegramInitData().then((initData) => {
       if (cancelled) return;
-      // login() awaits loadQuestions() internally, so by the time this resolves
-      // questions are in the store. No render gap can occur.
       login(initData)
-        .then(() => {
-          if (!cancelled) setScreen('category');
-        })
+        .then(() => { if (!cancelled) setScreen('category'); })
         .catch((err) => {
           if (!cancelled) {
-            console.error('Login failed:', err);
             setAuthError(err?.message || 'Auth failed');
             setScreen('error');
           }
         });
     });
     return () => { cancelled = true; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line
 
-  // After category selection: reload questions with the newly selected categories,
-  // then transition to main. isLoadingQuestions gates the card container.
-  const handleCategorySelectionComplete = () => {
-    loadQuestions(); // non-blocking — isLoadingQuestions will show skeleton until done
+  // ─── Category selection complete ──────────────────────────────────
+  const handleCategoryDone = () => {
+    loadQuestions(); // reload for newly selected cats — isLoadingQuestions shows skeleton
     setScreen('main');
   };
 
+  // ─── Language switching ───────────────────────────────────────────
+  // 1. Store clears questions + calls backend to reset category filter
+  // 2. We send user back to category selection so they pick cats for the new lang
+  const handleLanguageChange = async (newLang) => {
+    await switchLanguage(newLang); // updates apiClient language + saves to backend
+    setScreen('category');         // show category picker for the new language
+  };
+
+  // ─── Swipe handlers ───────────────────────────────────────────────
   const handleSwipe = (direction) => {
-    const currentQuestion = questions[currentIndex];
-    if (currentQuestion) swipeCard(currentQuestion.id, direction);
+    const q = questions[currentIndex];
+    if (q) swipeCard(q.id, direction);
   };
 
   const handleButtonSwipe = (direction) => {
-    // cardRefs now work because QuestionCard uses forwardRef + useImperativeHandle
-    if (cardRefs.current[currentIndex]?.swipe) {
-      cardRefs.current[currentIndex].swipe(direction);
-    }
+    cardRefs.current[currentIndex]?.swipe?.(direction);
   };
 
   // ─── Screens ─────────────────────────────────────────────────────
@@ -131,14 +117,14 @@ function App() {
   if (screen === 'error') {
     return (
       <div className="app-loading">
-        <p>Ошибка авторизации. Пожалуйста, откройте приложение через Telegram.</p>
+        <p>Ошибка авторизации. Откройте приложение через Telegram.</p>
         {authError && <p style={{ fontSize: 11, opacity: 0.5, marginTop: 8 }}>{authError}</p>}
       </div>
     );
   }
 
   if (screen === 'category') {
-    return <CategorySelection onComplete={handleCategorySelectionComplete} />;
+    return <CategorySelection onComplete={handleCategoryDone} />;
   }
 
   if (screen === 'resume') {
@@ -149,72 +135,71 @@ function App() {
     return <SubscriptionPlans onBack={() => setScreen('main')} />;
   }
 
-  // ─── Main app ────────────────────────────────────────────────────
+  // ─── Main ─────────────────────────────────────────────────────────
+  const renderMode = () => {
+    if (isLoadingQuestions)    return <SkeletonCard />;
+    if (!hasMoreQuestions())   return (
+      <div className="completion-screen">
+        <CheckCircle size={64} color="#51cf66" />
+        <h2>Отличная работа!</h2>
+        <p>Вы просмотрели все доступные вопросы</p>
+        <button className="restart-button" onClick={() => setScreen('category')}>
+          Выбрать другие темы
+        </button>
+      </div>
+    );
+
+    switch (learningMode) {
+      case 'swipe': return (
+        <div className="card-stack">
+          {questions.slice(currentIndex, currentIndex + 3).map((question, index) => (
+            <div
+              key={question.id}
+              className="card-wrapper"
+              style={{
+                zIndex: 3 - index,
+                transform: `scale(${1 - index * 0.05}) translateY(${index * -10}px)`,
+                opacity: 1 - index * 0.3,
+              }}
+            >
+              <QuestionCard
+                ref={el => (cardRefs.current[currentIndex + index] = el)}
+                question={question}
+                onSwipe={index === 0 ? handleSwipe : null}
+                canSwipe={index === 0}
+              />
+            </div>
+          ))}
+        </div>
+      );
+      case 'test':            return <TestMode />;
+      case 'bug-hunting':     return <BugHuntingMode />;
+      case 'blitz':           return <BlitzMode />;
+      case 'mock-interview':  return <MockInterviewMode />;
+      case 'concept-linker':  return <ConceptLinker />;
+      case 'code-completion': return <CodeCompletionMode />;
+      default:                return <TestMode />;
+    }
+  };
+
   return (
     <div className="app">
       <Header
         onSettingsClick={() => setScreen('category')}
         onResumeClick={() => setScreen('resume')}
         onSubscriptionClick={() => setScreen('subscriptions')}
+        onLanguageChange={handleLanguageChange}
       />
 
       <div className="card-container">
-        {isLoadingQuestions ? (
-          <SkeletonCard />
-        ) : hasMoreQuestions() ? (
-          learningMode === 'swipe' ? (
-            <div className="card-stack">
-              {questions
-                .slice(currentIndex, currentIndex + 3)
-                .map((question, index) => (
-                  <div
-                    key={question.id}
-                    className="card-wrapper"
-                    style={{
-                      zIndex: 3 - index,
-                      transform: `scale(${1 - index * 0.05}) translateY(${index * -10}px)`,
-                      opacity: 1 - index * 0.3,
-                    }}
-                  >
-                    <QuestionCard
-                      ref={(el) => (cardRefs.current[currentIndex + index] = el)}
-                      question={question}
-                      onSwipe={index === 0 ? handleSwipe : null}
-                      canSwipe={index === 0}
-                    />
-                  </div>
-                ))}
-            </div>
-          ) : learningMode === 'test' ? (
-            <TestMode />
-          ) : learningMode === 'bug-hunting' ? (
-            <BugHuntingMode />
-          ) : learningMode === 'blitz' ? (
-            <BlitzMode />
-          ) : learningMode === 'mock-interview' ? (
-            <MockInterviewMode />
-          ) : learningMode === 'concept-linker' ? (
-            <ConceptLinker />
-          ) : (
-            <CodeCompletionMode />
-          )
-        ) : (
-          <div className="completion-screen">
-            <CheckCircle size={64} color="#51cf66" />
-            <h2>Отличная работа!</h2>
-            <p>Вы просмотрели все доступные вопросы</p>
-            <button className="restart-button" onClick={() => setScreen('category')}>
-              Выбрать другие темы
-            </button>
-          </div>
-        )}
+        {renderMode()}
       </div>
 
       {learningMode === 'swipe' && (
         <SwipeButtons
           onSwipeLeft={() => handleButtonSwipe('left')}
           onSwipeRight={() => handleButtonSwipe('right')}
-          disabled={!hasMoreQuestions()}
+          disabled={!hasMoreQuestions() || isLoadingQuestions}
         />
       )}
 

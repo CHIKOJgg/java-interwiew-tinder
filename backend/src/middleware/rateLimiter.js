@@ -1,32 +1,55 @@
 import pool from '../config/database.js';
 
-/**
- * In-memory rate limit store (backed by DB for persistence).
- * Enforces per-user limits based on subscription plan.
- */
 const limitsCache = new Map();
 
+// ─── Admin bypass ─────────────────────────────────────────────────────
+// Set ADMIN_TELEGRAM_IDS=123456789,987654321 in .env to grant unlimited access
+const ADMIN_IDS = new Set(
+  (process.env.ADMIN_TELEGRAM_IDS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+);
+
+function isAdmin(userId) {
+  return ADMIN_IDS.has(String(userId));
+}
+
+// ─── Default free plan limits ─────────────────────────────────────────
+// These are the fallback values used when the subscription_plans table
+// is unavailable or the user has no plan row.
+const FREE_DEFAULTS = {
+  requests_per_day: 200,
+  ai_generations_per_month: 500,
+  resume_analysis_limit: 3,
+  interview_eval_limit: 20,
+  available_languages: ['Java', 'Python', 'TypeScript'],  // all languages unlocked on free
+  available_modes: ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion'],
+  model_priority: 'standard',
+};
+
 async function getUserLimits(userId) {
+  if (isAdmin(userId)) return null; // admins skip all checks
+
   if (limitsCache.has(userId)) {
     const cached = limitsCache.get(userId);
-    if (Date.now() - cached._fetchedAt < 60000) return cached; // 1 min cache
+    if (Date.now() - cached._fetchedAt < 60000) return cached;
   }
 
   try {
-    // Get user plan limits
     const { rows } = await pool.query(`
-      SELECT 
-        sp.requests_per_day,
-        sp.ai_generations_per_month,
-        sp.resume_analysis_limit,
-        sp.interview_eval_limit,
-        sp.available_languages,
-        sp.available_modes,
-        sp.model_priority,
-        COALESCE(rl.requests_today, 0) as requests_today,
-        COALESCE(rl.ai_generations_this_month, 0) as ai_generations_this_month,
-        COALESCE(rl.resume_analyses_this_month, 0) as resume_analyses_this_month,
-        COALESCE(rl.interview_evals_this_month, 0) as interview_evals_this_month,
+      SELECT
+        COALESCE(sp.requests_per_day,         ${FREE_DEFAULTS.requests_per_day})      as requests_per_day,
+        COALESCE(sp.ai_generations_per_month, ${FREE_DEFAULTS.ai_generations_per_month}) as ai_generations_per_month,
+        COALESCE(sp.resume_analysis_limit,    ${FREE_DEFAULTS.resume_analysis_limit})  as resume_analysis_limit,
+        COALESCE(sp.interview_eval_limit,     ${FREE_DEFAULTS.interview_eval_limit})   as interview_eval_limit,
+        COALESCE(sp.available_languages,      ARRAY['Java','Python','TypeScript'])      as available_languages,
+        COALESCE(sp.available_modes,          ARRAY['swipe','test','bug-hunting','blitz','mock-interview','concept-linker','code-completion']) as available_modes,
+        COALESCE(sp.model_priority,           'standard')                              as model_priority,
+        COALESCE(rl.requests_today,           0) as requests_today,
+        COALESCE(rl.ai_generations_this_month,0) as ai_generations_this_month,
+        COALESCE(rl.resume_analyses_this_month,0) as resume_analyses_this_month,
+        COALESCE(rl.interview_evals_this_month,0) as interview_evals_this_month,
         rl.daily_reset_at,
         rl.monthly_reset_at
       FROM users u
@@ -35,61 +58,64 @@ async function getUserLimits(userId) {
       WHERE u.telegram_id = $1
     `, [userId]);
 
-    if (rows.length === 0) return null;
+    if (rows.length === 0) return { ...FREE_DEFAULTS, _fetchedAt: Date.now() };
 
     const limits = { ...rows[0], _fetchedAt: Date.now() };
+    // Ensure arrays are real arrays (Postgres may return them as strings)
+    if (typeof limits.available_languages === 'string') {
+      limits.available_languages = limits.available_languages.replace(/[{}"]/g, '').split(',');
+    }
+    if (typeof limits.available_modes === 'string') {
+      limits.available_modes = limits.available_modes.replace(/[{}"]/g, '').split(',');
+    }
+
     limitsCache.set(userId, limits);
     return limits;
   } catch (err) {
     console.error('Error fetching user limits:', err.message);
-    return null;
+    // On DB error: use generous defaults so users aren't blocked
+    return { ...FREE_DEFAULTS, _fetchedAt: Date.now() };
   }
 }
 
 async function incrementCounter(userId, field) {
   try {
     await pool.query(`
-      INSERT INTO user_rate_limits (user_id, ${field}, last_request_at) 
+      INSERT INTO user_rate_limits (user_id, ${field}, last_request_at)
       VALUES ($1, 1, CURRENT_TIMESTAMP)
-      ON CONFLICT (user_id) DO UPDATE 
-      SET ${field} = user_rate_limits.${field} + 1, 
+      ON CONFLICT (user_id) DO UPDATE
+      SET ${field} = user_rate_limits.${field} + 1,
           last_request_at = CURRENT_TIMESTAMP
     `, [userId]);
-    limitsCache.delete(userId); // invalidate cache
+    limitsCache.delete(userId);
   } catch (err) {
     console.error('Error incrementing counter:', err.message);
   }
 }
 
-/**
- * Rate limiting middleware factory
- * @param {string} limitType - 'requests' | 'ai_generation' | 'resume' | 'interview'
- */
 export function rateLimit(limitType = 'requests') {
   return async (req, res, next) => {
     const userId = req.body?.userId || req.query?.userId;
-    if (!userId) return next(); // no user, no limits
+    if (!userId || isAdmin(userId)) return next();
 
     const limits = await getUserLimits(userId);
-    if (!limits) return next(); // can't check, let through
+    if (!limits) return next(); // admin or error — let through
 
-    // Reset counters if day/month has passed
+    // Reset stale counters
     const now = new Date();
     if (limits.daily_reset_at && new Date(limits.daily_reset_at).getDate() !== now.getDate()) {
-      await pool.query(`
-        UPDATE user_rate_limits 
-        SET requests_today = 0, daily_reset_at = CURRENT_TIMESTAMP 
-        WHERE user_id = $1
-      `, [userId]).catch(() => {});
+      await pool.query(
+        'UPDATE user_rate_limits SET requests_today = 0, daily_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1',
+        [userId]
+      ).catch(() => {});
       limitsCache.delete(userId);
     }
     if (limits.monthly_reset_at && new Date(limits.monthly_reset_at).getMonth() !== now.getMonth()) {
-      await pool.query(`
-        UPDATE user_rate_limits 
-        SET ai_generations_this_month = 0, resume_analyses_this_month = 0, 
-            interview_evals_this_month = 0, monthly_reset_at = CURRENT_TIMESTAMP 
-        WHERE user_id = $1
-      `, [userId]).catch(() => {});
+      await pool.query(
+        `UPDATE user_rate_limits SET ai_generations_this_month = 0, resume_analyses_this_month = 0,
+         interview_evals_this_month = 0, monthly_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
+        [userId]
+      ).catch(() => {});
       limitsCache.delete(userId);
     }
 
@@ -98,64 +124,68 @@ export function rateLimit(limitType = 'requests') {
 
     switch (limitType) {
       case 'requests':
-        exceeded = (limits.requests_today || 0) >= (limits.requests_per_day || 50);
+        exceeded = (limits.requests_today || 0) >= (limits.requests_per_day || FREE_DEFAULTS.requests_per_day);
         counterField = 'requests_today';
         break;
       case 'ai_generation':
-        exceeded = (limits.ai_generations_this_month || 0) >= (limits.ai_generations_per_month || 100);
+        exceeded = (limits.ai_generations_this_month || 0) >= (limits.ai_generations_per_month || FREE_DEFAULTS.ai_generations_per_month);
         counterField = 'ai_generations_this_month';
         break;
       case 'resume':
-        exceeded = (limits.resume_analyses_this_month || 0) >= (limits.resume_analysis_limit || 0);
+        exceeded = (limits.resume_analyses_this_month || 0) >= (limits.resume_analysis_limit || FREE_DEFAULTS.resume_analysis_limit);
         counterField = 'resume_analyses_this_month';
         break;
       case 'interview':
-        exceeded = (limits.interview_evals_this_month || 0) >= (limits.interview_eval_limit || 0);
+        exceeded = (limits.interview_evals_this_month || 0) >= (limits.interview_eval_limit || FREE_DEFAULTS.interview_eval_limit);
         counterField = 'interview_evals_this_month';
         break;
     }
 
     if (exceeded) {
-      return res.status(429).json({ 
-        error: 'Rate limit exceeded', 
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
         type: limitType,
-        message: 'Upgrade your plan for higher limits'
+        message: 'Upgrade your plan for higher limits',
       });
     }
 
-    await incrementCounter(userId, counterField);
+    if (counterField) await incrementCounter(userId, counterField);
     req.userLimits = limits;
     next();
   };
 }
 
-/**
- * Entitlement check middleware factory
- * @param {string} feature - 'language' | 'mode' | 'resume' | 'interview' | 'quality_model'
- * @param {string} value - specific language or mode to check
- */
 export function requireEntitlement(feature, value) {
   return async (req, res, next) => {
     const userId = req.body?.userId || req.query?.userId;
-    if (!userId) return next();
+    if (!userId || isAdmin(userId)) return next();
 
     const limits = await getUserLimits(userId);
     if (!limits) return next();
 
     let allowed = true;
+    const requestedLanguage = value || req.body?.language || req.query?.language;
+    const requestedMode = value || req.body?.mode || req.query?.mode;
 
     switch (feature) {
-      case 'language':
-        allowed = (limits.available_languages || ['Java']).includes(value || req.body?.language || req.query?.language);
+      case 'language': {
+        // Always allow if available_languages is missing/empty (DB schema not set up yet)
+        const langs = limits.available_languages;
+        if (!langs || langs.length === 0) { allowed = true; break; }
+        allowed = langs.includes(requestedLanguage) || langs.includes('*');
         break;
-      case 'mode':
-        allowed = (limits.available_modes || ['swipe', 'test']).includes(value || req.body?.mode || req.query?.mode);
+      }
+      case 'mode': {
+        const modes = limits.available_modes;
+        if (!modes || modes.length === 0) { allowed = true; break; }
+        allowed = modes.includes(requestedMode) || modes.includes('*');
         break;
+      }
       case 'resume':
-        allowed = (limits.resume_analysis_limit || 0) > 0;
+        allowed = (limits.resume_analysis_limit || FREE_DEFAULTS.resume_analysis_limit) > 0;
         break;
       case 'interview':
-        allowed = (limits.interview_eval_limit || 0) > 0;
+        allowed = (limits.interview_eval_limit || FREE_DEFAULTS.interview_eval_limit) > 0;
         break;
       case 'quality_model':
         allowed = limits.model_priority === 'quality';
@@ -163,10 +193,10 @@ export function requireEntitlement(feature, value) {
     }
 
     if (!allowed) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Feature not available',
         feature,
-        message: 'Upgrade your plan to access this feature'
+        message: 'Upgrade your plan to access this feature',
       });
     }
 
@@ -174,9 +204,6 @@ export function requireEntitlement(feature, value) {
   };
 }
 
-/**
- * Track analytics event
- */
 export async function trackEvent(eventData) {
   try {
     await pool.query(`
@@ -191,10 +218,7 @@ export async function trackEvent(eventData) {
       eventData.cacheHit || false,
       eventData.tokenUsage || null,
       eventData.fallbackUsed || false,
-      eventData.metadata ? JSON.stringify(eventData.metadata) : null
+      eventData.metadata ? JSON.stringify(eventData.metadata) : null,
     ]);
-  } catch (err) {
-    // Never fail the request because of analytics
-    console.error('Analytics tracking error:', err.message);
-  }
+  } catch { /* analytics never breaks the request */ }
 }

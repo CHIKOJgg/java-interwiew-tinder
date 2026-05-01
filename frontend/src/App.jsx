@@ -17,49 +17,52 @@ import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
 import './App.css';
 
-// ✅ BULLETPROOF Telegram init (Mobile safe + Dev fallback)
+// ─── FIX 1: Mobile-safe Telegram init ────────────────────────────────────────
+// Polls for window.Telegram?.WebApp to appear (it loads asynchronously in
+// Telegram's mobile WebView), then waits for initData to be populated.
 function getTelegramInitData() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let attempts = 0;
-    const maxAttempts = 50; // ~5 seconds
-    let isReadyCalled = false;
+    const maxAttempts = 80; // 100ms × 80 = 8 seconds max
 
     const interval = setInterval(() => {
-      const tg = window.Telegram?.WebApp;
-
-      if (tg) {
-        // Clear the native Telegram mobile spinner
-        if (!isReadyCalled) {
-          try {
-            tg.ready();
-            tg.expand();
-            isReadyCalled = true;
-          } catch (err) {
-            console.warn('Error calling Telegram ready/expand:', err);
-          }
-        }
-
-        // If we have actual Telegram data, resolve with it
-        if (tg.initData && tg.initData.length > 0) {
-          clearInterval(interval);
-          resolve(tg.initData);
-          return;
-        }
-      }
-
       attempts++;
 
-      // If we hit the 5-second timeout, DON'T crash. Use the dev fallback.
+      const tg = window.Telegram?.WebApp;
+
+      // WebApp bridge not injected yet — keep waiting
+      if (!tg) {
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          reject(new Error('Telegram WebApp не загрузился. Откройте через Telegram.'));
+        }
+        return;
+      }
+
+      // Call ready()/expand() exactly once, the first time WebApp appears.
+      // Guard with a flag so we don't spam it on every tick.
+      if (!tg._readyCalled) {
+        tg._readyCalled = true;
+        try { tg.ready(); } catch (e) { console.warn('tg.ready() failed:', e); }
+        try { tg.expand(); } catch (e) { console.warn('tg.expand() failed:', e); }
+      }
+
+      // initData is populated — done
+      if (tg.initData && tg.initData.length > 0) {
+        clearInterval(interval);
+        resolve(tg.initData);
+        return;
+      }
+
+      // Timeout after 8 seconds with initData still empty
       if (attempts >= maxAttempts) {
         clearInterval(interval);
-        console.warn('Timeout waiting for Telegram initData. Using Dev Fallback.');
-
-        // Your original dev fallback string
-        resolve('user=%7B%22id%22%3A123456789%2C%22first_name%22%3A%22Dev%22%2C%22username%22%3A%22dev_user%22%7D');
+        reject(new Error('initData пустой — приложение должно открываться через Telegram'));
       }
     }, 100);
   });
 }
+
 function App() {
   const {
     questions, currentIndex,
@@ -70,41 +73,30 @@ function App() {
     switchLanguage,
   } = useStore();
 
-  // ✅ NEW: separate init state
   const [initState, setInitState] = useState('waiting_telegram');
   const [screen, setScreen] = useState('category');
   const [authError, setAuthError] = useState(null);
 
   const cardRefs = useRef([]);
 
-  // ✅ NON-BLOCKING STARTUP
   useEffect(() => {
     let cancelled = false;
 
     const startApp = async () => {
       try {
         setInitState('waiting_telegram');
-
         const initData = await getTelegramInitData();
-
         if (!initData) throw new Error('No initData');
 
         setInitState('auth');
-
         await login(initData);
 
         if (cancelled) return;
-
-        // ✅ DO NOT BLOCK UI
         setInitState('ready');
         setScreen('category');
-
-        // load in background
         loadQuestions().catch(console.error);
-
       } catch (err) {
         if (cancelled) return;
-
         console.error('Startup failed:', err);
         setAuthError(err.message);
         setInitState('error');
@@ -112,11 +104,8 @@ function App() {
     };
 
     startApp();
-
     return () => { cancelled = true; };
   }, []);
-
-  // ─────────────────────────────────────────────
 
   const handleCategoryDone = () => {
     loadQuestions();
@@ -137,22 +126,23 @@ function App() {
     cardRefs.current[currentIndex]?.swipe?.(direction);
   };
 
-  // ✅ NEW: INIT STATE UI (instead of blocking spinner forever)
-
+  // ─── FIX 2: Use app-loading (flex-centered) instead of app for init screens ─
+  // .app uses height: 100% which collapses on mobile if root has no height.
+  // .app-loading uses flex centering and works regardless of parent height.
   if (initState === 'waiting_telegram') {
     return (
-      <div className="app">
+      <div className="app-loading">
         <SkeletonCard />
-        <p style={{ textAlign: 'center', opacity: 0.5 }}>Connecting to Telegram...</p>
+        <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>Connecting to Telegram...</p>
       </div>
     );
   }
 
   if (initState === 'auth') {
     return (
-      <div className="app">
+      <div className="app-loading">
         <SkeletonCard />
-        <p style={{ textAlign: 'center', opacity: 0.5 }}>Signing you in...</p>
+        <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>Signing you in...</p>
       </div>
     );
   }
@@ -160,16 +150,17 @@ function App() {
   if (initState === 'error') {
     return (
       <div className="app-loading">
-        <p>Ошибка запуска приложения</p>
-        <p style={{ fontSize: 11, opacity: 0.6 }}>{authError}</p>
-        <button onClick={() => window.location.reload()}>
+        <p style={{ fontSize: 16, fontWeight: 600 }}>Ошибка запуска приложения</p>
+        <p style={{ fontSize: 11, opacity: 0.6, marginTop: 8, textAlign: 'center', padding: '0 24px' }}>{authError}</p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{ marginTop: 20, padding: '12px 24px', borderRadius: 12, background: '#5c7cfa', color: '#fff', border: 'none', fontSize: 15, cursor: 'pointer' }}
+        >
           Перезапустить
         </button>
       </div>
     );
   }
-
-  // ─────────────────────────────────────────────
 
   if (screen === 'category') {
     return <CategorySelection onComplete={handleCategoryDone} />;
@@ -182,8 +173,6 @@ function App() {
   if (screen === 'subscriptions') {
     return <SubscriptionPlans onBack={() => setScreen('main')} />;
   }
-
-  // ─── MAIN ───────────────────────────────────
 
   const renderMode = () => {
     if (isLoadingQuestions) return <SkeletonCard />;
@@ -217,14 +206,12 @@ function App() {
             ))}
           </div>
         );
-
       case 'test': return <TestMode />;
       case 'bug-hunting': return <BugHuntingMode />;
       case 'blitz': return <BlitzMode />;
       case 'mock-interview': return <MockInterviewMode />;
       case 'concept-linker': return <ConceptLinker />;
       case 'code-completion': return <CodeCompletionMode />;
-
       default: return <TestMode />;
     }
   };
@@ -237,11 +224,9 @@ function App() {
         onSubscriptionClick={() => setScreen('subscriptions')}
         onLanguageChange={handleLanguageChange}
       />
-
       <div className="card-container">
         {renderMode()}
       </div>
-
       {learningMode === 'swipe' && (
         <SwipeButtons
           onSwipeLeft={() => handleButtonSwipe('left')}
@@ -249,7 +234,6 @@ function App() {
           disabled={!hasMoreQuestions() || isLoadingQuestions}
         />
       )}
-
       <ExplanationModal
         isOpen={showExplanation}
         explanation={currentExplanation}

@@ -41,9 +41,7 @@ const useStore = create((set, get) => ({
       const response = await apiClient.login(initData);
       const user = response.user;
       const lang = user.language || 'Java';
-
       apiClient.setLanguage(lang);
-
       set({
         user,
         isAuthenticated: true,
@@ -54,7 +52,6 @@ const useStore = create((set, get) => ({
       // ✅ NON-BLOCKING
       get().loadQuestions().catch(console.error);
       get().loadStats().catch(console.error);
-
       return user;
     } catch (error) {
       set({ isLoading: false, _loadingLock: false });

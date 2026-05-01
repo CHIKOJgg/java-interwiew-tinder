@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import apiClient from '../api/client';
 
 const CACHE_KEY = 'interview_tinder_cache';
-function saveToLocal(key, data) { try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch {} }
+function saveToLocal(key, data) { try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { } }
 function loadFromLocal(key) { try { return JSON.parse(localStorage.getItem(`${CACHE_KEY}_${key}`)); } catch { return null; } }
 
 const useStore = create((set, get) => ({
@@ -42,8 +42,8 @@ const useStore = create((set, get) => ({
       const lang = user.language || 'Java';
       apiClient.setLanguage(lang);
       set({ user, isAuthenticated: true, isLoading: false, language: lang });
-      await get().loadQuestions();
-      get().loadStats();
+      get().loadQuestions().catch(console.error);
+      get().loadStats().catch(console.error);
       return user;
     } catch (error) {
       set({ isLoading: false, _loadingLock: false });

@@ -37,13 +37,24 @@ const useStore = create((set, get) => ({
   login: async (initData) => {
     try {
       set({ isLoading: true });
+
       const response = await apiClient.login(initData);
       const user = response.user;
       const lang = user.language || 'Java';
+
       apiClient.setLanguage(lang);
-      set({ user, isAuthenticated: true, isLoading: false, language: lang });
+
+      set({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        language: lang
+      });
+
+      // ✅ NON-BLOCKING
       get().loadQuestions().catch(console.error);
       get().loadStats().catch(console.error);
+
       return user;
     } catch (error) {
       set({ isLoading: false, _loadingLock: false });

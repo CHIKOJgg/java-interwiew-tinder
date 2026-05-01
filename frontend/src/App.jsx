@@ -17,40 +17,49 @@ import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
 import './App.css';
 
-
+// ✅ BULLETPROOF Telegram init (Mobile safe + Dev fallback)
 function getTelegramInitData() {
   return new Promise((resolve) => {
-    const tg = window.Telegram?.WebApp;
+    let attempts = 0;
+    const maxAttempts = 50; // ~5 seconds
+    let isReadyCalled = false;
 
-    // ✅ 1. If Telegram not available → fallback (critical for mobile)
-    if (!tg) {
-      console.warn('Telegram WebApp not found → using fallback');
-      resolve('debug_user');
-      return;
-    }
+    const interval = setInterval(() => {
+      const tg = window.Telegram?.WebApp;
 
-    try {
-      tg.ready();
-      tg.expand();
-    } catch (e) {
-      console.warn('Telegram init error:', e);
-    }
+      if (tg) {
+        // Clear the native Telegram mobile spinner
+        if (!isReadyCalled) {
+          try {
+            tg.ready();
+            tg.expand();
+            isReadyCalled = true;
+          } catch (err) {
+            console.warn('Error calling Telegram ready/expand:', err);
+          }
+        }
 
-    // ✅ 2. If initData exists → use immediately
-    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-      console.log('Using initDataUnsafe');
-      resolve(tg.initData);
-      return;
-    }
+        // If we have actual Telegram data, resolve with it
+        if (tg.initData && tg.initData.length > 0) {
+          clearInterval(interval);
+          resolve(tg.initData);
+          return;
+        }
+      }
 
-    // ✅ 3. Fallback timeout (DO NOT BLOCK UI)
-    setTimeout(() => {
-      console.warn('initData timeout → fallback mode');
-      resolve('debug_user');
-    }, 1500);
+      attempts++;
+
+      // If we hit the 5-second timeout, DON'T crash. Use the dev fallback.
+      if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        console.warn('Timeout waiting for Telegram initData. Using Dev Fallback.');
+
+        // Your original dev fallback string
+        resolve('user=%7B%22id%22%3A123456789%2C%22first_name%22%3A%22Dev%22%2C%22username%22%3A%22dev_user%22%7D');
+      }
+    }, 100);
   });
 }
-
 function App() {
   const {
     questions, currentIndex,

@@ -411,11 +411,12 @@ app.post('/api/questions/interview-evaluate', rateLimit('interview'), async (req
 });
 
 // ─── Explanation ──────────────────────────────────────────────────────
-app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) => {
+app.post('/api/questions/explain', async (req, res) => {
   try {
-    const { questionId } = req.body;
+    const { questionId, userId } = req.body;
     if (!questionId) return res.status(400).json({ error: 'questionId is required' });
 
+    // ── 1. Check DB-cached explanation first (no AI needed) ──────────
     const result = await pool.query(
       'SELECT id, question_text, short_answer, cached_explanation, language FROM questions WHERE id = $1',
       [questionId]
@@ -427,14 +428,31 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
       return res.json({ explanation: question.cached_explanation, cached: true });
     }
 
+    // ── 2. Check AI cache (also cached, no model call needed) ─────────
+    const cachedAI = await checkCache(question.question_text, 'explanation', null, question.language || 'Java');
+    if (cachedAI) {
+      // Backfill the questions table cache too
+      pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cachedAI, questionId]).catch(() => {});
+      return res.json({ explanation: cachedAI, cached: true });
+    }
+
+    // ── 3. Call AI — let errors bubble so the client knows what failed ─
+    console.log(`🤖 Generating explanation for question ${questionId} (${question.language || 'Java'})`);
     const explanation = await generateExplanation(
-      question.question_text, question.short_answer, null, question.language || 'Java'
+      question.question_text, question.short_answer, userId || null, question.language || 'Java'
     );
-    await pool.query('UPDATE questions SET cached_explanation = $1 WHERE id = $2', [explanation, questionId]).catch(() => {});
+
+    // Backfill both caches asynchronously
+    pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [explanation, questionId]).catch(() => {});
+
     res.json({ explanation, cached: false });
   } catch (error) {
-    console.error('Error in /questions/explain:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error in /questions/explain:', error.message);
+    // Return the real error message — helps diagnose model/key issues in production
+    res.status(500).json({
+      error: 'AI explanation failed',
+      detail: error.message,
+    });
   }
 });
 

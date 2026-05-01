@@ -260,8 +260,13 @@ const useStore = create((set, get) => ({
     try {
       const response = await apiClient.getExplanation(questionId);
       set({ currentExplanation: response.explanation, isLoadingExplanation: false });
-    } catch {
-      set({ isLoadingExplanation: false, currentExplanation: 'Объяснение временно недоступно. Попробуйте позже.' });
+    } catch (err) {
+      // Surface the real server error so the user (and you) can see what failed
+      const detail = err?.message || 'Неизвестная ошибка';
+      set({
+        isLoadingExplanation: false,
+        currentExplanation: `⚠️ Не удалось загрузить объяснение.\n\n**Причина:** ${detail}\n\nПроверьте OPENROUTER_API_KEY и OPENROUTER_MODEL в .env на сервере.`,
+      });
     }
   },
 

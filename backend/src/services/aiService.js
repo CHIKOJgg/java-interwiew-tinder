@@ -10,13 +10,13 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 // ─── Real OpenRouter free model IDs ──────────────────────────────────
 // These are actual working free-tier models on OpenRouter as of 2025.
 // Free models are slower (10–30s) — timeout is set accordingly.
-const FAST_MODEL   = process.env.OPENROUTER_FAST_MODEL   || 'meta-llama/llama-3.1-8b-instruct:free';
-const QUALITY_MODEL = process.env.OPENROUTER_QUALITY_MODEL || 'google/gemma-2-9b-it:free';
+const FAST_MODEL = process.env.OPENROUTER_FAST_MODEL || 'openrouter/free';
+const QUALITY_MODEL = process.env.OPENROUTER_QUALITY_MODEL || 'openrouter/free';
 
 // Fallback chain: if primary fails, try these in order
 const FALLBACK_MODELS = [
-  'mistralai/mistral-7b-instruct:free',
-  'qwen/qwen-2.5-7b-instruct:free',
+  'openrouter/free',
+  'openrouter/free',
 ];
 
 const PROMPT_VERSION = 'v1';

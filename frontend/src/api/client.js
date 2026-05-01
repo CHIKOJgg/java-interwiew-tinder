@@ -7,29 +7,28 @@ class ApiClient {
     this.language = 'Java';
   }
 
-  setUserId(userId) { this.userId = userId; }
+  setUserId(userId) { this.userId = String(userId); }
   setLanguage(language) { this.language = language; }
 
   async request(endpoint, options = {}) {
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const url = `${this.baseUrl}${cleanEndpoint}`;
+    const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
     try {
       const response = await fetch(url, {
         ...options,
         headers: { 'Content-Type': 'application/json', ...options.headers },
       });
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || `HTTP ${response.status}`);
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${response.status}`);
       }
-      return await response.json();
+      return response.json();
     } catch (error) {
-      console.error(`API Error [${cleanEndpoint}]:`, error);
+      console.error(`API Error [${endpoint}]:`, error.message);
       throw error;
     }
   }
 
-  // Auth
+  // ─── Auth ──────────────────────────────────────────────────────────
   async login(initData) {
     const response = await this.request('/auth/login', {
       method: 'POST',
@@ -42,21 +41,12 @@ class ApiClient {
     return response;
   }
 
-  // Questions — lazy loading
+  // ─── Questions ─────────────────────────────────────────────────────
   async getQuestionsFeed(limit = 5, mode = 'swipe') {
     if (!this.userId) throw new Error('User not authenticated');
     return this.request(`/questions/feed?userId=${this.userId}&limit=${limit}&mode=${mode}&language=${this.language}`);
   }
 
-  // Generation polling
-  async requestGeneration(type, questionText, shortAnswer, category) {
-    return this.request(`/generate/${type}`, {
-      method: 'POST',
-      body: JSON.stringify({ questionText, shortAnswer, category, userId: this.userId, language: this.language }),
-    });
-  }
-
-  // Answer recording
   async recordSwipe(questionId, status) {
     return this.request('/questions/swipe', {
       method: 'POST',
@@ -99,24 +89,33 @@ class ApiClient {
     });
   }
 
-  async analyzeResume(resumeText) {
-    return this.request('/user/analyze-resume', {
-      method: 'POST',
-      body: JSON.stringify({ userId: this.userId, resumeText, language: this.language }),
-    });
-  }
-
   async getExplanation(questionId) {
     return this.request('/questions/explain', {
       method: 'POST',
-      body: JSON.stringify({ questionId }),
+      body: JSON.stringify({ questionId, userId: this.userId }),
     });
   }
 
-  async getStats() { return this.request(`/stats?userId=${this.userId}&language=${this.language}`); }
-  async getCategories() { return this.request(`/categories?language=${this.language}`); }
-  async getLanguages() { return this.request('/languages'); }
-  async getPreferences() { return this.request(`/preferences/${this.userId}`); }
+  async requestGeneration(type, questionText, shortAnswer, category) {
+    return this.request(`/generate/${type}`, {
+      method: 'POST',
+      body: JSON.stringify({ questionText, shortAnswer, category, userId: this.userId, language: this.language }),
+    });
+  }
+
+  // ─── Stats ─────────────────────────────────────────────────────────
+  async getStats() {
+    return this.request(`/stats?userId=${this.userId}&language=${this.language}`);
+  }
+
+  // ─── Preferences ───────────────────────────────────────────────────
+  async getCategories() {
+    return this.request(`/categories?language=${this.language}`);
+  }
+
+  async getPreferences() {
+    return this.request(`/preferences/${this.userId}`);
+  }
 
   async updatePreferences(categories, language) {
     return this.request('/preferences', {
@@ -125,14 +124,59 @@ class ApiClient {
     });
   }
 
-  // Subscription — fixed method names to match backend routes
-  async getPlans() { return this.request('/subscription/plans'); }
-  async getSubscriptionStatus() { return this.request(`/subscription/status/${this.userId}`); }
+  // Dedicated language-switch endpoint: clears old category filter server-side
+  async switchLanguage(userId, language) {
+    return this.request('/preferences/language', {
+      method: 'POST',
+      body: JSON.stringify({ userId, language }),
+    });
+  }
+
+  // ─── Resume ────────────────────────────────────────────────────────
+  async analyzeResume(resumeText) {
+    return this.request('/user/analyze-resume', {
+      method: 'POST',
+      body: JSON.stringify({ userId: this.userId, resumeText, language: this.language }),
+    });
+  }
+
+  // ─── Subscription ──────────────────────────────────────────────────
+  async getPlans() {
+    return this.request('/subscription/plans');
+  }
+
+  async getSubscriptionStatus() {
+    return this.request(`/subscription/status/${this.userId}`);
+  }
+
   async subscribe(planId) {
     return this.request('/subscription/subscribe', {
       method: 'POST',
       body: JSON.stringify({ userId: this.userId, planId }),
     });
+  }
+
+  async cancelSubscription() {
+    return this.request('/subscription/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ userId: this.userId }),
+    });
+  }
+
+  async getSubscriptionHistory() {
+    return this.request(`/subscription/history/${this.userId}`);
+  }
+
+  // ─── Admin ─────────────────────────────────────────────────────────
+  async grantPlan(targetUserId, planId, months = 12) {
+    return this.request('/admin/grant-plan', {
+      method: 'POST',
+      body: JSON.stringify({ adminUserId: this.userId, targetUserId, planId, months }),
+    });
+  }
+
+  async getAdminUsers() {
+    return this.request(`/admin/users?adminUserId=${this.userId}`);
   }
 }
 

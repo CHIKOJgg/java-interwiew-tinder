@@ -16,17 +16,18 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV === 'development';
+const ADMIN_IDS = new Set(
+  (process.env.ADMIN_TELEGRAM_IDS || '').split(',').map(s => s.trim()).filter(Boolean)
+);
 
 // ─── Global Middleware ───────────────────────────────────────────────
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow requests with no origin (mobile apps, curl, Telegram WebApp internal)
     if (!origin) return cb(null, true);
     const allowed = ['localhost', 'vercel.app', 'pages.dev', 'workers.dev', 'fly.dev', 'telegram.org', 'web.telegram.org'];
     if (allowed.some(d => origin.includes(d))) return cb(null, true);
-    // Allow any custom domain set via env var
     if (process.env.ALLOWED_ORIGIN && origin.includes(process.env.ALLOWED_ORIGIN)) return cb(null, true);
-    console.warn(`CORS blocked origin: ${origin}`);
+    console.warn(`CORS blocked: ${origin}`);
     cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -38,14 +39,10 @@ app.use(sanitizeBody);
 app.use(requestLogger);
 
 // ─── Health ──────────────────────────────────────────────────────────
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 // ─── Languages ───────────────────────────────────────────────────────
-app.get('/api/languages', (req, res) => {
-  res.json({ languages: getAvailableLanguages() });
-});
+app.get('/api/languages', (req, res) => res.json({ languages: getAvailableLanguages() }));
 
 // ─── Categories (language-aware) ─────────────────────────────────────
 app.get('/api/categories', async (req, res) => {
@@ -55,10 +52,7 @@ app.get('/api/categories', async (req, res) => {
       `SELECT DISTINCT category, COUNT(*) as count FROM questions WHERE language = $1 GROUP BY category ORDER BY category`,
       [language]
     );
-    res.json({
-      language,
-      categories: result.rows.map(r => ({ name: r.category, count: parseInt(r.count) }))
-    });
+    res.json({ language, categories: result.rows.map(r => ({ name: r.category, count: parseInt(r.count) })) });
   } catch (error) {
     console.error('Error fetching categories:', error);
     res.status(500).json({ error: 'Failed to fetch categories' });
@@ -83,44 +77,81 @@ app.post('/api/auth/login', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO users (telegram_id, username, first_name, last_name)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (telegram_id) DO UPDATE SET username = EXCLUDED.username, first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name
+       ON CONFLICT (telegram_id) DO UPDATE SET
+         username = EXCLUDED.username,
+         first_name = EXCLUDED.first_name,
+         last_name = EXCLUDED.last_name
        RETURNING *`,
       [userData.telegram_id, userData.username, userData.first_name, userData.last_name]
     );
     const user = result.rows[0];
 
-    // Preload 5 questions in background
+    // Auto-grant admin plan if user is in ADMIN_TELEGRAM_IDS
+    if (ADMIN_IDS.has(String(user.telegram_id))) {
+      try {
+        await pool.query(
+          `INSERT INTO user_subscriptions (user_id, plan_id, status, expires_at, payment_id, payment_provider)
+           VALUES ($1, 'admin', 'active', NULL, 'admin_grant', 'system')
+           ON CONFLICT DO NOTHING`,
+          [user.telegram_id]
+        ).catch(async () => {
+          // Try 'pro' plan if 'admin' plan doesn't exist
+          await pool.query(
+            `INSERT INTO user_subscriptions (user_id, plan_id, status, expires_at, payment_id, payment_provider)
+             VALUES ($1, 'pro', 'active', NULL, 'admin_grant', 'system')
+             ON CONFLICT DO NOTHING`,
+            [user.telegram_id]
+          ).catch(() => {});
+        });
+        await pool.query(
+          `UPDATE users SET subscription_plan = 'pro' WHERE telegram_id = $1`,
+          [user.telegram_id]
+        ).catch(() => {});
+      } catch {}
+    }
+
+    // Background warm-up: pre-enqueue AI generation jobs for this user's next questions
     try {
       const preload = await pool.query(
-        `SELECT q.question_text, q.short_answer, q.category, q.language FROM questions q
+        `SELECT q.question_text, q.short_answer, q.language FROM questions q
          LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
          WHERE up.id IS NULL OR up.status = 'unknown' ORDER BY RANDOM() LIMIT 5`,
         [user.telegram_id]
       );
       preload.rows.forEach(q => {
-        enqueueJob('explanation', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => { });
-        enqueueJob('test', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => { });
+        enqueueJob('explanation', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => {});
       });
     } catch (e) { console.error('Preload error:', e.message); }
 
-    // Get subscription info
+    // Resolve plan
     let plan = 'free';
-    try {
-      const subResult = await pool.query(
-        `SELECT plan_id FROM user_subscriptions WHERE user_id = $1 AND status = 'active' AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP) ORDER BY created_at DESC LIMIT 1`,
-        [user.telegram_id]
-      );
-      if (subResult.rows.length > 0) plan = subResult.rows[0].plan_id;
-    } catch (e) { /* no subscription tables yet is fine */ }
+    if (ADMIN_IDS.has(String(user.telegram_id))) {
+      plan = 'admin'; // always admin regardless of DB
+    } else {
+      try {
+        const subResult = await pool.query(
+          `SELECT plan_id FROM user_subscriptions WHERE user_id = $1 AND status = 'active'
+           AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+           ORDER BY created_at DESC LIMIT 1`,
+          [user.telegram_id]
+        );
+        if (subResult.rows.length > 0) plan = subResult.rows[0].plan_id;
+      } catch {}
+    }
 
     res.json({
       success: true,
       user: {
-        telegram_id: user.telegram_id, username: user.username,
-        first_name: user.first_name, last_name: user.last_name,
-        resume_text: user.resume_text, parsed_resume_data: user.parsed_resume_data,
-        language: user.language || 'Java', plan
-      }
+        telegram_id: user.telegram_id,
+        username: user.username,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        resume_text: user.resume_text,
+        parsed_resume_data: user.parsed_resume_data,
+        language: user.language || 'Java',
+        plan,
+        is_admin: ADMIN_IDS.has(String(user.telegram_id)),
+      },
     });
   } catch (error) {
     console.error('Error in /auth/login:', error);
@@ -131,73 +162,112 @@ app.post('/api/auth/login', async (req, res) => {
 // ─── Preferences ─────────────────────────────────────────────────────
 app.get('/api/preferences/:userId', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT selected_categories, selected_language FROM user_preferences WHERE telegram_id = $1', [req.params.userId]);
-    res.json({ selectedCategories: rows[0]?.selected_categories || [], selectedLanguage: rows[0]?.selected_language || 'Java' });
-  } catch (error) { res.status(500).json({ error: 'Failed to fetch preferences' }); }
+    const { rows } = await pool.query(
+      'SELECT selected_categories, selected_language FROM user_preferences WHERE telegram_id = $1',
+      [req.params.userId]
+    );
+    res.json({
+      selectedCategories: rows[0]?.selected_categories || [],
+      selectedLanguage: rows[0]?.selected_language || 'Java',
+    });
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch preferences' });
+  }
 });
 
 app.post('/api/preferences', validateBody({ userId: { required: true }, categories: { required: true } }), async (req, res) => {
   try {
     const { userId, categories, language } = req.body;
     await pool.query(
-      `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, updated_at) VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (telegram_id) DO UPDATE SET selected_categories = $2, selected_language = $3, updated_at = NOW()`,
+      `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, updated_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (telegram_id) DO UPDATE SET
+         selected_categories = $2,
+         selected_language = $3,
+         updated_at = NOW()`,
       [userId, categories, language || 'Java']
     );
     if (language) {
-      await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => { });
+      await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => {});
     }
     res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: 'Failed to update preferences' }); }
+  } catch {
+    res.status(500).json({ error: 'Failed to update preferences' });
+  }
 });
 
-// ─── Question Feed (static data only, no AI blocking) ────────────────
-app.get('/api/questions/feed', requireEntitlement('language'), async (req, res) => {
+// ─── Language switch (updates preference, clears category filter for new lang) ──
+app.post('/api/preferences/language', validateBody({ userId: { required: true }, language: { required: true } }), async (req, res) => {
+  try {
+    const { userId, language } = req.body;
+    // Clear categories so the new language shows all questions (not filtered by old lang's cats)
+    await pool.query(
+      `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, updated_at)
+       VALUES ($1, ARRAY[]::TEXT[], $2, NOW())
+       ON CONFLICT (telegram_id) DO UPDATE SET
+         selected_categories = ARRAY[]::TEXT[],
+         selected_language = $2,
+         updated_at = NOW()`,
+      [userId, language]
+    );
+    await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => {});
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error updating language preference:', err);
+    res.status(500).json({ error: 'Failed to update language' });
+  }
+});
+
+// ─── Question Feed ────────────────────────────────────────────────────
+app.get('/api/questions/feed', async (req, res) => {
   try {
     const { userId } = req.query;
     const language = req.query.language || 'Java';
     const limit = Math.min(parseInt(req.query.limit) || 5, 10);
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
-    const prefsResult = await pool.query('SELECT selected_categories FROM user_preferences WHERE telegram_id = $1', [userId]);
-    const selectedCategories = prefsResult.rows[0]?.selected_categories;
+    const prefsResult = await pool.query(
+      'SELECT selected_categories, selected_language FROM user_preferences WHERE telegram_id = $1',
+      [userId]
+    );
+    const prefs = prefsResult.rows[0];
+    // Only use saved categories if they belong to the CURRENT language
+    // (avoids empty results when user switches language without updating categories)
+    const savedLang = prefs?.selected_language || 'Java';
+    const selectedCategories = (savedLang === language) ? (prefs?.selected_categories || []) : [];
 
     let query, params;
-    if (selectedCategories?.length > 0) {
-      query = `SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer, q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language
-               FROM questions q LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
-               WHERE (up.id IS NULL OR up.status = 'unknown') AND q.category = ANY($2) AND q.language = $3
+    if (selectedCategories.length > 0) {
+      query = `SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
+                      q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language
+               FROM questions q
+               LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+               WHERE (up.id IS NULL OR up.status = 'unknown')
+                 AND q.category = ANY($2) AND q.language = $3
                ORDER BY RANDOM() LIMIT $4`;
       params = [userId, selectedCategories, language, limit];
     } else {
-      query = `SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer, q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language
-               FROM questions q LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+      query = `SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
+                      q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language
+               FROM questions q
+               LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
                WHERE (up.id IS NULL OR up.status = 'unknown') AND q.language = $2
                ORDER BY RANDOM() LIMIT $3`;
       params = [userId, language, limit];
     }
 
     const result = await pool.query(query, params);
-
-    const questions = await Promise.all(result.rows.map(async (row) => {
-      // Fire-and-forget background generation check/enqueue
-      const checkAndEnqueue = async (type) => {
-        const cached = await checkCache(row.question_text, type === 'test' ? 'test' : 'explanation', null, language);
-        if (!cached) {
-          enqueueJob(type, { questionText: row.question_text, shortAnswer: row.short_answer, userId, language }).catch(() => { });
-        }
-      };
-
-      checkAndEnqueue('explanation');
-      checkAndEnqueue('test');
-
-      return {
-        id: row.id, category: row.category, difficulty: row.difficulty,
-        question: row.question_text, shortAnswer: row.short_answer,
-        options: row.options || [], bugHuntingData: row.bug_hunting_data || null,
-        blitzData: row.blitz_data || null, codeCompletionData: row.code_completion_data || null,
-        language: row.language || 'Java'
-      };
+    const questions = result.rows.map(row => ({
+      id: row.id,
+      category: row.category,
+      difficulty: row.difficulty,
+      question: row.question_text,
+      shortAnswer: row.short_answer,
+      options: row.options || [],
+      bugHuntingData: row.bug_hunting_data || null,
+      blitzData: row.blitz_data || null,
+      codeCompletionData: row.code_completion_data || null,
+      language: row.language || 'Java',
     }));
 
     res.json({ questions });
@@ -207,36 +277,21 @@ app.get('/api/questions/feed', requireEntitlement('language'), async (req, res) 
   }
 });
 
-// ─── Generation Endpoints (non-blocking, cache-first) ────────────────
-app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res, next) => {
-  const { type } = req.params;
-  const modeMap = {
-    explanation: 'swipe', // explanation belongs to basic swipe
-    test: 'test',
-    blitz: 'blitz',
-    bug: 'bug-hunting',
-    code: 'code-completion'
-  };
-  requireEntitlement('mode', modeMap[type])(req, res, next);
-}, async (req, res) => {
+// ─── AI Generation (cache-first, non-blocking) ────────────────────────
+app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => {
   try {
     const { type } = req.params;
     const { questionText, shortAnswer, category, userId, language = 'Java' } = req.body;
     if (!questionText) return res.status(400).json({ error: 'questionText is required' });
 
-    const typeConfig = {
-      explanation: { mode: 'explanation', model: 'openrouter/quality-model' },
-      test: { mode: 'test', model: 'openrouter/fast-model' },
-      blitz: { mode: 'blitz', model: 'openrouter/fast-model' },
-      bug: { mode: 'bug', model: 'openrouter/fast-model' },
-      code: { mode: 'code', model: 'openrouter/fast-model' }
+    const modeMap = {
+      explanation: 'explanation', test: 'test', blitz: 'blitz', bug: 'bug', code: 'code',
     };
-    const config = typeConfig[type];
-    if (!config) return res.status(400).json({ error: 'Invalid generation type' });
+    const mode = modeMap[type];
+    if (!mode) return res.status(400).json({ error: 'Invalid generation type' });
 
-    const cached = await checkCache(questionText, config.mode, config.model, language);
+    const cached = await checkCache(questionText, mode, null, language);
     if (cached) {
-      trackEvent({ userId, eventType: 'ai_cache_hit', endpoint: `/generate/${type}`, cacheHit: true });
       return res.json({ status: 'ready', data: cached });
     }
 
@@ -248,125 +303,153 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res, nex
   }
 });
 
-// ─── Answer Submission Endpoints (idempotent via UPSERT) ─────────────
-app.post('/api/questions/swipe', validateBody({ userId: { required: true }, questionId: { required: true }, status: { required: true, enum: ['known', 'unknown'] } }), async (req, res) => {
-  try {
-    const { userId, questionId, status } = req.body;
-    await pool.query(
-      `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, question_id) DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
-      [userId, questionId, status]
-    );
-    res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
-});
+// ─── Swipe ───────────────────────────────────────────────────────────
+app.post('/api/questions/swipe',
+  validateBody({ userId: { required: true }, questionId: { required: true }, status: { required: true, enum: ['known', 'unknown'] } }),
+  async (req, res) => {
+    try {
+      const { userId, questionId, status } = req.body;
+      await pool.query(
+        `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id, question_id) DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
+        [userId, questionId, status]
+      );
+      res.json({ success: true });
+    } catch { res.status(500).json({ error: 'Internal server error' }); }
+  }
+);
 
-app.post('/api/questions/test-answer', validateBody({ userId: { required: true }, questionId: { required: true }, answer: { required: true } }), async (req, res) => {
-  try {
-    const { userId, questionId, answer } = req.body;
-    const result = await pool.query('SELECT short_answer FROM questions WHERE id = $1', [questionId]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Question not found' });
+// ─── Test answer ──────────────────────────────────────────────────────
+app.post('/api/questions/test-answer',
+  validateBody({ userId: { required: true }, questionId: { required: true }, answer: { required: true } }),
+  async (req, res) => {
+    try {
+      const { userId, questionId, answer } = req.body;
+      const result = await pool.query('SELECT short_answer, options FROM questions WHERE id = $1', [questionId]);
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Question not found' });
+      const { short_answer: correctAnswer, options } = result.rows[0];
+      // Match against the stored options or short_answer
+      const isCorrect = answer === correctAnswer || (options && options.includes(answer) && answer === correctAnswer);
+      await pool.query(
+        `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id, question_id) DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
+        [userId, questionId, isCorrect ? 'known' : 'unknown']
+      );
+      res.json({ success: true, isCorrect, correctAnswer });
+    } catch { res.status(500).json({ error: 'Internal server error' }); }
+  }
+);
 
-    const correctAnswer = result.rows[0].short_answer;
-    const isCorrect = answer === correctAnswer;
-    await pool.query(
-      `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, question_id) DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
-      [userId, questionId, isCorrect ? 'known' : 'unknown']
-    );
-    res.json({ success: true, isCorrect, correctAnswer });
-  } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
-});
+// ─── Bug hunt answer ──────────────────────────────────────────────────
+app.post('/api/questions/bug-hunt-answer',
+  validateBody({ userId: { required: true }, questionId: { required: true }, answer: { required: true } }),
+  async (req, res) => {
+    try {
+      const { userId, questionId, answer } = req.body;
+      const result = await pool.query('SELECT bug_hunting_data FROM questions WHERE id = $1', [questionId]);
+      if (!result.rows[0]?.bug_hunting_data) return res.status(404).json({ error: 'Bug hunt data not found' });
+      const correctBug = result.rows[0].bug_hunting_data.bug;
+      const isCorrect = answer === correctBug;
+      await pool.query(
+        `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id, question_id) DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
+        [userId, questionId, isCorrect ? 'known' : 'unknown']
+      );
+      res.json({ success: true, isCorrect, correctAnswer: correctBug });
+    } catch { res.status(500).json({ error: 'Internal server error' }); }
+  }
+);
 
-app.post('/api/questions/bug-hunt-answer', validateBody({ userId: { required: true }, questionId: { required: true }, answer: { required: true } }), async (req, res) => {
-  try {
-    const { userId, questionId, answer } = req.body;
-    const result = await pool.query('SELECT bug_hunting_data FROM questions WHERE id = $1', [questionId]);
-    if (result.rows.length === 0 || !result.rows[0].bug_hunting_data) return res.status(404).json({ error: 'Bug hunt data not found' });
+// ─── Blitz answer ─────────────────────────────────────────────────────
+app.post('/api/questions/blitz-answer',
+  validateBody({ userId: { required: true } }),
+  async (req, res) => {
+    try {
+      const { userId, questionId, answer } = req.body;
+      const result = await pool.query('SELECT blitz_data FROM questions WHERE id = $1', [questionId]);
+      if (!result.rows[0]?.blitz_data) return res.status(404).json({ error: 'Blitz data not found' });
+      const isActuallyCorrect = result.rows[0].blitz_data.isCorrect;
+      const isCorrect = answer === isActuallyCorrect;
+      await pool.query(
+        `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id, question_id) DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
+        [userId, questionId, isCorrect ? 'known' : 'unknown']
+      );
+      res.json({ success: true, isCorrect, correctAnswer: isActuallyCorrect });
+    } catch { res.status(500).json({ error: 'Internal server error' }); }
+  }
+);
 
-    const correctBug = result.rows[0].bug_hunting_data.bug;
-    const isCorrect = answer === correctBug;
-    await pool.query(
-      `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, question_id) DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
-      [userId, questionId, isCorrect ? 'known' : 'unknown']
-    );
-    res.json({ success: true, isCorrect, correctAnswer: correctBug });
-  } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
-});
+// ─── Code completion answer ───────────────────────────────────────────
+app.post('/api/questions/code-completion-answer',
+  validateBody({ userId: { required: true }, questionId: { required: true }, answer: { required: true } }),
+  async (req, res) => {
+    try {
+      const { userId, questionId, answer } = req.body;
+      const result = await pool.query('SELECT code_completion_data FROM questions WHERE id = $1', [questionId]);
+      if (!result.rows[0]?.code_completion_data) return res.status(404).json({ error: 'Code completion data not found' });
+      const correctPart = result.rows[0].code_completion_data.correctPart;
+      const isCorrect = answer === correctPart;
+      await pool.query(
+        `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id, question_id) DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
+        [userId, questionId, isCorrect ? 'known' : 'unknown']
+      );
+      res.json({ success: true, isCorrect, correctAnswer: correctPart });
+    } catch { res.status(500).json({ error: 'Internal server error' }); }
+  }
+);
 
-app.post('/api/questions/blitz-answer', validateBody({ userId: { required: true } }), async (req, res) => {
-  try {
-    const { userId, questionId, answer } = req.body;
-    const result = await pool.query('SELECT blitz_data FROM questions WHERE id = $1', [questionId]);
-    if (result.rows.length === 0 || !result.rows[0].blitz_data) return res.status(404).json({ error: 'Blitz data not found' });
-
-    const isActuallyCorrect = result.rows[0].blitz_data.isCorrect;
-    const isCorrect = answer === isActuallyCorrect;
-    await pool.query(
-      `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, question_id) DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
-      [userId, questionId, isCorrect ? 'known' : 'unknown']
-    );
-    res.json({ success: true, isCorrect, correctAnswer: isActuallyCorrect });
-  } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
-});
-
-app.post('/api/questions/code-completion-answer', validateBody({ userId: { required: true }, questionId: { required: true }, answer: { required: true } }), async (req, res) => {
-  try {
-    const { userId, questionId, answer } = req.body;
-    const result = await pool.query('SELECT code_completion_data FROM questions WHERE id = $1', [questionId]);
-    if (result.rows.length === 0 || !result.rows[0].code_completion_data) return res.status(404).json({ error: 'Code completion data not found' });
-
-    const correctPart = result.rows[0].code_completion_data.correctPart;
-    const isCorrect = answer === correctPart;
-    await pool.query(
-      `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, question_id) DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
-      [userId, questionId, isCorrect ? 'known' : 'unknown']
-    );
-    res.json({ success: true, isCorrect, correctAnswer: correctPart });
-  } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
-});
-
-// ─── Interview Evaluation ────────────────────────────────────────────
-app.post('/api/questions/interview-evaluate', rateLimit('interview'), requireEntitlement('interview'), async (req, res) => {
+// ─── Interview Evaluation ─────────────────────────────────────────────
+app.post('/api/questions/interview-evaluate', rateLimit('interview'), async (req, res) => {
   try {
     const { question, answer, language = 'Java' } = req.body;
     if (!question || !answer) return res.status(400).json({ error: 'question and answer are required' });
     const evaluation = await evaluateInterviewAnswer(question, answer, null, language);
     res.json(evaluation);
-  } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
-// ─── Explanation ─────────────────────────────────────────────────────
+// ─── Explanation ──────────────────────────────────────────────────────
 app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) => {
   try {
     const { questionId } = req.body;
     if (!questionId) return res.status(400).json({ error: 'questionId is required' });
 
-    const result = await pool.query('SELECT id, question_text, short_answer, cached_explanation, language FROM questions WHERE id = $1', [questionId]);
+    const result = await pool.query(
+      'SELECT id, question_text, short_answer, cached_explanation, language FROM questions WHERE id = $1',
+      [questionId]
+    );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Question not found' });
 
     const question = result.rows[0];
-    if (question.cached_explanation) return res.json({ explanation: question.cached_explanation, cached: true });
+    if (question.cached_explanation) {
+      return res.json({ explanation: question.cached_explanation, cached: true });
+    }
 
-    const explanation = await generateExplanation(question.question_text, question.short_answer, null, question.language || 'Java');
-    await pool.query('UPDATE questions SET cached_explanation = $1 WHERE id = $2', [explanation, questionId]).catch(() => { });
+    const explanation = await generateExplanation(
+      question.question_text, question.short_answer, null, question.language || 'Java'
+    );
+    await pool.query('UPDATE questions SET cached_explanation = $1 WHERE id = $2', [explanation, questionId]).catch(() => {});
     res.json({ explanation, cached: false });
-  } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (error) {
+    console.error('Error in /questions/explain:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-// ─── Resume Analysis ─────────────────────────────────────────────────
-app.post('/api/user/analyze-resume', rateLimit('resume'), requireEntitlement('resume'), async (req, res) => {
+// ─── Resume Analysis ──────────────────────────────────────────────────
+app.post('/api/user/analyze-resume', rateLimit('resume'), async (req, res) => {
   try {
     const { userId, resumeText, language = 'Java' } = req.body;
     if (!userId || !resumeText) return res.status(400).json({ error: 'userId and resumeText are required' });
-
     const parsedData = await analyzeResume(resumeText, userId, language);
-    await pool.query('UPDATE users SET resume_text = $1, parsed_resume_data = $2 WHERE telegram_id = $3', [resumeText, parsedData, userId]).catch(() => { });
+    await pool.query(
+      'UPDATE users SET resume_text = $1, parsed_resume_data = $2 WHERE telegram_id = $3',
+      [resumeText, parsedData, userId]
+    ).catch(() => {});
     res.json({ success: true, parsedData });
-  } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
 app.get('/api/user/resume/:userId', async (req, res) => {
@@ -374,69 +457,151 @@ app.get('/api/user/resume/:userId', async (req, res) => {
     const result = await pool.query('SELECT resume_text, parsed_resume_data FROM users WHERE telegram_id = $1', [req.params.userId]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     res.json(result.rows[0]);
-  } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
-// ─── Subscription Endpoints ──────────────────────────────────────────
+// ─── Subscription ─────────────────────────────────────────────────────
 app.get('/api/subscription/plans', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM subscription_plans ORDER BY price_monthly ASC');
+    if (rows.length === 0) {
+      // Return default plans if table is empty or missing
+      return res.json({
+        plans: [
+          { id: 'free', name: 'Free', price_monthly: 0, requests_per_day: 200, available_languages: ['Java', 'Python', 'TypeScript'], available_modes: ['swipe', 'test'] },
+          { id: 'pro', name: 'Pro', price_monthly: 9, requests_per_day: 1000, available_languages: ['Java', 'Python', 'TypeScript'], available_modes: ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion'], resume_analysis_limit: 10, interview_eval_limit: 50 },
+        ],
+      });
+    }
     res.json({ plans: rows });
-  } catch (error) { res.json({ plans: [{ id: 'free', name: 'Free', price_monthly: 0 }] }); }
+  } catch {
+    res.json({
+      plans: [
+        { id: 'free', name: 'Free', price_monthly: 0 },
+        { id: 'pro', name: 'Pro', price_monthly: 9 },
+      ],
+    });
+  }
 });
 
 app.get('/api/subscription/status/:userId', async (req, res) => {
   try {
+    const isAdmin = ADMIN_IDS.has(String(req.params.userId));
+    if (isAdmin) {
+      return res.json({ plan: 'admin', plan_name: 'Admin (Unlimited)', status: 'active', is_admin: true });
+    }
     const { rows } = await pool.query(
       `SELECT us.*, sp.name as plan_name, sp.available_languages, sp.available_modes
        FROM user_subscriptions us JOIN subscription_plans sp ON us.plan_id = sp.id
-       WHERE us.user_id = $1 AND us.status = 'active' ORDER BY us.created_at DESC LIMIT 1`,
+       WHERE us.user_id = $1 AND us.status = 'active'
+         AND (us.expires_at IS NULL OR us.expires_at > CURRENT_TIMESTAMP)
+       ORDER BY us.created_at DESC LIMIT 1`,
       [req.params.userId]
     );
-    if (rows.length === 0) return res.json({ plan: 'free', status: 'active' });
+    if (rows.length === 0) return res.json({ plan: 'free', plan_name: 'Free', status: 'active' });
     res.json(rows[0]);
-  } catch (error) { res.json({ plan: 'free', status: 'active' }); }
+  } catch { res.json({ plan: 'free', status: 'active' }); }
 });
 
-app.post('/api/subscription/subscribe', validateBody({ userId: { required: true }, planId: { required: true } }), async (req, res) => {
-  try {
-    const { userId, planId } = req.body;
-    const result = await billingService.createSubscription(userId, planId);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+app.post('/api/subscription/subscribe',
+  validateBody({ userId: { required: true }, planId: { required: true } }),
+  async (req, res) => {
+    try {
+      const result = await billingService.createSubscription(req.body.userId, req.body.planId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 app.get('/api/subscription/history/:userId', async (req, res) => {
   try {
     const history = await billingService.getHistory(req.params.userId);
     res.json({ history });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
+});
+
+// Cancel subscription
+app.post('/api/subscription/cancel',
+  validateBody({ userId: { required: true } }),
+  async (req, res) => {
+    try {
+      const result = await billingService.cancelSubscription(req.body.userId);
+      res.json(result);
+    } catch { res.status(500).json({ error: 'Internal server error' }); }
+  }
+);
+
+// ─── Admin Endpoints ──────────────────────────────────────────────────
+
+// Grant plan (admin-only)
+app.post('/api/admin/grant-plan', async (req, res) => {
+  try {
+    const { adminUserId, targetUserId, planId, months = 12 } = req.body;
+    if (!ADMIN_IDS.has(String(adminUserId))) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const expiresAt = months === 0 ? null : new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000);
+    await pool.query('BEGIN');
+    await pool.query(
+      `UPDATE user_subscriptions SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND status = 'active'`,
+      [targetUserId]
+    );
+    await pool.query(
+      `INSERT INTO user_subscriptions (user_id, plan_id, status, expires_at, payment_id, payment_provider)
+       VALUES ($1, $2, 'active', $3, 'admin_grant', 'admin')`,
+      [targetUserId, planId, expiresAt]
+    );
+    await pool.query(
+      `UPDATE users SET subscription_plan = $1, subscription_expires_at = $2 WHERE telegram_id = $3`,
+      [planId, expiresAt, targetUserId]
+    );
+    await pool.query('COMMIT');
+    res.json({ success: true, message: `Granted ${planId} to ${targetUserId}` });
+  } catch (err) {
+    await pool.query('ROLLBACK').catch(() => {});
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ─── Admin Endpoints ─────────────────────────────────────────────────
+// List all users (admin-only)
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const { adminUserId } = req.query;
+    if (!ADMIN_IDS.has(String(adminUserId))) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const { rows } = await pool.query(`
+      SELECT u.telegram_id, u.username, u.first_name, u.subscription_plan,
+             u.subscription_expires_at, u.created_at,
+             COUNT(up.id) as questions_seen
+      FROM users u
+      LEFT JOIN user_progress up ON up.user_id = u.telegram_id
+      GROUP BY u.telegram_id, u.username, u.first_name, u.subscription_plan, u.subscription_expires_at, u.created_at
+      ORDER BY u.created_at DESC LIMIT 100
+    `);
+    res.json({ users: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/admin/metrics', async (req, res) => {
   try {
     const metrics = await metricsService.getSystemOverview();
     res.json(metrics);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
 app.post('/api/admin/clear-cache', async (req, res) => {
   try {
     await pool.query('DELETE FROM ai_cache');
     res.json({ success: true, message: 'AI Cache cleared' });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
-// ─── Stats ───────────────────────────────────────────────────────────
+// ─── Stats ────────────────────────────────────────────────────────────
 app.get('/api/stats', async (req, res) => {
   try {
     const { userId } = req.query;
@@ -447,27 +612,31 @@ app.get('/api/stats', async (req, res) => {
       `SELECT COUNT(*) FILTER (WHERE status = 'known') as known_count,
               COUNT(*) FILTER (WHERE status = 'unknown') as unknown_count,
               COUNT(*) as total_seen
-       FROM user_progress WHERE user_id = $1`, [userId]
+       FROM user_progress WHERE user_id = $1`,
+      [userId]
     );
-    const totalQuestions = await pool.query('SELECT COUNT(*) as total FROM questions WHERE language = $1', [language]);
+    const totalResult = await pool.query(
+      'SELECT COUNT(*) as total FROM questions WHERE language = $1', [language]
+    );
 
     res.json({
       known: parseInt(result.rows[0].known_count),
       unknown: parseInt(result.rows[0].unknown_count),
       totalSeen: parseInt(result.rows[0].total_seen),
-      totalQuestions: parseInt(totalQuestions.rows[0].total)
+      totalQuestions: parseInt(totalResult.rows[0].total),
     });
-  } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
-// ─── Server ──────────────────────────────────────────────────────────
+// ─── Server ───────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════╗
-║   🚀 Interview Tinder Backend Started        ║
+║   🚀 Interview Tinder Backend                  ║
 ╠════════════════════════════════════════════════╣
-║   Port: ${PORT.toString().padEnd(39)} ║
-║   Mode: ${(isDev ? 'Development' : 'Production').padEnd(39)} ║
+║   Port: ${String(PORT).padEnd(39)}║
+║   Mode: ${(isDev ? 'Development' : 'Production').padEnd(39)}║
+║   Admins: ${String(ADMIN_IDS.size).padEnd(37)}║
 ╚════════════════════════════════════════════════╝
   `);
 });

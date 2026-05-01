@@ -10,23 +10,6 @@ class ApiClient {
   setUserId(userId) { this.userId = String(userId); }
   setLanguage(language) { this.language = language; }
 
-  async request(endpoint, options = {}) {
-    const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: { 'Content-Type': 'application/json', ...options.headers },
-      });
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${response.status}`);
-      }
-      return response.json();
-    } catch (error) {
-      console.error(`API Error [${endpoint}]:`, error.message);
-      throw error;
-    }
-  }
 
   // ─── Auth ──────────────────────────────────────────────────────────
   async login(initData) {
@@ -94,6 +77,26 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ questionId, userId: this.userId }),
     });
+  }
+
+  // Override request() error to include server `detail` field
+  async request(endpoint, options = {}) {
+    const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', ...options.headers },
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        // Prefer server's `detail` field (AI errors), fall back to `error`
+        throw new Error(err.detail || err.error || `HTTP ${response.status}`);
+      }
+      return response.json();
+    } catch (error) {
+      console.error(`API Error [${endpoint}]:`, error.message);
+      throw error;
+    }
   }
 
   async requestGeneration(type, questionText, shortAnswer, category) {

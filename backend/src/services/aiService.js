@@ -7,258 +7,220 @@ dotenv.config();
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-// ─── Real OpenRouter free model IDs ──────────────────────────────────
-// These are actual working free-tier models on OpenRouter as of 2025.
-// Free models are slower (10–30s) — timeout is set accordingly.
-const FAST_MODEL = process.env.OPENROUTER_FAST_MODEL || 'openrouter/free';
-const QUALITY_MODEL = process.env.OPENROUTER_QUALITY_MODEL || 'openrouter/free';
-
-// Fallback chain: if primary fails, try these in order
-const FALLBACK_MODELS = [
-  'openrouter/free',
-  'openrouter/free',
-];
+// ─── openrouter/free randomly selects from all available free models on OpenRouter.
+// It automatically filters for models that support the features your request needs.
+// This is the correct model string for zero-cost inference with auto model selection.
+const MODEL = process.env.OPENROUTER_MODEL || 'openrouter/free';
 
 const PROMPT_VERSION = 'v1';
-const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS || '30000'); // 30s for free models
+const AI_TIMEOUT_MS  = parseInt(process.env.AI_TIMEOUT_MS || '45000'); // free models ~20-40s
 
-// ─── Helpers ─────────────────────────────────────────────────────────
+// Warn on startup if key is missing
+if (!OPENROUTER_API_KEY) {
+  console.error('⚠️  OPENROUTER_API_KEY is not set — all AI calls will fail');
+}
 
+// ─── Cache helpers ─────────────────────────────────────────────────────
 function generateClusterId(text, language = 'Java') {
-  const normalized = (language + ':' + text).toLowerCase().replace(/[^\w\sа-яё]/gi, '').replace(/\s+/g, ' ').trim();
+  const normalized = (language + ':' + text)
+    .toLowerCase().replace(/[^\wа-яё\s]/gi, '').replace(/\s+/g, ' ').trim();
   return crypto.createHash('sha256').update(normalized || 'empty').digest('hex');
 }
 
-const parseAIResponse = (content) => {
+function parseAIResponse(content) {
+  // 1. Try direct parse
+  try { return JSON.parse(content); } catch {}
+  // 2. Strip markdown fences
+  const fenced = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fenced) { try { return JSON.parse(fenced[1]); } catch {} }
+  // 3. Extract first {...} or [...]
+  const obj = content.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+  if (obj) { try { return JSON.parse(obj[1]); } catch {} }
+  throw new Error('No JSON found in AI response: ' + content.substring(0, 120));
+}
+
+async function readCache(clusterId, mode, language) {
   try {
-    return JSON.parse(content);
-  } catch {
-    try {
-      const jsonMatch =
-        content.match(/```json\s*([\s\S]*?)\s*```/) ||
-        content.match(/```\s*([\s\S]*?)\s*```/) ||
-        content.match(/\{[\s\S]*\}/) ||
-        content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) return JSON.parse(jsonMatch[1] || jsonMatch[0]);
-      throw new Error('No JSON found in response');
-    } catch {
-      console.error('Failed to parse AI response:', content?.substring(0, 200));
-      throw new Error('Failed to parse AI response');
-    }
-  }
-};
-
-// ─── Dedup & Cache ───────────────────────────────────────────────────
-
-const pendingRequests = new Map();
-
-export const checkCache = async (questionText, mode, model, language = 'Java') => {
-  try {
-    const clusterId = generateClusterId(questionText, language);
     const { rows } = await pool.query(
-      'SELECT response FROM ai_cache WHERE cluster_id = $1 AND mode = $2 AND prompt_version = $3 AND language = $4',
+      'SELECT response FROM ai_cache WHERE cluster_id=$1 AND mode=$2 AND prompt_version=$3 AND language=$4',
       [clusterId, mode, PROMPT_VERSION, language]
     );
     return rows.length > 0 ? rows[0].response : null;
   } catch (err) {
-    console.error('DB Cache read error:', err.message);
+    console.error('Cache read error:', err.message);
     return null;
   }
-};
+}
 
-// ─── Single model call ───────────────────────────────────────────────
-
-async function callModel(messages, modelId, maxTokens, temperature) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
-
+async function writeCache(clusterId, mode, language, content) {
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.APP_URL || 'https://github.com/java-interview-tinder',
-        'X-Title': 'Java Interview Tinder',
-      },
-      body: JSON.stringify({ model: modelId, messages, max_tokens: maxTokens, temperature }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errBody = await response.text().catch(() => '');
-      throw new Error(`OpenRouter ${response.status}: ${errBody.substring(0, 100)}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) throw new Error('Empty response from model');
-    return content.trim();
+    await pool.query(
+      `INSERT INTO ai_cache (cluster_id, mode, model, prompt_version, language, response)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (cluster_id, mode, prompt_version, language) DO NOTHING`,
+      [clusterId, mode, MODEL, PROMPT_VERSION, language, content]
+    );
   } catch (err) {
-    clearTimeout(timeoutId);
-    throw err;
+    console.error('Cache write error:', err.message);
   }
 }
 
-// ─── Core AI Call (cache → primary model → fallbacks) ───────────────
+// ─── Dedup in-flight requests ──────────────────────────────────────────
+const pendingRequests = new Map();
 
-async function callAI(messages, context, maxTokens = 400, temperature = 0.7, isJson = false) {
-  const { questionText, mode, model: primaryModel, fallbackTemplate, language = 'Java' } = context;
+// ─── Single OpenRouter call ────────────────────────────────────────────
+async function callOpenRouter(messages, maxTokens = 500, temperature = 0.7) {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error('OPENROUTER_API_KEY is not configured on the server');
+  }
 
-  const clusterId = generateClusterId(questionText, language);
-  const cacheKey = `${clusterId}:${mode}:${language}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
 
-  // 1. Check DB Cache (model-agnostic — any model's answer is valid)
+  let response;
   try {
-    const { rows } = await pool.query(
-      'SELECT response FROM ai_cache WHERE cluster_id = $1 AND mode = $2 AND prompt_version = $3 AND language = $4',
-      [clusterId, mode, PROMPT_VERSION, language]
-    );
-    if (rows.length > 0) {
-      console.log(`✅ Cache hit: ${mode} ${language}`);
-      return isJson ? parseAIResponse(rows[0].response) : rows[0].response;
-    }
-  } catch (err) {
-    console.error('DB Cache read error:', err.message);
+    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.APP_URL || 'https://interview-tinder.app',
+        'X-Title': 'Interview Tinder',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages,
+        max_tokens: maxTokens,
+        temperature,
+      }),
+    });
+  } finally {
+    clearTimeout(timer);
   }
 
-  // 2. Deduplicate concurrent identical requests
-  if (pendingRequests.has(cacheKey)) {
-    return pendingRequests.get(cacheKey);
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`OpenRouter ${response.status}: ${body.substring(0, 200)}`);
   }
 
-  const aiPromise = (async () => {
-    if (!OPENROUTER_API_KEY) {
-      console.warn('⚠️  OPENROUTER_API_KEY not set — returning fallback');
-      return fallbackTemplate;
-    }
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content;
+  if (!content?.trim()) throw new Error('Empty response from OpenRouter');
 
-    const modelsToTry = [primaryModel, ...FALLBACK_MODELS];
-    let lastError;
+  console.log(`✅ OpenRouter (${MODEL}) responded [${content.length} chars]`);
+  return content.trim();
+}
 
-    for (const modelId of modelsToTry) {
-      try {
-        console.log(`🤖 Calling ${modelId} for ${mode}...`);
-        const content = await callModel(messages, modelId, maxTokens, temperature);
+// ─── Core call with cache + dedup ──────────────────────────────────────
+async function callAI(messages, { questionText, mode, language = 'Java', isJson = false, maxTokens = 500, temperature = 0.7 }) {
+  const clusterId = generateClusterId(questionText, language);
+  const dedupKey  = `${clusterId}:${mode}:${language}`;
 
-        // 3. Store in DB Cache
-        try {
-          await pool.query(
-            `INSERT INTO ai_cache (cluster_id, mode, model, prompt_version, language, response)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             ON CONFLICT (cluster_id, mode, prompt_version, language) DO NOTHING`,
-            [clusterId, mode, modelId, PROMPT_VERSION, language, content]
-          );
-        } catch (dbErr) {
-          // Cache write failure is non-fatal
-          console.error('DB Cache write error:', dbErr.message);
-        }
+  // 1. DB cache
+  const cached = await readCache(clusterId, mode, language);
+  if (cached) {
+    console.log(`✅ Cache hit [${mode}] ${language}`);
+    return isJson ? parseAIResponse(cached) : cached;
+  }
 
-        console.log(`✅ ${modelId} responded for ${mode}`);
-        return isJson ? parseAIResponse(content) : content;
-      } catch (err) {
-        lastError = err;
-        console.error(`❌ ${modelId} failed for ${mode}:`, err.message);
-        // Try next model
-      }
-    }
+  // 2. Dedup concurrent identical requests
+  if (pendingRequests.has(dedupKey)) {
+    const result = await pendingRequests.get(dedupKey);
+    return isJson ? parseAIResponse(typeof result === 'string' ? result : JSON.stringify(result)) : result;
+  }
 
-    console.error('All models failed, using fallback. Last error:', lastError?.message);
-    return fallbackTemplate;
+  const promise = (async () => {
+    const content = await callOpenRouter(messages, maxTokens, temperature);
+    await writeCache(clusterId, mode, language, content);
+    return isJson ? parseAIResponse(content) : content;
   })();
 
-  pendingRequests.set(cacheKey, aiPromise);
+  pendingRequests.set(dedupKey, promise);
   try {
-    return await aiPromise;
+    return await promise;
   } finally {
-    pendingRequests.delete(cacheKey);
+    pendingRequests.delete(dedupKey);
   }
 }
 
-// ─── Public API ──────────────────────────────────────────────────────
+// ─── Public API ────────────────────────────────────────────────────────
+export const checkCache = (questionText, mode, _model, language = 'Java') =>
+  readCache(generateClusterId(questionText, language), mode, language);
 
-export const generateExplanation = (questionText, shortAnswer, userId = null, language = 'Java') => {
+export function generateExplanation(questionText, shortAnswer, _userId, language = 'Java') {
   const lang = getLanguage(language);
   return callAI(
     [
       { role: 'system', content: lang.systemPrompt },
-      { role: 'user', content: lang.prompts.explanation(questionText, shortAnswer) },
+      { role: 'user',   content: lang.prompts.explanation(questionText, shortAnswer) },
     ],
-    { questionText, mode: 'explanation', model: QUALITY_MODEL, fallbackTemplate: 'Объяснение временно недоступно. Пожалуйста, попробуйте позже.', language },
-    500, 0.7, false
+    { questionText, mode: 'explanation', language, isJson: false, maxTokens: 600, temperature: 0.7 }
   );
-};
+}
 
-export const generateTestOptions = (questionText, correctAnswer, userId = null, language = 'Java') => {
+export function generateTestOptions(questionText, correctAnswer, _userId, language = 'Java') {
   const lang = getLanguage(language);
   return callAI(
     [
-      { role: 'system', content: 'Return ONLY a JSON array of 3 strings. No explanations, no markdown.' },
-      { role: 'user', content: lang.prompts.test(questionText, correctAnswer) },
+      { role: 'system', content: 'Ответь ТОЛЬКО JSON массивом из 3 строк. Никакого текста, никакого Markdown.' },
+      { role: 'user',   content: lang.prompts.test(questionText, correctAnswer) },
     ],
-    { questionText, mode: 'test', model: FAST_MODEL, fallbackTemplate: ['Вариант A', 'Вариант B', 'Вариант C'], language },
-    150, 0.5, true
+    { questionText, mode: 'test', language, isJson: true, maxTokens: 200, temperature: 0.5 }
   );
-};
+}
 
-export const generateBuggyCode = (questionText, topic, userId = null, language = 'Java') => {
+export function generateBuggyCode(questionText, topic, _userId, language = 'Java') {
   const lang = getLanguage(language);
   return callAI(
     [
-      { role: 'system', content: 'Return ONLY valid JSON. No markdown, no explanation.' },
-      { role: 'user', content: lang.prompts.bug(questionText, topic) },
+      { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
+      { role: 'user',   content: lang.prompts.bug(questionText, topic) },
     ],
-    { questionText, mode: 'bug', model: FAST_MODEL, fallbackTemplate: { code: '// Сервис временно недоступен', bug: 'N/A', options: ['N/A', 'N/A', 'N/A', 'N/A'] }, language },
-    300, 0.6, true
+    { questionText, mode: 'bug', language, isJson: true, maxTokens: 400, temperature: 0.6 }
   );
-};
+}
 
-export const generateBlitzStatement = (questionText, topic, userId = null, language = 'Java') => {
+export function generateBlitzStatement(questionText, topic, _userId, language = 'Java') {
   const lang = getLanguage(language);
   return callAI(
     [
-      { role: 'system', content: 'Return ONLY valid JSON. No markdown, no explanation.' },
-      { role: 'user', content: lang.prompts.blitz(questionText, topic) },
+      { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
+      { role: 'user',   content: lang.prompts.blitz(questionText, topic) },
     ],
-    { questionText, mode: 'blitz', model: FAST_MODEL, fallbackTemplate: { statement: 'Сервис временно недоступен.', isCorrect: false }, language },
-    150, 0.7, true
+    { questionText, mode: 'blitz', language, isJson: true, maxTokens: 150, temperature: 0.7 }
   );
-};
+}
 
-export const evaluateInterviewAnswer = (question, answer, userId = null, language = 'Java') => {
+export function evaluateInterviewAnswer(question, answer, _userId, language = 'Java') {
   const lang = getLanguage(language);
   return callAI(
     [
-      { role: 'system', content: 'Return ONLY valid JSON. No markdown, no explanation.' },
-      { role: 'user', content: lang.prompts.interview(question, answer) },
+      { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
+      { role: 'user',   content: lang.prompts.interview(question, answer) },
     ],
-    { questionText: `${question}|${answer}`, mode: 'interview', model: QUALITY_MODEL, fallbackTemplate: { score: 5, feedback: 'Оценка временно недоступна.', correctVersion: 'N/A' }, language },
-    200, 0.5, true
+    { questionText: `${question}|${answer}`, mode: 'interview', language, isJson: true, maxTokens: 300, temperature: 0.5 }
   );
-};
+}
 
-export const generateCodeCompletion = (questionText, topic, userId = null, language = 'Java') => {
+export function generateCodeCompletion(questionText, topic, _userId, language = 'Java') {
   const lang = getLanguage(language);
   return callAI(
     [
-      { role: 'system', content: 'Return ONLY valid JSON. No markdown, no explanation.' },
-      { role: 'user', content: lang.prompts.code(questionText, topic) },
+      { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
+      { role: 'user',   content: lang.prompts.code(questionText, topic) },
     ],
-    { questionText, mode: 'code', model: FAST_MODEL, fallbackTemplate: { snippet: '// Сервис временно недоступен', correctPart: 'N/A', options: ['N/A', 'N/A', 'N/A', 'N/A'] }, language },
-    300, 0.6, true
+    { questionText, mode: 'code', language, isJson: true, maxTokens: 400, temperature: 0.6 }
   );
-};
+}
 
-export const analyzeResume = (resumeText, userId = null, language = 'Java') => {
+export function analyzeResume(resumeText, _userId, language = 'Java') {
   const lang = getLanguage(language);
   return callAI(
     [
-      { role: 'system', content: 'Return ONLY valid JSON. No markdown, no explanation.' },
-      { role: 'user', content: lang.prompts.resume(resumeText) },
+      { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
+      { role: 'user',   content: lang.prompts.resume(resumeText) },
     ],
-    { questionText: resumeText.substring(0, 200), mode: 'resume', model: QUALITY_MODEL, fallbackTemplate: { skills: [], experienceLevel: 'Unknown', strengths: [], improvementAreas: [], suggestedQuestions: [] }, language },
-    500, 0.3, true
+    { questionText: resumeText.substring(0, 300), mode: 'resume', language, isJson: true, maxTokens: 600, temperature: 0.3 }
   );
-};
+}

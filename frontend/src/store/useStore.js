@@ -194,10 +194,18 @@ const useStore = create((set, get) => ({
     const response = await apiClient.submitCodeCompletionAnswer(questionId, answer);
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
+    // Incorrect -> open explanation modal; closeExplanation() advances currentIndex.
+    // Correct   -> do NOT auto-advance; CodeCompletionMode.handleNext calls advanceQuestion()
+    //              so the user sees the green feedback before the question changes.
     if (!response.isCorrect) get().loadExplanation(questionId);
-    else set(s => ({ currentIndex: s.currentIndex + 1 }));
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
     return response;
+  },
+
+  // Advance used by CodeCompletionMode so the component controls when currentIndex changes.
+  advanceQuestion: () => {
+    set(s => ({ currentIndex: s.currentIndex + 1 }));
+    if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
   },
 
   // ─── Blitz ─────────────────────────────────────────────────────────

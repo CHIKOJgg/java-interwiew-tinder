@@ -1,177 +1,214 @@
+/* ── Tinder card wrapper (positioned by the library) ──────────────── */
 .swipe-card {
   position: absolute;
   width: 100%;
   height: 100%;
+  /* Let the library handle touch for swiping, our handlers detect taps */
 }
 
+/* ── Outer card shell ─────────────────────────────────────────────── */
 .card {
   width: 100%;
   height: 100%;
   cursor: pointer;
-  perspective: 1000px;
+
+  /* 3-D perspective for the flip */
+  perspective: 1200px;
+
+  /* Prevent text selection / callout on long-press */
   user-select: none;
   -webkit-user-select: none;
-  touch-action: none;
+  -webkit-touch-callout: none;
+
+  /*
+   * CRITICAL for mobile flip:
+   * "touch-action: none" was the culprit — it tells the browser to hand
+   * ALL touch input to JS, which means the browser never fires the
+   * synthetic "click" event that pointerType==='touch' relies on.
+   * We need "touch-action: pan-y" so swipe-left/right is handled by
+   * TinderCard via JS, while our touchstart/end handlers do tap detection.
+   *
+   * Do NOT use "touch-action: none" here.
+   */
+  touch-action: pan-y;
 }
 
+/* ── 3-D flip container ───────────────────────────────────────────── */
 .card-inner {
   position: relative;
   width: 100%;
   height: 100%;
-  transition: transform 0.6s;
+  transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
   transform-style: preserve-3d;
+  will-change: transform;
 }
 
 .card.flipped .card-inner {
   transform: rotateY(180deg);
 }
 
+/* ── Both faces share this base ───────────────────────────────────── */
 .card-face {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  background: var(--tg-theme-bg-color, #fff);
-  border-radius: 20px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  padding: 24px;
+  inset: 0;
+  /* width + height = 100% */
+  border-radius: 22px;
+  padding: 22px 20px 18px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  /* Hide the face when it is rotated away */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.18),
+    0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
+/* ── Front face ───────────────────────────────────────────────────── */
 .card-front {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
 }
 
+/* ── Back face — rotated 180° so it appears on flip ──────────────── */
 .card-back {
   transform: rotateY(180deg);
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
+  background: linear-gradient(145deg, #f093fb 0%, #f5576c 100%);
+  color: #fff;
 }
 
+/* ── Badges ───────────────────────────────────────────────────────── */
 .badges-container {
   display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 7px;
   flex-wrap: wrap;
+  margin-bottom: 14px;
 }
 
-.category-badge {
-  display: inline-block;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-}
-
+.category-badge,
 .difficulty-badge {
-  display: inline-block;
-  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 13px;
   border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.6px;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
+/* ── Front: question text ─────────────────────────────────────────── */
 .question-content {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 20px 0;
+  padding: 12px 0;
 }
 
 .question-content h2 {
-  font-size: 24px;
-  line-height: 1.4;
-  font-weight: 600;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: clamp(17px, 4.5vw, 24px);
+  line-height: 1.45;
+  font-weight: 700;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
+/* ── Flip hint button ─────────────────────────────────────────────── */
 .flip-hint {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.15);
+  gap: 7px;
+  padding: 13px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
-  font-size: 14px;
-  opacity: 0.8;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  /* Explicit tap area for mobile */
+  min-height: 46px;
+  touch-action: manipulation;
+  transition: background 0.15s;
 }
 
+.flip-hint:active {
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(0.97);
+}
+
+/* ── Back: answer text ────────────────────────────────────────────── */
 .answer-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
+  overflow-y: auto;
 }
 
 .answer-label {
-  font-size: 14px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  opacity: 0.8;
-  font-weight: 600;
+  letter-spacing: 1.2px;
+  opacity: 0.75;
+  font-weight: 700;
 }
 
 .answer-content p {
-  font-size: 18px;
+  font-size: clamp(15px, 4vw, 19px);
   line-height: 1.6;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 0;
 }
 
+/* ── Swipe hints at bottom of back ───────────────────────────────── */
 .swipe-instructions {
   display: flex;
   justify-content: space-between;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.15);
+  padding: 13px 16px;
+  margin-top: 14px;
+  background: rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(10px);
   border-radius: 12px;
-  margin-top: 20px;
 }
 
 .swipe-hint {
-  font-size: 14px;
-  font-weight: 600;
-  opacity: 0.9;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .swipe-hint.left {
-  color: #ff6b6b;
+  color: #ff8787;
 }
 
 .swipe-hint.right {
-  color: #51cf66;
+  color: #8ce99a;
 }
 
-/* Animation for card appearance */
-.swipe-card {
-  animation: cardAppear 0.4s ease-out;
-}
-
+/* ── Card appear animation ────────────────────────────────────────── */
 @keyframes cardAppear {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.92);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+.swipe-card {
+  animation: cardAppear 0.35s ease-out;
 }

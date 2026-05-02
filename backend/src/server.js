@@ -101,13 +101,13 @@ app.post('/api/auth/login', async (req, res) => {
              VALUES ($1, 'pro', 'active', NULL, 'admin_grant', 'system')
              ON CONFLICT DO NOTHING`,
             [user.telegram_id]
-          ).catch(() => {});
+          ).catch(() => { });
         });
         await pool.query(
           `UPDATE users SET subscription_plan = 'pro' WHERE telegram_id = $1`,
           [user.telegram_id]
-        ).catch(() => {});
-      } catch {}
+        ).catch(() => { });
+      } catch { }
     }
 
     // Background warm-up: pre-enqueue AI generation jobs for this user's next questions
@@ -119,7 +119,7 @@ app.post('/api/auth/login', async (req, res) => {
         [user.telegram_id]
       );
       preload.rows.forEach(q => {
-        enqueueJob('explanation', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => {});
+        enqueueJob('explanation', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => { });
       });
     } catch (e) { console.error('Preload error:', e.message); }
 
@@ -136,7 +136,7 @@ app.post('/api/auth/login', async (req, res) => {
           [user.telegram_id]
         );
         if (subResult.rows.length > 0) plan = subResult.rows[0].plan_id;
-      } catch {}
+      } catch { }
     }
 
     res.json({
@@ -188,7 +188,7 @@ app.post('/api/preferences', validateBody({ userId: { required: true }, categori
       [userId, categories, language || 'Java']
     );
     if (language) {
-      await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => {});
+      await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => { });
     }
     res.json({ success: true });
   } catch {
@@ -210,7 +210,7 @@ app.post('/api/preferences/language', validateBody({ userId: { required: true },
          updated_at = NOW()`,
       [userId, language]
     );
-    await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => {});
+    await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => { });
     res.json({ success: true });
   } catch (err) {
     console.error('Error updating language preference:', err);
@@ -282,21 +282,65 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
   try {
     const { type } = req.params;
     const { questionText, shortAnswer, category, userId, language = 'Java' } = req.body;
-    if (!questionText) return res.status(400).json({ error: 'questionText is required' });
+
+    if (!questionText) {
+      return res.status(400).json({ error: 'questionText is required' });
+    }
 
     const modeMap = {
-      explanation: 'explanation', test: 'test', blitz: 'blitz', bug: 'bug', code: 'code',
+      explanation: 'explanation',
+      test: 'test',
+      blitz: 'blitz',
+      bug: 'bug',
+      code: 'code',
     };
-    const mode = modeMap[type];
-    if (!mode) return res.status(400).json({ error: 'Invalid generation type' });
 
+    const mode = modeMap[type];
+    if (!mode) {
+      return res.status(400).json({ error: 'Invalid generation type' });
+    }
+
+    // ─── 1. Check cache first ───────────────────────────────────────
     const cached = await checkCache(questionText, mode, null, language);
     if (cached) {
       return res.json({ status: 'ready', data: cached });
     }
 
+    // ─── 2. Check existing job (PREVENT DUPLICATES) ─────────────────
+    const existingJob = await pool.query(
+      `SELECT id, status 
+       FROM ai_jobs 
+       WHERE task_type = $1 
+         AND payload->>'questionText' = $2 
+         AND payload->>'language' = $3
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [type, questionText, language]
+    );
+
+    if (existingJob.rows.length > 0) {
+      const job = existingJob.rows[0];
+
+      if (job.status === 'completed') {
+        // try cache again (should now exist)
+        const cachedAfter = await checkCache(questionText, mode, null, language);
+        if (cachedAfter) {
+          return res.json({ status: 'ready', data: cachedAfter });
+        }
+      }
+
+      if (job.status === 'pending' || job.status === 'processing') {
+        return res.json({ status: 'pending' });
+      }
+
+      // failed → allow retry (fallthrough)
+    }
+
+    // ─── 3. Enqueue ONLY if no active job ───────────────────────────
     await enqueueJob(type, { questionText, shortAnswer, category, userId, language });
+
     return res.json({ status: 'pending' });
+
   } catch (err) {
     console.error('Error in /api/generate/:type:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -432,7 +476,7 @@ app.post('/api/questions/explain', async (req, res) => {
     const cachedAI = await checkCache(question.question_text, 'explanation', null, question.language || 'Java');
     if (cachedAI) {
       // Backfill the questions table cache too
-      pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cachedAI, questionId]).catch(() => {});
+      pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cachedAI, questionId]).catch(() => { });
       return res.json({ explanation: cachedAI, cached: true });
     }
 
@@ -443,7 +487,7 @@ app.post('/api/questions/explain', async (req, res) => {
     );
 
     // Backfill both caches asynchronously
-    pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [explanation, questionId]).catch(() => {});
+    pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [explanation, questionId]).catch(() => { });
 
     res.json({ explanation, cached: false });
   } catch (error) {
@@ -465,7 +509,7 @@ app.post('/api/user/analyze-resume', rateLimit('resume'), async (req, res) => {
     await pool.query(
       'UPDATE users SET resume_text = $1, parsed_resume_data = $2 WHERE telegram_id = $3',
       [resumeText, parsedData, userId]
-    ).catch(() => {});
+    ).catch(() => { });
     res.json({ success: true, parsedData });
   } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
@@ -578,7 +622,7 @@ app.post('/api/admin/grant-plan', async (req, res) => {
     await pool.query('COMMIT');
     res.json({ success: true, message: `Granted ${planId} to ${targetUserId}` });
   } catch (err) {
-    await pool.query('ROLLBACK').catch(() => {});
+    await pool.query('ROLLBACK').catch(() => { });
     res.status(500).json({ error: err.message });
   }
 });

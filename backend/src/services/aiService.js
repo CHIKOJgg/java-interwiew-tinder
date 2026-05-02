@@ -6,61 +6,98 @@ import { getLanguage } from './languageRegistry.js';
 dotenv.config();
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-
-// ─── openrouter/free randomly selects from all available free models on OpenRouter.
-// It automatically filters for models that support the features your request needs.
-// This is the correct model string for zero-cost inference with auto model selection.
 const MODEL = process.env.OPENROUTER_MODEL || 'openrouter/free';
-
 const PROMPT_VERSION = 'v1';
-const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS || '30000'); // free models ~20-40s
+const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS || '30000', 10);
 
-// Warn on startup if key is missing
 if (!OPENROUTER_API_KEY) {
   console.error('⚠️  OPENROUTER_API_KEY is not set — all AI calls will fail');
 }
 
-// ─── Cache helpers ─────────────────────────────────────────────────────
-function generateClusterId(text, language = 'Java') {
-  const normalized = (language + ':' + text)
-    .toLowerCase().replace(/[^\wа-яё\s]/gi, '').replace(/\s+/g, ' ').trim();
-  return crypto.createHash('sha256').update(normalized || 'empty').digest('hex');
+function generateClusterId(text, language = 'Java', mode = '') {
+  const raw = `${language}:${mode}:${text}`;
+  return crypto.createHash('sha256').update(raw || 'empty').digest('hex');
 }
 
 function parseAIResponse(content) {
-  // 1. Try direct parse
-  try { return JSON.parse(content); } catch { }
-  // 2. Strip markdown fences
+  if (typeof content !== 'string') {
+    throw new Error('AI response is not a string');
+  }
+
+  try {
+    return JSON.parse(content);
+  } catch { }
+
   const fenced = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenced) { try { return JSON.parse(fenced[1]); } catch { } }
-  // 3. Extract first {...} or [...]
+  if (fenced) {
+    try {
+      return JSON.parse(fenced[1]);
+    } catch { }
+  }
+
   const obj = content.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-  if (obj) { try { return JSON.parse(obj[1]); } catch { } }
+  if (obj) {
+    try {
+      return JSON.parse(obj[1]);
+    } catch { }
+  }
+
   throw new Error('No JSON found in AI response: ' + content.substring(0, 120));
 }
 
-async function readCache(clusterId, mode, model, language) {
-  const { rows } = await pool.query(
-    'SELECT response FROM ai_cache WHERE cluster_id=$1 AND mode=$2 AND model=$3 AND prompt_version=$4 AND language=$5',
-    [clusterId, mode, model, PROMPT_VERSION, language]
-  );
-  return rows.length > 0 ? rows[0].response : null;
+function serializeCacheContent(content) {
+  if (content == null) return '';
+  if (typeof content === 'string') return content;
+  return JSON.stringify(content);
+}
+
+async function readCache(clusterId, mode, model, language, isJson = false) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT response FROM ai_cache
+       WHERE cluster_id=$1 AND mode=$2 AND model=$3 AND prompt_version=$4 AND language=$5`,
+      [clusterId, mode, model, PROMPT_VERSION, language]
+    );
+
+    if (rows.length === 0) return null;
+
+    const response = rows[0].response;
+    if (!isJson) return response;
+
+    try {
+      return parseAIResponse(response);
+    } catch (err) {
+      console.error('Cached JSON parse error:', err.message);
+      return response;
+    }
+  } catch (err) {
+    console.error('Cache read error:', err.message);
+    return null;
+  }
 }
 
 async function writeCache(clusterId, mode, model, language, content) {
-  await pool.query(
-    `INSERT INTO ai_cache (cluster_id, mode, model, prompt_version, language, response)
-     VALUES ($1,$2,$3,$4,$5,$6)
-     ON CONFLICT (cluster_id, mode, model, prompt_version, language)
-     DO UPDATE SET response = EXCLUDED.response`,
-    [clusterId, mode, model, PROMPT_VERSION, language, content]
-  );
+  try {
+    const text = serializeCacheContent(content).trim();
+    if (!text) {
+      console.warn(`Skipping cache write [${mode}] ${language}: empty content`);
+      return;
+    }
+
+    await pool.query(
+      `INSERT INTO ai_cache (cluster_id, mode, model, prompt_version, language, response)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (cluster_id, mode, model, prompt_version, language)
+       DO UPDATE SET response = EXCLUDED.response`,
+      [clusterId, mode, model, PROMPT_VERSION, language, text]
+    );
+  } catch (err) {
+    console.error('Cache write error:', err.message);
+  }
 }
 
-// ─── Dedup in-flight requests ──────────────────────────────────────────
 const pendingRequests = new Map();
 
-// ─── Single OpenRouter call ────────────────────────────────────────────
 async function callOpenRouter(messages, maxTokens = 500, temperature = 0.7) {
   if (!OPENROUTER_API_KEY) {
     throw new Error('OPENROUTER_API_KEY is not configured on the server');
@@ -98,37 +135,44 @@ async function callOpenRouter(messages, maxTokens = 500, temperature = 0.7) {
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
-  if (!content?.trim()) throw new Error('Empty response from OpenRouter');
+
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new Error('Empty response from OpenRouter');
+  }
 
   console.log(`✅ OpenRouter (${MODEL}) responded [${content.length} chars]`);
   return content.trim();
 }
 
-// ─── Core call with cache + dedup ──────────────────────────────────────
-async function callAI(messages, { questionText, mode, language = 'Java', isJson = false, maxTokens = 500, temperature = 0.7 }) {
-  const clusterId = generateClusterId(questionText, language);
-  const dedupKey = `${clusterId}:${mode}:${language}`;
+async function callAI(messages, {
+  questionText,
+  mode,
+  language = 'Java',
+  isJson = false,
+  maxTokens = 500,
+  temperature = 0.7,
+}) {
+  const clusterId = generateClusterId(questionText, language, mode);
+  const dedupKey = `${clusterId}:${mode}:${language}:${MODEL}:${isJson ? 'json' : 'text'}`;
 
-  // 1. DB cache
-  const cached = await readCache(clusterId, mode, language);
-  if (cached) {
+  const cached = await readCache(clusterId, mode, MODEL, language, isJson);
+  if (cached !== null && cached !== undefined) {
     console.log(`✅ Cache hit [${mode}] ${language}`);
-    return isJson ? parseAIResponse(cached) : cached;
+    return cached;
   }
 
-  // 2. Dedup concurrent identical requests
   if (pendingRequests.has(dedupKey)) {
-    const result = await pendingRequests.get(dedupKey);
-    return isJson ? parseAIResponse(typeof result === 'string' ? result : JSON.stringify(result)) : result;
+    return pendingRequests.get(dedupKey);
   }
 
   const promise = (async () => {
     const content = await callOpenRouter(messages, maxTokens, temperature);
-    await writeCache(clusterId, mode, language, content);
+    await writeCache(clusterId, mode, MODEL, language, content);
     return isJson ? parseAIResponse(content) : content;
   })();
 
   pendingRequests.set(dedupKey, promise);
+
   try {
     return await promise;
   } finally {
@@ -136,9 +180,8 @@ async function callAI(messages, { questionText, mode, language = 'Java', isJson 
   }
 }
 
-// ─── Public API ────────────────────────────────────────────────────────
-export const checkCache = (questionText, mode, _model, language = 'Java') =>
-  readCache(generateClusterId(questionText, language), mode, language);
+export const checkCache = (questionText, mode, _model, language = 'Java', isJson = false) =>
+  readCache(generateClusterId(questionText, language, mode), mode, MODEL, language, isJson);
 
 export function generateExplanation(questionText, shortAnswer, _userId, language = 'Java') {
   const lang = getLanguage(language);

@@ -1,19 +1,16 @@
-/* ─── FIX 3 (continued): .app needs explicit height, not just height: 100% ───
-   height: 100% only works if the parent (#root) has a defined height.
-   With min-height on #root (not height), children using height: 100% get 0.
-   Solution: use min-height: 100% AND flex: 1 so .app expands to fill #root.
-────────────────────────────────────────────────────────────────────────────── */
+/* ── Root layout — fills the Telegram WebApp viewport ────────────── */
 .app {
   width: 100%;
   flex: 1;
-  /* grow to fill #root's flex container */
   min-height: 100%;
-  /* ensure it's at least as tall as #root */
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Push content above the fixed bottom nav (56px) + safe-area */
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
 }
 
+/* ── Auth / loading screens ───────────────────────────────────────── */
 .app-loading {
   width: 100%;
   flex: 1;
@@ -30,7 +27,7 @@
 
 .app-loading .spinner {
   animation: spin 1s linear infinite;
-  color: var(--tg-theme-button-color, #5c7cfa);
+  color: var(--tg-theme-button-color, #667eea);
 }
 
 .app-loading p {
@@ -38,22 +35,24 @@
   font-size: 14px;
 }
 
+/* ── Main card area ───────────────────────────────────────────────── */
 .card-container {
   flex: 1;
   position: relative;
   overflow: hidden;
-  padding: 20px;
+  padding: 14px 16px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* ── Swipe card stack ─────────────────────────────────────────────── */
 .card-stack {
   position: relative;
   width: 100%;
-  max-width: 400px;
-  height: 500px;
-  max-height: 60vh;
+  max-width: 420px;
+  /* Use viewport-relative height so the card never overflows */
+  height: min(520px, 62vh);
 }
 
 .card-wrapper {
@@ -64,68 +63,85 @@
   will-change: transform, opacity;
 }
 
+/* Stacked card shadows (2nd card peeking) */
+.card-wrapper:nth-child(2) {
+  transform: scale(0.96) translateY(8px);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.card-wrapper:nth-child(3) {
+  transform: scale(0.92) translateY(16px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* ── Swipe action buttons ─────────────────────────────────────────── */
+/* SwipeButtons sit above the bottom nav; add extra bottom margin */
+.swipe-buttons-container {
+  position: fixed;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.swipe-buttons-container>* {
+  pointer-events: all;
+}
+
+/* ── Completion screen ────────────────────────────────────────────── */
 .completion-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  padding: 40px;
+  gap: 18px;
+  padding: 32px 24px;
   text-align: center;
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
 .completion-screen h2 {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--tg-theme-text-color, #2d3436);
   margin: 0;
 }
 
 .completion-screen p {
-  font-size: 16px;
+  font-size: 15px;
   color: var(--tg-theme-hint-color, #868e96);
   margin: 0;
 }
 
-.restart-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.completion-screen button {
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: #fff;
   border: none;
-  border-radius: 16px;
-  padding: 16px 32px;
-  font-size: 16px;
+  border-radius: 14px;
+  padding: 14px 28px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(118, 75, 162, 0.35);
+  touch-action: manipulation;
+  box-shadow: 0 4px 14px rgba(118, 75, 162, 0.3);
+  min-height: 50px;
 }
 
-.restart-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(118, 75, 162, 0.45);
-}
-
-.restart-button:active {
+.completion-screen button:active {
   transform: scale(0.97);
 }
 
-@media (max-height: 700px) {
-  .card-stack {
-    height: 400px;
-  }
-}
-
-@media (max-height: 600px) {
-  .card-stack {
-    height: 350px;
-  }
-}
-
+/* ── Animations ───────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
 
   to {
@@ -137,5 +153,18 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* ── Responsive heights ───────────────────────────────────────────── */
+@media (max-height: 680px) {
+  .card-stack {
+    height: min(420px, 56vh);
+  }
+}
+
+@media (max-height: 580px) {
+  .card-stack {
+    height: min(360px, 52vh);
   }
 }

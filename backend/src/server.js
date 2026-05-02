@@ -300,20 +300,20 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
       return res.status(400).json({ error: 'Invalid generation type' });
     }
 
-    // ─── 1. Check cache first ───────────────────────────────────────
-    const cached = await checkCache(questionText, mode, null, language);
-    if (cached) {
+    const isJson = mode !== 'explanation';
+
+    const cached = await checkCache(questionText, mode, null, language, isJson);
+    if (cached !== null && cached !== undefined) {
       return res.json({ status: 'ready', data: cached });
     }
 
-    // ─── 2. Check existing job (PREVENT DUPLICATES) ─────────────────
     const existingJob = await pool.query(
-      `SELECT id, status 
-       FROM ai_jobs 
-       WHERE task_type = $1 
-         AND payload->>'questionText' = $2 
+      `SELECT id, status, error_message
+       FROM ai_jobs
+       WHERE task_type = $1
+         AND payload->>'questionText' = $2
          AND payload->>'language' = $3
-       ORDER BY created_at DESC 
+       ORDER BY created_at DESC
        LIMIT 1`,
       [type, questionText, language]
     );
@@ -321,28 +321,90 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
     if (existingJob.rows.length > 0) {
       const job = existingJob.rows[0];
 
-      if (job.status === 'completed') {
-        // try cache again (should now exist)
-        const cachedAfter = await checkCache(questionText, mode, null, language);
-        if (cachedAfter) {
-          return res.json({ status: 'ready', data: cachedAfter });
-        }
-      }
-
       if (job.status === 'pending' || job.status === 'processing') {
         return res.json({ status: 'pending' });
       }
 
-      // failed → allow retry (fallthrough)
+      if (job.status === 'completed') {
+        const cachedAfter = await checkCache(questionText, mode, null, language, isJson);
+        if (cachedAfter !== null && cachedAfter !== undefined) {
+          return res.json({ status: 'ready', data: cachedAfter });
+        }
+      }
+
+      if (job.status === 'failed') {
+        return res.json({ status: 'failed', error: job.error_message || 'Generation failed' });
+      }
     }
 
-    // ─── 3. Enqueue ONLY if no active job ───────────────────────────
     await enqueueJob(type, { questionText, shortAnswer, category, userId, language });
-
     return res.json({ status: 'pending' });
-
   } catch (err) {
     console.error('Error in /api/generate/:type:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/generate/:type', async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { questionText, language = 'Java' } = req.query;
+
+    if (!questionText) {
+      return res.status(400).json({ error: 'questionText is required' });
+    }
+
+    const modeMap = {
+      explanation: 'explanation',
+      test: 'test',
+      blitz: 'blitz',
+      bug: 'bug',
+      code: 'code',
+    };
+
+    const mode = modeMap[type];
+    if (!mode) {
+      return res.status(400).json({ error: 'Invalid generation type' });
+    }
+
+    const isJson = mode !== 'explanation';
+
+    const cached = await checkCache(questionText, mode, null, language, isJson);
+    if (cached !== null && cached !== undefined) {
+      return res.json({ status: 'ready', data: cached });
+    }
+
+    const job = await pool.query(
+      `SELECT id, status, error_message
+       FROM ai_jobs
+       WHERE task_type = $1
+         AND payload->>'questionText' = $2
+         AND payload->>'language' = $3
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [type, questionText, language]
+    );
+
+    if (job.rows.length === 0) {
+      return res.json({ status: 'not_found' });
+    }
+
+    const row = job.rows[0];
+
+    if (row.status === 'failed') {
+      return res.json({ status: 'failed', error: row.error_message || 'Generation failed' });
+    }
+
+    if (row.status === 'completed') {
+      const cachedAfter = await checkCache(questionText, mode, null, language, isJson);
+      if (cachedAfter !== null && cachedAfter !== undefined) {
+        return res.json({ status: 'ready', data: cachedAfter });
+      }
+    }
+
+    return res.json({ status: 'pending' });
+  } catch (err) {
+    console.error('Error in GET /api/generate/:type:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

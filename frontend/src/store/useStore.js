@@ -11,6 +11,8 @@ const useStore = create((set, get) => ({
   isLoading: true,
   language: 'Java',
 
+  pendingGenerations: {},
+
   questions: [],
   currentIndex: 0,
   isLoadingQuestions: false,
@@ -236,29 +238,91 @@ const useStore = create((set, get) => ({
   },
   clearResumeData: () => set({ resumeData: null }),
 
-  // ─── AI generation ─────────────────────────────────────────────────
   fetchGeneration: async (type, questionId) => {
     const question = get().questions.find(q => q.id === questionId);
     if (!question) return;
-    const typeMap = { test: 'options', bug: 'bugHuntingData', blitz: 'blitzData', code: 'codeCompletionData' };
+
+    const typeMap = {
+      test: 'options',
+      bug: 'bugHuntingData',
+      blitz: 'blitzData',
+      code: 'codeCompletionData',
+    };
     const dataKey = typeMap[type];
-    try {
-      const response = await apiClient.requestGeneration(type, question.question, question.shortAnswer, question.category);
-      if (response.status === 'ready' && response.data) {
+    const key = `${type}:${questionId}:${question.language || get().language}`;
+
+    if (get().pendingGenerations[key]) {
+      return get().pendingGenerations[key];
+    }
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    const promise = (async () => {
+      const startResponse = await apiClient.requestGeneration(
+        type,
+        question.question,
+        question.shortAnswer,
+        question.category
+      );
+
+      if (startResponse.status === 'ready' && startResponse.data !== undefined) {
         set(state => ({
           questions: state.questions.map(q =>
             q.id === questionId
-              ? { ...q, [dataKey]: response.data, options: type === 'test' ? response.data : q.options }
+              ? { ...q, [dataKey]: startResponse.data, options: type === 'test' ? startResponse.data : q.options }
               : q
           ),
         }));
-        return response.data;
-      } else if (response.status === 'pending') {
-        await new Promise(r => setTimeout(r, 2000));
-        return get().fetchGeneration(type, questionId);
+        return startResponse.data;
       }
+
+      const deadline = Date.now() + 60000;
+
+      while (Date.now() < deadline) {
+        await sleep(2000);
+
+        const statusResponse = await apiClient.request(
+          `/generate/${type}?questionText=${encodeURIComponent(question.question)}&language=${encodeURIComponent(question.language || get().language)}`,
+          { method: 'GET' }
+        );
+
+        if (statusResponse.status === 'ready' && statusResponse.data !== undefined) {
+          set(state => ({
+            questions: state.questions.map(q =>
+              q.id === questionId
+                ? { ...q, [dataKey]: statusResponse.data, options: type === 'test' ? statusResponse.data : q.options }
+                : q
+            ),
+          }));
+          return statusResponse.data;
+        }
+
+        if (statusResponse.status === 'failed') {
+          throw new Error(statusResponse.error || 'Generation failed');
+        }
+      }
+
+      throw new Error('Generation timeout');
+    })();
+
+    set(state => ({
+      pendingGenerations: {
+        ...state.pendingGenerations,
+        [key]: promise,
+      },
+    }));
+
+    try {
+      return await promise;
     } catch (err) {
       console.error(`fetchGeneration(${type}) failed:`, err);
+      throw err;
+    } finally {
+      set(state => {
+        const next = { ...state.pendingGenerations };
+        delete next[key];
+        return { pendingGenerations: next };
+      });
     }
   },
 

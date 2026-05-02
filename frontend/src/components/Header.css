@@ -71,27 +71,32 @@
 }
 
 .action-btn {
-  background: var(--tg-theme-button-color, #667eea);
-  border: none;
-  border-radius: 9px;
-  width: 34px;
-  height: 34px;
+  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  /* Larger: 40×40 so icons are easy to tap and clearly visible */
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  /* Icon color contrasts on both light and dark Telegram themes */
+  color: var(--tg-theme-text-color, #2d3436);
   cursor: pointer;
   flex-shrink: 0;
   touch-action: manipulation;
-  transition: opacity 0.15s, transform 0.1s;
+  transition: opacity 0.15s, transform 0.1s, background 0.15s;
 }
 
 .action-btn.premium {
   background: linear-gradient(135deg, #f6a821, #f03e3e);
+  border-color: transparent;
+  color: #fff;
 }
 
 .action-btn:active {
-  transform: scale(0.93);
+  opacity: 0.7;
+  transform: scale(0.92);
 }
 
 /* ── Progress / stats row ─────────────────────────────────────────── */

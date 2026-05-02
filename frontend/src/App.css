@@ -1,4 +1,4 @@
-/* ── Root layout — fills the Telegram WebApp viewport ────────────── */
+/* ── Root layout ───────────────────────────────────────────────────── */
 .app {
   width: 100%;
   flex: 1;
@@ -6,11 +6,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Push content above the fixed bottom nav (56px) + safe-area */
   padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
 }
 
-/* ── Auth / loading screens ───────────────────────────────────────── */
 .app-loading {
   width: 100%;
   flex: 1;
@@ -35,66 +33,63 @@
   font-size: 14px;
 }
 
-/* ── Main card area ───────────────────────────────────────────────── */
 .card-container {
   flex: 1;
   position: relative;
   overflow: hidden;
-  padding: 14px 16px 12px;
+  padding: 14px 16px 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* ── Swipe card stack ─────────────────────────────────────────────── */
+/* ── Swipe card stack ─────────────────────────────────────── */
 .card-stack {
   position: relative;
   width: 100%;
   max-width: 420px;
-  /* Use viewport-relative height so the card never overflows */
-  height: min(520px, 62vh);
+  height: min(500px, 60vh);
 }
 
 .card-wrapper {
   position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.card-wrapper:not(.card-behind) {
+  z-index: 3;
+}
+
+.card-wrapper.card-behind:nth-child(2) {
+  transform: scale(0.95) translateY(10px);
+  z-index: 2;
+}
+
+.card-wrapper.card-behind:nth-child(3) {
+  transform: scale(0.90) translateY(20px);
+  z-index: 1;
+}
+
+/*
+ * Peek shell — only the gradient background, no text.
+ * This prevents question text / badges of card #2 and #3
+ * from bleeding through the active card's translucent opacity layers.
+ */
+.card-peek-shell {
   width: 100%;
   height: 100%;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  will-change: transform, opacity;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #5a72d8 0%, #6b409a 100%);
+  opacity: 0.55;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .14), 0 1px 4px rgba(0, 0, 0, .1);
 }
 
-/* Stacked card shadows (2nd card peeking) */
-.card-wrapper:nth-child(2) {
-  transform: scale(0.96) translateY(8px);
-  opacity: 0.6;
-  pointer-events: none;
+.card-wrapper.card-behind:nth-child(3) .card-peek-shell {
+  opacity: 0.30;
 }
 
-.card-wrapper:nth-child(3) {
-  transform: scale(0.92) translateY(16px);
-  opacity: 0.3;
-  pointer-events: none;
-}
-
-/* ── Swipe action buttons ─────────────────────────────────────────── */
-/* SwipeButtons sit above the bottom nav; add extra bottom margin */
-.swipe-buttons-container {
-  position: fixed;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  z-index: 50;
-  pointer-events: none;
-}
-
-.swipe-buttons-container>* {
-  pointer-events: all;
-}
-
-/* ── Completion screen ────────────────────────────────────────────── */
+/* ── Completion ────────────────────────────────────────────── */
 .completion-screen {
   display: flex;
   flex-direction: column;
@@ -129,7 +124,7 @@
   font-weight: 700;
   cursor: pointer;
   touch-action: manipulation;
-  box-shadow: 0 4px 14px rgba(118, 75, 162, 0.3);
+  box-shadow: 0 4px 14px rgba(118, 75, 162, .3);
   min-height: 50px;
 }
 
@@ -137,7 +132,6 @@
   transform: scale(0.97);
 }
 
-/* ── Animations ───────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -156,7 +150,6 @@
   }
 }
 
-/* ── Responsive heights ───────────────────────────────────────────── */
 @media (max-height: 680px) {
   .card-stack {
     height: min(420px, 56vh);

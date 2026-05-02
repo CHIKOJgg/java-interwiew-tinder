@@ -17,20 +17,15 @@ import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
 import './App.css';
 
-// ─── FIX 1: Mobile-safe Telegram init ────────────────────────────────────────
-// Polls for window.Telegram?.WebApp to appear (it loads asynchronously in
-// Telegram's mobile WebView), then waits for initData to be populated.
 function getTelegramInitData() {
   return new Promise((resolve, reject) => {
     let attempts = 0;
-    const maxAttempts = 80; // 100ms × 80 = 8 seconds max
+    const maxAttempts = 80;
 
     const interval = setInterval(() => {
       attempts++;
-
       const tg = window.Telegram?.WebApp;
 
-      // WebApp bridge not injected yet — keep waiting
       if (!tg) {
         if (attempts >= maxAttempts) {
           clearInterval(interval);
@@ -39,22 +34,18 @@ function getTelegramInitData() {
         return;
       }
 
-      // Call ready()/expand() exactly once, the first time WebApp appears.
-      // Guard with a flag so we don't spam it on every tick.
       if (!tg._readyCalled) {
         tg._readyCalled = true;
         try { tg.ready(); } catch (e) { console.warn('tg.ready() failed:', e); }
         try { tg.expand(); } catch (e) { console.warn('tg.expand() failed:', e); }
       }
 
-      // initData is populated — done
       if (tg.initData && tg.initData.length > 0) {
         clearInterval(interval);
         resolve(tg.initData);
         return;
       }
 
-      // Timeout after 8 seconds with initData still empty
       if (attempts >= maxAttempts) {
         clearInterval(interval);
         reject(new Error('initData пустой — приложение должно открываться через Telegram'));
@@ -126,9 +117,6 @@ function App() {
     cardRefs.current[currentIndex]?.swipe?.(direction);
   };
 
-  // ─── FIX 2: Use app-loading (flex-centered) instead of app for init screens ─
-  // .app uses height: 100% which collapses on mobile if root has no height.
-  // .app-loading uses flex centering and works regardless of parent height.
   if (initState === 'waiting_telegram') {
     return (
       <div className="app-loading">
@@ -162,17 +150,9 @@ function App() {
     );
   }
 
-  if (screen === 'category') {
-    return <CategorySelection onComplete={handleCategoryDone} />;
-  }
-
-  if (screen === 'resume') {
-    return <ResumeAnalyzer onBack={() => setScreen('main')} />;
-  }
-
-  if (screen === 'subscriptions') {
-    return <SubscriptionPlans onBack={() => setScreen('main')} />;
-  }
+  if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} />;
+  if (screen === 'resume') return <ResumeAnalyzer onBack={() => setScreen('main')} />;
+  if (screen === 'subscriptions') return <SubscriptionPlans onBack={() => setScreen('main')} />;
 
   const renderMode = () => {
     if (isLoadingQuestions) return <SkeletonCard />;
@@ -195,13 +175,23 @@ function App() {
         return (
           <div className="card-stack">
             {questions.slice(currentIndex, currentIndex + 3).map((q, index) => (
-              <div key={q.id} className="card-wrapper">
-                <QuestionCard
-                  ref={el => (cardRefs.current[currentIndex + index] = el)}
-                  question={q}
-                  onSwipe={index === 0 ? handleSwipe : null}
-                  canSwipe={index === 0}
-                />
+              <div
+                key={q.id}
+                className={`card-wrapper ${index > 0 ? 'card-behind' : ''}`}
+                style={{ zIndex: 3 - index }}
+              >
+                {index === 0 ? (
+                  // ── Active card: full QuestionCard with flip ──
+                  <QuestionCard
+                    ref={el => (cardRefs.current[currentIndex] = el)}
+                    question={q}
+                    onSwipe={handleSwipe}
+                    canSwipe={true}
+                  />
+                ) : (
+                  // ── Peek cards: blank gradient shell only, no text bleeding ──
+                  <div className="card-peek-shell" />
+                )}
               </div>
             ))}
           </div>

@@ -190,7 +190,7 @@ export function generateExplanation(questionText, shortAnswer, _userId, language
       { role: 'system', content: lang.systemPrompt },
       { role: 'user', content: lang.prompts.explanation(questionText, shortAnswer) },
     ],
-    { questionText, mode: 'explanation', language, isJson: false, maxTokens: 600, temperature: 0.7 }
+    { questionText, mode: 'explanation', language, isJson: false, maxTokens: 300, temperature: 0.7 }
   );
 }
 
@@ -212,7 +212,7 @@ export function generateBuggyCode(questionText, topic, _userId, language = 'Java
       { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
       { role: 'user', content: lang.prompts.bug(questionText, topic) },
     ],
-    { questionText, mode: 'bug', language, isJson: true, maxTokens: 400, temperature: 0.6 }
+    { questionText, mode: 'bug', language, isJson: true, maxTokens: 300, temperature: 0.6 }
   );
 }
 
@@ -245,7 +245,7 @@ export function generateCodeCompletion(questionText, topic, _userId, language = 
       { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
       { role: 'user', content: lang.prompts.code(questionText, topic) },
     ],
-    { questionText, mode: 'code', language, isJson: true, maxTokens: 600, temperature: 0.3 }
+    { questionText, mode: 'code', language, isJson: true, maxTokens: 300, temperature: 0.3 }
   );
 }
 
@@ -256,6 +256,6 @@ export function analyzeResume(resumeText, _userId, language = 'Java') {
       { role: 'system', content: 'Ответь ТОЛЬКО валидным JSON объектом. Никакого текста, никакого Markdown.' },
       { role: 'user', content: lang.prompts.resume(resumeText) },
     ],
-    { questionText: resumeText.substring(0, 300), mode: 'resume', language, isJson: true, maxTokens: 600, temperature: 0.3 }
+    { questionText: resumeText.substring(0, 300), mode: 'resume', language, isJson: true, maxTokens: 400, temperature: 0.3 }
   );
 }

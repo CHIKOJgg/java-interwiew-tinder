@@ -223,56 +223,83 @@ app.get('/api/questions/feed', async (req, res) => {
   try {
     const { userId } = req.query;
     const language = req.query.language || 'Java';
-    const limit = Math.min(parseInt(req.query.limit) || 5, 10);
+    const mode     = req.query.mode || 'swipe';
+    const limit    = Math.min(parseInt(req.query.limit) || 5, 10);
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
+    // Load user's category preferences (only apply if they match current language)
     const prefsResult = await pool.query(
       'SELECT selected_categories, selected_language FROM user_preferences WHERE telegram_id = $1',
       [userId]
     );
     const prefs = prefsResult.rows[0];
-    // Only use saved categories if they belong to the CURRENT language
-    // (avoids empty results when user switches language without updating categories)
     const savedLang = prefs?.selected_language || 'Java';
     const selectedCategories = (savedLang === language) ? (prefs?.selected_categories || []) : [];
 
+    // ── Mode-specific WHERE clause ─────────────────────────────────────
+    // Exclude questions that are missing required AI-generated data for the
+    // mode — they'd cause 404s on answer submission.
+    const modeFilter = {
+      'bug-hunting':     'AND q.bug_hunting_data IS NOT NULL',
+      'blitz':           'AND q.blitz_data IS NOT NULL',
+      'code-completion': 'AND q.code_completion_data IS NOT NULL',
+      'test':            'AND q.short_answer IS NOT NULL AND q.short_answer != \'\'',
+      'swipe':           '',
+      'mock-interview':  '',
+      'concept-linker':  '',
+    }[mode] || '';
+
+    const catFilter = selectedCategories.length > 0
+      ? 'AND q.category = ANY($cat)'
+      : '';
+
+    // Build query with named-position params to handle dynamic cat filter
     let query, params;
     if (selectedCategories.length > 0) {
-      query = `SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
-                      q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language
-               FROM questions q
-               LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
-               WHERE (up.id IS NULL OR up.status = 'unknown')
-                 AND q.category = ANY($2) AND q.language = $3
-               ORDER BY RANDOM() LIMIT $4`;
-      params = [userId, selectedCategories, language, limit];
+      query = `
+        SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
+               q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language
+        FROM questions q
+        LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+        WHERE (up.id IS NULL OR up.status = 'unknown')
+          AND q.language = $2
+          AND q.category = ANY($3)
+          ${modeFilter}
+        ORDER BY RANDOM() LIMIT $4`;
+      params = [userId, language, selectedCategories, limit];
     } else {
-      query = `SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
-                      q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language
-               FROM questions q
-               LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
-               WHERE (up.id IS NULL OR up.status = 'unknown') AND q.language = $2
-               ORDER BY RANDOM() LIMIT $3`;
+      query = `
+        SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
+               q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language
+        FROM questions q
+        LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+        WHERE (up.id IS NULL OR up.status = 'unknown')
+          AND q.language = $2
+          ${modeFilter}
+        ORDER BY RANDOM() LIMIT $3`;
       params = [userId, language, limit];
     }
 
     const result = await pool.query(query, params);
+
+    // If no questions found, return empty array with helpful meta
+    // (don't 500 — TypeScript or newly added languages may legitimately have 0 questions)
     const questions = result.rows.map(row => ({
-      id: row.id,
-      category: row.category,
-      difficulty: row.difficulty,
-      question: row.question_text,
-      shortAnswer: row.short_answer,
-      options: row.options || [],
-      bugHuntingData: row.bug_hunting_data || null,
-      blitzData: row.blitz_data || null,
-      codeCompletionData: row.code_completion_data || null,
-      language: row.language || 'Java',
+      id:                row.id,
+      category:          row.category,
+      difficulty:        row.difficulty,
+      question:          row.question_text,
+      shortAnswer:       row.short_answer,
+      options:           row.options || [],
+      bugHuntingData:    row.bug_hunting_data  || null,
+      blitzData:         row.blitz_data        || null,
+      codeCompletionData:row.code_completion_data || null,
+      language:          row.language || 'Java',
     }));
 
-    res.json({ questions });
+    res.json({ questions, meta: { language, mode, total: questions.length } });
   } catch (error) {
-    console.error('Error in /questions/feed:', error);
+    console.error('Error in /questions/feed:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -587,7 +614,10 @@ app.post('/api/subscription/cancel',
     try {
       const result = await billingService.cancelSubscription(req.body.userId);
       res.json(result);
-    } catch { res.status(500).json({ error: 'Internal server error' }); }
+    } catch (err) {
+      console.error('Cancel subscription error:', err.message);
+      res.status(500).json({ error: err.message || 'Internal server error' });
+    }
   }
 );
 
@@ -666,24 +696,32 @@ app.get('/api/stats', async (req, res) => {
     const language = req.query.language || 'Java';
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
+    // Join with questions so stats are language-scoped
+    // Switching language shows only that language's progress
     const result = await pool.query(
-      `SELECT COUNT(*) FILTER (WHERE status = 'known') as known_count,
-              COUNT(*) FILTER (WHERE status = 'unknown') as unknown_count,
-              COUNT(*) as total_seen
-       FROM user_progress WHERE user_id = $1`,
-      [userId]
+      `SELECT
+         COUNT(*) FILTER (WHERE up.status = 'known')   AS known_count,
+         COUNT(*) FILTER (WHERE up.status = 'unknown') AS unknown_count,
+         COUNT(*)                                       AS total_seen
+       FROM user_progress up
+       JOIN questions q ON q.id = up.question_id
+       WHERE up.user_id = $1 AND q.language = $2`,
+      [userId, language]
     );
     const totalResult = await pool.query(
       'SELECT COUNT(*) as total FROM questions WHERE language = $1', [language]
     );
 
     res.json({
-      known: parseInt(result.rows[0].known_count),
-      unknown: parseInt(result.rows[0].unknown_count),
-      totalSeen: parseInt(result.rows[0].total_seen),
-      totalQuestions: parseInt(totalResult.rows[0].total),
+      known:          parseInt(result.rows[0].known_count  || 0),
+      unknown:        parseInt(result.rows[0].unknown_count || 0),
+      totalSeen:      parseInt(result.rows[0].total_seen   || 0),
+      totalQuestions: parseInt(totalResult.rows[0].total   || 0),
     });
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (err) {
+    console.error('Stats error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // ─── Server ───────────────────────────────────────────────────────────

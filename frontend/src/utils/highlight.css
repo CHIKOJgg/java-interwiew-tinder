@@ -1,0 +1,24 @@
+/* Syntax highlighting tokens — shared by BugHuntingMode, CodeCompletionMode, ExplanationModal */
+.hl-code-block {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 12px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre;
+  -webkit-overflow-scrolling: touch;
+  margin: 10px 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+.hl-keyword    { color: #cba6f7; font-weight: 600; }  /* purple */
+.hl-type       { color: #89dceb; }                    /* cyan */
+.hl-function   { color: #89b4fa; }                    /* blue */
+.hl-string     { color: #a6e3a1; }                    /* green */
+.hl-number     { color: #fab387; }                    /* peach */
+.hl-comment    { color: #6c7086; font-style: italic; } /* muted */
+.hl-annotation { color: #f38ba8; }                    /* red */

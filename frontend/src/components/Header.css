@@ -1,12 +1,8 @@
-/* ── Top header bar ───────────────────────────────────────────────── */
 .header {
   background: var(--tg-theme-bg-color, #fff);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
-  padding: 10px 14px 8px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
-  /* Sit on top of everything */
-  position: relative;
-  z-index: 10;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .header-content {
@@ -18,112 +14,121 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
-/* ── Logo + title + language ──────────────────────────────────────── */
 .header-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
-}
-
-.header-logo {
-  color: var(--tg-theme-button-color, #667eea);
-  flex-shrink: 0;
+  gap: 10px;
 }
 
 .header-title h1 {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--tg-theme-text-color, #2d3436);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.header-title svg {
+  color: var(--tg-theme-button-color, #5c7cfa);
 }
 
 .lang-select {
   background: var(--tg-theme-secondary-bg-color, #f1f3f5);
-  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0,0,0,0.08);
   border-radius: 8px;
   padding: 4px 8px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--tg-theme-text-color, #2d3436);
   cursor: pointer;
   outline: none;
-  flex-shrink: 0;
-  touch-action: manipulation;
+  transition: all 0.2s;
 }
 
 .lang-select:focus {
-  border-color: var(--tg-theme-button-color, #667eea);
+  border-color: var(--tg-theme-button-color, #5c7cfa);
+  box-shadow: 0 0 0 2px rgba(92, 124, 250, 0.2);
 }
 
-/* ── Right action buttons ─────────────────────────────────────────── */
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+  gap: 8px;
 }
 
-.action-btn {
+.mode-switcher {
+  display: flex;
   background: var(--tg-theme-secondary-bg-color, #f1f3f5);
-  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  padding: 3px;
   border-radius: 10px;
-  /* Larger: 40×40 so icons are easy to tap and clearly visible */
-  width: 40px;
-  height: 40px;
+  gap: 2px;
+}
+
+.mode-button {
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 6px;
+  color: var(--tg-theme-hint-color, #868e96);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Icon color contrasts on both light and dark Telegram themes */
+  transition: all 0.2s;
+}
+
+.mode-button.active {
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-button-color, #5c7cfa);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.mode-button:hover:not(.active) {
   color: var(--tg-theme-text-color, #2d3436);
+}
+
+.settings-button {
+  background: var(--tg-theme-button-color, #5c7cfa);
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  color: var(--tg-theme-button-text-color, #fff);
   cursor: pointer;
-  flex-shrink: 0;
-  touch-action: manipulation;
-  transition: opacity 0.15s, transform 0.1s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
-.action-btn.premium {
-  background: linear-gradient(135deg, #f6a821, #f03e3e);
-  border-color: transparent;
-  color: #fff;
+.settings-button:hover {
+  opacity: 0.85;
+  transform: scale(1.05);
 }
 
-.action-btn:active {
-  opacity: 0.7;
-  transform: scale(0.92);
+.settings-button:active {
+  transform: scale(0.95);
 }
 
-/* ── Progress / stats row ─────────────────────────────────────────── */
 .stats-container {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .stats-text {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--tg-theme-hint-color, #868e96);
 }
 
 .stats-text strong {
-  color: var(--tg-theme-button-color, #667eea);
+  color: var(--tg-theme-button-color, #5c7cfa);
   font-weight: 700;
 }
 
-.plan-badge {
-  font-size: 11px;
-  opacity: 0.75;
-  font-weight: 700;
-}
-
+/* Bug 2 fix: was opacity: 0.3 making the track nearly invisible */
 .progress-bar {
-  height: 5px;
+  height: 6px;
   background: var(--tg-theme-secondary-bg-color, #e9ecef);
   border-radius: 3px;
   overflow: hidden;
@@ -132,187 +137,43 @@
 .progress-fill {
   height: 100%;
   background: linear-gradient(to right, #667eea, #764ba2);
-  border-radius: 3px;
   transition: width 0.4s ease;
+  border-radius: 3px;
 }
-
-/* ── Bottom navigation bar ────────────────────────────────────────── */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: var(--tg-theme-bg-color, #fff);
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  display: flex;
-  align-items: stretch;
-  /* Safe area for iPhone home indicator */
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
-}
-
-.bottom-nav-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  padding: 8px 4px;
-  border: none;
-  background: transparent;
-  color: var(--tg-theme-hint-color, #adb5bd);
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: color 0.15s;
-  font-size: 10px;
+/* Plan badge next to stats text */
+.plan-badge {
+  font-size: 12px;
+  opacity: 0.75;
   font-weight: 600;
-  letter-spacing: 0.2px;
-  min-height: 56px;
 }
 
-.bottom-nav-item.active {
-  color: var(--tg-theme-button-color, #667eea);
+/* Premium star button */
+.settings-button.premium-badge {
+  background: linear-gradient(135deg, #f6a821, #f03e3e);
 }
 
-.bottom-nav-item svg {
-  transition: transform 0.15s;
-}
-
-.bottom-nav-item.active svg {
-  transform: translateY(-2px);
-}
-
-/* ── Mode drawer ──────────────────────────────────────────────────── */
-.drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 99;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-.mode-drawer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  background: var(--tg-theme-bg-color, #fff);
-  border-radius: 20px 20px 0 0;
-  padding: 12px 16px 24px;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.15);
-
-  /* Slide up / down */
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.mode-drawer.open {
-  transform: translateY(0);
-}
-
-.drawer-handle {
-  width: 36px;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 2px;
-  margin: 0 auto 14px;
-}
-
-.drawer-header {
+/* §3 — Topic counter and dual progress bars */
+.stats-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--tg-theme-text-color, #2d3436);
+  align-items: baseline;
+  gap: 8px;
 }
-
-.drawer-close {
-  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
-  border: none;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.topic-counter {
+  font-size: 11px;
   color: var(--tg-theme-hint-color, #868e96);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.drawer-modes {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.drawer-mode-btn {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  width: 100%;
-  padding: 13px 14px;
-  border-radius: 14px;
-  border: none;
-  background: transparent;
-  color: var(--tg-theme-text-color, #2d3436);
-  cursor: pointer;
-  touch-action: manipulation;
-  text-align: left;
-  position: relative;
-  transition: background 0.15s;
-}
-
-.drawer-mode-btn:active {
-  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
-}
-
-.drawer-mode-btn.active {
-  background: rgba(102, 126, 234, 0.1);
-  color: var(--tg-theme-button-color, #667eea);
-}
-
-.drawer-mode-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  white-space: nowrap;
   flex-shrink: 0;
 }
-
-.drawer-mode-btn.active .drawer-mode-icon {
-  background: rgba(102, 126, 234, 0.15);
-  color: var(--tg-theme-button-color, #667eea);
+.topic-counter strong {
+  color: #51cf66;
+  font-weight: 700;
 }
-
-.drawer-mode-label {
-  flex: 1;
-  font-size: 15px;
-  font-weight: 600;
+.topic-bar {
+  margin-top: 3px;
+  height: 4px;
+  opacity: .75;
 }
-
-.drawer-active-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--tg-theme-button-color, #667eea);
+.topic-fill {
+  background: linear-gradient(to right, #51cf66, #2f9e44);
 }

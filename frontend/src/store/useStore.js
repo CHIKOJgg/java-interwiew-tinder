@@ -18,6 +18,9 @@ const useStore = create((set, get) => ({
   learningMode: 'swipe',
 
   stats: { known: 0, unknown: 0, totalSeen: 0, totalQuestions: 0 },
+  // Selected categories and per-category progress (§3)
+  selectedCategories: [],
+  categoryStats: { known: 0, total: 0 },
 
   blitzScore: 0,
   blitzTimeLeft: 60,
@@ -51,7 +54,12 @@ const useStore = create((set, get) => ({
     }
   },
 
-  // ─── Language switching ────────────────────────────────────────────
+  // Set selected categories (called from CategorySelection on save)
+  setSelectedCategories: (cats) => {
+    set({ selectedCategories: cats });
+    // Immediately refresh category-scoped stats
+    get().loadStats();
+  },
   // Calls the new /api/preferences/language endpoint which clears stale
   // category filters, then reloads questions for the new language.
   switchLanguage: async (language) => {
@@ -97,9 +105,19 @@ const useStore = create((set, get) => ({
 
   loadStats: async () => {
     try {
+      const { selectedCategories, language } = get();
       const stats = await apiClient.getStats();
       set({ stats });
       saveToLocal('stats', stats);
+
+      // Category-scoped stats for the topic counter (§3)
+      if (selectedCategories.length > 0) {
+        const catStats = await apiClient.getCategoryStats(selectedCategories);
+        set({ categoryStats: catStats });
+      } else {
+        // No filter — topic counter mirrors global stats
+        set({ categoryStats: { known: stats.known, total: stats.totalQuestions } });
+      }
     } catch {
       const cached = loadFromLocal('stats');
       if (cached) set({ stats: cached });

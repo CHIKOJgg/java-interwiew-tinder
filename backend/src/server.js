@@ -689,6 +689,36 @@ app.post('/api/admin/clear-cache', async (req, res) => {
   } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
+// ─── Category-scoped stats (§3 topic counter) ────────────────────────
+app.get('/api/stats/categories', async (req, res) => {
+  try {
+    const { userId, language = 'Java', categories } = req.query;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    let cats = [];
+    try { cats = JSON.parse(decodeURIComponent(categories || '[]')); } catch {}
+
+    if (cats.length === 0) return res.json({ known: 0, total: 0 });
+
+    const result = await pool.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE up.status = 'known') AS known,
+         COUNT(q.id)                                  AS total
+       FROM questions q
+       LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+       WHERE q.language = $2 AND q.category = ANY($3)`,
+      [userId, language, cats]
+    );
+    res.json({
+      known: parseInt(result.rows[0].known || 0),
+      total: parseInt(result.rows[0].total || 0),
+    });
+  } catch (err) {
+    console.error('Category stats error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ─── Stats ────────────────────────────────────────────────────────────
 app.get('/api/stats', async (req, res) => {
   try {

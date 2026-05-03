@@ -116,6 +116,12 @@ class ApiClient {
     return this.request(`/stats?userId=${this.userId}&language=${this.language}`);
   }
 
+  // Category-scoped progress for topic counter (§3)
+  async getCategoryStats(categories) {
+    const cats = encodeURIComponent(JSON.stringify(categories));
+    return this.request(`/stats/categories?userId=${this.userId}&language=${this.language}&categories=${cats}`);
+  }
+
   // ─── Preferences ───────────────────────────────────────────────────
   async getCategories() {
     return this.request(`/categories?language=${this.language}`);

@@ -276,3 +276,24 @@
     transform: translateY(0);
   }
 }
+
+/* ── Retry / hint styles added for error state ────────────────────── */
+.retry-gen-button {
+  padding: 11px 24px;
+  border-radius: 12px;
+  border: none;
+  background: #228be6;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.gen-hint {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--tg-theme-hint-color, #adb5bd);
+  font-weight: 600;
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useStore from '../store/useStore';
 import { Bug, Check, X, Loader2, Code } from 'lucide-react';
 import './BugHuntingMode.css';
@@ -20,15 +20,26 @@ const BugHuntingMode = () => {
   const currentQuestion = questions[currentIndex];
   const bugData = currentQuestion?.bugHuntingData;
 
+  // Track which question ID state was last reset for
+  const lastResetIdRef = useRef(null);
+
+  // Reset UI state only when the question actually changes (not when bugData arrives)
   useEffect(() => {
-    setSelectedOption(null);
-    setResult(null);
-    
-    // Trigger generation if missing
-    if (currentQuestion && !bugData) {
-      fetchGeneration('bug', currentQuestion.id);
+    const id = currentQuestion?.id;
+    if (id !== lastResetIdRef.current) {
+      lastResetIdRef.current = id;
+      setSelectedOption(null);
+      setResult(null);
     }
-  }, [currentIndex, currentQuestion, bugData, fetchGeneration]);
+  }, [currentQuestion?.id]);
+
+  // Trigger AI generation separately - fires when ID changes OR when bugData goes null→data
+  useEffect(() => {
+    if (currentQuestion && !bugData && !result) {
+      fetchGeneration('bug', currentQuestion.id).catch(console.error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQuestion?.id, !!bugData]);
 
   const handleOptionSelect = (option) => {
     if (result || isSubmitting) return;
@@ -108,7 +119,8 @@ const BugHuntingMode = () => {
             if (selectedOption === option) optionClass += ' selected';
 
             if (result) {
-              if (option === result.correctAnswer) {
+              const norm = (s) => s?.trim().toLowerCase() ?? '';
+              if (norm(option) === norm(result.correctAnswer)) {
                 optionClass += ' correct';
               } else if (selectedOption === option && !result.isCorrect) {
                 optionClass += ' incorrect';

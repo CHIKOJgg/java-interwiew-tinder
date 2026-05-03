@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import apiClient from '../api/client';
 
 const CACHE_KEY = 'interview_tinder_cache';
-function saveToLocal(key, data) { try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { } }
+function saveToLocal(key, data) { try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch {} }
 function loadFromLocal(key) { try { return JSON.parse(localStorage.getItem(`${CACHE_KEY}_${key}`)); } catch { return null; } }
 
 const useStore = create((set, get) => ({
@@ -10,8 +10,6 @@ const useStore = create((set, get) => ({
   isAuthenticated: false,
   isLoading: true,
   language: 'Java',
-
-  pendingGenerations: {},
 
   questions: [],
   currentIndex: 0,
@@ -39,21 +37,13 @@ const useStore = create((set, get) => ({
   login: async (initData) => {
     try {
       set({ isLoading: true });
-
       const response = await apiClient.login(initData);
       const user = response.user;
       const lang = user.language || 'Java';
       apiClient.setLanguage(lang);
-      set({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-        language: lang
-      });
-
-      // ✅ NON-BLOCKING
-      get().loadQuestions().catch(console.error);
-      get().loadStats().catch(console.error);
+      set({ user, isAuthenticated: true, isLoading: false, language: lang });
+      await get().loadQuestions();
+      get().loadStats();
       return user;
     } catch (error) {
       set({ isLoading: false, _loadingLock: false });
@@ -194,18 +184,10 @@ const useStore = create((set, get) => ({
     const response = await apiClient.submitCodeCompletionAnswer(questionId, answer);
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
-    // Incorrect -> open explanation modal; closeExplanation() advances currentIndex.
-    // Correct   -> do NOT auto-advance; CodeCompletionMode.handleNext calls advanceQuestion()
-    //              so the user sees the green feedback before the question changes.
     if (!response.isCorrect) get().loadExplanation(questionId);
+    else set(s => ({ currentIndex: s.currentIndex + 1 }));
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
     return response;
-  },
-
-  // Advance used by CodeCompletionMode so the component controls when currentIndex changes.
-  advanceQuestion: () => {
-    set(s => ({ currentIndex: s.currentIndex + 1 }));
-    if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
   },
 
   // ─── Blitz ─────────────────────────────────────────────────────────
@@ -246,91 +228,60 @@ const useStore = create((set, get) => ({
   },
   clearResumeData: () => set({ resumeData: null }),
 
-  fetchGeneration: async (type, questionId) => {
+  // ─── AI generation ─────────────────────────────────────────────────
+  fetchGeneration: async (type, questionId, _attempt = 0) => {
+    const MAX_ATTEMPTS = 10;       // ~20s total at 2s intervals
+    const POLL_INTERVAL_MS = 2000;
+
     const question = get().questions.find(q => q.id === questionId);
     if (!question) return;
 
-    const typeMap = {
-      test: 'options',
-      bug: 'bugHuntingData',
-      blitz: 'blitzData',
-      code: 'codeCompletionData',
-    };
+    const typeMap = { test: 'options', bug: 'bugHuntingData', blitz: 'blitzData', code: 'codeCompletionData' };
     const dataKey = typeMap[type];
-    const key = `${type}:${questionId}:${question.language || get().language}`;
 
-    if (get().pendingGenerations[key]) {
-      return get().pendingGenerations[key];
+    // Bug 5 fix: terminal failure after MAX_ATTEMPTS — set a sentinel so the
+    // component can show an error instead of spinning forever
+    if (_attempt >= MAX_ATTEMPTS) {
+      console.error(`fetchGeneration(${type}) exceeded ${MAX_ATTEMPTS} attempts for q=${questionId}`);
+      set(state => ({
+        questions: state.questions.map(q =>
+          q.id === questionId
+            ? { ...q, [dataKey]: { __error: true, message: 'AI generation timed out. Try switching to a different mode.' } }
+            : q
+        ),
+      }));
+      return;
     }
 
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-    const promise = (async () => {
-      const startResponse = await apiClient.requestGeneration(
-        type,
-        question.question,
-        question.shortAnswer,
-        question.category
+    try {
+      // Pass questionId so the server includes it in the job payload for worker backfill
+      const response = await apiClient.requestGeneration(
+        type, question.question, question.shortAnswer, question.category, questionId
       );
 
-      if (startResponse.status === 'ready' && startResponse.data !== undefined) {
+      if (response.status === 'ready' && response.data) {
         set(state => ({
           questions: state.questions.map(q =>
             q.id === questionId
-              ? { ...q, [dataKey]: startResponse.data, options: type === 'test' ? startResponse.data : q.options }
+              ? {
+                  ...q,
+                  [dataKey]: response.data,
+                  // For test mode, also populate options array
+                  options: type === 'test' ? (Array.isArray(response.data) ? response.data : q.options) : q.options,
+                }
               : q
           ),
         }));
-        return startResponse.data;
+        return response.data;
       }
 
-      const deadline = Date.now() + 60000;
-
-      while (Date.now() < deadline) {
-        await sleep(2000);
-
-        const statusResponse = await apiClient.request(
-          `/generate/${type}?questionText=${encodeURIComponent(question.question)}&language=${encodeURIComponent(question.language || get().language)}`,
-          { method: 'GET' }
-        );
-
-        if (statusResponse.status === 'ready' && statusResponse.data !== undefined) {
-          set(state => ({
-            questions: state.questions.map(q =>
-              q.id === questionId
-                ? { ...q, [dataKey]: statusResponse.data, options: type === 'test' ? statusResponse.data : q.options }
-                : q
-            ),
-          }));
-          return statusResponse.data;
-        }
-
-        if (statusResponse.status === 'failed') {
-          throw new Error(statusResponse.error || 'Generation failed');
-        }
-      }
-
-      throw new Error('Generation timeout');
-    })();
-
-    set(state => ({
-      pendingGenerations: {
-        ...state.pendingGenerations,
-        [key]: promise,
-      },
-    }));
-
-    try {
-      return await promise;
+      // Still pending — wait and retry
+      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+      return get().fetchGeneration(type, questionId, _attempt + 1);
     } catch (err) {
-      console.error(`fetchGeneration(${type}) failed:`, err);
-      throw err;
-    } finally {
-      set(state => {
-        const next = { ...state.pendingGenerations };
-        delete next[key];
-        return { pendingGenerations: next };
-      });
+      console.error(`fetchGeneration(${type}) attempt ${_attempt} failed:`, err.message);
+      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+      return get().fetchGeneration(type, questionId, _attempt + 1);
     }
   },
 

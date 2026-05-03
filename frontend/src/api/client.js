@@ -1,4 +1,4 @@
-const API_BASE_URL = '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 class ApiClient {
   constructor() {
@@ -99,10 +99,15 @@ class ApiClient {
     }
   }
 
-  async requestGeneration(type, questionText, shortAnswer, category) {
+  async requestGeneration(type, questionText, shortAnswer, category, questionId) {
     return this.request(`/generate/${type}`, {
       method: 'POST',
-      body: JSON.stringify({ questionText, shortAnswer, category, userId: this.userId, language: this.language }),
+      body: JSON.stringify({
+        questionText, shortAnswer, category,
+        userId: this.userId,
+        questionId,          // needed so worker backfills questions table columns
+        language: this.language,
+      }),
     });
   }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
 import { Bug, Check, X, Loader2, Code } from 'lucide-react';
 import './BugHuntingMode.css';
@@ -18,28 +18,16 @@ const BugHuntingMode = () => {
   const [result, setResult] = useState(null);
 
   const currentQuestion = questions[currentIndex];
-  const bugData = currentQuestion?.bugHuntingData;
+  const bugData  = currentQuestion?.bugHuntingData;
+  const hasError = bugData?.__error;
 
-  // Track which question ID state was last reset for
-  const lastResetIdRef = useRef(null);
-
-  // Reset UI state only when the question actually changes (not when bugData arrives)
   useEffect(() => {
-    const id = currentQuestion?.id;
-    if (id !== lastResetIdRef.current) {
-      lastResetIdRef.current = id;
-      setSelectedOption(null);
-      setResult(null);
+    setSelectedOption(null);
+    setResult(null);
+    if (currentQuestion && !bugData) {
+      fetchGeneration('bug', currentQuestion.id);
     }
-  }, [currentQuestion?.id]);
-
-  // Trigger AI generation separately - fires when ID changes OR when bugData goes null→data
-  useEffect(() => {
-    if (currentQuestion && !bugData && !result) {
-      fetchGeneration('bug', currentQuestion.id).catch(console.error);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentQuestion?.id, !!bugData]);
+  }, [currentIndex, currentQuestion?.id]); // eslint-disable-line
 
   const handleOptionSelect = (option) => {
     if (result || isSubmitting) return;
@@ -78,6 +66,17 @@ const BugHuntingMode = () => {
   }
 
   if (!hasMoreQuestions()) return null;
+
+  if (hasError) {
+    return (
+      <div className="bug-mode-loading">
+        <Bug size={40} color="#ff6b6b" />
+        <p style={{ color: '#ff6b6b', marginTop: 12 }}>{bugData.message}</p>
+        <button style={{ marginTop: 16, padding: '8px 20px', borderRadius: 10, border: 'none', background: '#339af0', color: '#fff', cursor: 'pointer' }}
+          onClick={() => fetchGeneration('bug', currentQuestion.id, 0)}>Попробовать снова</button>
+      </div>
+    );
+  }
 
   if (!bugData) {
     return (
@@ -119,8 +118,7 @@ const BugHuntingMode = () => {
             if (selectedOption === option) optionClass += ' selected';
 
             if (result) {
-              const norm = (s) => s?.trim().toLowerCase() ?? '';
-              if (norm(option) === norm(result.correctAnswer)) {
+              if (option === result.correctAnswer) {
                 optionClass += ' correct';
               } else if (selectedOption === option && !result.isCorrect) {
                 optionClass += ' incorrect';

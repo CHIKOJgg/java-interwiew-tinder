@@ -71,13 +71,13 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
                 onClick={onSubscriptionClick}
                 title="Подписка"
               >
-                <Star size={18} fill={isPremium ? '#ffd43b' : 'none'} />
+                <Star size={20} fill={isPremium ? '#fff' : 'none'} />
               </button>
               <button className="action-btn" onClick={onResumeClick} title="Резюме">
-                <FileText size={18} />
+                <FileText size={20} />
               </button>
               <button className="action-btn" onClick={onSettingsClick} title="Категории">
-                <Settings size={18} />
+                <Settings size={20} />
               </button>
             </div>
           </div>

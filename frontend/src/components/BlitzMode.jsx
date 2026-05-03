@@ -29,12 +29,13 @@ const BlitzMode = () => {
   
   const currentQuestion = questions[currentIndex];
   const blitzData = currentQuestion?.blitzData;
+  const hasError  = blitzData?.__error;
 
   useEffect(() => {
     if (isBlitzActive && currentQuestion && !blitzData) {
       fetchGeneration('blitz', currentQuestion.id);
     }
-  }, [isBlitzActive, currentIndex, currentQuestion, blitzData, fetchGeneration]);
+  }, [isBlitzActive, currentIndex, currentQuestion?.id]); // eslint-disable-line
 
   const handleAnswer = async (answer) => {
     if (!isBlitzActive || feedback) return;
@@ -103,9 +104,16 @@ const BlitzMode = () => {
       </div>
 
       <div className={`blitz-card ${feedback}`}>
-        {isLoadingQuestions && !blitzData ? (
+        {hasError ? (
+          <div className="blitz-loading">
+            <p style={{ color: '#ff6b6b', textAlign: 'center' }}>{blitzData.message}</p>
+            <button style={{ marginTop: 12, padding: '8px 20px', borderRadius: 10, border: 'none', background: '#339af0', color: '#fff', cursor: 'pointer' }}
+              onClick={() => fetchGeneration('blitz', currentQuestion.id, 0)}>Повторить</button>
+          </div>
+        ) : isLoadingQuestions || !blitzData ? (
           <div className="blitz-loading">
             <Zap className="spinner" size={48} />
+            <p style={{ marginTop: 8 }}>Подготовка...</p>
           </div>
         ) : (
           <>

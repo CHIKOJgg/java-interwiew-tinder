@@ -132,7 +132,8 @@ const TestMode = () => {
             let cls = 'option-item';
             if (selectedOption === option) cls += ' selected';
             if (result) {
-              if (option === result.correctAnswer) cls += ' correct';
+              const norm = (s) => s?.trim().toLowerCase() ?? '';
+              if (norm(option) === norm(result.correctAnswer)) cls += ' correct';
               else if (selectedOption === option && !result.isCorrect) cls += ' incorrect';
             }
 
@@ -148,7 +149,7 @@ const TestMode = () => {
                   {String.fromCharCode(65 + index)}
                 </span>
                 <span className="option-text">{option}</span>
-                {result && option === result.correctAnswer && (
+                {result && (option?.trim().toLowerCase() === result.correctAnswer?.trim().toLowerCase()) && (
                   <Check size={18} className="result-icon check" />
                 )}
                 {result && selectedOption === option && !result.isCorrect && (

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check } from 'lucide-react';
 import api from '../api/client';
+import useStore from '../store/useStore';
 import './CategorySelection.css';
 
 const CategorySelection = ({ onComplete }) => {
+  const { setSelectedCategories } = useStore();
   const [categories, setCategories] = useState([]);
-  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedCategories, setLocalSelected] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -22,7 +24,7 @@ const CategorySelection = ({ onComplete }) => {
       try {
         const prefsData = await api.getPreferences();
         if (prefsData.selectedCategories && prefsData.selectedCategories.length > 0) {
-          setSelectedCategories(prefsData.selectedCategories);
+          setLocalSelected(prefsData.selectedCategories);
         }
       } catch {
         // No saved preferences, use defaults
@@ -36,15 +38,15 @@ const CategorySelection = ({ onComplete }) => {
 
   // useCallback so the reference is stable — avoids re-renders
   const toggleCategory = useCallback((categoryName) => {
-    setSelectedCategories((prev) =>
+    setLocalSelected((prev) =>
       prev.includes(categoryName)
         ? prev.filter((c) => c !== categoryName)
         : [...prev, categoryName]
     );
   }, []);
 
-  const selectAll = () => setSelectedCategories(categories.map((c) => c.name));
-  const deselectAll = () => setSelectedCategories([]);
+  const selectAll = () => setLocalSelected(categories.map((c) => c.name));
+  const deselectAll = () => setLocalSelected([]);
 
   const handleSave = async () => {
     if (selectedCategories.length === 0) {
@@ -54,6 +56,8 @@ const CategorySelection = ({ onComplete }) => {
     try {
       setSaving(true);
       await api.updatePreferences(selectedCategories);
+      // Persist into store so Header topic counter can read them (§3)
+      setSelectedCategories(selectedCategories);
       onComplete();
     } catch (error) {
       console.error('Error saving preferences:', error);

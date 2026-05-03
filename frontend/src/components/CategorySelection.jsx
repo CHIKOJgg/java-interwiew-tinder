@@ -72,6 +72,24 @@ const CategorySelection = ({ onComplete }) => {
     );
   }
 
+  // ── Empty state — language has no questions yet (e.g. TypeScript) ──
+  if (!loading && categories.length === 0) {
+    return (
+      <div className="category-selection" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16, padding: 24 }}>
+        <div style={{ fontSize: 48 }}>📭</div>
+        <h2 style={{ textAlign: 'center' }}>Вопросы для этого языка ещё не добавлены</h2>
+        <p style={{ textAlign: 'center', opacity: 0.6 }}>Выберите другой язык или вернитесь позже — база вопросов пополняется.</p>
+        <button
+          className="start-button"
+          onClick={onComplete}
+          style={{ marginTop: 8 }}
+        >
+          ← Назад
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="category-selection">
       <div className="category-header">

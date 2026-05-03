@@ -158,3 +158,33 @@ ON CONFLICT DO NOTHING;
 -- ─── Done ──────────────────────────────────────────────────────────
 SELECT 'Migration complete!' as status;
 SELECT language, COUNT(*) as total FROM questions GROUP BY language ORDER BY language;
+
+-- ══════════════════════════════════════════════════════════════════
+--  PATCH: Fix subscription UNIQUE constraint + clear bad AI cache
+-- ══════════════════════════════════════════════════════════════════
+
+-- ── Fix user_subscriptions UNIQUE constraint ───────────────────────────
+-- The old UNIQUE(user_id, plan_id, status) prevents having more than one
+-- cancelled subscription per plan per user, which breaks re-subscribing.
+-- Replace it with a partial unique index that only enforces uniqueness
+-- for ACTIVE subscriptions (one active subscription per user at a time).
+
+ALTER TABLE user_subscriptions DROP CONSTRAINT IF EXISTS user_subscriptions_user_id_plan_id_status_key;
+DROP INDEX IF EXISTS idx_user_subs_user;
+
+-- Only one active subscription per user at a time
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_subs_one_active
+  ON user_subscriptions(user_id)
+  WHERE status = 'active';
+
+-- Fast lookup by user + status
+CREATE INDEX IF NOT EXISTS idx_user_subs_user_status
+  ON user_subscriptions(user_id, status);
+
+-- ── Clear bad AI cache entries (prose responses from v1 prompts) ───────
+-- PROMPT_VERSION bumped to 'v2' so these are no longer served,
+-- but deleting them frees space and prevents confusion.
+DELETE FROM ai_cache WHERE prompt_version = 'v1';
+
+-- ── Confirm ────────────────────────────────────────────────────────────
+SELECT 'Constraint + cache patch applied!' AS status;

@@ -13,9 +13,25 @@ const ResumeAnalyzer = ({ onBack }) => {
 
   const [resumeText, setResumeText] = useState('');
 
+  const [analyzeError, setAnalyzeError] = useState(null);
+
   const handleAnalyze = async () => {
     if (!resumeText.trim() || isAnalyzingResume) return;
-    await analyzeResume(resumeText);
+    setAnalyzeError(null);
+    try {
+      const result = await analyzeResume(resumeText);
+      // Guard: if the AI returned an object missing key fields, show an error
+      // instead of rendering empty template cards.
+      if (!result || !result.skills || !result.experienceLevel) {
+        setAnalyzeError('Не удалось распознать резюме. Попробуйте ещё раз или упростите текст.');
+        clearResumeData();
+      }
+    } catch (err) {
+      console.error('analyzeResume failed:', err);
+      setAnalyzeError(err?.message?.includes('rate')
+        ? 'Превышен лимит запросов. Подождите минуту и попробуйте снова.'
+        : 'Ошибка анализа. Проверьте подключение и попробуйте ещё раз.');
+    }
   };
 
   return (
@@ -47,7 +63,7 @@ const ResumeAnalyzer = ({ onBack }) => {
               {isAnalyzingResume ? (
                 <>
                   <Loader2 className="spinner" size={20} />
-                  <span>Анализируем ваш опыт...</span>
+                  <span>Анализируем резюме... (~15–30с)</span>
                 </>
               ) : (
                 <>
@@ -56,6 +72,11 @@ const ResumeAnalyzer = ({ onBack }) => {
                 </>
               )}
             </button>
+            {analyzeError && (
+              <div className="analyze-error">
+                ⚠️ {analyzeError}
+              </div>
+            )}
           </div>
         ) : (
           <div className="analyzer-results-section">
@@ -64,7 +85,7 @@ const ResumeAnalyzer = ({ onBack }) => {
                 <div className="card-icon"><Star size={24} /></div>
                 <div className="card-info">
                   <h3>Уровень</h3>
-                  <div className="level-badge">{resumeData.experienceLevel}</div>
+                  <div className="level-badge">{resumeData.experienceLevel || "—"}</div>
                 </div>
               </div>
 

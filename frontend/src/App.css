@@ -1,4 +1,4 @@
-/* ── Root layout ───────────────────────────────────────────────────── */
+/* ── Root layout ─────────────────────────────────────────────────────── */
 .app {
   width: 100%;
   flex: 1;
@@ -6,9 +6,16 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  /*
+   * Padding-bottom accounts for:
+   *   56px  bottom nav
+   *   80px  SwipeButtons height (only visible in swipe mode, but padding is always present)
+   *   12px  gap between buttons and nav
+   */
+  padding-bottom: calc(56px + 80px + 12px + env(safe-area-inset-bottom, 0px));
 }
 
+/* ── Loading/error screens ───────────────────────────────────────────── */
 .app-loading {
   width: 100%;
   flex: 1;
@@ -23,32 +30,29 @@
   text-align: center;
 }
 
-.app-loading .spinner {
-  animation: spin 1s linear infinite;
-  color: var(--tg-theme-button-color, #667eea);
-}
-
 .app-loading p {
   color: var(--tg-theme-hint-color, #868e96);
   font-size: 14px;
 }
 
+/* ── Content area ────────────────────────────────────────────────────── */
 .card-container {
   flex: 1;
   position: relative;
-  overflow: hidden;
-  padding: 14px 16px 0;
+  /* overflow visible so TinderCard swipe animation isn't clipped */
+  overflow: visible;
+  padding: 10px 16px 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* ── Swipe card stack ─────────────────────────────────────── */
+/* ── Swipe card stack ────────────────────────────────────────────────── */
 .card-stack {
   position: relative;
   width: 100%;
   max-width: 420px;
-  height: min(500px, 60vh);
+  height: min(480px, 58vh);
 }
 
 .card-wrapper {
@@ -71,25 +75,50 @@
   z-index: 1;
 }
 
-/*
- * Peek shell — only the gradient background, no text.
- * This prevents question text / badges of card #2 and #3
- * from bleeding through the active card's translucent opacity layers.
- */
+/* Peek shell: gradient background only — no text, no flip content */
 .card-peek-shell {
   width: 100%;
   height: 100%;
   border-radius: 22px;
   background: linear-gradient(145deg, #5a72d8 0%, #6b409a 100%);
   opacity: 0.55;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, .14), 0 1px 4px rgba(0, 0, 0, .1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
 }
 
 .card-wrapper.card-behind:nth-child(3) .card-peek-shell {
   opacity: 0.30;
 }
 
-/* ── Completion ────────────────────────────────────────────── */
+/* ── Error boundary fallback ─────────────────────────────────────────── */
+.card-error-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  height: 100%;
+  padding: 32px;
+  text-align: center;
+}
+
+.card-error-fallback p {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #868e96);
+}
+
+.card-error-fallback button {
+  padding: 11px 22px;
+  border-radius: 12px;
+  border: none;
+  background: #667eea;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* ── Completion screen ───────────────────────────────────────────────── */
 .completion-screen {
   display: flex;
   flex-direction: column;
@@ -132,6 +161,7 @@
   transform: scale(0.97);
 }
 
+/* ── Animations ──────────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -150,14 +180,15 @@
   }
 }
 
-@media (max-height: 680px) {
+/* ── Responsive card heights ─────────────────────────────────────────── */
+@media (max-height: 700px) {
   .card-stack {
-    height: min(420px, 56vh);
+    height: min(420px, 54vh);
   }
 }
 
-@media (max-height: 580px) {
+@media (max-height: 600px) {
   .card-stack {
-    height: min(360px, 52vh);
+    height: min(360px, 50vh);
   }
 }

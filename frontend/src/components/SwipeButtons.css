@@ -1,37 +1,47 @@
+/*
+ * SwipeButtons are fixed just above the bottom navigation bar.
+ * Previously they were in normal document flow and sat behind the fixed
+ * bottom nav — users accidentally tapped nav tabs instead of swipe buttons,
+ * which switched modes and caused the apparent "blank screen".
+ */
 .swipe-buttons {
+  position: fixed;
+  /* Sit above the 56px bottom nav + device safe area */
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 8px);
+  left: 0;
+  right: 0;
+  z-index: 90;
+  /* below bottom-nav (z:100) but above card stack */
+
   display: flex;
   justify-content: center;
-  gap: 40px;
-  padding: 20px;
-  background: var(--tg-theme-bg-color, #fff);
-  border-top: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+  align-items: center;
+  gap: 48px;
+
+  /* Transparent background — card peek should show through */
+  pointer-events: none;
+  /* let container pass through, only buttons respond */
 }
 
 .swipe-button {
+  pointer-events: all;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  width: 80px;
-  height: 80px;
+  gap: 5px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   border: none;
-  background: var(--tg-theme-button-color, #3390ec);
-  color: var(--tg-theme-button-text-color, #fff);
-  font-size: 12px;
-  font-weight: 600;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.swipe-button:active {
-  transform: scale(0.95);
-}
-
-.swipe-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  touch-action: manipulation;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 
 .swipe-button-left {
@@ -42,15 +52,20 @@
   background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
 }
 
-.swipe-button span {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.swipe-button:active:not(:disabled) {
+  transform: scale(0.92);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.swipe-button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 @media (hover: hover) {
   .swipe-button:hover:not(:disabled) {
-    transform: scale(1.05);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    transform: scale(1.07);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
   }
 }

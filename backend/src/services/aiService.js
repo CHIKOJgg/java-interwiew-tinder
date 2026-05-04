@@ -6,9 +6,9 @@ import { getLanguage } from './languageRegistry.js';
 dotenv.config();
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL         = process.env.OPENROUTER_MODEL || 'openrouter/free';
+const MODEL = process.env.OPENROUTER_MODEL || 'openrouter/free';
 const PROMPT_VERSION = 'v2'; // bump version so old bad-response cache entries are ignored
-const AI_TIMEOUT_MS  = parseInt(process.env.AI_TIMEOUT_MS || '45000');
+const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS || '45000');
 
 if (!OPENROUTER_API_KEY) {
   console.error('⚠️  OPENROUTER_API_KEY is not set — all AI calls will fail');
@@ -26,22 +26,22 @@ export function parseAIResponse(content) {
   if (!content?.trim()) throw new Error('Empty AI response');
   const text = content.trim();
 
-  try { return JSON.parse(text); } catch {}
+  try { return JSON.parse(text); } catch { }
 
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenced) { try { return JSON.parse(fenced[1].trim()); } catch {} }
+  if (fenced) { try { return JSON.parse(fenced[1].trim()); } catch { } }
 
   const obj = text.match(/\{[\s\S]*\}/);
-  if (obj) { try { return JSON.parse(obj[0]); } catch {} }
+  if (obj) { try { return JSON.parse(obj[0]); } catch { } }
 
   const arr = text.match(/\[[\s\S]*\]/);
-  if (arr) { try { return JSON.parse(arr[0]); } catch {} }
+  if (arr) { try { return JSON.parse(arr[0]); } catch { } }
 
   try {
     return JSON.parse(
       text.replace(/[\r\n]+/g, ' ').replace(/,\s*([}\]])/g, '$1')
     );
-  } catch {}
+  } catch { }
 
   throw new Error('No valid JSON found: ' + text.substring(0, 200));
 }
@@ -49,12 +49,12 @@ export function parseAIResponse(content) {
 // ─── Validate parsed result has required fields ────────────────────────
 const REQUIRED_FIELDS = {
   explanation: ['title', 'theory'],
-  test:        ['options'],
-  bug:         ['code', 'bug', 'options'],
-  blitz:       ['statement', 'isCorrect'],
-  code:        ['snippet', 'correctPart', 'options'],
-  interview:   ['score', 'feedback'],
-  resume:      ['skills', 'experienceLevel'],
+  test: ['options'],
+  bug: ['code', 'bug', 'options'],
+  blitz: ['statement', 'isCorrect'],
+  code: ['snippet', 'correctPart', 'options'],
+  interview: ['score', 'feedback'],
+  resume: ['skills', 'experienceLevel'],
 };
 
 function validateParsed(mode, parsed) {
@@ -66,7 +66,7 @@ function validateParsed(mode, parsed) {
     }
   }
   // Extra: options must be non-empty arrays for modes that use them
-  if (['test','bug','code'].includes(mode) && !Array.isArray(parsed.options)) {
+  if (['test', 'bug', 'code'].includes(mode) && !Array.isArray(parsed.options)) {
     throw new Error(`'options' must be an array for mode '${mode}'`);
   }
   return true;
@@ -136,15 +136,15 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature) 
       signal: controller.signal,
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type':  'application/json',
-        'HTTP-Referer':  process.env.APP_URL || 'https://interview-tinder.app',
-        'X-Title':       'Interview Tinder',
+        'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.APP_URL || 'https://interview-tinder.app',
+        'X-Title': 'Interview Tinder',
       },
       body: JSON.stringify({
         model: MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user',   content: userPrompt },
+          { role: 'user', content: userPrompt },
         ],
         max_tokens: maxTokens,
         temperature,
@@ -159,7 +159,7 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature) 
     throw new Error(`OpenRouter ${response.status}: ${body.substring(0, 200)}`);
   }
 
-  const data    = await response.json();
+  const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
   if (!content?.trim()) throw new Error('Empty response from OpenRouter');
 
@@ -171,7 +171,7 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature) 
 // ─── Core: cache → dedup → AI → validate → write ──────────────────────
 async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens, temperature, systemPrompt, userPrompt }) {
   const clusterId = generateClusterId(questionText, language);
-  const dedupKey  = `${clusterId}:${mode}:${language}`;
+  const dedupKey = `${clusterId}:${mode}:${language}`;
 
   // 1. DB cache hit
   const cached = await readCache(clusterId, mode, language);
@@ -190,7 +190,7 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
         pool.query(
           `DELETE FROM ai_cache WHERE cluster_id=$1 AND mode=$2 AND prompt_version=$3 AND language=$4`,
           [cid, mode, PROMPT_VERSION, language]
-        ).catch(() => {});
+        ).catch(() => { });
       }
     } else {
       return cached;
@@ -259,5 +259,5 @@ export function generateCodeCompletion(questionText, topic, _userId, language = 
 export function analyzeResume(resumeText, _userId, language = 'Java') {
   const { prompts } = getLanguage(language);
   const { system, user } = prompts.resume(resumeText);
-  return callAI({ questionText: resumeText.substring(0, 300), mode: 'resume', language, isJson: true, maxTokens: 600, temperature: 0.3, systemPrompt: system, userPrompt: user });
+  return callAI({ questionText: resumeText.substring(0, 300), mode: 'resume', language, isJson: true, maxTokens: 1400, temperature: 0.25, systemPrompt: system, userPrompt: user });
 }

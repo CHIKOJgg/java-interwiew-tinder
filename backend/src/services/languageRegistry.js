@@ -111,7 +111,7 @@ Return JSON in this exact format:
 }
 
 The first element of options must be the correct answer (matching correctPart exactly).
-Return only the JSON.`,
+Return only the JSON object.`,
   },
 
   interview: {
@@ -132,83 +132,85 @@ Evaluate the answer. Return JSON in this exact format:
   "correctVersion": "HashMap provides O(1) average for get/put using hashing. Not thread-safe. Use ConcurrentHashMap for concurrent access."
 }
 
-Return only the JSON.`,
+Return only the JSON object.`,
   },
 
   resume: {
-    system: () => jsonSystem({
-      skills: ["string"],
-      experienceLevel: "Junior|Middle|Senior",
-      strengths: ["string"],
-      improvementAreas: ["string"],
-      suggestedQuestions: ["string — interview question to ask this candidate"],
-    }),
+    system: () =>
+      `You are a JSON API. You MUST respond with ONLY a valid JSON object — no prose, no markdown fences, no explanation before or after.`,
     user: (lang, text) =>
-      `Programming language focus: ${lang}
-Resume text: ${text.substring(0, 1500)}
-
-Analyze this resume. Return JSON in this exact format:
+      `Analyze this ${lang} developer resume and return ONLY a JSON object with exactly these 5 keys:
 {
-  "skills": ["Java", "Spring Boot", "PostgreSQL"],
-  "experienceLevel": "Middle",
-  "strengths": ["Strong OOP knowledge", "Production Spring experience"],
-  "improvementAreas": ["No cloud experience", "Limited testing coverage"],
-  "suggestedQuestions": ["Explain Spring bean lifecycle", "How do you handle N+1 queries?"]
+  "skills": ["up to 8 specific technical skills found in the resume"],
+  "experienceLevel": "Junior OR Middle OR Senior",
+  "strengths": ["2-4 concrete strengths from the resume"],
+  "improvementAreas": ["2-3 specific gaps or improvement areas"],
+  "suggestedQuestions": ["3-4 relevant interview questions for this candidate"]
 }
 
-Return only the JSON.`,
+IMPORTANT: Return the complete JSON object. Do not truncate. Do not add any text before or after the JSON.
+
+Resume (${lang} focus):
+<resume>
+${text.substring(0, 2000)}
+</resume>`,
   },
 };
 
 // ─── Language definitions ──────────────────────────────────────────────
 export const LANGUAGES = {
   Java: {
-    id: 'Java', name: 'Java',
-    categories: ['Java Core','Collections','Multithreading','Spring','JVM','Exceptions','OOP','Stream API','Design Patterns','Database','Testing','Microservices','Security'],
+    id: 'Java',
+    name: 'Java',
+    categories: ['Java Core', 'Collections', 'Multithreading', 'Spring', 'JVM', 'Exceptions', 'OOP', 'Stream API', 'Design Patterns', 'Database', 'Testing', 'Microservices', 'Security'],
     prompts: {
       explanation: (q, a) => ({ system: PROMPTS.explanation.system(), user: PROMPTS.explanation.user('Java', q, a) }),
-      test:        (q, a) => ({ system: PROMPTS.test.system(),        user: PROMPTS.test.user('Java', q, a) }),
-      bug:         (q, t) => ({ system: PROMPTS.bug.system(),         user: PROMPTS.bug.user('Java', q, t) }),
-      blitz:       (q, t) => ({ system: PROMPTS.blitz.system(),       user: PROMPTS.blitz.user('Java', q, t) }),
-      code:        (q, t) => ({ system: PROMPTS.code.system(),        user: PROMPTS.code.user('Java', q, t) }),
-      interview:   (q, a) => ({ system: PROMPTS.interview.system(),   user: PROMPTS.interview.user('Java', q, a) }),
-      resume:      (t)    => ({ system: PROMPTS.resume.system(),      user: PROMPTS.resume.user('Java', t) }),
+      test: (q, a) => ({ system: PROMPTS.test.system(), user: PROMPTS.test.user('Java', q, a) }),
+      bug: (q, t) => ({ system: PROMPTS.bug.system(), user: PROMPTS.bug.user('Java', q, t) }),
+      blitz: (q, t) => ({ system: PROMPTS.blitz.system(), user: PROMPTS.blitz.user('Java', q, t) }),
+      code: (q, t) => ({ system: PROMPTS.code.system(), user: PROMPTS.code.user('Java', q, t) }),
+      interview: (q, a) => ({ system: PROMPTS.interview.system(), user: PROMPTS.interview.user('Java', q, a) }),
+      resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('Java', t) }),
     },
     codeLanguage: 'java',
     systemPrompt: 'You are an expert Java mentor. Explain clearly. Use Russian language.',
   },
+
   Python: {
-    id: 'Python', name: 'Python',
-    categories: ['Python Core','Data Structures','OOP','Concurrency','Django','Flask','FastAPI','Testing','Decorators','Generators','Type Hints','Async/Await','Design Patterns','Database'],
+    id: 'Python',
+    name: 'Python',
+    categories: ['Python Core', 'Data Structures', 'OOP', 'Concurrency', 'Django', 'Flask', 'FastAPI', 'Testing', 'Decorators', 'Generators', 'Type Hints', 'Async/Await', 'Design Patterns', 'Database'],
     prompts: {
       explanation: (q, a) => ({ system: PROMPTS.explanation.system(), user: PROMPTS.explanation.user('Python', q, a) }),
-      test:        (q, a) => ({ system: PROMPTS.test.system(),        user: PROMPTS.test.user('Python', q, a) }),
-      bug:         (q, t) => ({ system: PROMPTS.bug.system(),         user: PROMPTS.bug.user('Python', q, t) }),
-      blitz:       (q, t) => ({ system: PROMPTS.blitz.system(),       user: PROMPTS.blitz.user('Python', q, t) }),
-      code:        (q, t) => ({ system: PROMPTS.code.system(),        user: PROMPTS.code.user('Python', q, t) }),
-      interview:   (q, a) => ({ system: PROMPTS.interview.system(),   user: PROMPTS.interview.user('Python', q, a) }),
-      resume:      (t)    => ({ system: PROMPTS.resume.system(),      user: PROMPTS.resume.user('Python', t) }),
+      test: (q, a) => ({ system: PROMPTS.test.system(), user: PROMPTS.test.user('Python', q, a) }),
+      bug: (q, t) => ({ system: PROMPTS.bug.system(), user: PROMPTS.bug.user('Python', q, t) }),
+      blitz: (q, t) => ({ system: PROMPTS.blitz.system(), user: PROMPTS.blitz.user('Python', q, t) }),
+      code: (q, t) => ({ system: PROMPTS.code.system(), user: PROMPTS.code.user('Python', q, t) }),
+      interview: (q, a) => ({ system: PROMPTS.interview.system(), user: PROMPTS.interview.user('Python', q, a) }),
+      resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('Python', t) }),
     },
     codeLanguage: 'python',
     systemPrompt: 'You are an expert Python mentor. Explain clearly. Use Russian language.',
   },
+
   TypeScript: {
-    id: 'TypeScript', name: 'TypeScript',
-    categories: ['TypeScript Core','Type System','Generics','Decorators','React','Node.js','NestJS','OOP','Async/Await','Testing','Design Patterns','Modules'],
+    id: 'TypeScript',
+    name: 'TypeScript',
+    categories: ['TypeScript Core', 'Type System', 'Generics', 'Decorators', 'React', 'Node.js', 'NestJS', 'OOP', 'Async/Await', 'Testing', 'Design Patterns', 'Modules'],
     prompts: {
       explanation: (q, a) => ({ system: PROMPTS.explanation.system(), user: PROMPTS.explanation.user('TypeScript', q, a) }),
-      test:        (q, a) => ({ system: PROMPTS.test.system(),        user: PROMPTS.test.user('TypeScript', q, a) }),
-      bug:         (q, t) => ({ system: PROMPTS.bug.system(),         user: PROMPTS.bug.user('TypeScript', q, t) }),
-      blitz:       (q, t) => ({ system: PROMPTS.blitz.system(),       user: PROMPTS.blitz.user('TypeScript', q, t) }),
-      code:        (q, t) => ({ system: PROMPTS.code.system(),        user: PROMPTS.code.user('TypeScript', q, t) }),
-      interview:   (q, a) => ({ system: PROMPTS.interview.system(),   user: PROMPTS.interview.user('TypeScript', q, a) }),
-      resume:      (t)    => ({ system: PROMPTS.resume.system(),      user: PROMPTS.resume.user('TypeScript', t) }),
+      test: (q, a) => ({ system: PROMPTS.test.system(), user: PROMPTS.test.user('TypeScript', q, a) }),
+      bug: (q, t) => ({ system: PROMPTS.bug.system(), user: PROMPTS.bug.user('TypeScript', q, t) }),
+      blitz: (q, t) => ({ system: PROMPTS.blitz.system(), user: PROMPTS.blitz.user('TypeScript', q, t) }),
+      code: (q, t) => ({ system: PROMPTS.code.system(), user: PROMPTS.code.user('TypeScript', q, t) }),
+      interview: (q, a) => ({ system: PROMPTS.interview.system(), user: PROMPTS.interview.user('TypeScript', q, a) }),
+      resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('TypeScript', t) }),
     },
     codeLanguage: 'typescript',
     systemPrompt: 'You are an expert TypeScript mentor. Explain clearly. Use Russian language.',
   },
 };
 
-export const getLanguage  = (id) => LANGUAGES[id] || LANGUAGES.Java;
+export const getLanguage = (id) => LANGUAGES[id] || LANGUAGES.Java;
 export const getAvailableLanguages = () => Object.keys(LANGUAGES);
 export const getCategories = (id) => getLanguage(id).categories;

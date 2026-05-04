@@ -29,16 +29,16 @@ function SnippetBlock({ snippet, selected, result, codeLanguage }) {
 
 const CodeCompletionMode = () => {
   const { questions, currentIndex, submitCodeCompletionAnswer, isLoadingQuestions,
-          hasMoreQuestions, fetchGeneration, language } = useStore();
+    hasMoreQuestions, fetchGeneration, language } = useStore();
 
   const [selectedOption, setSelectedOption] = useState(null);
-  const [isSubmitting, setIsSubmitting]     = useState(false);
-  const [result, setResult]                 = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [result, setResult] = useState(null);
 
   const currentQuestion = questions[currentIndex];
-  const completionData  = currentQuestion?.codeCompletionData;
-  const hasError        = completionData?.__error;
-  const codeLanguage    = { Java: 'java', Python: 'python', TypeScript: 'typescript' }[language] || 'java';
+  const completionData = currentQuestion?.codeCompletionData;
+  const hasError = completionData?.__error;
+  const codeLanguage = { Java: 'java', Python: 'python', TypeScript: 'typescript' }[language] || 'java';
 
   useEffect(() => {
     setSelectedOption(null);
@@ -102,7 +102,8 @@ const CodeCompletionMode = () => {
             let cls = 'completion-option';
             if (selectedOption === option) cls += ' selected';
             if (result) {
-              if (option === result.correctAnswer) cls += ' correct';
+              const norm = (s) => s?.trim().toLowerCase() ?? '';
+              if (norm(option) === norm(result.correctAnswer)) cls += ' correct';
               else if (selectedOption === option && !result.isCorrect) cls += ' incorrect';
             }
             return (
@@ -125,8 +126,8 @@ const CodeCompletionMode = () => {
             {result.isCorrect
               ? <div className="feedback-correct"><Check size={18} /><span>Идеально!</span></div>
               : <div className="feedback-incorrect"><X size={18} />
-                  <span>Неверно. Правильно: <code>{result.correctAnswer}</code></span>
-                </div>
+                <span>Неверно. Правильно: <code>{result.correctAnswer}</code></span>
+              </div>
             }
             {/* §12 — next button always appears */}
             <button className="next-completion-button" onClick={handleNext}>

@@ -5,21 +5,23 @@ import './SwipeButtons.css';
 const SwipeButtons = ({ onSwipeLeft, onSwipeRight, disabled = false }) => {
   return (
     <div className="swipe-buttons">
-      <button 
+      <button
         className="swipe-button swipe-button-left"
         onClick={onSwipeLeft}
         disabled={disabled}
+        type="button"
       >
-        <X size={32} />
+        <X size={30} />
         <span>Не знаю</span>
       </button>
-      
-      <button 
+
+      <button
         className="swipe-button swipe-button-right"
         onClick={onSwipeRight}
         disabled={disabled}
+        type="button"
       >
-        <Check size={32} />
+        <Check size={30} />
         <span>Знаю</span>
       </button>
     </div>

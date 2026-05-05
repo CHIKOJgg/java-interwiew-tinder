@@ -18,26 +18,12 @@ Required schema: ${JSON.stringify(schema)}`;
 // ─── Per-mode schemas and example builders ─────────────────────────────
 const PROMPTS = {
   explanation: {
-    system: () => jsonSystem({
-      title: "string — topic name",
-      theory: "string — clear explanation in 2-4 sentences",
-      where_used: ["string — real usage example"],
-      code_example: "string — short runnable code snippet",
-      key_points: ["string — bullet point"],
-    }),
-    user: (lang, q, a) =>
-      `Language: ${lang}
-Question: ${q}
-Short answer: ${a}
-
-Respond with a JSON explanation. Example of the exact format:
-{
-  "title": "HashMap vs TreeMap",
-  "theory": "HashMap stores key-value pairs in a hash table with O(1) average lookup. TreeMap uses a red-black tree with O(log n) lookup but keeps keys sorted.",
-  "where_used": ["HashMap: caching, frequency counting", "TreeMap: range queries, sorted iteration"],
-  "code_example": "Map<String, Integer> map = new HashMap<>();\\nmap.put(\\"a\\", 1);",
-  "key_points": ["HashMap is faster", "TreeMap is sorted", "Neither is thread-safe"]
-}`,
+    // Plain-text markdown — no JSON. Immune to token-limit truncation that breaks JSON.
+    system: () => `You are a senior software engineer and teacher. Respond ONLY in plain text using the exact markdown template below. Do NOT use JSON. Do NOT add any text before or after the template.`,
+    user: (lang, q, a) => {
+      const codeLang = lang.toLowerCase();
+      return `Language: ${lang}\nQuestion: ${q}\nShort answer: ${a}\n\nFill in this exact template:\n\n## [Topic name]\n\n[Explanation in 2-3 clear sentences.]\n\n**Применяется:** [2-3 real-world cases]\n\n**Пример:**\n\`\`\`${codeLang}\n[short code, 3-6 lines]\n\`\`\`\n\n**Главное:**\n- [point 1]\n- [point 2]\n- [point 3]`;
+    },
   },
 
   test: {
@@ -111,7 +97,7 @@ Return JSON in this exact format:
 }
 
 The first element of options must be the correct answer (matching correctPart exactly).
-Return only the JSON object.`,
+Return only the JSON.`,
   },
 
   interview: {
@@ -132,36 +118,38 @@ Evaluate the answer. Return JSON in this exact format:
   "correctVersion": "HashMap provides O(1) average for get/put using hashing. Not thread-safe. Use ConcurrentHashMap for concurrent access."
 }
 
-Return only the JSON object.`,
+Return only the JSON.`,
   },
 
   resume: {
-    system: () =>
-      `You are a JSON API. You MUST respond with ONLY a valid JSON object — no prose, no markdown fences, no explanation before or after.`,
+    system: () => jsonSystem({
+      skills: ["string"],
+      experienceLevel: "Junior|Middle|Senior",
+      strengths: ["string"],
+      improvementAreas: ["string"],
+      suggestedQuestions: ["string — interview question to ask this candidate"],
+    }),
     user: (lang, text) =>
-      `Analyze this ${lang} developer resume and return ONLY a JSON object with exactly these 5 keys:
+      `Programming language focus: ${lang}
+Resume text: ${text.substring(0, 1500)}
+
+Analyze this resume. Return JSON in this exact format:
 {
-  "skills": ["up to 8 specific technical skills found in the resume"],
-  "experienceLevel": "Junior OR Middle OR Senior",
-  "strengths": ["2-4 concrete strengths from the resume"],
-  "improvementAreas": ["2-3 specific gaps or improvement areas"],
-  "suggestedQuestions": ["3-4 relevant interview questions for this candidate"]
+  "skills": ["Java", "Spring Boot", "PostgreSQL"],
+  "experienceLevel": "Middle",
+  "strengths": ["Strong OOP knowledge", "Production Spring experience"],
+  "improvementAreas": ["No cloud experience", "Limited testing coverage"],
+  "suggestedQuestions": ["Explain Spring bean lifecycle", "How do you handle N+1 queries?"]
 }
 
-IMPORTANT: Return the complete JSON object. Do not truncate. Do not add any text before or after the JSON.
-
-Resume (${lang} focus):
-<resume>
-${text.substring(0, 2000)}
-</resume>`,
+Return only the JSON.`,
   },
 };
 
 // ─── Language definitions ──────────────────────────────────────────────
 export const LANGUAGES = {
   Java: {
-    id: 'Java',
-    name: 'Java',
+    id: 'Java', name: 'Java',
     categories: ['Java Core', 'Collections', 'Multithreading', 'Spring', 'JVM', 'Exceptions', 'OOP', 'Stream API', 'Design Patterns', 'Database', 'Testing', 'Microservices', 'Security'],
     prompts: {
       explanation: (q, a) => ({ system: PROMPTS.explanation.system(), user: PROMPTS.explanation.user('Java', q, a) }),
@@ -175,10 +163,8 @@ export const LANGUAGES = {
     codeLanguage: 'java',
     systemPrompt: 'You are an expert Java mentor. Explain clearly. Use Russian language.',
   },
-
   Python: {
-    id: 'Python',
-    name: 'Python',
+    id: 'Python', name: 'Python',
     categories: ['Python Core', 'Data Structures', 'OOP', 'Concurrency', 'Django', 'Flask', 'FastAPI', 'Testing', 'Decorators', 'Generators', 'Type Hints', 'Async/Await', 'Design Patterns', 'Database'],
     prompts: {
       explanation: (q, a) => ({ system: PROMPTS.explanation.system(), user: PROMPTS.explanation.user('Python', q, a) }),
@@ -192,10 +178,8 @@ export const LANGUAGES = {
     codeLanguage: 'python',
     systemPrompt: 'You are an expert Python mentor. Explain clearly. Use Russian language.',
   },
-
   TypeScript: {
-    id: 'TypeScript',
-    name: 'TypeScript',
+    id: 'TypeScript', name: 'TypeScript',
     categories: ['TypeScript Core', 'Type System', 'Generics', 'Decorators', 'React', 'Node.js', 'NestJS', 'OOP', 'Async/Await', 'Testing', 'Design Patterns', 'Modules'],
     prompts: {
       explanation: (q, a) => ({ system: PROMPTS.explanation.system(), user: PROMPTS.explanation.user('TypeScript', q, a) }),

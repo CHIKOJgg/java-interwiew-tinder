@@ -18,13 +18,21 @@ const BACKFILL = {
   },
   test: async (qId, result) => {
     // result is a parsed array of wrong-answer strings
-    const options = Array.isArray(result) ? result : [];
+    const options = Array.isArray(result) ? result : (result?.options || []);
+    if (!options.length) {
+      console.warn(`Backfill skip [test] q=${qId}: AI returned empty options array`);
+      return; // Don't save [] to postgres ARRAY column — causes malformed array literal error
+    }
     await pool.query(
       'UPDATE questions SET options=$1 WHERE id=$2',
       [JSON.stringify(options), qId]
     );
   },
   bug: async (qId, result) => {
+    if (!result?.code || !result?.bug || !Array.isArray(result?.options) || !result.options.length) {
+      console.warn(`Backfill skip [bug] q=${qId}: incomplete result`);
+      return;
+    }
     await pool.query(
       'UPDATE questions SET bug_hunting_data=$1 WHERE id=$2',
       [JSON.stringify(result), qId]
@@ -37,6 +45,10 @@ const BACKFILL = {
     );
   },
   code: async (qId, result) => {
+    if (!result?.snippet || !result?.correctPart || !Array.isArray(result?.options) || !result.options.length) {
+      console.warn(`Backfill skip [code] q=${qId}: incomplete result`);
+      return;
+    }
     await pool.query(
       'UPDATE questions SET code_completion_data=$1 WHERE id=$2',
       [JSON.stringify(result), qId]
@@ -47,9 +59,9 @@ const BACKFILL = {
 // ─── Job processor ────────────────────────────────────────────────────
 const processJob = async (job) => {
   const { id, task_type, payload } = job;
-  const p    = typeof payload === 'string' ? JSON.parse(payload) : payload;
+  const p = typeof payload === 'string' ? JSON.parse(payload) : payload;
   const lang = p.language || 'Java';
-  const qId  = p.questionId || null;  // may be absent for warm-up jobs
+  const qId = p.questionId || null;  // may be absent for warm-up jobs
 
   console.log(`👷 Job ${id}: ${task_type} [${lang}]${qId ? ` q=${qId}` : ''}`);
 
@@ -99,7 +111,7 @@ const processJob = async (job) => {
            updated_at=CURRENT_TIMESTAMP
        WHERE id=$1`,
       [id, err.message]
-    ).catch(() => {});
+    ).catch(() => { });
   }
 };
 

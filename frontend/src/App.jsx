@@ -14,81 +14,46 @@ import CategorySelection from './components/CategorySelection';
 import SubscriptionPlans from './components/SubscriptionPlans';
 import { SkeletonCard } from './components/Skeleton';
 import useStore from './store/useStore';
-import { CheckCircle, RefreshCw } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import './App.css';
 
-// ─── Error Boundary ────────────────────────────────────────────────────
-class CardErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, info) {
-    console.error('Card render error:', error, info);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="card-error-fallback">
-          <RefreshCw size={32} opacity={0.4} />
-          <p>Ошибка отображения карточки</p>
-          <button
-            onClick={() => {
-              this.setState({ hasError: false, error: null });
-              this.props.onReset?.();
-            }}
-          >
-            Следующий вопрос
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-// ─── Telegram initData ─────────────────────────────────────────────────
 function getTelegramInitData() {
   return new Promise((resolve, reject) => {
-    // Try synchronously first — initData is usually ready immediately
-    const tryNow = () => {
+    let attempts = 0;
+    const maxAttempts = 80;
+
+    const interval = setInterval(() => {
+      attempts++;
       const tg = window.Telegram?.WebApp;
-      if (!tg) return false;
+
+      if (!tg) {
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          reject(new Error('Telegram WebApp не загрузился. Откройте через Telegram.'));
+        }
+        return;
+      }
+
       if (!tg._readyCalled) {
         tg._readyCalled = true;
-        try { tg.ready(); } catch (_) { }
-        try { tg.expand(); } catch (_) { }
+        try { tg.ready(); } catch (e) { console.warn('tg.ready() failed:', e); }
+        try { tg.expand(); } catch (e) { console.warn('tg.expand() failed:', e); }
       }
+
       if (tg.initData && tg.initData.length > 0) {
+        clearInterval(interval);
         resolve(tg.initData);
-        return true;
+        return;
       }
-      return false;
-    };
 
-    if (tryNow()) return;
-
-    let attempts = 0;
-    const MAX = 30; // 30 × 100ms = 3s
-    const timer = setInterval(() => {
-      attempts++;
-      if (tryNow()) { clearInterval(timer); return; }
-      if (attempts >= MAX) {
-        clearInterval(timer);
-        console.warn('initData still empty after 3s — sending to backend anyway');
-        resolve(window.Telegram?.WebApp?.initData ?? '');
+      if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        reject(new Error('initData пустой — приложение должно открываться через Telegram'));
       }
     }, 100);
   });
 }
 
-// ─── App ──────────────────────────────────────────────────────────────
 function App() {
   const {
     questions, currentIndex,
@@ -102,18 +67,21 @@ function App() {
   const [initState, setInitState] = useState('waiting_telegram');
   const [screen, setScreen] = useState('category');
   const [authError, setAuthError] = useState(null);
-  const [cardErrorKey, setCardErrorKey] = useState(0); // resets ErrorBoundary
 
   const cardRefs = useRef([]);
 
   useEffect(() => {
     let cancelled = false;
+
     const startApp = async () => {
       try {
         setInitState('waiting_telegram');
         const initData = await getTelegramInitData();
+        if (!initData) throw new Error('No initData');
+
         setInitState('auth');
         await login(initData);
+
         if (cancelled) return;
         setInitState('ready');
         setScreen('category');
@@ -125,6 +93,7 @@ function App() {
         setInitState('error');
       }
     };
+
     startApp();
     return () => { cancelled = true; };
   }, []);
@@ -148,14 +117,20 @@ function App() {
     cardRefs.current[currentIndex]?.swipe?.(direction);
   };
 
-  // ── Loading / error screens ──────────────────────────────────────────
-  if (initState === 'waiting_telegram' || initState === 'auth') {
+  if (initState === 'waiting_telegram') {
     return (
       <div className="app-loading">
         <SkeletonCard />
-        <p style={{ marginTop: 16, opacity: 0.5 }}>
-          {initState === 'waiting_telegram' ? 'Connecting to Telegram...' : 'Signing you in...'}
-        </p>
+        <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>Connecting to Telegram...</p>
+      </div>
+    );
+  }
+
+  if (initState === 'auth') {
+    return (
+      <div className="app-loading">
+        <SkeletonCard />
+        <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>Signing you in...</p>
       </div>
     );
   }
@@ -164,7 +139,7 @@ function App() {
     return (
       <div className="app-loading">
         <p style={{ fontSize: 16, fontWeight: 600 }}>Ошибка запуска приложения</p>
-        <p style={{ fontSize: 11, opacity: 0.6, marginTop: 8, padding: '0 24px', textAlign: 'center' }}>{authError}</p>
+        <p style={{ fontSize: 11, opacity: 0.6, marginTop: 8, textAlign: 'center', padding: '0 24px' }}>{authError}</p>
         <button
           onClick={() => window.location.reload()}
           style={{ marginTop: 20, padding: '12px 24px', borderRadius: 12, background: '#5c7cfa', color: '#fff', border: 'none', fontSize: 15, cursor: 'pointer' }}
@@ -179,8 +154,12 @@ function App() {
   if (screen === 'resume') return <ResumeAnalyzer onBack={() => setScreen('main')} />;
   if (screen === 'subscriptions') return <SubscriptionPlans onBack={() => setScreen('main')} />;
 
-  // ── Mode content ─────────────────────────────────────────────────────
   const renderMode = () => {
+    // Blitz and MockInterview have their own start/active/results state machines.
+    // Never block them with the global "no questions" completion screen.
+    if (learningMode === 'blitz') return <BlitzMode />;
+    if (learningMode === 'mock-interview') return <MockInterviewMode />;
+
     if (isLoadingQuestions) return <SkeletonCard />;
 
     if (!hasMoreQuestions()) {
@@ -189,7 +168,9 @@ function App() {
           <CheckCircle size={64} color="#51cf66" />
           <h2>Отличная работа!</h2>
           <p>Вы просмотрели все доступные вопросы</p>
-          <button onClick={() => setScreen('category')}>Выбрать другие темы</button>
+          <button onClick={() => setScreen('category')}>
+            Выбрать другие темы
+          </button>
         </div>
       );
     }
@@ -197,37 +178,28 @@ function App() {
     switch (learningMode) {
       case 'swipe':
         return (
-          <CardErrorBoundary
-            key={cardErrorKey}
-            onReset={() => {
-              setCardErrorKey(k => k + 1);
-              swipeCard(questions[currentIndex]?.id, 'left');
-            }}
-          >
-            <div className="card-stack">
-              {questions.slice(currentIndex, currentIndex + 3).map((q, index) => {
-                if (!q) return null;
-                return (
-                  <div
-                    key={q.id}
-                    className={`card-wrapper ${index > 0 ? 'card-behind' : ''}`}
-                    style={{ zIndex: 3 - index }}
-                  >
-                    {index === 0 ? (
-                      <QuestionCard
-                        ref={el => { cardRefs.current[currentIndex] = el; }}
-                        question={q}
-                        onSwipe={handleSwipe}
-                        canSwipe={true}
-                      />
-                    ) : (
-                      <div className="card-peek-shell" />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </CardErrorBoundary>
+          <div className="card-stack">
+            {questions.slice(currentIndex, currentIndex + 3).map((q, index) => (
+              <div
+                key={q.id}
+                className={`card-wrapper ${index > 0 ? 'card-behind' : ''}`}
+                style={{ zIndex: 3 - index }}
+              >
+                {index === 0 ? (
+                  // ── Active card: full QuestionCard with flip ──
+                  <QuestionCard
+                    ref={el => (cardRefs.current[currentIndex] = el)}
+                    question={q}
+                    onSwipe={handleSwipe}
+                    canSwipe={true}
+                  />
+                ) : (
+                  // ── Peek cards: blank gradient shell only, no text bleeding ──
+                  <div className="card-peek-shell" />
+                )}
+              </div>
+            ))}
+          </div>
         );
       case 'test': return <TestMode />;
       case 'bug-hunting': return <BugHuntingMode />;
@@ -250,9 +222,6 @@ function App() {
       <div className="card-container">
         {renderMode()}
       </div>
-
-      {/* SwipeButtons are position:fixed — rendered outside card-container
-          so they don't affect layout, and sit above the bottom nav */}
       {learningMode === 'swipe' && (
         <SwipeButtons
           onSwipeLeft={() => handleButtonSwipe('left')}
@@ -260,7 +229,6 @@ function App() {
           disabled={!hasMoreQuestions() || isLoadingQuestions}
         />
       )}
-
       <ExplanationModal
         isOpen={showExplanation}
         explanation={currentExplanation}

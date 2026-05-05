@@ -84,28 +84,80 @@ function StructuredExplanation({ data, language }) {
   );
 }
 
-// ─── Fallback plain-text renderer ────────────────────────────────────
-function PlainExplanation({ text }) {
-  // Minimal markdown: **bold**, `code`, newlines → <br>
+// ─── Markdown renderer ───────────────────────────────────────────────
+// Handles the template output from the new plain-text explanation prompt:
+//   ## Heading, **bold**, `inline code`, ```code blocks```, - list items
+function PlainExplanation({ text, codeLanguage }) {
   const lines = (text || '').split('\n');
-  return (
-    <div className="plain-explanation">
-      {lines.map((line, i) => {
-        const parts = line.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
-        return (
-          <p key={i}>
-            {parts.map((p, j) => {
-              if (p.startsWith('**') && p.endsWith('**'))
-                return <strong key={j}>{p.slice(2, -2)}</strong>;
-              if (p.startsWith('`') && p.endsWith('`'))
-                return <code key={j} className="inline-code">{p.slice(1, -1)}</code>;
-              return p;
-            })}
-          </p>
-        );
-      })}
-    </div>
-  );
+  const nodes = [];
+  let i = 0;
+
+  const inlineFormat = (line, key) => {
+    // Split on **bold** and `code` spans
+    const parts = line.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+    return (
+      <span key={key}>
+        {parts.map((p, j) => {
+          if (p.startsWith('**') && p.endsWith('**'))
+            return <strong key={j}>{p.slice(2, -2)}</strong>;
+          if (p.startsWith('`') && p.endsWith('`'))
+            return <code key={j} className="inline-code">{p.slice(1, -1)}</code>;
+          return p;
+        })}
+      </span>
+    );
+  };
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // ## Heading
+    if (line.startsWith('## ')) {
+      nodes.push(<h3 key={i} className="exp-md-heading">{line.slice(3)}</h3>);
+      i++; continue;
+    }
+
+    // ```code block```
+    if (line.trimStart().startsWith('```')) {
+      const codeLines = [];
+      i++;
+      while (i < lines.length && !lines[i].trimStart().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++; // skip closing ```
+      nodes.push(
+        <pre key={i} className="exp-md-code">
+          <code>{codeLines.join('\n')}</code>
+        </pre>
+      );
+      continue;
+    }
+
+    // - list item (collect consecutive items into one <ul>)
+    if (line.startsWith('- ') || line.startsWith('* ')) {
+      const items = [];
+      while (i < lines.length && (lines[i].startsWith('- ') || lines[i].startsWith('* '))) {
+        items.push(lines[i].slice(2));
+        i++;
+      }
+      nodes.push(
+        <ul key={i} className="exp-md-list">
+          {items.map((item, j) => <li key={j}>{inlineFormat(item, j)}</li>)}
+        </ul>
+      );
+      continue;
+    }
+
+    // Empty line → skip
+    if (!line.trim()) { i++; continue; }
+
+    // Regular paragraph with inline formatting
+    nodes.push(<p key={i} className="exp-md-para">{inlineFormat(line, i)}</p>);
+    i++;
+  }
+
+  return <div className="plain-explanation">{nodes}</div>;
 }
 
 // ─── Main component ───────────────────────────────────────────────────
@@ -119,7 +171,7 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose }) => {
     try {
       const parsed = JSON.parse(trimmed);
       if (parsed.theory || parsed.title) return { isJson: true, data: parsed };
-    } catch {}
+    } catch { }
     return { isJson: false, data: null };
   }, [explanation]);
 
@@ -141,7 +193,7 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose }) => {
           ) : isJson ? (
             <StructuredExplanation data={data} language={codeLanguage} />
           ) : (
-            <PlainExplanation text={explanation} />
+            <PlainExplanation text={explanation} codeLanguage={codeLanguage} />
           )}
         </div>
 

@@ -21,6 +21,40 @@ function generateClusterId(text, language = 'Java') {
   return crypto.createHash('sha256').update(normalized || 'empty').digest('hex');
 }
 
+
+// ─── JSON truncation repair ────────────────────────────────────────────
+// Free-tier models often hit their token limit mid-string.
+// This closes open strings / objects so partial JSON is still parseable.
+function repairTruncatedJSON(raw) {
+  const start = raw.indexOf('{');
+  if (start === -1) return null;
+  const s = raw.slice(start);
+
+  let depth = 0, inStr = false, esc = false;
+  let i = 0;
+  for (; i < s.length; i++) {
+    const c = s[i];
+    if (esc) { esc = false; continue; }
+    if (c === '\\' && inStr) { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (!inStr) {
+      if (c === '{' || c === '[') depth++;
+      else if (c === '}' || c === ']') {
+        depth--;
+        if (depth === 0) return s.slice(0, i + 1); // already complete
+      }
+    }
+  }
+  if (depth <= 0) return null; // something weird, skip repair
+
+  // Truncated — patch it up
+  let repaired = s.trimEnd();
+  if (inStr) repaired += '"';           // close open string
+  repaired = repaired.replace(/,\s*$/, ''); // remove trailing comma
+  while (depth > 0) { repaired += '}'; depth--; }
+  return repaired;
+}
+
 // ─── JSON parser — 5-stage recovery ───────────────────────────────────
 export function parseAIResponse(content) {
   if (!content?.trim()) throw new Error('Empty AI response');
@@ -42,6 +76,13 @@ export function parseAIResponse(content) {
       text.replace(/[\r\n]+/g, ' ').replace(/,\s*([}\]])/g, '$1')
     );
   } catch { }
+
+  // Stage 6: try to repair truncated JSON (model hit token limit mid-string)
+  const repaired = repairTruncatedJSON(text);
+  if (repaired) {
+    try { return JSON.parse(repaired); } catch { }
+    try { return JSON.parse(repaired.replace(/[\r\n]+/g, ' ').replace(/,\s*([}\]])/g, '$1')); } catch { }
+  }
 
   throw new Error('No valid JSON found: ' + text.substring(0, 200));
 }
@@ -223,19 +264,19 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
 export function generateExplanation(questionText, shortAnswer, _userId, language = 'Java') {
   const { prompts } = getLanguage(language);
   const { system, user } = prompts.explanation(questionText, shortAnswer);
-  return callAI({ questionText, mode: 'explanation', language, isJson: true, maxTokens: 700, temperature: 0.5, systemPrompt: system, userPrompt: user });
+  return callAI({ questionText, mode: 'explanation', language, isJson: false, maxTokens: 900, temperature: 0.4, systemPrompt: system, userPrompt: user });
 }
 
 export function generateTestOptions(questionText, correctAnswer, _userId, language = 'Java') {
   const { prompts } = getLanguage(language);
   const { system, user } = prompts.test(questionText, correctAnswer);
-  return callAI({ questionText, mode: 'test', language, isJson: true, maxTokens: 200, temperature: 0.4, systemPrompt: system, userPrompt: user });
+  return callAI({ questionText, mode: 'test', language, isJson: true, maxTokens: 400, temperature: 0.4, systemPrompt: system, userPrompt: user });
 }
 
 export function generateBuggyCode(questionText, topic, _userId, language = 'Java') {
   const { prompts } = getLanguage(language);
   const { system, user } = prompts.bug(questionText, topic || 'General');
-  return callAI({ questionText, mode: 'bug', language, isJson: true, maxTokens: 500, temperature: 0.5, systemPrompt: system, userPrompt: user });
+  return callAI({ questionText, mode: 'bug', language, isJson: true, maxTokens: 800, temperature: 0.5, systemPrompt: system, userPrompt: user });
 }
 
 export function generateBlitzStatement(questionText, topic, _userId, language = 'Java') {
@@ -253,11 +294,11 @@ export function evaluateInterviewAnswer(question, answer, _userId, language = 'J
 export function generateCodeCompletion(questionText, topic, _userId, language = 'Java') {
   const { prompts } = getLanguage(language);
   const { system, user } = prompts.code(questionText, topic || 'General');
-  return callAI({ questionText, mode: 'code', language, isJson: true, maxTokens: 500, temperature: 0.5, systemPrompt: system, userPrompt: user });
+  return callAI({ questionText, mode: 'code', language, isJson: true, maxTokens: 800, temperature: 0.5, systemPrompt: system, userPrompt: user });
 }
 
 export function analyzeResume(resumeText, _userId, language = 'Java') {
   const { prompts } = getLanguage(language);
   const { system, user } = prompts.resume(resumeText);
-  return callAI({ questionText: resumeText.substring(0, 300), mode: 'resume', language, isJson: true, maxTokens: 1400, temperature: 0.25, systemPrompt: system, userPrompt: user });
+  return callAI({ questionText: resumeText.substring(0, 300), mode: 'resume', language, isJson: true, maxTokens: 600, temperature: 0.3, systemPrompt: system, userPrompt: user });
 }

@@ -18,27 +18,32 @@ Required schema: ${JSON.stringify(schema)}`;
 // ─── Per-mode schemas and example builders ─────────────────────────────
 const PROMPTS = {
   explanation: {
-    // Plain-text markdown — no JSON. Immune to token-limit truncation that breaks JSON.
-    system: () => `You are a senior software engineer and teacher. Respond ONLY in plain text using the exact markdown template below. Do NOT use JSON. Do NOT add any text before or after the template.`,
-    user: (lang, q, a) => {
-      const codeLang = lang.toLowerCase();
-      return `Language: ${lang}\nQuestion: ${q}\nShort answer: ${a}\n\nFill in this exact template:\n\n## [Topic name]\n\n[Explanation in 2-3 clear sentences.]\n\n**Применяется:** [2-3 real-world cases]\n\n**Пример:**\n\`\`\`${codeLang}\n[short code, 3-6 lines]\n\`\`\`\n\n**Главное:**\n- [point 1]\n- [point 2]\n- [point 3]`;
-    },
+    system: () => jsonSystem({
+      title: "string — topic name",
+      theory: "string — clear explanation in 2-4 sentences",
+      where_used: ["string — real usage example"],
+      code_example: "string — short runnable code snippet",
+      key_points: ["string — bullet point"],
+    }),
+    user: (lang, q, a) =>
+      `Language: ${lang}
+Question: ${q}
+Short answer: ${a}
+
+Respond with a JSON explanation. Example of the exact format:
+{
+  "title": "HashMap vs TreeMap",
+  "theory": "HashMap stores key-value pairs in a hash table with O(1) average lookup. TreeMap uses a red-black tree with O(log n) lookup but keeps keys sorted.",
+  "where_used": ["HashMap: caching, frequency counting", "TreeMap: range queries, sorted iteration"],
+  "code_example": "Map<String, Integer> map = new HashMap<>();\\nmap.put(\\"a\\", 1);",
+  "key_points": ["HashMap is faster", "TreeMap is sorted", "Neither is thread-safe"]
+}`,
   },
 
   test: {
-    system: () => jsonSystem({
-      options: ["wrong option 1", "wrong option 2", "wrong option 3"],
-    }),
+    system: () => `You generate wrong but plausible distractor answers for technical interview questions. Respond ONLY with valid JSON — no markdown, no preamble. Format: {"options":["wrong 1","wrong 2","wrong 3"]}`,
     user: (lang, q, correct) =>
-      `Language: ${lang}
-Question: ${q}
-Correct answer: ${correct}
-
-Generate exactly 3 WRONG but plausible distractor answers. Example format:
-{"options": ["ArrayList is thread-safe", "LinkedList has O(1) random access", "Vector is deprecated"]}
-
-Now generate 3 wrong answers for the question above. Return only the JSON.`,
+      `${lang} question: "${q}"\nCorrect answer: "${correct}"\nGenerate 3 WRONG, plausible-sounding distractors a junior dev might confuse with the correct answer.\nReturn ONLY: {"options":["wrong1","wrong2","wrong3"]}`,
   },
 
   bug: {

@@ -101,13 +101,13 @@ app.post('/api/auth/login', async (req, res) => {
              VALUES ($1, 'pro', 'active', NULL, 'admin_grant', 'system')
              ON CONFLICT DO NOTHING`,
             [user.telegram_id]
-          ).catch(() => {});
+          ).catch(() => { });
         });
         await pool.query(
           `UPDATE users SET subscription_plan = 'pro' WHERE telegram_id = $1`,
           [user.telegram_id]
-        ).catch(() => {});
-      } catch {}
+        ).catch(() => { });
+      } catch { }
     }
 
     // Background warm-up: pre-enqueue AI generation jobs for this user's next questions
@@ -119,7 +119,7 @@ app.post('/api/auth/login', async (req, res) => {
         [user.telegram_id]
       );
       preload.rows.forEach(q => {
-        enqueueJob('explanation', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => {});
+        enqueueJob('explanation', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => { });
       });
     } catch (e) { console.error('Preload error:', e.message); }
 
@@ -136,7 +136,7 @@ app.post('/api/auth/login', async (req, res) => {
           [user.telegram_id]
         );
         if (subResult.rows.length > 0) plan = subResult.rows[0].plan_id;
-      } catch {}
+      } catch { }
     }
 
     res.json({
@@ -188,7 +188,7 @@ app.post('/api/preferences', validateBody({ userId: { required: true }, categori
       [userId, categories, language || 'Java']
     );
     if (language) {
-      await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => {});
+      await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => { });
     }
     res.json({ success: true });
   } catch {
@@ -210,7 +210,7 @@ app.post('/api/preferences/language', validateBody({ userId: { required: true },
          updated_at = NOW()`,
       [userId, language]
     );
-    await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => {});
+    await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => { });
     res.json({ success: true });
   } catch (err) {
     console.error('Error updating language preference:', err);
@@ -223,8 +223,8 @@ app.get('/api/questions/feed', async (req, res) => {
   try {
     const { userId } = req.query;
     const language = req.query.language || 'Java';
-    const mode     = req.query.mode || 'swipe';
-    const limit    = Math.min(parseInt(req.query.limit) || 5, 10);
+    const mode = req.query.mode || 'swipe';
+    const limit = Math.min(parseInt(req.query.limit) || 5, 10);
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     // Load user's category preferences (only apply if they match current language)
@@ -239,15 +239,12 @@ app.get('/api/questions/feed', async (req, res) => {
     // ── Mode-specific WHERE clause ─────────────────────────────────────
     // Exclude questions that are missing required AI-generated data for the
     // mode — they'd cause 404s on answer submission.
-    const modeFilter = {
-      'bug-hunting':     'AND q.bug_hunting_data IS NOT NULL',
-      'blitz':           'AND q.blitz_data IS NOT NULL',
-      'code-completion': 'AND q.code_completion_data IS NOT NULL',
-      'test':            'AND q.short_answer IS NOT NULL AND q.short_answer != \'\'',
-      'swipe':           '',
-      'mock-interview':  '',
-      'concept-linker':  '',
-    }[mode] || '';
+    // No mode-specific filters — every mode can see all questions for
+    // the selected language. AI data (blitz, bug, code) is generated
+    // on-demand via fetchGeneration in the component. Requiring it here
+    // caused the feed to return 0 questions and show "Отличная работа"
+    // immediately before any AI jobs had been processed.
+    const modeFilter = '';
 
     const catFilter = selectedCategories.length > 0
       ? 'AND q.category = ANY($cat)'
@@ -285,16 +282,16 @@ app.get('/api/questions/feed', async (req, res) => {
     // If no questions found, return empty array with helpful meta
     // (don't 500 — TypeScript or newly added languages may legitimately have 0 questions)
     const questions = result.rows.map(row => ({
-      id:                row.id,
-      category:          row.category,
-      difficulty:        row.difficulty,
-      question:          row.question_text,
-      shortAnswer:       row.short_answer,
-      options:           row.options || [],
-      bugHuntingData:    row.bug_hunting_data  || null,
-      blitzData:         row.blitz_data        || null,
-      codeCompletionData:row.code_completion_data || null,
-      language:          row.language || 'Java',
+      id: row.id,
+      category: row.category,
+      difficulty: row.difficulty,
+      question: row.question_text,
+      shortAnswer: row.short_answer,
+      options: row.options || [],
+      bugHuntingData: row.bug_hunting_data || null,
+      blitzData: row.blitz_data || null,
+      codeCompletionData: row.code_completion_data || null,
+      language: row.language || 'Java',
     }));
 
     res.json({ questions, meta: { language, mode, total: questions.length } });
@@ -359,7 +356,7 @@ async function resolveAIData(questionId, columnName, cacheMode) {
       try {
         data = JSON.parse(cached);
         // Opportunistically backfill so next hit is fast
-        pool.query(`UPDATE questions SET ${columnName}=$1 WHERE id=$2`, [JSON.stringify(data), questionId]).catch(() => {});
+        pool.query(`UPDATE questions SET ${columnName}=$1 WHERE id=$2`, [JSON.stringify(data), questionId]).catch(() => { });
       } catch { data = null; }
     }
   }
@@ -400,10 +397,26 @@ app.post('/api/questions/test-answer',
   async (req, res) => {
     try {
       const { userId, questionId, answer } = req.body;
-      const qRes = await pool.query('SELECT short_answer FROM questions WHERE id=$1', [questionId]);
-      if (!qRes.rows[0]) return res.status(404).json({ error: 'Question not found' });
-      const correctAnswer = qRes.rows[0].short_answer;
-      const isCorrect = answer === correctAnswer;
+      const norm = (s) => (s || '').trim().toLowerCase();
+
+      // First try to get the AI-generated correct option from cache / db
+      // (stored as options[0] by the test prompt before shuffling)
+      let correctAnswer;
+      try {
+        const { data } = await resolveAIData(questionId, 'cached_test_options', 'test');
+        if (data && Array.isArray(data) && data.length > 0) {
+          correctAnswer = data[0]; // prompt guarantees options[0] = correct answer
+        }
+      } catch (_) { }
+
+      // Fallback: short_answer is always correct for the question
+      if (!correctAnswer) {
+        const qRes = await pool.query('SELECT short_answer FROM questions WHERE id=$1', [questionId]);
+        if (!qRes.rows[0]) return res.status(404).json({ error: 'Question not found' });
+        correctAnswer = qRes.rows[0].short_answer;
+      }
+
+      const isCorrect = norm(answer) === norm(correctAnswer);
       await recordProgress(userId, questionId, isCorrect);
       res.json({ success: true, isCorrect, correctAnswer });
     } catch { res.status(500).json({ error: 'Internal server error' }); }
@@ -419,7 +432,7 @@ app.post('/api/questions/bug-hunt-answer',
       const { data } = await resolveAIData(questionId, 'bug_hunting_data', 'bug');
       if (!data) return res.status(404).json({ error: 'Bug hunt data not generated yet — please wait' });
       const correctBug = data.bug;
-      const isCorrect  = answer === correctBug;
+      const isCorrect = (answer || '').trim().toLowerCase() === (correctBug || '').trim().toLowerCase();
       await recordProgress(userId, questionId, isCorrect);
       res.json({ success: true, isCorrect, correctAnswer: correctBug });
     } catch (err) {
@@ -438,7 +451,7 @@ app.post('/api/questions/blitz-answer',
       const { data } = await resolveAIData(questionId, 'blitz_data', 'blitz');
       if (!data) return res.status(404).json({ error: 'Blitz data not generated yet — please wait' });
       const isActuallyCorrect = data.isCorrect;
-      const isCorrect         = answer === isActuallyCorrect;
+      const isCorrect = Boolean(answer) === Boolean(isActuallyCorrect);
       await recordProgress(userId, questionId, isCorrect);
       res.json({ success: true, isCorrect, correctAnswer: isActuallyCorrect });
     } catch (err) {
@@ -457,7 +470,7 @@ app.post('/api/questions/code-completion-answer',
       const { data } = await resolveAIData(questionId, 'code_completion_data', 'code');
       if (!data) return res.status(404).json({ error: 'Code completion data not generated yet — please wait' });
       const correctPart = data.correctPart;
-      const isCorrect   = answer === correctPart;
+      const isCorrect = (answer || '').trim().toLowerCase() === (correctPart || '').trim().toLowerCase();
       await recordProgress(userId, questionId, isCorrect);
       res.json({ success: true, isCorrect, correctAnswer: correctPart });
     } catch (err) {
@@ -499,7 +512,7 @@ app.post('/api/questions/explain', async (req, res) => {
     const cachedAI = await checkCache(question.question_text, 'explanation', null, question.language || 'Java');
     if (cachedAI) {
       // Backfill the questions table cache too
-      pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cachedAI, questionId]).catch(() => {});
+      pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cachedAI, questionId]).catch(() => { });
       return res.json({ explanation: cachedAI, cached: true });
     }
 
@@ -510,7 +523,7 @@ app.post('/api/questions/explain', async (req, res) => {
     );
 
     // Backfill both caches asynchronously
-    pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [explanation, questionId]).catch(() => {});
+    pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [explanation, questionId]).catch(() => { });
 
     res.json({ explanation, cached: false });
   } catch (error) {
@@ -532,7 +545,7 @@ app.post('/api/user/analyze-resume', rateLimit('resume'), async (req, res) => {
     await pool.query(
       'UPDATE users SET resume_text = $1, parsed_resume_data = $2 WHERE telegram_id = $3',
       [resumeText, parsedData, userId]
-    ).catch(() => {});
+    ).catch(() => { });
     res.json({ success: true, parsedData });
   } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
@@ -648,7 +661,7 @@ app.post('/api/admin/grant-plan', async (req, res) => {
     await pool.query('COMMIT');
     res.json({ success: true, message: `Granted ${planId} to ${targetUserId}` });
   } catch (err) {
-    await pool.query('ROLLBACK').catch(() => {});
+    await pool.query('ROLLBACK').catch(() => { });
     res.status(500).json({ error: err.message });
   }
 });
@@ -696,7 +709,7 @@ app.get('/api/stats/categories', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     let cats = [];
-    try { cats = JSON.parse(decodeURIComponent(categories || '[]')); } catch {}
+    try { cats = JSON.parse(decodeURIComponent(categories || '[]')); } catch { }
 
     if (cats.length === 0) return res.json({ known: 0, total: 0 });
 
@@ -743,10 +756,10 @@ app.get('/api/stats', async (req, res) => {
     );
 
     res.json({
-      known:          parseInt(result.rows[0].known_count  || 0),
-      unknown:        parseInt(result.rows[0].unknown_count || 0),
-      totalSeen:      parseInt(result.rows[0].total_seen   || 0),
-      totalQuestions: parseInt(totalResult.rows[0].total   || 0),
+      known: parseInt(result.rows[0].known_count || 0),
+      unknown: parseInt(result.rows[0].unknown_count || 0),
+      totalSeen: parseInt(result.rows[0].total_seen || 0),
+      totalQuestions: parseInt(totalResult.rows[0].total || 0),
     });
   } catch (err) {
     console.error('Stats error:', err.message);

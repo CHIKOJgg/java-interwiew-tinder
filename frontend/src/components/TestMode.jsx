@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useStore from '../store/useStore';
 import { Check, X, Loader2 } from 'lucide-react';
 import './TestMode.css';
@@ -8,6 +8,7 @@ const TestMode = () => {
     questions,
     currentIndex,
     submitTestAnswer,
+    advanceQuestion,
     isLoadingQuestions,
     hasMoreQuestions,
     fetchGeneration,
@@ -57,6 +58,9 @@ const TestMode = () => {
     try {
       const response = await submitTestAnswer(currentQuestion.id, selectedOption);
       setResult({ isCorrect: response.isCorrect, correctAnswer: response.correctAnswer });
+      // Note: store no longer auto-advances. For incorrect answers the store
+      // opens the ExplanationModal; closeExplanation() will call advanceQuestion().
+      // For correct answers we show feedback here and user taps "Next".
     } catch (err) {
       console.error('Error submitting answer:', err);
     } finally {
@@ -67,6 +71,7 @@ const TestMode = () => {
   const handleNext = () => {
     setResult(null);
     setSelectedOption(null);
+    advanceQuestion();
   };
 
   // ── Loading states ──────────────────────────────────────────────────

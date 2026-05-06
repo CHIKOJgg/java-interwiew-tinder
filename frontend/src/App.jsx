@@ -155,11 +155,17 @@ function App() {
   if (screen === 'subscriptions') return <SubscriptionPlans onBack={() => setScreen('main')} />;
 
   const renderMode = () => {
-    // Blitz and MockInterview have their own start/active/results state machines.
-    // Never block them with the global "no questions" completion screen.
+    // Non-swipe modes manage their own empty/loading states.
+    // Routing them through hasMoreQuestions() causes "Отличная работа"
+    // to fire whenever the feed returns 0 (AI data not yet generated).
+    if (learningMode === 'test') return <TestMode />;
+    if (learningMode === 'bug-hunting') return <BugHuntingMode />;
     if (learningMode === 'blitz') return <BlitzMode />;
     if (learningMode === 'mock-interview') return <MockInterviewMode />;
+    if (learningMode === 'concept-linker') return <ConceptLinker />;
+    if (learningMode === 'code-completion') return <CodeCompletionMode />;
 
+    // Swipe mode: show skeleton during load, completion screen when exhausted
     if (isLoadingQuestions) return <SkeletonCard />;
 
     if (!hasMoreQuestions()) {

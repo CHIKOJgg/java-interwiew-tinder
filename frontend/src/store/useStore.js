@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import apiClient from '../api/client';
 
 const CACHE_KEY = 'interview_tinder_cache';
-function saveToLocal(key, data) { try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch {} }
+function saveToLocal(key, data) { try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { } }
 function loadFromLocal(key) { try { return JSON.parse(localStorage.getItem(`${CACHE_KEY}_${key}`)); } catch { return null; } }
 
 const useStore = create((set, get) => ({
@@ -25,6 +25,7 @@ const useStore = create((set, get) => ({
   blitzScore: 0,
   blitzTimeLeft: 60,
   isBlitzActive: false,
+  blitzIdle: true,  // true = start screen; false = game started/ended
 
   interviewHistory: [],
   isEvaluatingInterview: false,
@@ -141,7 +142,8 @@ const useStore = create((set, get) => ({
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
     if (!response.isCorrect) get().loadExplanation(questionId);
-    else set(s => ({ currentIndex: s.currentIndex + 1 }));
+    // Do NOT auto-advance on correct — TestMode.handleNext() calls advanceQuestion()
+    // so the user sees the green feedback before the question changes.
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
     return response;
   },
@@ -151,7 +153,7 @@ const useStore = create((set, get) => ({
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
     if (!response.isCorrect) get().loadExplanation(questionId);
-    else set(s => ({ currentIndex: s.currentIndex + 1 }));
+    // Do NOT auto-advance — BugHuntingMode.handleNext() calls advanceQuestion()
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
     return response;
   },
@@ -203,14 +205,20 @@ const useStore = create((set, get) => ({
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
     if (!response.isCorrect) get().loadExplanation(questionId);
-    else set(s => ({ currentIndex: s.currentIndex + 1 }));
+    // Do NOT auto-advance — CodeCompletionMode.handleNext() calls advanceQuestion()
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
     return response;
   },
 
+  // Explicit advance — called by components after showing correct feedback
+  advanceQuestion: () => {
+    set(s => ({ currentIndex: s.currentIndex + 1 }));
+    if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+  },
+
   // ─── Blitz ─────────────────────────────────────────────────────────
   startBlitz: () => {
-    set({ blitzScore: 0, blitzTimeLeft: 60, isBlitzActive: true, currentIndex: 0 });
+    set({ blitzScore: 0, blitzTimeLeft: 60, isBlitzActive: true, blitzIdle: false, currentIndex: 0 });
     get().loadQuestions();
   },
   stopBlitz: () => set({ isBlitzActive: false }),
@@ -222,7 +230,7 @@ const useStore = create((set, get) => ({
   // ─── Mode switching ────────────────────────────────────────────────
   setLearningMode: (mode) => {
     const prevMode = get().learningMode;
-    set({ learningMode: mode, currentIndex: 0, isBlitzActive: false, blitzTimeLeft: 60, blitzScore: 0, interviewHistory: [] });
+    set({ learningMode: mode, currentIndex: 0, isBlitzActive: false, blitzTimeLeft: 60, blitzScore: 0, blitzIdle: true, interviewHistory: [] });
     if (mode !== prevMode) {
       get().loadQuestions().then(() => {
         if (mode === 'mock-interview') get().startInterview();
@@ -282,11 +290,11 @@ const useStore = create((set, get) => ({
           questions: state.questions.map(q =>
             q.id === questionId
               ? {
-                  ...q,
-                  [dataKey]: response.data,
-                  // For test mode, also populate options array
-                  options: type === 'test' ? (Array.isArray(response.data) ? response.data : q.options) : q.options,
-                }
+                ...q,
+                [dataKey]: response.data,
+                // For test mode, also populate options array
+                options: type === 'test' ? (Array.isArray(response.data) ? response.data : q.options) : q.options,
+              }
               : q
           ),
         }));

@@ -25,7 +25,7 @@ const useStore = create((set, get) => ({
   blitzScore: 0,
   blitzTimeLeft: 60,
   isBlitzActive: false,
-  blitzIdle: true,  // true = start screen; false = game started/ended
+  blitzIdle: true,
 
   interviewHistory: [],
   isEvaluatingInterview: false,
@@ -142,8 +142,8 @@ const useStore = create((set, get) => ({
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
     if (!response.isCorrect) get().loadExplanation(questionId);
-    // Do NOT auto-advance on correct — TestMode.handleNext() calls advanceQuestion()
-    // so the user sees the green feedback before the question changes.
+    // Do NOT auto-advance — TestMode.handleNext() calls advanceQuestion() after
+    // showing the green feedback, so the user actually sees it.
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
     return response;
   },
@@ -153,17 +153,19 @@ const useStore = create((set, get) => ({
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
     if (!response.isCorrect) get().loadExplanation(questionId);
-    // Do NOT auto-advance — BugHuntingMode.handleNext() calls advanceQuestion()
+    // Do NOT auto-advance — BugHuntingMode shows feedback + "Следующая задача" button
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
     return response;
   },
 
-  submitBlitzAnswer: async (questionId, answer) => {
-    const response = await apiClient.submitBlitzAnswer(questionId, answer);
-    if (response.isCorrect) set(s => ({ blitzScore: s.blitzScore + 1 }));
-    set(s => ({ currentIndex: s.currentIndex + 1 }));
+  submitBlitzAnswer: async (questionId, answer, clientIsCorrect) => {
+    // Increment score locally immediately — don't wait for server round-trip.
+    // The server validates against AI data when available, otherwise trusts clientIsCorrect.
+    if (clientIsCorrect) set(s => ({ blitzScore: s.blitzScore + 1 }));
+    // Fire-and-forget to server for stats recording (don't await for UX)
+    apiClient.submitBlitzAnswer(questionId, answer, clientIsCorrect).catch(() => { });
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
-    return response;
+    return { isCorrect: clientIsCorrect };
   },
 
   submitInterviewAnswer: async (question, answer) => {
@@ -205,15 +207,9 @@ const useStore = create((set, get) => ({
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
     if (!response.isCorrect) get().loadExplanation(questionId);
-    // Do NOT auto-advance — CodeCompletionMode.handleNext() calls advanceQuestion()
+    else set(s => ({ currentIndex: s.currentIndex + 1 }));
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
     return response;
-  },
-
-  // Explicit advance — called by components after showing correct feedback
-  advanceQuestion: () => {
-    set(s => ({ currentIndex: s.currentIndex + 1 }));
-    if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
   },
 
   // ─── Blitz ─────────────────────────────────────────────────────────
@@ -327,10 +323,18 @@ const useStore = create((set, get) => ({
     }
   },
 
+  advanceQuestion: () => {
+    set(s => ({ currentIndex: s.currentIndex + 1 }));
+    if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+  },
+
   closeExplanation: () => {
     const { learningMode, currentIndex } = get();
     set({ showExplanation: false, currentExplanation: null });
-    if (['test', 'bug-hunting', 'code-completion'].includes(learningMode)) {
+    // bug-hunting: advance after wrong answer (component shows feedback then user taps next,
+    // but we still advance here so the next question loads after modal closes)
+    // test + code-completion: component calls advanceQuestion() itself — don't double-advance
+    if (learningMode === 'bug-hunting') {
       set({ currentIndex: currentIndex + 1 });
     }
   },

@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import useStore from '../store/useStore';
-import { Timer, Zap, Check, X, Trophy, Play, RefreshCw } from 'lucide-react';
+import { Timer, Zap, Check, X, Trophy, Play } from 'lucide-react';
 import './BlitzMode.css';
 
-// Generate True/False statement from existing question data — no AI needed.
-// Uses shortAnswer (always correct) or a wrong option (isCorrect: false).
+
+// Generate a True/False statement from existing question data — no AI wait needed.
 function makeFallbackBlitzData(question) {
   const wrong = (question.options || []).filter(
     o => (o || '').trim().toLowerCase() !== (question.shortAnswer || '').trim().toLowerCase()
@@ -18,58 +18,78 @@ function makeFallbackBlitzData(question) {
 
 const BlitzMode = () => {
   const {
-    questions, currentIndex, blitzScore, blitzTimeLeft,
-    isBlitzActive, blitzIdle, startBlitz, decrementBlitzTime,
-    submitBlitzAnswer, fetchGeneration, advanceQuestion,
+    questions,
+    currentIndex,
+    blitzScore,
+    blitzTimeLeft,
+    isBlitzActive,
+    blitzIdle,
+    startBlitz,
+    decrementBlitzTime,
+    submitBlitzAnswer,
+    isLoadingQuestions,
+    fetchGeneration,
+    advanceQuestion,
   } = useStore();
 
-  const [feedback, setFeedback] = useState(null);
+  const [feedback, setFeedback] = useState(null); // 'correct' | 'incorrect'
   const [localBlitzData, setLocalBlitzData] = useState(null);
-  const feedbackTimer = useRef(null);
 
   useEffect(() => {
     if (!isBlitzActive) return;
-    const t = setInterval(() => decrementBlitzTime(), 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => {
+      decrementBlitzTime();
+    }, 1000);
+    return () => clearInterval(timer);
   }, [isBlitzActive, decrementBlitzTime]);
 
   const currentQuestion = questions[currentIndex];
   const aiBlitzData = currentQuestion?.blitzData;
-  const blitzData = (aiBlitzData && !aiBlitzData.__error) ? aiBlitzData : localBlitzData;
+  const hasError = aiBlitzData?.__error;
+  // Use AI data if valid, otherwise use locally-generated fallback
+  const blitzData = (aiBlitzData && !hasError) ? aiBlitzData : localBlitzData;
 
   useEffect(() => {
     if (!isBlitzActive || !currentQuestion) return;
+    // Generate fallback data immediately (no loading state)
     setLocalBlitzData(makeFallbackBlitzData(currentQuestion));
-    if (!aiBlitzData || aiBlitzData.__error) {
+    // Also request AI-generated statement in background
+    if (!blitzData && !hasError) {
       fetchGeneration('blitz', currentQuestion.id).catch(() => { });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBlitzActive, currentIndex, currentQuestion?.id]);
+  }, [isBlitzActive, currentIndex, currentQuestion?.id]); // eslint-disable-line
 
-  useEffect(() => () => clearTimeout(feedbackTimer.current), []);
+  const handleAnswer = async (answer) => {
+    if (!isBlitzActive || feedback) return;
+    const q = questions[currentIndex];
+    if (!q) return;
 
-  const handleAnswer = useCallback(async (answer) => {
-    if (!isBlitzActive || feedback || !blitzData) return;
+    // Evaluate locally using whatever blitzData we have (AI or fallback)
+    const blitzData = q.blitzData && !q.blitzData.__error ? q.blitzData : localBlitzData;
+    if (!blitzData) return;
+
     const correct = Boolean(answer) === Boolean(blitzData.isCorrect);
     setFeedback(correct ? 'correct' : 'incorrect');
-    submitBlitzAnswer(currentQuestion.id, answer).catch(() => { });
-    feedbackTimer.current = setTimeout(() => {
+
+    // Score locally, fire server call for record-keeping (non-blocking)
+    submitBlitzAnswer(q.id, answer, correct);
+
+    setTimeout(() => {
       setFeedback(null);
       setLocalBlitzData(null);
-      advanceQuestion();
     }, 350);
-  }, [isBlitzActive, feedback, blitzData, currentQuestion, submitBlitzAnswer, advanceQuestion]);
+  };
 
-  // Start screen — controlled by blitzIdle flag, not blitzTimeLeft===60
-  if (blitzIdle) {
+  if (!isBlitzActive && blitzIdle) {
     return (
       <div className="blitz-start-screen">
         <div className="blitz-start-card">
           <Zap size={64} className="zap-icon" />
           <h1>Блиц-режим</h1>
-          <p>60 секунд. Только Правда или Ложь. Отвечайте как можно быстрее!</p>
-          <button className="start-blitz-button" onClick={startBlitz} type="button">
-            <Play size={20} /><span>Поехали!</span>
+          <p>Ответьте на максимальное количество вопросов за 60 секунд. Только Правда или Ложь!</p>
+          <button className="start-blitz-button" onClick={startBlitz}>
+            <Play size={20} />
+            <span>Поехали!</span>
           </button>
         </div>
       </div>
@@ -82,9 +102,12 @@ const BlitzMode = () => {
         <div className="blitz-results-card">
           <Trophy size={64} className="trophy-icon" />
           <h1>Время вышло!</h1>
-          <div className="final-score"><span>Ваш результат:</span><strong>{blitzScore}</strong></div>
-          <button className="retry-blitz-button" onClick={startBlitz} type="button">
-            <RefreshCw size={18} /><span>Ещё раз</span>
+          <div className="final-score">
+            <span>Ваш результат:</span>
+            <strong>{blitzScore}</strong>
+          </div>
+          <button className="retry-blitz-button" onClick={startBlitz}>
+            Попробовать еще раз
           </button>
         </div>
       </div>
@@ -98,29 +121,52 @@ const BlitzMode = () => {
           <Timer size={20} />
           <span className={blitzTimeLeft < 10 ? 'low-time' : ''}>{blitzTimeLeft}с</span>
         </div>
-        <div className="blitz-current-score"><Zap size={20} /><span>Счёт: {blitzScore}</span></div>
+        <div className="blitz-current-score">
+          <Zap size={20} />
+          <span>Счет: {blitzScore}</span>
+        </div>
       </div>
 
-      <div className={`blitz-card ${feedback || ''}`}>
+      <div className={`blitz-card ${feedback}`}>
         {!blitzData ? (
-          <div className="blitz-loading"><Zap className="spinner" size={48} /><p>Загрузка...</p></div>
+          <div className="blitz-loading">
+            <Zap className="spinner" size={48} />
+            <p style={{ marginTop: 8 }}>Загрузка...</p>
+          </div>
         ) : (
           <>
-            <div className="blitz-topic">{currentQuestion?.category} · {currentQuestion?.difficulty}</div>
-            <h2 className="blitz-statement">{blitzData.statement}</h2>
+            <div className="blitz-topic">{currentQuestion?.category}</div>
+            <h2 className="blitz-statement">
+              {blitzData?.statement || 'Загрузка...'}
+            </h2>
+
             <div className="blitz-actions">
-              <button className="blitz-btn false-btn" onClick={() => handleAnswer(false)} disabled={!!feedback} type="button">
-                <X size={24} /><span>Ложь</span>
+              <button
+                className="blitz-btn false-btn"
+                onClick={() => handleAnswer(false)}
+                disabled={feedback}
+              >
+                <X size={24} />
+                <span>Ложь</span>
               </button>
-              <button className="blitz-btn true-btn" onClick={() => handleAnswer(true)} disabled={!!feedback} type="button">
-                <Check size={24} /><span>Правда</span>
+              <button
+                className="blitz-btn true-btn"
+                onClick={() => handleAnswer(true)}
+                disabled={feedback}
+              >
+                <Check size={24} />
+                <span>Правда</span>
               </button>
             </div>
           </>
         )}
       </div>
+
       <div className="blitz-progress">
-        <div className="blitz-progress-fill" style={{ width: `${(blitzTimeLeft / 60) * 100}%` }} />
+        <div
+          className="blitz-progress-fill"
+          style={{ width: `${(blitzTimeLeft / 60) * 100}%` }}
+        />
       </div>
     </div>
   );

@@ -76,6 +76,9 @@ export const validateTelegramWebAppData = (initData, botToken) => {
  * Mock validation for development (when BOT_TOKEN is not set)
  */
 export const mockValidation = (initData) => {
+  if (process.env.NODE_ENV === 'production' && !process.env.BOT_TOKEN) {
+    throw new Error('Production guard: BOT_TOKEN is missing. Mock validation is blocked in production.');
+  }
   try {
     const urlParams = new URLSearchParams(initData);
     const userParam = urlParams.get('user');

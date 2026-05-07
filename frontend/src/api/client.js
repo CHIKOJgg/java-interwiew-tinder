@@ -10,6 +10,13 @@ class ApiClient {
   setUserId(userId) { this.userId = String(userId); }
   setLanguage(language) { this.language = language; }
 
+  async getAuthHeaders() {
+    // We import the store dynamically to avoid circular dependencies if any
+    const { default: useStore } = await import('../store/useStore');
+    const token = useStore.getState().token;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }
+
 
   // ─── Auth ──────────────────────────────────────────────────────────
   async login(initData) {
@@ -26,35 +33,34 @@ class ApiClient {
 
   // ─── Questions ─────────────────────────────────────────────────────
   async getQuestionsFeed(limit = 5, mode = 'swipe') {
-    if (!this.userId) throw new Error('User not authenticated');
-    return this.request(`/questions/feed?userId=${this.userId}&limit=${limit}&mode=${mode}&language=${this.language}`);
+    return this.request(`/questions/feed?limit=${limit}&mode=${mode}&language=${this.language}`);
   }
 
   async recordSwipe(questionId, status) {
     return this.request('/questions/swipe', {
       method: 'POST',
-      body: JSON.stringify({ userId: this.userId, questionId, status }),
+      body: JSON.stringify({ questionId, status }),
     });
   }
 
   async submitTestAnswer(questionId, answer) {
     return this.request('/questions/test-answer', {
       method: 'POST',
-      body: JSON.stringify({ userId: this.userId, questionId, answer }),
+      body: JSON.stringify({ questionId, answer }),
     });
   }
 
   async submitBugHuntAnswer(questionId, answer) {
     return this.request('/questions/bug-hunt-answer', {
       method: 'POST',
-      body: JSON.stringify({ userId: this.userId, questionId, answer }),
+      body: JSON.stringify({ questionId, answer }),
     });
   }
 
   async submitBlitzAnswer(questionId, answer, clientIsCorrect = false) {
     return this.request('/questions/blitz-answer', {
       method: 'POST',
-      body: JSON.stringify({ userId: this.userId, questionId, answer: !!answer, clientIsCorrect: Boolean(clientIsCorrect) }),
+      body: JSON.stringify({ questionId, answer: !!answer, clientIsCorrect: Boolean(clientIsCorrect) }),
     });
   }
 
@@ -68,28 +74,40 @@ class ApiClient {
   async submitCodeCompletionAnswer(questionId, answer) {
     return this.request('/questions/code-completion-answer', {
       method: 'POST',
-      body: JSON.stringify({ userId: this.userId, questionId, answer }),
+      body: JSON.stringify({ questionId, answer }),
     });
   }
 
   async getExplanation(questionId) {
     return this.request('/questions/explain', {
       method: 'POST',
-      body: JSON.stringify({ questionId, userId: this.userId }),
+      body: JSON.stringify({ questionId }),
     });
   }
 
   // Override request() error to include server `detail` field
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    const authHeaders = await this.getAuthHeaders();
+    
     try {
       const response = await fetch(url, {
         ...options,
-        headers: { 'Content-Type': 'application/json', ...options.headers },
+        headers: { 
+          'Content-Type': 'application/json', 
+          ...authHeaders,
+          ...options.headers 
+        },
       });
+
+      if (response.status === 401 && endpoint !== '/auth/login') {
+        const { default: useStore } = await import('../store/useStore');
+        useStore.getState().logout();
+        throw new Error('Session expired. Please log in again.');
+      }
+
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        // Prefer server's `detail` field (AI errors), fall back to `error`
         throw new Error(err.detail || err.error || `HTTP ${response.status}`);
       }
       return response.json();
@@ -104,7 +122,6 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({
         questionText, shortAnswer, category,
-        userId: this.userId,
         questionId,          // needed so worker backfills questions table columns
         language: this.language,
       }),
@@ -113,13 +130,13 @@ class ApiClient {
 
   // ─── Stats ─────────────────────────────────────────────────────────
   async getStats() {
-    return this.request(`/stats?userId=${this.userId}&language=${this.language}`);
+    return this.request(`/stats?language=${this.language}`);
   }
 
   // Category-scoped progress for topic counter (§3)
   async getCategoryStats(categories) {
     const cats = encodeURIComponent(JSON.stringify(categories));
-    return this.request(`/stats/categories?userId=${this.userId}&language=${this.language}&categories=${cats}`);
+    return this.request(`/stats/categories?language=${this.language}&categories=${cats}`);
   }
 
   // ─── Preferences ───────────────────────────────────────────────────
@@ -128,21 +145,21 @@ class ApiClient {
   }
 
   async getPreferences() {
-    return this.request(`/preferences/${this.userId}`);
+    return this.request('/preferences');
   }
 
   async updatePreferences(categories, language) {
     return this.request('/preferences', {
       method: 'POST',
-      body: JSON.stringify({ userId: this.userId, categories, language: language || this.language }),
+      body: JSON.stringify({ categories, language: language || this.language }),
     });
   }
 
   // Dedicated language-switch endpoint: clears old category filter server-side
-  async switchLanguage(userId, language) {
+  async switchLanguage(language) {
     return this.request('/preferences/language', {
       method: 'POST',
-      body: JSON.stringify({ userId, language }),
+      body: JSON.stringify({ language }),
     });
   }
 
@@ -150,7 +167,7 @@ class ApiClient {
   async analyzeResume(resumeText) {
     return this.request('/user/analyze-resume', {
       method: 'POST',
-      body: JSON.stringify({ userId: this.userId, resumeText, language: this.language }),
+      body: JSON.stringify({ resumeText, language: this.language }),
     });
   }
 
@@ -160,37 +177,37 @@ class ApiClient {
   }
 
   async getSubscriptionStatus() {
-    return this.request(`/subscription/status/${this.userId}`);
+    return this.request('/subscription/status');
   }
 
   async subscribe(planId) {
     return this.request('/subscription/subscribe', {
       method: 'POST',
-      body: JSON.stringify({ userId: this.userId, planId }),
+      body: JSON.stringify({ planId }),
     });
   }
 
   async cancelSubscription() {
     return this.request('/subscription/cancel', {
       method: 'POST',
-      body: JSON.stringify({ userId: this.userId }),
+      body: JSON.stringify({}),
     });
   }
 
   async getSubscriptionHistory() {
-    return this.request(`/subscription/history/${this.userId}`);
+    return this.request('/subscription/history');
   }
 
   // ─── Admin ─────────────────────────────────────────────────────────
   async grantPlan(targetUserId, planId, months = 12) {
     return this.request('/admin/grant-plan', {
       method: 'POST',
-      body: JSON.stringify({ adminUserId: this.userId, targetUserId, planId, months }),
+      body: JSON.stringify({ targetUserId, planId, months }),
     });
   }
 
   async getAdminUsers() {
-    return this.request(`/admin/users?adminUserId=${this.userId}`);
+    return this.request('/admin/users');
   }
 }
 

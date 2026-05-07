@@ -5,9 +5,13 @@ const CACHE_KEY = 'interview_tinder_cache';
 function saveToLocal(key, data) { try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { } }
 function loadFromLocal(key) { try { return JSON.parse(localStorage.getItem(`${CACHE_KEY}_${key}`)); } catch { return null; } }
 
+function saveToSession(key, data) { try { sessionStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { } }
+function loadFromSession(key) { try { return JSON.parse(sessionStorage.getItem(`${CACHE_KEY}_${key}`)); } catch { return null; } }
+
 const useStore = create((set, get) => ({
   user: null,
-  isAuthenticated: false,
+  token: loadFromSession('token'),
+  isAuthenticated: !!loadFromSession('token'),
   isLoading: true,
   language: 'Java',
 
@@ -42,10 +46,13 @@ const useStore = create((set, get) => ({
     try {
       set({ isLoading: true });
       const response = await apiClient.login(initData);
-      const user = response.user;
+      const { user, token } = response;
       const lang = user.language || 'Java';
       apiClient.setLanguage(lang);
-      set({ user, isAuthenticated: true, isLoading: false, language: lang });
+      
+      saveToSession('token', token);
+      set({ user, token, isAuthenticated: true, isLoading: false, language: lang });
+      
       await get().loadQuestions();
       get().loadStats();
       return user;
@@ -53,6 +60,19 @@ const useStore = create((set, get) => ({
       set({ isLoading: false, _loadingLock: false });
       throw error;
     }
+  },
+
+  logout: () => {
+    sessionStorage.removeItem(`${CACHE_KEY}_token`);
+    localStorage.clear(); // Clear all other caches
+    set({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      questions: [],
+      stats: { known: 0, unknown: 0, totalSeen: 0, totalQuestions: 0 },
+      categoryStats: { known: 0, total: 0 }
+    });
   },
 
   // Set selected categories (called from CategorySelection on save)
@@ -70,7 +90,7 @@ const useStore = create((set, get) => ({
 
     if (user?.telegram_id) {
       try {
-        await apiClient.switchLanguage(user.telegram_id, language);
+        await apiClient.switchLanguage(language);
       } catch (err) {
         console.error('Language preference save failed:', err);
       }

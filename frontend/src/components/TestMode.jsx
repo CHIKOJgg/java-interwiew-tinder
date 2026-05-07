@@ -1,7 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import useStore from '../store/useStore';
-import { Check, X, Loader2 } from 'lucide-react';
+import { Check, X, Loader2, AlertCircle } from 'lucide-react';
 import './TestMode.css';
+
+// Shuffle an array without mutating it
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 const TestMode = () => {
   const {
@@ -10,42 +20,36 @@ const TestMode = () => {
     submitTestAnswer,
     advanceQuestion,
     isLoadingQuestions,
-    hasMoreQuestions,
-    fetchGeneration,
-    pendingGenerations,
   } = useStore();
 
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null);
-  const [generationError, setGenerationError] = useState(null);
 
   const currentQuestion = questions[currentIndex];
 
-  // Derive the generation key for this question so we can check pending state
-  const genKey = currentQuestion
-    ? `test:${currentQuestion.id}:${currentQuestion.language || 'Java'}`
-    : null;
+  // Build the 4 shuffled options once per question.
+  // The correct answer is always shortAnswer. The 3 distractors come from options[] in DB.
+  // We memo by questionId so the shuffle doesn't change on every render.
+  const displayOptions = useMemo(() => {
+    if (!currentQuestion) return [];
+    const correct = currentQuestion.shortAnswer || '';
+    const wrongs = (currentQuestion.options || [])
+      .filter(o => (o || '').trim().toLowerCase() !== correct.trim().toLowerCase())
+      .slice(0, 3);
+    if (!wrongs.length) return [];        // no distractors → not a test question
+    return shuffle([correct, ...wrongs]);
+  }, [currentQuestion?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isGenerating = genKey ? !!pendingGenerations?.[genKey] : false;
-
-  // Determine whether this question actually has usable options
-  const hasOptions =
-    Array.isArray(currentQuestion?.options) && currentQuestion.options.length >= 2;
-
+  // Reset UI when question changes
+  const prevIdRef = useRef(null);
   useEffect(() => {
-    setSelectedOption(null);
-    setResult(null);
-    setGenerationError(null);
-
-    // Only trigger generation if the question exists and has no options yet
-    if (currentQuestion && !hasOptions) {
-      fetchGeneration('test', currentQuestion.id).catch((err) => {
-        setGenerationError(err?.message || 'Не удалось загрузить варианты ответов');
-      });
+    if (currentQuestion?.id !== prevIdRef.current) {
+      prevIdRef.current = currentQuestion?.id;
+      setSelectedOption(null);
+      setResult(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, currentQuestion?.id]);
+  }, [currentQuestion?.id]);
 
   const handleOptionSelect = (option) => {
     if (result || isSubmitting) return;
@@ -58,11 +62,8 @@ const TestMode = () => {
     try {
       const response = await submitTestAnswer(currentQuestion.id, selectedOption);
       setResult({ isCorrect: response.isCorrect, correctAnswer: response.correctAnswer });
-      // Note: store no longer auto-advances. For incorrect answers the store
-      // opens the ExplanationModal; closeExplanation() will call advanceQuestion().
-      // For correct answers we show feedback here and user taps "Next".
     } catch (err) {
-      console.error('Error submitting answer:', err);
+      console.error('Test submit error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -74,7 +75,7 @@ const TestMode = () => {
     advanceQuestion();
   };
 
-  // ── Loading states ──────────────────────────────────────────────────
+  // ── States ───────────────────────────────────────────────────────────
   if (isLoadingQuestions) {
     return (
       <div className="test-mode-loading">
@@ -84,45 +85,29 @@ const TestMode = () => {
     );
   }
 
-  if (!hasMoreQuestions()) return null; // App.jsx shows completion screen
-
-  if (!currentQuestion) return null;
-
-  // ── Question exists but options aren't ready yet ────────────────────
-  if (!hasOptions) {
-    if (generationError) {
-      return (
-        <div className="test-mode-loading">
-          <div className="test-error-icon">⚠️</div>
-          <p className="test-error-text">{generationError}</p>
-          <button
-            className="retry-button"
-            onClick={() => {
-              setGenerationError(null);
-              fetchGeneration('test', currentQuestion.id).catch((err) => {
-                setGenerationError(err?.message || 'Ошибка');
-              });
-            }}
-          >
-            Повторить
-          </button>
-        </div>
-      );
-    }
-
-    // Actively generating — show a descriptive loader instead of a broken form
+  if (!currentQuestion) {
     return (
       <div className="test-mode-loading">
-        <Loader2 className="spinner" size={44} />
-        <p>Генерация вариантов…</p>
-        <span className="test-loading-hint">
-          {currentQuestion.category} · {currentQuestion.difficulty}
-        </span>
+        <AlertCircle size={44} opacity={0.4} />
+        <p>Нет доступных вопросов для теста</p>
+        <p style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>Варианты ответов ещё генерируются</p>
       </div>
     );
   }
 
-  // ── Render question with options ─────────────────────────────────────
+  if (!displayOptions.length) {
+    // This question has no distractors — skip it automatically
+    advanceQuestion();
+    return (
+      <div className="test-mode-loading">
+        <Loader2 className="spinner" size={44} />
+        <p>Загрузка…</p>
+      </div>
+    );
+  }
+
+  const norm = s => (s || '').trim().toLowerCase();
+
   return (
     <div className="test-mode">
       <div className="test-card">
@@ -133,14 +118,14 @@ const TestMode = () => {
         <h2 className="test-question">{currentQuestion.question}</h2>
 
         <div className="options-list">
-          {currentQuestion.options.map((option, index) => {
+          {displayOptions.map((option, index) => {
+            const isCorrectOpt = result && norm(option) === norm(result.correctAnswer);
+            const isWrongSelected = result && !result.isCorrect && selectedOption === option;
+
             let cls = 'option-item';
-            if (selectedOption === option) cls += ' selected';
-            if (result) {
-              const norm = (s) => s?.trim().toLowerCase() ?? '';
-              if (norm(option) === norm(result.correctAnswer)) cls += ' correct';
-              else if (selectedOption === option && !result.isCorrect) cls += ' incorrect';
-            }
+            if (!result && selectedOption === option) cls += ' selected';
+            if (isCorrectOpt) cls += ' correct';
+            if (isWrongSelected) cls += ' incorrect';
 
             return (
               <button
@@ -150,16 +135,10 @@ const TestMode = () => {
                 disabled={!!result}
                 type="button"
               >
-                <span className="option-letter">
-                  {String.fromCharCode(65 + index)}
-                </span>
+                <span className="option-letter">{String.fromCharCode(65 + index)}</span>
                 <span className="option-text">{option}</span>
-                {result && (option?.trim().toLowerCase() === result.correctAnswer?.trim().toLowerCase()) && (
-                  <Check size={18} className="result-icon check" />
-                )}
-                {result && selectedOption === option && !result.isCorrect && (
-                  <X size={18} className="result-icon cross" />
-                )}
+                {isCorrectOpt && <Check size={18} className="result-icon check" />}
+                {isWrongSelected && <X size={18} className="result-icon cross" />}
               </button>
             );
           })}
@@ -178,20 +157,16 @@ const TestMode = () => {
           <div className="test-result-feedback">
             {result.isCorrect ? (
               <div className="feedback-correct">
-                <Check size={22} />
-                <span>Правильно!</span>
+                <Check size={22} /><span>Правильно!</span>
               </div>
             ) : (
               <div className="feedback-incorrect">
-                <X size={22} />
-                <span>Не совсем…</span>
+                <X size={22} /><span>Неверно</span>
               </div>
             )}
-            {result.isCorrect && (
-              <button className="next-test-button" onClick={handleNext} type="button">
-                Следующий вопрос
-              </button>
-            )}
+            <button className="next-test-button" onClick={handleNext} type="button">
+              Следующий вопрос →
+            </button>
           </div>
         )}
       </div>

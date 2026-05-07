@@ -239,12 +239,12 @@ app.get('/api/questions/feed', async (req, res) => {
     // ── Mode-specific WHERE clause ─────────────────────────────────────
     // Exclude questions that are missing required AI-generated data for the
     // mode — they'd cause 404s on answer submission.
-    // No mode-specific filters — every mode can see all questions for
-    // the selected language. AI data (blitz, bug, code) is generated
-    // on-demand via fetchGeneration in the component. Requiring it here
-    // caused the feed to return 0 questions and show "Отличная работа"
-    // immediately before any AI jobs had been processed.
-    const modeFilter = '';
+    // Test mode: ONLY return questions with pre-populated options (array length >= 4).
+    // All other modes get all questions and load AI data on-demand.
+    // This eliminates all fetchGeneration calls from TestMode.
+    const modeFilter = (mode === 'test')
+      ? `AND COALESCE(jsonb_array_length(to_jsonb(q.options)), 0) >= 4`
+      : '';
 
     const catFilter = selectedCategories.length > 0
       ? 'AND q.category = ANY($cat)'
@@ -397,25 +397,10 @@ app.post('/api/questions/test-answer',
   async (req, res) => {
     try {
       const { userId, questionId, answer } = req.body;
-      const norm = (s) => (s || '').trim().toLowerCase();
-
-      // First try to get the AI-generated correct option from cache / db
-      // (stored as options[0] by the test prompt before shuffling)
-      let correctAnswer;
-      try {
-        const { data } = await resolveAIData(questionId, 'cached_test_options', 'test');
-        if (data && Array.isArray(data) && data.length > 0) {
-          correctAnswer = data[0]; // prompt guarantees options[0] = correct answer
-        }
-      } catch (_) { }
-
-      // Fallback: short_answer is always correct for the question
-      if (!correctAnswer) {
-        const qRes = await pool.query('SELECT short_answer FROM questions WHERE id=$1', [questionId]);
-        if (!qRes.rows[0]) return res.status(404).json({ error: 'Question not found' });
-        correctAnswer = qRes.rows[0].short_answer;
-      }
-
+      const qRes = await pool.query('SELECT short_answer FROM questions WHERE id=$1', [questionId]);
+      if (!qRes.rows[0]) return res.status(404).json({ error: 'Question not found' });
+      const correctAnswer = qRes.rows[0].short_answer;
+      const norm = s => (s || '').trim().toLowerCase();
       const isCorrect = norm(answer) === norm(correctAnswer);
       await recordProgress(userId, questionId, isCorrect);
       res.json({ success: true, isCorrect, correctAnswer });
@@ -432,7 +417,8 @@ app.post('/api/questions/bug-hunt-answer',
       const { data } = await resolveAIData(questionId, 'bug_hunting_data', 'bug');
       if (!data) return res.status(404).json({ error: 'Bug hunt data not generated yet — please wait' });
       const correctBug = data.bug;
-      const isCorrect = (answer || '').trim().toLowerCase() === (correctBug || '').trim().toLowerCase();
+      const norm = s => (s || '').trim().toLowerCase();
+      const isCorrect = norm(answer) === norm(correctBug);
       await recordProgress(userId, questionId, isCorrect);
       res.json({ success: true, isCorrect, correctAnswer: correctBug });
     } catch (err) {
@@ -447,13 +433,21 @@ app.post('/api/questions/blitz-answer',
   validateBody({ userId: { required: true } }),
   async (req, res) => {
     try {
-      const { userId, questionId, answer } = req.body;
-      const { data } = await resolveAIData(questionId, 'blitz_data', 'blitz');
-      if (!data) return res.status(404).json({ error: 'Blitz data not generated yet — please wait' });
-      const isActuallyCorrect = data.isCorrect;
-      const isCorrect = Boolean(answer) === Boolean(isActuallyCorrect);
+      const { userId, questionId, answer, clientIsCorrect } = req.body;
+      let isCorrect;
+      try {
+        const { data } = await resolveAIData(questionId, 'blitz_data', 'blitz');
+        if (data) {
+          isCorrect = Boolean(answer) === Boolean(data.isCorrect);
+        } else {
+          // Blitz data not in DB yet (fallback statement used) — trust client evaluation
+          isCorrect = Boolean(clientIsCorrect);
+        }
+      } catch {
+        isCorrect = Boolean(clientIsCorrect);
+      }
       await recordProgress(userId, questionId, isCorrect);
-      res.json({ success: true, isCorrect, correctAnswer: isActuallyCorrect });
+      res.json({ success: true, isCorrect });
     } catch (err) {
       console.error('blitz-answer error:', err.message);
       res.status(500).json({ error: 'Internal server error' });
@@ -470,7 +464,8 @@ app.post('/api/questions/code-completion-answer',
       const { data } = await resolveAIData(questionId, 'code_completion_data', 'code');
       if (!data) return res.status(404).json({ error: 'Code completion data not generated yet — please wait' });
       const correctPart = data.correctPart;
-      const isCorrect = (answer || '').trim().toLowerCase() === (correctPart || '').trim().toLowerCase();
+      const normC = s => (s || '').trim().toLowerCase();
+      const isCorrect = normC(answer) === normC(correctPart);
       await recordProgress(userId, questionId, isCorrect);
       res.json({ success: true, isCorrect, correctAnswer: correctPart });
     } catch (err) {

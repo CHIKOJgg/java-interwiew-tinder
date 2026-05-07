@@ -41,30 +41,33 @@ Respond with a JSON explanation. Example of the exact format:
   },
 
   test: {
-    system: () => `You generate wrong but plausible distractor answers for technical interview questions. Respond ONLY with valid JSON — no markdown, no preamble. Format: {"options":["wrong 1","wrong 2","wrong 3"]}`,
+    system: () => jsonSystem({
+      options: ["wrong option 1", "wrong option 2", "wrong option 3"],
+    }),
     user: (lang, q, correct) =>
-      `${lang} question: "${q}"\nCorrect answer: "${correct}"\nGenerate 3 WRONG, plausible-sounding distractors a junior dev might confuse with the correct answer.\nReturn ONLY: {"options":["wrong1","wrong2","wrong3"]}`,
+      `Language: ${lang}
+Question: ${q}
+Correct answer: ${correct}
+
+Generate exactly 3 WRONG but plausible distractor answers. Example format:
+{"options": ["ArrayList is thread-safe", "LinkedList has O(1) random access", "Vector is deprecated"]}
+
+Now generate 3 wrong answers for the question above. Return only the JSON.`,
   },
 
   bug: {
-    system: () => jsonSystem({
-      code: "string — code snippet with exactly one bug, use \\n for newlines",
-      bug: "string — the correct answer (what the bug is, short phrase)",
-      options: ["correct bug description", "wrong option 1", "wrong option 2", "wrong option 3"],
-    }),
-    user: (lang, q, topic) =>
-      `Language: ${lang}, Topic: ${topic}
-Context: ${q}
-
-Write a ${lang} code snippet with exactly ONE bug. Return JSON in this exact format:
-{
-  "code": "public int sum(int a, int b) {\\n    return a - b;\\n}",
-  "bug": "subtraction instead of addition",
-  "options": ["subtraction instead of addition", "missing return type", "wrong parameter names", "null pointer risk"]
-}
-
-The first element of options must be the correct answer (matching the bug field exactly).
-Return only the JSON object.`,
+    system: () => `You write buggy code puzzles for developer interviews. You MUST respond with ONLY a valid JSON object. No text before or after. No markdown fences.
+Required format: {"code":"...","bug":"short phrase","options":["correct","wrong1","wrong2","wrong3"]}
+Rules: options[0] must exactly match the bug field. Keep code under 8 lines. Use \\n for newlines in code.`,
+    user: (lang, q, topic) => {
+      return `Write a ${lang} bug hunting exercise about: ${topic}.
+\nSteps:
+1. Write 4-8 lines of ${lang} code that has exactly ONE subtle bug.
+2. Describe the bug in a short phrase (5-10 words).
+3. Write 3 WRONG but plausible-sounding bug descriptions.
+\nReturn ONLY this JSON (no other text):
+{"code":"line1\\nline2\\nline3","bug":"the real bug description","options":["the real bug description","plausible wrong 1","plausible wrong 2","plausible wrong 3"]}`;
+    },
   },
 
   blitz: {

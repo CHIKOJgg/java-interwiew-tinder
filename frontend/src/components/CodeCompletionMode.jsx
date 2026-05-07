@@ -62,7 +62,11 @@ const CodeCompletionMode = () => {
     }
   };
 
-  const handleNext = () => { setResult(null); setSelectedOption(null); };
+  const handleNext = () => {
+    setResult(null);
+    setSelectedOption(null);
+    advanceQuestion();
+  };
 
   if (isLoadingQuestions) return <LoadingCard text="Загрузка вопросов..." />;
   if (!hasMoreQuestions()) return null;
@@ -102,7 +106,7 @@ const CodeCompletionMode = () => {
             let cls = 'completion-option';
             if (selectedOption === option) cls += ' selected';
             if (result) {
-              const norm = (s) => s?.trim().toLowerCase() ?? '';
+              const norm = s => (s || '').trim().toLowerCase();
               if (norm(option) === norm(result.correctAnswer)) cls += ' correct';
               else if (selectedOption === option && !result.isCorrect) cls += ' incorrect';
             }

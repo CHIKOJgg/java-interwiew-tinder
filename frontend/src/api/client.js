@@ -51,10 +51,10 @@ class ApiClient {
     });
   }
 
-  async submitBlitzAnswer(questionId, answer) {
+  async submitBlitzAnswer(questionId, answer, clientIsCorrect = false) {
     return this.request('/questions/blitz-answer', {
       method: 'POST',
-      body: JSON.stringify({ userId: this.userId, questionId, answer: !!answer }),
+      body: JSON.stringify({ userId: this.userId, questionId, answer: !!answer, clientIsCorrect: Boolean(clientIsCorrect) }),
     });
   }
 

@@ -7,7 +7,7 @@ import './BugHuntingMode.css';
 
 const BugHuntingMode = () => {
   const { questions, currentIndex, submitBugHuntAnswer, isLoadingQuestions,
-    hasMoreQuestions, fetchGeneration, language } = useStore();
+    hasMoreQuestions, fetchGeneration, advanceQuestion, language } = useStore();
 
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,7 +47,11 @@ const BugHuntingMode = () => {
     }
   };
 
-  const handleNext = () => { setResult(null); setSelectedOption(null); };
+  const handleNext = () => {
+    setResult(null);
+    setSelectedOption(null);
+    advanceQuestion();
+  };
 
   if (isLoadingQuestions) return <LoadingCard text="Загрузка вопросов..." />;
   if (!hasMoreQuestions()) return null;
@@ -85,7 +89,7 @@ const BugHuntingMode = () => {
             let cls = 'bug-option';
             if (selectedOption === option) cls += ' selected';
             if (result) {
-              const norm = (s) => s?.trim().toLowerCase() ?? '';
+              const norm = s => (s || '').trim().toLowerCase();
               if (norm(option) === norm(result.correctAnswer)) cls += ' correct';
               else if (selectedOption === option && !result.isCorrect) cls += ' incorrect';
             }
@@ -94,7 +98,7 @@ const BugHuntingMode = () => {
                 onClick={() => !result && !isSubmitting && setSelectedOption(option)}
                 disabled={!!result}>
                 <span className="option-text">{option}</span>
-                {result && option?.trim().toLowerCase() === result.correctAnswer?.trim().toLowerCase() && <Check size={16} />}
+                {result && (option || '').trim().toLowerCase() === (result.correctAnswer || '').trim().toLowerCase() && <Check size={16} />}
                 {result && selectedOption === option && !result.isCorrect && <X size={16} />}
               </button>
             );

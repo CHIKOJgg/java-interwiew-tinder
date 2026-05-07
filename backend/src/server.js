@@ -10,23 +10,22 @@ import { requestLogger, validateBody, sanitizeBody } from './middleware/logging.
 import { rateLimit, requireEntitlement, trackEvent } from './middleware/rateLimiter.js';
 import { billingService } from './services/billingService.js';
 import { metricsService } from './services/metricsService.js';
+import jwt from 'jsonwebtoken';
+import { authMiddleware, requireAdmin, ADMIN_IDS } from './middleware/auth.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV === 'development';
-const ADMIN_IDS = new Set(
-  (process.env.ADMIN_TELEGRAM_IDS || '').split(',').map(s => s.trim()).filter(Boolean)
+const ALLOWED_ORIGINS = new Set(
+  (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
 );
 
 // ─── Global Middleware ───────────────────────────────────────────────
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-    const allowed = ['localhost', 'vercel.app', 'pages.dev', 'workers.dev', 'fly.dev', 'telegram.org', 'web.telegram.org'];
-    if (allowed.some(d => origin.includes(d))) return cb(null, true);
-    if (process.env.ALLOWED_ORIGIN && origin.includes(process.env.ALLOWED_ORIGIN)) return cb(null, true);
+    if (!origin || ALLOWED_ORIGINS.has(origin) || isDev) return cb(null, true);
     console.warn(`CORS blocked: ${origin}`);
     cb(new Error('Not allowed by CORS'));
   },
@@ -139,8 +138,15 @@ app.post('/api/auth/login', async (req, res) => {
       } catch { }
     }
 
+    const token = jwt.sign(
+      { userId: user.telegram_id, plan },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
     res.json({
       success: true,
+      token,
       user: {
         telegram_id: user.telegram_id,
         username: user.username,
@@ -150,6 +156,8 @@ app.post('/api/auth/login', async (req, res) => {
         parsed_resume_data: user.parsed_resume_data,
         language: user.language || 'Java',
         plan,
+        // NOTE: is_admin is for UI display purposes ONLY. 
+        // Security checks MUST be performed server-side using requireAdmin middleware.
         is_admin: ADMIN_IDS.has(String(user.telegram_id)),
       },
     });
@@ -159,12 +167,24 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// ─── Protected Routes (JWT required) ──────────────────────────────────
+app.use('/api', (req, res, next) => {
+  // Exclude auth login and languages from global auth
+  if (req.path === '/auth/login' || req.path === '/languages') {
+    return next();
+  }
+  authMiddleware(req, res, next);
+});
+
+// ─── Admin Routes (requireAdmin required) ─────────────────────────────
+app.use('/api/admin', requireAdmin);
+
 // ─── Preferences ─────────────────────────────────────────────────────
-app.get('/api/preferences/:userId', async (req, res) => {
+app.get('/api/preferences', async (req, res) => {
   try {
     const { rows } = await pool.query(
       'SELECT selected_categories, selected_language FROM user_preferences WHERE telegram_id = $1',
-      [req.params.userId]
+      [req.userId]
     );
     res.json({
       selectedCategories: rows[0]?.selected_categories || [],
@@ -175,9 +195,10 @@ app.get('/api/preferences/:userId', async (req, res) => {
   }
 });
 
-app.post('/api/preferences', validateBody({ userId: { required: true }, categories: { required: true } }), async (req, res) => {
+app.post('/api/preferences', validateBody({ categories: { required: true } }), async (req, res) => {
   try {
-    const { userId, categories, language } = req.body;
+    const { categories, language } = req.body;
+    const userId = req.userId;
     await pool.query(
       `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, updated_at)
        VALUES ($1, $2, $3, NOW())
@@ -197,9 +218,10 @@ app.post('/api/preferences', validateBody({ userId: { required: true }, categori
 });
 
 // ─── Language switch (updates preference, clears category filter for new lang) ──
-app.post('/api/preferences/language', validateBody({ userId: { required: true }, language: { required: true } }), async (req, res) => {
+app.post('/api/preferences/language', validateBody({ language: { required: true } }), async (req, res) => {
   try {
-    const { userId, language } = req.body;
+    const { language } = req.body;
+    const userId = req.userId;
     // Clear categories so the new language shows all questions (not filtered by old lang's cats)
     await pool.query(
       `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, updated_at)
@@ -221,11 +243,10 @@ app.post('/api/preferences/language', validateBody({ userId: { required: true },
 // ─── Question Feed ────────────────────────────────────────────────────
 app.get('/api/questions/feed', async (req, res) => {
   try {
-    const { userId } = req.query;
+    const userId = req.userId;
     const language = req.query.language || 'Java';
     const mode = req.query.mode || 'swipe';
     const limit = Math.min(parseInt(req.query.limit) || 5, 10);
-    if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     // Load user's category preferences (only apply if they match current language)
     const prefsResult = await pool.query(
@@ -305,7 +326,8 @@ app.get('/api/questions/feed', async (req, res) => {
 app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => {
   try {
     const { type } = req.params;
-    const { questionText, shortAnswer, category, userId, questionId, language = 'Java' } = req.body;
+    const { questionText, shortAnswer, category, questionId, language = 'Java' } = req.body;
+    const userId = req.userId;
     if (!questionText) return res.status(400).json({ error: 'questionText is required' });
 
     const modeMap = { explanation: 'explanation', test: 'test', blitz: 'blitz', bug: 'bug', code: 'code' };
@@ -377,10 +399,11 @@ async function recordProgress(userId, questionId, isCorrect) {
 
 // ─── Swipe ────────────────────────────────────────────────────────────
 app.post('/api/questions/swipe',
-  validateBody({ userId: { required: true }, questionId: { required: true }, status: { required: true, enum: ['known', 'unknown'] } }),
+  validateBody({ questionId: { required: true }, status: { required: true, enum: ['known', 'unknown'] } }),
   async (req, res) => {
     try {
-      const { userId, questionId, status } = req.body;
+      const { questionId, status } = req.body;
+      const userId = req.userId;
       await pool.query(
         `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1,$2,$3,CURRENT_TIMESTAMP)
          ON CONFLICT (user_id, question_id) DO UPDATE SET status=EXCLUDED.status, updated_at=CURRENT_TIMESTAMP`,
@@ -393,10 +416,11 @@ app.post('/api/questions/swipe',
 
 // ─── Test answer ──────────────────────────────────────────────────────
 app.post('/api/questions/test-answer',
-  validateBody({ userId: { required: true }, questionId: { required: true }, answer: { required: true } }),
+  validateBody({ questionId: { required: true }, answer: { required: true } }),
   async (req, res) => {
     try {
-      const { userId, questionId, answer } = req.body;
+      const { questionId, answer } = req.body;
+      const userId = req.userId;
       const qRes = await pool.query('SELECT short_answer FROM questions WHERE id=$1', [questionId]);
       if (!qRes.rows[0]) return res.status(404).json({ error: 'Question not found' });
       const correctAnswer = qRes.rows[0].short_answer;
@@ -410,10 +434,11 @@ app.post('/api/questions/test-answer',
 
 // ─── Bug hunt answer ──────────────────────────────────────────────────
 app.post('/api/questions/bug-hunt-answer',
-  validateBody({ userId: { required: true }, questionId: { required: true }, answer: { required: true } }),
+  validateBody({ questionId: { required: true }, answer: { required: true } }),
   async (req, res) => {
     try {
-      const { userId, questionId, answer } = req.body;
+      const { questionId, answer } = req.body;
+      const userId = req.userId;
       const { data } = await resolveAIData(questionId, 'bug_hunting_data', 'bug');
       if (!data) return res.status(404).json({ error: 'Bug hunt data not generated yet — please wait' });
       const correctBug = data.bug;
@@ -430,10 +455,10 @@ app.post('/api/questions/bug-hunt-answer',
 
 // ─── Blitz answer ─────────────────────────────────────────────────────
 app.post('/api/questions/blitz-answer',
-  validateBody({ userId: { required: true } }),
   async (req, res) => {
     try {
-      const { userId, questionId, answer, clientIsCorrect } = req.body;
+      const { questionId, answer, clientIsCorrect } = req.body;
+      const userId = req.userId;
       let isCorrect;
       try {
         const { data } = await resolveAIData(questionId, 'blitz_data', 'blitz');
@@ -457,10 +482,11 @@ app.post('/api/questions/blitz-answer',
 
 // ─── Code completion answer ───────────────────────────────────────────
 app.post('/api/questions/code-completion-answer',
-  validateBody({ userId: { required: true }, questionId: { required: true }, answer: { required: true } }),
+  validateBody({ questionId: { required: true }, answer: { required: true } }),
   async (req, res) => {
     try {
-      const { userId, questionId, answer } = req.body;
+      const { questionId, answer } = req.body;
+      const userId = req.userId;
       const { data } = await resolveAIData(questionId, 'code_completion_data', 'code');
       if (!data) return res.status(404).json({ error: 'Code completion data not generated yet — please wait' });
       const correctPart = data.correctPart;
@@ -488,7 +514,8 @@ app.post('/api/questions/interview-evaluate', rateLimit('interview'), async (req
 // ─── Explanation ──────────────────────────────────────────────────────
 app.post('/api/questions/explain', async (req, res) => {
   try {
-    const { questionId, userId } = req.body;
+    const { questionId } = req.body;
+    const userId = req.userId;
     if (!questionId) return res.status(400).json({ error: 'questionId is required' });
 
     // ── 1. Check DB-cached explanation first (no AI needed) ──────────
@@ -534,8 +561,9 @@ app.post('/api/questions/explain', async (req, res) => {
 // ─── Resume Analysis ──────────────────────────────────────────────────
 app.post('/api/user/analyze-resume', rateLimit('resume'), async (req, res) => {
   try {
-    const { userId, resumeText, language = 'Java' } = req.body;
-    if (!userId || !resumeText) return res.status(400).json({ error: 'userId and resumeText are required' });
+    const { resumeText, language = 'Java' } = req.body;
+    const userId = req.userId;
+    if (!resumeText) return res.status(400).json({ error: 'resumeText is required' });
     const parsedData = await analyzeResume(resumeText, userId, language);
     await pool.query(
       'UPDATE users SET resume_text = $1, parsed_resume_data = $2 WHERE telegram_id = $3',
@@ -545,9 +573,9 @@ app.post('/api/user/analyze-resume', rateLimit('resume'), async (req, res) => {
   } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
-app.get('/api/user/resume/:userId', async (req, res) => {
+app.get('/api/user/resume', async (req, res) => {
   try {
-    const result = await pool.query('SELECT resume_text, parsed_resume_data FROM users WHERE telegram_id = $1', [req.params.userId]);
+    const result = await pool.query('SELECT resume_text, parsed_resume_data FROM users WHERE telegram_id = $1', [req.userId]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     res.json(result.rows[0]);
   } catch { res.status(500).json({ error: 'Internal server error' }); }
@@ -577,9 +605,10 @@ app.get('/api/subscription/plans', async (req, res) => {
   }
 });
 
-app.get('/api/subscription/status/:userId', async (req, res) => {
+app.get('/api/subscription/status', async (req, res) => {
   try {
-    const isAdmin = ADMIN_IDS.has(String(req.params.userId));
+    const userId = req.userId;
+    const isAdmin = ADMIN_IDS.has(String(userId));
     if (isAdmin) {
       return res.json({ plan: 'admin', plan_name: 'Admin (Unlimited)', status: 'active', is_admin: true });
     }
@@ -589,7 +618,7 @@ app.get('/api/subscription/status/:userId', async (req, res) => {
        WHERE us.user_id = $1 AND us.status = 'active'
          AND (us.expires_at IS NULL OR us.expires_at > CURRENT_TIMESTAMP)
        ORDER BY us.created_at DESC LIMIT 1`,
-      [req.params.userId]
+      [userId]
     );
     if (rows.length === 0) return res.json({ plan: 'free', plan_name: 'Free', status: 'active' });
     res.json(rows[0]);
@@ -597,10 +626,10 @@ app.get('/api/subscription/status/:userId', async (req, res) => {
 });
 
 app.post('/api/subscription/subscribe',
-  validateBody({ userId: { required: true }, planId: { required: true } }),
+  validateBody({ planId: { required: true } }),
   async (req, res) => {
     try {
-      const result = await billingService.createSubscription(req.body.userId, req.body.planId);
+      const result = await billingService.createSubscription(req.userId, req.body.planId);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -608,19 +637,18 @@ app.post('/api/subscription/subscribe',
   }
 );
 
-app.get('/api/subscription/history/:userId', async (req, res) => {
+app.get('/api/subscription/history', async (req, res) => {
   try {
-    const history = await billingService.getHistory(req.params.userId);
+    const history = await billingService.getHistory(req.userId);
     res.json({ history });
   } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
 // Cancel subscription
 app.post('/api/subscription/cancel',
-  validateBody({ userId: { required: true } }),
   async (req, res) => {
     try {
-      const result = await billingService.cancelSubscription(req.body.userId);
+      const result = await billingService.cancelSubscription(req.userId);
       res.json(result);
     } catch (err) {
       console.error('Cancel subscription error:', err.message);
@@ -634,10 +662,7 @@ app.post('/api/subscription/cancel',
 // Grant plan (admin-only)
 app.post('/api/admin/grant-plan', async (req, res) => {
   try {
-    const { adminUserId, targetUserId, planId, months = 12 } = req.body;
-    if (!ADMIN_IDS.has(String(adminUserId))) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    const { targetUserId, planId, months = 12 } = req.body;
     const expiresAt = months === 0 ? null : new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000);
     await pool.query('BEGIN');
     await pool.query(
@@ -664,10 +689,6 @@ app.post('/api/admin/grant-plan', async (req, res) => {
 // List all users (admin-only)
 app.get('/api/admin/users', async (req, res) => {
   try {
-    const { adminUserId } = req.query;
-    if (!ADMIN_IDS.has(String(adminUserId))) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
     const { rows } = await pool.query(`
       SELECT u.telegram_id, u.username, u.first_name, u.subscription_plan,
              u.subscription_expires_at, u.created_at,
@@ -700,8 +721,8 @@ app.post('/api/admin/clear-cache', async (req, res) => {
 // ─── Category-scoped stats (§3 topic counter) ────────────────────────
 app.get('/api/stats/categories', async (req, res) => {
   try {
-    const { userId, language = 'Java', categories } = req.query;
-    if (!userId) return res.status(400).json({ error: 'userId is required' });
+    const userId = req.userId;
+    const { language = 'Java', categories } = req.query;
 
     let cats = [];
     try { cats = JSON.parse(decodeURIComponent(categories || '[]')); } catch { }
@@ -730,9 +751,8 @@ app.get('/api/stats/categories', async (req, res) => {
 // ─── Stats ────────────────────────────────────────────────────────────
 app.get('/api/stats', async (req, res) => {
   try {
-    const { userId } = req.query;
+    const userId = req.userId;
     const language = req.query.language || 'Java';
-    if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     // Join with questions so stats are language-scoped
     // Switching language shows only that language's progress

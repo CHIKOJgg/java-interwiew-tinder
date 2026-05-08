@@ -11,6 +11,7 @@
     "seed-db": "node src/scripts/seed-db.js",
     "migrate": "node src/scripts/migrate.js",
     "migrate-stars": "node src/scripts/migrate-stars.js",
+    "migrate-ton": "node src/scripts/migrate-ton.js",
     "worker": "node src/worker.js",
     "vercel-build": "echo 'Build completed'"
   },

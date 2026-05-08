@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import useStore from '../store/useStore';
 import apiClient from '../api/client';
-import { Check, Star, Shield, Zap, ArrowLeft, X, Clock, ChevronDown, ChevronUp, Users, AlertCircle } from 'lucide-react';
+import { Check, Star, Shield, Zap, ArrowLeft, X, Clock, ChevronDown, ChevronUp, Users, AlertCircle, Copy, CheckCircle } from 'lucide-react';
 import './SubscriptionPlans.css';
 
 // ─── Plan config ──────────────────────────────────────────────────────
@@ -130,6 +130,73 @@ const StatusBanner = ({ status, onCancel }) => {
   );
 };
 
+
+// ─── TON Payment Modal ────────────────────────────────────────────────
+const TonModal = ({ invoice, onCheck, onCancel, polling }) => {
+  const [copied, setCopied] = useState(null);
+
+  const handleCopy = (text, field) => {
+    navigator.clipboard.writeText(text);
+    setCopied(field);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  if (!invoice) return null;
+
+  return (
+    <div className="ton-modal-overlay">
+      <div className="ton-modal">
+        <button className="ton-modal-close" onClick={onCancel}><X size={20} /></button>
+        <div className="ton-modal-header">
+          <div className="ton-icon-large">💎</div>
+          <h2>Оплата через TON</h2>
+          <p>Отправьте точную сумму на адрес ниже</p>
+        </div>
+
+        <div className="ton-modal-body">
+          <div className="ton-field">
+            <label>Сумма</label>
+            <div className="ton-value-row">
+              <span className="ton-amount-val">{invoice.amountTon} TON</span>
+              <button onClick={() => handleCopy(invoice.amountTon.toString(), 'amount')}>
+                {copied === 'amount' ? <CheckCircle size={16} color="#51cf66" /> : <Copy size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="ton-field">
+            <label>Адрес кошелька</label>
+            <div className="ton-value-row address">
+              <span className="ton-address-val">{invoice.address}</span>
+              <button onClick={() => handleCopy(invoice.address, 'address')}>
+                {copied === 'address' ? <CheckCircle size={16} color="#51cf66" /> : <Copy size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="ton-field">
+            <label>Комментарий (ОБЯЗАТЕЛЬНО)</label>
+            <div className="ton-value-row comment">
+              <span className="ton-comment-val">{invoice.comment}</span>
+              <button onClick={() => handleCopy(invoice.comment, 'comment')}>
+                {copied === 'comment' ? <CheckCircle size={16} color="#51cf66" /> : <Copy size={16} />}
+              </button>
+            </div>
+            <p className="ton-warning">Без комментария платеж не будет зачислен автоматически!</p>
+          </div>
+        </div>
+
+        <div className="ton-modal-footer">
+          <button className="ton-check-btn" disabled={polling} onClick={onCheck}>
+            {polling ? 'Проверка...' : 'Я оплатил, проверить'}
+          </button>
+          <p className="ton-poll-hint">Мы проверяем сеть каждые 30 секунд</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main component ───────────────────────────────────────────────────
 const SubscriptionPlans = ({ onBack }) => {
   const { user, login } = useStore();
@@ -144,6 +211,8 @@ const SubscriptionPlans = ({ onBack }) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [toast, setToast] = useState(null);           // { text, type }
   const [polling, setPolling] = useState(false);      // polling after invoice send
+  const [tonInvoice, setTonInvoice] = useState(null); // Active TON invoice
+  const [tonPolling, setTonPolling] = useState(false);
 
   const isAdmin = user?.plan === 'admin' || user?.is_admin;
 
@@ -218,9 +287,42 @@ const SubscriptionPlans = ({ onBack }) => {
       setPurchasing(null);
       setPolling(true);
       showToast('Проверьте чат Telegram — счёт отправлен. Оплатите там, и план активируется автоматически.', 'info');
+    }
+  };
+
+  // TON: creates invoice and shows modal
+  const handleSubscribeTon = async (planId, interval = 'monthly') => {
+    if (purchasing || polling || tonPolling) return;
+    try {
+      setPurchasing(planId);
+      const invoice = await apiClient.createTonInvoice(planId, interval);
+      setTonInvoice(invoice);
+      setPurchasing(null);
     } catch (e) {
       setPurchasing(null);
-      showToast(`Ошибка: ${e.message}`, 'error');
+      showToast(`Ошибка TON: ${e.message}`, 'error');
+    }
+  };
+
+  const handleCheckTon = async () => {
+    if (tonPolling) return;
+    setTonPolling(true);
+    try {
+      const res = await apiClient.checkTonPayment();
+      if (res.fulfilled) {
+        setTonInvoice(null);
+        setShowSuccess(true);
+        await fetchAll();
+        if (window.Telegram?.WebApp?.initData) {
+          login(window.Telegram.WebApp.initData).catch(() => {});
+        }
+      } else {
+        showToast('Платеж пока не найден. Подождите 30-60 секунд после отправки.', 'info');
+      }
+    } catch (e) {
+      showToast(`Ошибка проверки: ${e.message}`, 'error');
+    } finally {
+      setTonPolling(false);
     }
   };
 
@@ -278,6 +380,13 @@ const SubscriptionPlans = ({ onBack }) => {
       <StatusBanner
         status={status}
         onCancel={handleCancel}
+      />
+
+      <TonModal
+        invoice={tonInvoice}
+        polling={tonPolling}
+        onCheck={handleCheckTon}
+        onCancel={() => setTonInvoice(null)}
       />
 
       {showSuccess && (
@@ -398,6 +507,15 @@ const SubscriptionPlans = ({ onBack }) => {
                         onClick={() => handleSubscribeStars(plan.id, 'yearly')}
                       >
                         <Star size={14} fill="#ffd43b" /> 3000 Stars / год (скидка 44%)
+                      </button>
+
+                      {/* TON Payment Option */}
+                      <button
+                        className="ton-btn-mini"
+                        disabled={isBuying || polling || tonPolling}
+                        onClick={() => handleSubscribeTon(plan.id, 'monthly')}
+                      >
+                        💎 Оплатить TON
                       </button>
                     </>
                   )}

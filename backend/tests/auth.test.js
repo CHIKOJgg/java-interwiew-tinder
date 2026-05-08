@@ -21,6 +21,11 @@ vi.mock('../src/config/logger.js', () => ({
   }
 }));
 
+vi.mock('../src/utils/telegram.js', () => ({
+  validateTelegramWebAppData: vi.fn().mockReturnValue({ telegram_id: 987654321, username: 'testuser', first_name: 'Test', last_name: 'User' }),
+  mockValidation: vi.fn(),
+}));
+
 vi.mock('pino-http', () => ({
   default: vi.fn().mockReturnValue((req, res, next) => {
     req.log = { info: vi.fn(), error: vi.fn(), warn: vi.fn() };
@@ -55,7 +60,7 @@ describe('Auth Integration Tests', () => {
     process.env.JWT_SECRET = JWT_SECRET;
     process.env.ADMIN_TELEGRAM_IDS = ADMIN_ID;
     process.env.NODE_ENV = 'test';
-    process.env.BOT_TOKEN = ''; // Force mockValidation
+    process.env.BOT_TOKEN = 'test_bot_token'; // Set it so it tries validate
   });
 
   afterEach(() => {
@@ -103,7 +108,8 @@ describe('Auth Integration Tests', () => {
       
       pool.query
         .mockResolvedValueOnce({ rows: [{ known_count: 5, unknown_count: 10, total_seen: 15 }] }) // result
-        .mockResolvedValueOnce({ rows: [{ total: 100 }] }); // totalResult
+        .mockResolvedValueOnce({ rows: [{ total: 100 }] }) // totalResult
+        .mockResolvedValueOnce({ rows: [{ current_streak: 2, longest_streak: 5 }] }); // userStreak
 
       const response = await request(app)
         .get('/api/stats')

@@ -159,6 +159,10 @@ export async function activateTonSubscription(userId, planId, interval, txHash, 
 
     await client.query('COMMIT');
     logger.info({ userId, planId, txHash }, '✅ TON subscription activated');
+
+    // Process referral conversion if applicable
+    import('../referralService.js').then(m => m.referralService.processConversion(userId)).catch(() => {});
+
     return { success: true };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});

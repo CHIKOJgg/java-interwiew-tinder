@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Gift, Copy, Share2 } from 'lucide-react';
 import api from '../api/client';
 import useStore from '../store/useStore';
 import './CategorySelection.css';
@@ -10,6 +10,8 @@ const CategorySelection = ({ onComplete }) => {
   const [selectedCategories, setLocalSelected] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [refStats, setRefStats] = useState({ total: 0, converted: 0, rewardDays: 0 });
+  const { user } = useStore();
 
   useEffect(() => {
     loadData();
@@ -28,6 +30,13 @@ const CategorySelection = ({ onComplete }) => {
         }
       } catch {
         // No saved preferences, use defaults
+      }
+
+      try {
+        const stats = await api.getReferralStats();
+        setRefStats(stats);
+      } catch (e) {
+        console.error('Failed to load referral stats', e);
       }
     } catch (error) {
       console.error('Error loading categories:', error);
@@ -118,6 +127,40 @@ const CategorySelection = ({ onComplete }) => {
             />
           );
         })}
+      </div>
+      
+      <div className="referral-section">
+        <div className="referral-card">
+          <div className="referral-title">
+            <Gift className="gift-icon" size={20} />
+            <h3>Приглашайте друзей</h3>
+          </div>
+          <p className="referral-text">Получайте 7 дней PRO-подписки за каждого приглашенного друга, который подпишется!</p>
+          
+          <div className="referral-link-box" onClick={() => {
+            const link = `https://t.me/${window.Telegram?.WebApp?.initDataUnsafe?.receiver?.username || 'JavaInterviewTinderBot'}?start=${user?.telegram_id}`;
+            navigator.clipboard.writeText(link);
+            alert('Ссылка скопирована!');
+          }}>
+            <span className="ref-url">t.me/your_referral_link</span>
+            <Copy size={16} />
+          </div>
+
+          <div className="referral-stats">
+            <div className="ref-stat">
+              <span className="ref-val">{refStats.total}</span>
+              <span className="ref-lab">Приглашено</span>
+            </div>
+            <div className="ref-stat">
+              <span className="ref-val">{refStats.converted}</span>
+              <span className="ref-lab">Оплачено</span>
+            </div>
+            <div className="ref-stat highlight">
+              <span className="ref-val">{refStats.rewardDays}</span>
+              <span className="ref-lab">Дней PRO</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="category-footer">

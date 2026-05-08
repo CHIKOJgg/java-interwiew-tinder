@@ -258,6 +258,10 @@ class ApiClient {
   async getPercentile(score) {
     return this.request(`/stats/percentile?language=${this.language}&score=${score}`);
   }
+
+  async getReferralStats() {
+    return this.request('/referrals/stats');
+  }
 }
 
 export default new ApiClient();

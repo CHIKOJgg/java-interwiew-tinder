@@ -13,6 +13,7 @@ import { billingService } from './services/billingService.js';
 import { sendStarsInvoice, answerPreCheckout, sendTelegramMessage, activateStarsSubscription } from './services/billing/starsService.js';
 import { createTonInvoice, getUserPendingInvoice, pollPendingInvoices } from './services/billing/tonService.js';
 import { metricsService } from './services/metricsService.js';
+import { referralService } from './services/referralService.js';
 import jwt from 'jsonwebtoken';
 import { authMiddleware, requireAdmin, ADMIN_IDS } from './middleware/auth.js';
 import redis, { isConnected as isRedisConnected } from './config/redis.js';
@@ -137,7 +138,7 @@ app.get('/api/categories', async (req, res) => {
 // ─── Auth ────────────────────────────────────────────────────────────
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { initData } = req.body;
+    const { initData, referralId } = req.body;
     let userData;
 
     if (process.env.BOT_TOKEN && initData) {
@@ -160,6 +161,17 @@ app.post('/api/auth/login', async (req, res) => {
       [userData.telegram_id, userData.username, userData.first_name, userData.last_name]
     );
     const user = result.rows[0];
+
+    // Track referral if this is a new user and referralId is provided
+    if (referralId && result.rowCount > 0 && !result.rows[0].created_at) { 
+      // Note: result.rowCount > 0 and checking if created_at is fresh (or using a separate flag)
+      // Actually, ON CONFLICT will return the row. We should check if it's a new insert.
+    }
+    // Correct logic for new user detection:
+    const isNewUser = result.rows[0].created_at > new Date(Date.now() - 5000);
+    if (referralId && isNewUser) {
+      await referralService.trackReferral(referralId, user.telegram_id);
+    }
 
     // Auto-grant admin plan if user is in ADMIN_TELEGRAM_IDS
     if (ADMIN_IDS.has(String(user.telegram_id))) {
@@ -1052,6 +1064,13 @@ app.get('/api/stats/percentile', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+app.get('/api/referrals/stats', async (req, res) => {
+  try {
+    const stats = await referralService.getStats(req.userId);
+    res.json(stats);
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
 // ─── Category-scoped stats (§3 topic counter) ────────────────────────

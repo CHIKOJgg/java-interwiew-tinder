@@ -82,8 +82,15 @@ function App() {
         const initData = await getTelegramInitData();
         if (!initData) throw new Error('No initData');
 
+        // Extract referralId from start_param if present
+        const tg = window.Telegram?.WebApp;
+        let referralId = null;
+        if (tg?.initDataUnsafe?.start_param) {
+          referralId = tg.initDataUnsafe.start_param;
+        }
+
         setInitState('auth');
-        await login(initData);
+        await login(initData, referralId);
 
         if (cancelled) return;
         setInitState('ready');

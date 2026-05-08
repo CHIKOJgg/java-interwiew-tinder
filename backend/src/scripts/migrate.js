@@ -257,6 +257,22 @@ const migrations = [
       ALTER TABLE users ADD COLUMN IF NOT EXISTS longest_streak INT DEFAULT 0;
       CREATE INDEX IF NOT EXISTS idx_users_streak_activity ON users(last_activity_date);
     `
+  },
+
+  // ── 016: Referral System ──────────────────────────────────────────
+  {
+    id: '016_referral_system',
+    sql: `
+      CREATE TABLE IF NOT EXISTS referrals (
+        id SERIAL PRIMARY KEY,
+        referrer_id BIGINT REFERENCES users(telegram_id),
+        referred_id BIGINT REFERENCES users(telegram_id) UNIQUE,
+        converted BOOLEAN DEFAULT FALSE,
+        reward_granted BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);
+    `
   }
 ];
 

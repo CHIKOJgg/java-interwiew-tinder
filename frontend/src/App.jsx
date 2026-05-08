@@ -16,7 +16,9 @@ const MockInterviewMode = lazy(() => import('./components/MockInterviewMode'));
 const ResumeAnalyzer = lazy(() => import('./components/ResumeAnalyzer'));
 const SubscriptionPlans = lazy(() => import('./components/SubscriptionPlans'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
-const CategorySelection = lazy(() => import('./components/CategorySelection'));
+import CodeCompletionMode from './components/CodeCompletionMode';
+import ReportSheet from './components/ReportSheet';
+import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import './App.css';
@@ -74,8 +76,16 @@ function App() {
   const [screen, setScreen] = useState('category');
   const [authError, setAuthError] = useState(null);
   const [showShare, setShowShare] = useState(false);
+  const [undoToast, setUndoToast] = useState(false);
+  const [reportingQuestionId, setReportingQuestionId] = useState(null);
 
   const cardRefs = useRef([]);
+
+  useEffect(() => {
+    const handleReport = (e) => setReportingQuestionId(e.detail);
+    window.addEventListener('report-question', handleReport);
+    return () => window.removeEventListener('report-question', handleReport);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -269,6 +279,12 @@ function App() {
         <ShareCard 
           stats={stats} 
           onBack={() => setShowShare(false)} 
+        />
+      )}
+      {reportingQuestionId && (
+        <ReportSheet 
+          questionId={reportingQuestionId} 
+          onClose={() => setReportingQuestionId(null)} 
         />
       )}
     </div>

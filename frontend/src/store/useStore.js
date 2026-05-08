@@ -173,6 +173,15 @@ const useStore = create((set, get) => ({
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
   },
 
+  reportQuestion: async (questionId, reason, comment) => {
+    try {
+      await apiClient.reportQuestion(questionId, reason, comment);
+    } catch (err) {
+      console.error('Failed to report question:', err);
+      throw err;
+    }
+  },
+
   submitTestAnswer: async (questionId, answer) => {
     const response = await apiClient.submitTestAnswer(questionId, answer);
     const status = response.isCorrect ? 'known' : 'unknown';

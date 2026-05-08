@@ -147,6 +147,29 @@
   transform: scale(0.97);
 }
 
+.report-flag {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(5px);
+  z-index: 10;
+}
+
+.report-flag:active {
+  transform: scale(0.9);
+}
+
 /* ── Back: answer text ────────────────────────────────────────────── */
 .answer-content {
   flex: 1;

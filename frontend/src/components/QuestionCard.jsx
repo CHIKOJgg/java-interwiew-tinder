@@ -1,6 +1,6 @@
 import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import TinderCard from 'react-tinder-card';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Flag } from 'lucide-react';
 import './QuestionCard.css';
 
 const categoryColors = {
@@ -128,6 +128,14 @@ const QuestionCard = forwardRef(({ question, onSwipe, canSwipe = true }, ref) =>
             >
               <RotateCcw size={15} />
               <span>Нажми для ответа</span>
+            </button>
+            <button
+              className="report-flag"
+              onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('report-question', { detail: question.id })); }}
+              type="button"
+              title="Сообщить об ошибке"
+            >
+              <Flag size={16} />
             </button>
           </div>
 

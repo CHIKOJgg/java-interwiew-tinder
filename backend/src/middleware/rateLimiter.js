@@ -1,6 +1,8 @@
 import pool from '../config/database.js';
+import redis from '../config/redis.js';
 
-const limitsCache = new Map();
+// No longer using local Map for limits caching — use Redis
+// const limitsCache = new Map();
 
 // ─── Admin bypass ─────────────────────────────────────────────────────
 // Set ADMIN_TELEGRAM_IDS=123456789,987654321 in .env to grant unlimited access
@@ -29,11 +31,18 @@ const FREE_DEFAULTS = {
 };
 
 async function getUserLimits(userId) {
-  if (isAdmin(userId)) return null; // admins skip all checks
+  if (isAdmin(userId)) return null; 
 
-  if (limitsCache.has(userId)) {
-    const cached = limitsCache.get(userId);
-    if (Date.now() - cached._fetchedAt < 60000) return cached;
+  const cacheKey = `limits:${userId}`;
+  
+  // 1. Try Redis cache first
+  if (redis) {
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch (err) {
+      console.warn('Redis read error in getUserLimits:', err.message);
+    }
   }
 
   try {
@@ -61,7 +70,6 @@ async function getUserLimits(userId) {
     if (rows.length === 0) return { ...FREE_DEFAULTS, _fetchedAt: Date.now() };
 
     const limits = { ...rows[0], _fetchedAt: Date.now() };
-    // Ensure arrays are real arrays (Postgres may return them as strings)
     if (typeof limits.available_languages === 'string') {
       limits.available_languages = limits.available_languages.replace(/[{}"]/g, '').split(',');
     }
@@ -69,16 +77,34 @@ async function getUserLimits(userId) {
       limits.available_modes = limits.available_modes.replace(/[{}"]/g, '').split(',');
     }
 
-    limitsCache.set(userId, limits);
+    // 2. Save to Redis with 60s TTL
+    if (redis) {
+      redis.setex(cacheKey, 60, JSON.stringify(limits)).catch(() => {});
+    }
+    
     return limits;
   } catch (err) {
     console.error('Error fetching user limits:', err.message);
-    // On DB error: use generous defaults so users aren't blocked
     return { ...FREE_DEFAULTS, _fetchedAt: Date.now() };
   }
 }
 
 async function incrementCounter(userId, field) {
+  const redisKey = `counter:${userId}:${field}`;
+  
+  // 1. Try Redis INCR first for immediate consistency across instances
+  if (redis) {
+    try {
+      await redis.incr(redisKey);
+      // Set TTL if new key
+      const ttl = field.includes('month') ? 2592000 : 86400; // rough 30d or 1d
+      await redis.expire(redisKey, ttl);
+    } catch (err) {
+      console.warn('Redis increment failed:', err.message);
+    }
+  }
+
+  // 2. Persist to DB
   try {
     await pool.query(`
       INSERT INTO user_rate_limits (user_id, ${field}, last_request_at)
@@ -87,7 +113,9 @@ async function incrementCounter(userId, field) {
       SET ${field} = user_rate_limits.${field} + 1,
           last_request_at = CURRENT_TIMESTAMP
     `, [userId]);
-    limitsCache.delete(userId);
+    
+    // Invalidate limits cache
+    if (redis) redis.del(`limits:${userId}`).catch(() => {});
   } catch (err) {
     console.error('Error incrementing counter:', err.message);
   }
@@ -101,14 +129,17 @@ export function rateLimit(limitType = 'requests') {
     const limits = await getUserLimits(userId);
     if (!limits) return next(); // admin or error — let through
 
-    // Reset stale counters
+    // Reset stale counters in DB
     const now = new Date();
     if (limits.daily_reset_at && new Date(limits.daily_reset_at).getDate() !== now.getDate()) {
       await pool.query(
         'UPDATE user_rate_limits SET requests_today = 0, daily_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1',
         [userId]
       ).catch(() => {});
-      limitsCache.delete(userId);
+      if (redis) {
+        redis.del(`limits:${userId}`).catch(() => {});
+        redis.del(`counter:${userId}:requests_today`).catch(() => {});
+      }
     }
     if (limits.monthly_reset_at && new Date(limits.monthly_reset_at).getMonth() !== now.getMonth()) {
       await pool.query(
@@ -116,29 +147,48 @@ export function rateLimit(limitType = 'requests') {
          interview_evals_this_month = 0, monthly_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
         [userId]
       ).catch(() => {});
-      limitsCache.delete(userId);
+      if (redis) {
+        redis.del(`limits:${userId}`).catch(() => {});
+        redis.keys(`counter:${userId}:*_month`).then(keys => {
+          if (keys.length > 0) redis.del(...keys);
+        }).catch(() => {});
+      }
     }
 
+    // 2. Check current counter value (prefer Redis for distributed accuracy)
+    let currentCount = 0;
     let exceeded = false;
     let counterField;
 
     switch (limitType) {
       case 'requests':
-        exceeded = (limits.requests_today || 0) >= (limits.requests_per_day || FREE_DEFAULTS.requests_per_day);
         counterField = 'requests_today';
         break;
       case 'ai_generation':
-        exceeded = (limits.ai_generations_this_month || 0) >= (limits.ai_generations_per_month || FREE_DEFAULTS.ai_generations_per_month);
         counterField = 'ai_generations_this_month';
         break;
       case 'resume':
-        exceeded = (limits.resume_analyses_this_month || 0) >= (limits.resume_analysis_limit || FREE_DEFAULTS.resume_analysis_limit);
         counterField = 'resume_analyses_this_month';
         break;
       case 'interview':
-        exceeded = (limits.interview_evals_this_month || 0) >= (limits.interview_eval_limit || FREE_DEFAULTS.interview_eval_limit);
         counterField = 'interview_evals_this_month';
         break;
+    }
+
+    if (counterField) {
+      if (redis) {
+        try {
+          const val = await redis.get(`counter:${userId}:${counterField}`);
+          currentCount = val ? parseInt(val) : limits[counterField];
+        } catch {
+          currentCount = limits[counterField];
+        }
+      } else {
+        currentCount = limits[counterField];
+      }
+
+      const max = limits[counterField.replace('_today', '_per_day').replace('_this_month', '_limit')] || FREE_DEFAULTS[counterField.replace('_today', '_per_day').replace('_this_month', '_limit')];
+      exceeded = currentCount >= max;
     }
 
     if (exceeded) {

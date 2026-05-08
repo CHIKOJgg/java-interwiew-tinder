@@ -223,6 +223,20 @@ class ApiClient {
     return this.sendStarsInvoice(planId, interval);
   }
 
+  // ─── TON Crypto ────────────────────────────────────────────────────
+  async createTonInvoice(planId, interval = 'monthly') {
+    return this.request('/billing/ton/invoice', {
+      method: 'POST',
+      body: JSON.stringify({ planId, interval }),
+    });
+  }
+
+  async checkTonPayment() {
+    return this.request('/billing/ton/check', {
+      method: 'GET'
+    });
+  }
+
   async getBillingInfo() {
     return this.request('/billing/info');
   }

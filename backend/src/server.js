@@ -10,6 +10,7 @@ import { requestLogger, validateBody, sanitizeBody } from './middleware/logging.
 import { rateLimit, requireEntitlement, trackEvent } from './middleware/rateLimiter.js';
 import { billingService } from './services/billingService.js';
 import { sendStarsInvoice, answerPreCheckout, sendTelegramMessage, activateStarsSubscription } from './services/billing/starsService.js';
+import { createTonInvoice, getUserPendingInvoice, pollPendingInvoices } from './services/billing/tonService.js';
 import { metricsService } from './services/metricsService.js';
 import jwt from 'jsonwebtoken';
 import { authMiddleware, requireAdmin, ADMIN_IDS } from './middleware/auth.js';
@@ -797,8 +798,43 @@ app.delete('/api/billing/subscription', async (req, res) => {
   }
 });
 
+// ─── TON Crypto routes ───────────────────────────────────────────────
+// POST /api/billing/ton/invoice — create a pending TON invoice
+app.post('/api/billing/ton/invoice',
+  validateBody({ planId: { required: true } }),
+  async (req, res) => {
+    try {
+      if (!process.env.TON_WALLET_ADDRESS) {
+        return res.status(503).json({ error: 'TON payments are not configured on this server' });
+      }
+      const { planId, interval = 'monthly' } = req.body;
+      const invoice = await createTonInvoice(req.userId, planId, interval);
+      res.json(invoice);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
 
-app.post('/api/subscription/subscribe',
+// GET /api/billing/ton/check — poll for fulfillment of user's pending invoice
+app.get('/api/billing/ton/check', async (req, res) => {
+  try {
+    const invoice = await getUserPendingInvoice(req.userId);
+    if (!invoice) return res.json({ fulfilled: true });
+    res.json({
+      fulfilled: false,
+      invoiceId: invoice.invoice_id,
+      amountTon: parseFloat(invoice.amount_ton),
+      address:   process.env.TON_WALLET_ADDRESS,
+      comment:   invoice.invoice_id,
+      expiresAt: invoice.expires_at,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
   validateBody({ planId: { required: true } }),
   async (req, res) => {
     try {
@@ -967,6 +1003,12 @@ app.listen(PORT, () => {
 ║   Admins: ${String(ADMIN_IDS.size).padEnd(37)}║
 ╚════════════════════════════════════════════════╝
   `);
+
+  // ── TON payment poller: every 30 s, check for fulfilled invoices ──
+  if (process.env.TON_WALLET_ADDRESS) {
+    console.log('💫 TON poller started (30 s interval)');
+    setInterval(() => pollPendingInvoices().catch(console.error), 30_000);
+  }
 });
 
 process.on('SIGTERM', async () => { await pool.end(); process.exit(0); });

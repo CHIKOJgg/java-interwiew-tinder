@@ -131,23 +131,34 @@ Return only the JSON.`,
 
   resume: {
     system: () => jsonSystem({
-      skills: ["string"],
-      experienceLevel: "Junior|Middle|Senior",
-      strengths: ["string"],
-      improvementAreas: ["string"],
-      suggestedQuestions: ["string — interview question to ask this candidate"],
+      score: "number (0-100)",
+      sections: {
+        summary: { score: "number", feedback: "string" },
+        experience: { score: "number", feedback: "string" },
+        skills: { score: "number", feedback: "string", missing: ["string"] },
+        education: { score: "number", feedback: "string" }
+      },
+      topIssues: ["string"],
+      topStrengths: ["string"],
+      suggestedQuestions: ["string — specific question text to ask"]
     }),
     user: (lang, text) =>
       `Programming language focus: ${lang}
 Resume text: ${text.substring(0, 1500)}
 
-Analyze this resume. Return JSON in this exact format:
+Analyze this resume and provide a structured scoring rubric. Return JSON in this exact format:
 {
-  "skills": ["Java", "Spring Boot", "PostgreSQL"],
-  "experienceLevel": "Middle",
-  "strengths": ["Strong OOP knowledge", "Production Spring experience"],
-  "improvementAreas": ["No cloud experience", "Limited testing coverage"],
-  "suggestedQuestions": ["Explain Spring bean lifecycle", "How do you handle N+1 queries?"]
+  "score": 85,
+  "sections": {
+    "summary": { "score": 90, "feedback": "Concise and professional." },
+    "experience": { "score": 80, "feedback": "Good progression, but metrics are missing." },
+    "skills": { "score": 85, "feedback": "Relevant stack.", "missing": ["Docker", "Kubernetes"] },
+    "education": { "score": 100, "feedback": "Degree is in a relevant field." }
+  },
+  "topIssues": ["No quantitative achievements", "Missing cloud orchestration skills"],
+  "topStrengths": ["Clear technical focus", "Strong tenure at previous roles"],
+  "recommendedQuestions": ["Spring", "Multithreading"],
+  "suggestedQuestions": ["How do you optimize Spring Boot startup time?", "Explain the difference between optimistic and pessimistic locking."]
 }
 
 Return only the JSON.`,

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import dotenv from 'dotenv';
 import pool from '../config/database.js';
 import redis from '../config/redis.js';
 import logger from '../config/logger.js';

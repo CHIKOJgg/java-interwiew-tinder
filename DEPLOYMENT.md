@@ -60,6 +60,13 @@ flyctl ssh console --app java-interwiew-tinder -C "node src/scripts/migrate-star
 3. Перейдите в Settings → Database
 4. Скопируйте Connection String
 
+## Безопасность данных и бэкапы
+
+- **Автоматические бэкапы:** Supabase выполняет полное резервное копирование каждые 24 часа.
+- **PITR:** Поддерживается восстановление на любой момент времени (Point-in-Time Recovery).
+- **Проверка целостности:** Background worker запускает еженедельную проверку (Sunday 02:00 UTC), логируя количество строк в таблицах.
+- **Восстановление:** См. подробную инструкцию в [RESTORE_PROCEDURE.md](./RESTORE_PROCEDURE.md).
+
 ## Шаг 3: Настройка Mini App в Telegram
 
 1. Откройте [@BotFather](https://t.me/BotFather)

@@ -1021,8 +1021,9 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // ─── Server ───────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`
 ╔════════════════════════════════════════════════╗
 ║   🚀 Interview Tinder Backend                  ║
 ╠════════════════════════════════════════════════╣
@@ -1030,14 +1031,15 @@ app.listen(PORT, () => {
 ║   Mode: ${(isDev ? 'Development' : 'Production').padEnd(39)}║
 ║   Admins: ${String(ADMIN_IDS.size).padEnd(37)}║
 ╚════════════════════════════════════════════════╝
-  `);
+    `);
 
-  // ── TON payment poller: every 30 s, check for fulfilled invoices ──
-  if (process.env.TON_WALLET_ADDRESS) {
-    logger.info('💫 TON poller started (30 s interval)');
-    setInterval(() => pollPendingInvoices().catch(err => logger.error({ err }, 'TON poller error')), 30_000);
-  }
-});
+    // ── TON payment poller: every 30 s, check for fulfilled invoices ──
+    if (process.env.TON_WALLET_ADDRESS) {
+      logger.info('💫 TON poller started (30 s interval)');
+      setInterval(() => pollPendingInvoices().catch(err => logger.error({ err }, 'TON poller error')), 30_000);
+    }
+  });
+}
 
 process.on('SIGTERM', async () => { await pool.end(); process.exit(0); });
 process.on('SIGINT', async () => { await pool.end(); process.exit(0); });

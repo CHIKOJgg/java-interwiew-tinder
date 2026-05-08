@@ -13,7 +13,7 @@
     "migrate-stars": "node src/scripts/migrate-stars.js",
     "migrate-ton": "node src/scripts/migrate-ton.js",
     "worker": "node src/worker.js",
-    "test": "vitest run tests/auth.test.js",
+    "test": "vitest run tests/",
     "lint": "echo 'No linter configured'",
     "vercel-build": "echo 'Build completed'"
   },

@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
 import { Share2, Trophy, Flame, Target, Users, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import apiClient from '../api/client';
 import useStore from '../store/useStore';
 import './ShareCard.css';
 
 const ShareCard = ({ stats, onBack }) => {
+  const { t } = useTranslation();
   const { user, language } = useStore();
   const [percentile, setPercentile] = useState(null);
 
@@ -21,7 +22,12 @@ const ShareCard = ({ stats, onBack }) => {
   }, [stats.known]);
 
   const shareUrl = `${window.location.origin}/?ref=share&from=${user?.telegram_id}`;
-  const shareText = `🚀 I'm crushing my ${language} interviews! Streak: ${stats.streak} days, Knowledge: ${stats.known} concepts. Better than ${percentile || 'most'}% of devs!`;
+  const shareText = t('share.text', {
+    language,
+    streak: stats.streak,
+    known: stats.known,
+    rank: 100 - (percentile || 0)
+  });
 
   const handleShareStory = () => {
     const tg = window.Telegram?.WebApp;
@@ -46,39 +52,39 @@ const ShareCard = ({ stats, onBack }) => {
         
         <div className="share-card-header">
           <Trophy className="trophy-icon" size={40} />
-          <h2>Session Complete!</h2>
-          <p>You're becoming a ${language} master</p>
+          <h2>{t('share.title')}</h2>
+          <p>{t('share.subtitle', { language })}</p>
         </div>
 
         <div className="share-stats-grid">
           <div className="share-stat">
             <Flame className="stat-icon streak" size={20} />
             <span className="stat-val">{stats.streak}</span>
-            <span className="stat-lab">Day Streak</span>
+            <span className="stat-lab">{t('share.streak')}</span>
           </div>
           <div className="share-stat">
             <Target className="stat-icon target" size={20} />
             <span className="stat-val">{stats.known}</span>
-            <span className="stat-lab">Concepts</span>
+            <span className="stat-lab">{t('share.concepts')}</span>
           </div>
           <div className="share-stat wide">
             <Users className="stat-icon users" size={20} />
-            <span className="stat-val">Top {100 - (percentile || 0)}%</span>
-            <span className="stat-lab">of devs this week</span>
+            <span className="stat-val">{t('share.percentile', { rank: 100 - (percentile || 0) })}</span>
+            <span className="stat-lab">{t('share.dev_week')}</span>
           </div>
         </div>
 
         <div className="share-actions">
           <button className="share-btn primary" onClick={handleShareStory}>
             <Share2 size={18} />
-            Share to Story
+            {t('share.story')}
           </button>
           <button className="share-btn secondary" onClick={handleShareChat}>
-            Send to Friends
+            {t('share.friends')}
           </button>
         </div>
 
-        <p className="referral-hint">Friends who join via your link get 1 week of Pro!</p>
+        <p className="referral-hint">{t('share.hint')}</p>
       </div>
     </div>
   );

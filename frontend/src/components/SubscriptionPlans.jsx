@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import useStore from '../store/useStore';
 import apiClient from '../api/client';
+import { useTranslation } from 'react-i18next';
 import { Check, Star, Shield, Zap, ArrowLeft, X, Clock, ChevronDown, ChevronUp, Users, AlertCircle, Copy, CheckCircle } from 'lucide-react';
 import './SubscriptionPlans.css';
 
@@ -10,6 +11,7 @@ const PLAN_COLORS = { free: '#adb5bd', pro: '#ffd43b', admin: '#748ffc' };
 
 // ─── Admin Panel ──────────────────────────────────────────────────────
 const AdminPanel = () => {
+  const { t } = useTranslation();
   const { user } = useStore();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -49,7 +51,7 @@ const AdminPanel = () => {
     <div className="admin-panel">
       <button className="admin-toggle" onClick={() => setOpen(o => !o)}>
         <Shield size={16} />
-        Admin Panel
+        {t('header.admin')} Panel
         {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
 
@@ -77,8 +79,8 @@ const AdminPanel = () => {
           </div>
           {grantMsg && <p className="admin-msg">{grantMsg}</p>}
 
-          <h3><Users size={14} /> Users ({users.length})</h3>
-          {loading ? <p>Loading...</p> : (
+          <h3><Users size={14} /> {t('subscription.users', 'Users')} ({users.length})</h3>
+          {loading ? <p>{t('common.loading')}</p> : (
             <div className="admin-users-table">
               <div className="admin-table-header">
                 <span>ID</span><span>Name</span><span>Plan</span><span>Seen</span>
@@ -101,6 +103,7 @@ const AdminPanel = () => {
 
 // ─── Subscription status banner ───────────────────────────────────────
 const StatusBanner = ({ status, onCancel }) => {
+  const { t } = useTranslation();
   if (!status || status.plan === 'free') return null;
 
   const isAdmin = status.plan === 'admin' || status.is_admin;
@@ -112,18 +115,18 @@ const StatusBanner = ({ status, onCancel }) => {
       <div className="status-info">
         {isAdmin ? <Shield size={18} /> : <Star size={18} />}
         <div>
-          <strong>{isAdmin ? '👑 Admin — Unlimited' : `⭐ ${status.plan_name || 'Pro'} активен`}</strong>
+          <strong>{isAdmin ? `👑 ${t('subscription.admin')} — Unlimited` : `⭐ ${t('subscription.pro')} ${t('subscription.active')}`}</strong>
           {expires && !isAdmin && (
             <span className="expires-at">
-              <Clock size={12} /> {isCancelled ? 'Доступ до' : 'Продление'} {expires}
+              <Clock size={12} /> {isCancelled ? t('subscription.expires') : t('subscription.renewable')} {expires}
             </span>
           )}
-          {isCancelled && <span className="cancelled-tag">Отмена запланирована</span>}
+          {isCancelled && <span className="cancelled-tag">{t('subscription.cancelled')}</span>}
         </div>
       </div>
       {!isAdmin && !isCancelled && (
         <button className="cancel-btn" onClick={onCancel}>
-          <X size={14} /> Отменить
+          <X size={14} /> {t('common.cancel')}
         </button>
       )}
     </div>
@@ -133,6 +136,7 @@ const StatusBanner = ({ status, onCancel }) => {
 
 // ─── TON Payment Modal ────────────────────────────────────────────────
 const TonModal = ({ invoice, onCheck, onCancel, polling }) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(null);
 
   const handleCopy = (text, field) => {
@@ -149,8 +153,8 @@ const TonModal = ({ invoice, onCheck, onCancel, polling }) => {
         <button className="ton-modal-close" onClick={onCancel}><X size={20} /></button>
         <div className="ton-modal-header">
           <div className="ton-icon-large">💎</div>
-          <h2>Оплата через TON</h2>
-          <p>Отправьте точную сумму на адрес ниже</p>
+          <h2>{t('subscription.ton_title', 'Payment via TON')}</h2>
+          <p>{t('subscription.ton_desc', 'Send exact amount to address below')}</p>
         </div>
 
         <div className="ton-modal-body">
@@ -188,9 +192,9 @@ const TonModal = ({ invoice, onCheck, onCancel, polling }) => {
 
         <div className="ton-modal-footer">
           <button className="ton-check-btn" disabled={polling} onClick={onCheck}>
-            {polling ? 'Проверка...' : 'Я оплатил, проверить'}
+            {polling ? t('common.loading') : t('subscription.ton_check', 'I paid, check now')}
           </button>
-          <p className="ton-poll-hint">Мы проверяем сеть каждые 30 секунд</p>
+          <p className="ton-poll-hint">{t('subscription.ton_poll_hint', 'We check every 30 seconds')}</p>
         </div>
       </div>
     </div>
@@ -199,6 +203,7 @@ const TonModal = ({ invoice, onCheck, onCancel, polling }) => {
 
 // ─── Main component ───────────────────────────────────────────────────
 const SubscriptionPlans = ({ onBack }) => {
+  const { t } = useTranslation();
   const { user, login } = useStore();
   const [plans, setPlans] = useState([]);
   const [status, setStatus] = useState(null);
@@ -234,7 +239,7 @@ const SubscriptionPlans = ({ onBack }) => {
     }
   }, []);
 
-  useEffect(() => { 
+  useEffect(() => {
     fetchAll();
     // Check for ?success=true (Stripe redirect — kept for compatibility)
     const params = new URLSearchParams(window.location.search);
@@ -266,10 +271,10 @@ const SubscriptionPlans = ({ onBack }) => {
           setStatus(info);
           setShowSuccess(true);
           if (window.Telegram?.WebApp?.initData) {
-            login(window.Telegram.WebApp.initData).catch(() => {});
+            login(window.Telegram.WebApp.initData).catch(() => { });
           }
         }
-      } catch {}
+      } catch { }
       if (checks >= MAX_CHECKS) {
         clearInterval(interval);
         setPolling(false);
@@ -287,6 +292,10 @@ const SubscriptionPlans = ({ onBack }) => {
       setPurchasing(null);
       setPolling(true);
       showToast('Проверьте чат Telegram — счёт отправлен. Оплатите там, и план активируется автоматически.', 'info');
+    }
+    catch (e) {
+      setPurchasing(null);
+      showToast(`Ошибка Stars: ${e.message}`, 'error');
     }
   };
 
@@ -314,7 +323,7 @@ const SubscriptionPlans = ({ onBack }) => {
         setShowSuccess(true);
         await fetchAll();
         if (window.Telegram?.WebApp?.initData) {
-          login(window.Telegram.WebApp.initData).catch(() => {});
+          login(window.Telegram.WebApp.initData).catch(() => { });
         }
       } else {
         showToast('Платеж пока не найден. Подождите 30-60 секунд после отправки.', 'info');
@@ -333,7 +342,7 @@ const SubscriptionPlans = ({ onBack }) => {
       setCancelConfirm(false);
       await fetchAll();
       if (window.Telegram?.WebApp?.initData) {
-        await login(window.Telegram.WebApp.initData).catch(() => {});
+        await login(window.Telegram.WebApp.initData).catch(() => { });
       }
     } catch (e) {
       alert(`Ошибка отмены: ${e.message}`);
@@ -345,7 +354,7 @@ const SubscriptionPlans = ({ onBack }) => {
       const res = await apiClient.getBillingHistory();
       setHistory(res.history || []);
       setShowHistory(true);
-    } catch {}
+    } catch { }
   };
 
   if (loading) {
@@ -353,9 +362,9 @@ const SubscriptionPlans = ({ onBack }) => {
       <div className="subscription-container">
         <div className="sub-header">
           <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-          <h1>Подписка</h1>
+          <h1>{t('header.subscription')}</h1>
         </div>
-        <div className="sub-loading">Загрузка...</div>
+        <div className="sub-loading">{t('common.loading')}</div>
       </div>
     );
   }
@@ -366,7 +375,7 @@ const SubscriptionPlans = ({ onBack }) => {
     <div className="subscription-container">
       <div className="sub-header">
         <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
-        <h1>Подписка</h1>
+        <h1>{t('header.subscription')}</h1>
         {isAdmin && <span className="admin-crown">👑</span>}
       </div>
 
@@ -392,9 +401,9 @@ const SubscriptionPlans = ({ onBack }) => {
       {showSuccess && (
         <div className="success-celebration">
           <div className="confetti-wrap">✨ 🎊 💎 🎊 ✨</div>
-          <h2>Добро пожаловать в Pro!</h2>
-          <p>Ваша подписка успешно активирована. Все возможности открыты.</p>
-          <button onClick={() => setShowSuccess(false)}>Отлично!</button>
+          <h2>{t('subscription.success_title', 'Welcome to Pro!')}</h2>
+          <p>{t('subscription.success_desc', 'Your subscription is active. All features unlocked.')}</p>
+          <button onClick={() => setShowSuccess(false)}>{t('common.done')}</button>
         </div>
       )}
       {/* Toast notification */}
@@ -443,11 +452,11 @@ const SubscriptionPlans = ({ onBack }) => {
                   <Icon size={28} color={color} fill={plan.id !== 'free' ? color : 'none'} />
                 </div>
 
-                <h2 className="plan-name">{plan.name}</h2>
+                <h2 className="plan-name">{t(`subscription.${plan.id}`)}</h2>
                 <div className="plan-price">
                   {plan.price_monthly === 0
-                    ? <span className="free-tag">Бесплатно</span>
-                    : <><span className="price-amount">${plan.price_monthly}</span><span className="price-period">/мес</span></>
+                    ? <span className="free-tag">{t('subscription.free')}</span>
+                    : <><span className="price-amount">${plan.price_monthly}</span><span className="price-period">/{t('subscription.monthly_short', 'mo')}</span></>
                   }
                 </div>
 
@@ -483,11 +492,11 @@ const SubscriptionPlans = ({ onBack }) => {
 
                 <div className="plan-actions">
                   {isCurrent ? (
-                    <button className="subscribe-btn current" disabled>✓ Текущий план</button>
+                    <button className="subscribe-btn current" disabled>✓ {t('subscription.current')}</button>
                   ) : plan.id === 'free' ? (
                     <button className="subscribe-btn" disabled={isBuying}
                       onClick={() => handleSubscribeStars(plan.id)}>
-                      Выбрать бесплатно
+                      {t('subscription.select_free', 'Select Free')}
                     </button>
                   ) : (
                     <>
@@ -499,14 +508,14 @@ const SubscriptionPlans = ({ onBack }) => {
                         onClick={() => handleSubscribeStars(plan.id, 'monthly')}
                       >
                         <Star size={16} fill="#ffd43b" />
-                        {isBuying ? 'Отправка...' : polling ? 'Ожидание оплаты...' : '450 Stars / месяц'}
+                        {isBuying ? t('common.saving') : polling ? t('subscription.processing') : `450 Stars / ${t('subscription.monthly')}`}
                       </button>
                       <button
                         className="stars-btn yearly"
                         disabled={isBuying || polling}
                         onClick={() => handleSubscribeStars(plan.id, 'yearly')}
                       >
-                        <Star size={14} fill="#ffd43b" /> 3000 Stars / год (скидка 44%)
+                        <Star size={14} fill="#ffd43b" /> 3000 Stars / {t('subscription.yearly')} ({t('subscription.discount', 'discount')} 44%)
                       </button>
 
                       {/* TON Payment Option */}
@@ -515,7 +524,7 @@ const SubscriptionPlans = ({ onBack }) => {
                         disabled={isBuying || polling || tonPolling}
                         onClick={() => handleSubscribeTon(plan.id, 'monthly')}
                       >
-                        💎 Оплатить TON
+                        💎 {t('subscription.pay_ton', 'Pay via TON')}
                       </button>
                     </>
                   )}
@@ -538,24 +547,24 @@ const SubscriptionPlans = ({ onBack }) => {
       <div className="history-section">
         <button className="history-toggle" onClick={showHistory ? () => setShowHistory(false) : fetchHistory}>
           {showHistory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          История платежей
+          {t('subscription.history', 'Payment History')}
         </button>
         {showHistory && (
           <div className="history-list">
             {history.length === 0
               ? <p className="no-history">История пуста</p>
               : history.map((h, i) => (
-                  <div key={i} className="history-item">
-                    <div className="history-main">
-                      <span className={`plan-tag ${h.plan_id}`}>{h.plan_name || h.plan_id}</span>
-                      <span className="history-provider">{h.payment_provider === 'stripe' ? '💳 Card' : '⭐ Stars'}</span>
-                    </div>
-                    <div className="history-meta">
-                      <span className="history-status">{h.status}</span>
-                      <span className="history-date">{new Date(h.created_at).toLocaleDateString('ru-RU')}</span>
-                    </div>
+                <div key={i} className="history-item">
+                  <div className="history-main">
+                    <span className={`plan-tag ${h.plan_id}`}>{h.plan_name || h.plan_id}</span>
+                    <span className="history-provider">{h.payment_provider === 'stripe' ? '💳 Card' : '⭐ Stars'}</span>
                   </div>
-                ))
+                  <div className="history-meta">
+                    <span className="history-status">{h.status}</span>
+                    <span className="history-date">{new Date(h.created_at).toLocaleDateString('ru-RU')}</span>
+                  </div>
+                </div>
+              ))
             }
           </div>
         )}

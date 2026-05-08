@@ -1,0 +1,114 @@
+{
+  "common": {
+    "back": "Back",
+    "save": "Save",
+    "saving": "Saving...",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "error": "Error",
+    "done": "Done",
+    "next": "Next",
+    "choose_topics": "Choose Topics",
+    "choose_topics_desc": "Select categories for study",
+    "all": "All",
+    "none": "None",
+    "selected": "Selected",
+    "questions": "questions"
+  },
+  "header": {
+    "studied": "Studied",
+    "learning_mode": "Learning Mode",
+    "settings": "Settings",
+    "resume": "Resume",
+    "subscription": "Subscription",
+    "admin": "Admin",
+    "more": "More"
+  },
+  "modes": {
+    "swipe": "Swipe",
+    "test": "Test",
+    "bug_hunting": "Bug Hunting",
+    "blitz": "Blitz",
+    "mock_interview": "Mock Interview",
+    "concept_linker": "Concept Linker",
+    "code_completion": "Code"
+  },
+  "referral": {
+    "title": "Invite Friends",
+    "desc": "Get 7 days of PRO for every friend who subscribes!",
+    "copied": "Link copied!",
+    "invited": "Invited",
+    "paid": "Paid",
+    "pro_days": "PRO Days"
+  },
+  "explanation": {
+    "title": "Explanation",
+    "theory": "Theory",
+    "usage": "Where it's used",
+    "example": "Code Example",
+    "points": "Key Points"
+  },
+  "auth": {
+    "connecting": "Connecting to Telegram...",
+    "signing_in": "Signing you in...",
+    "startup_error": "Startup Failed",
+    "restart": "Restart"
+  },
+  "completion": {
+    "title": "Great Job!",
+    "desc": "You've reviewed all available questions",
+    "choose_other": "Choose other topics",
+    "share": "Share results"
+  },
+  "share": {
+    "title": "Session Complete!",
+    "subtitle": "You're becoming a {{language}} master",
+    "text": "🚀 I'm crushing my {{language}} interviews! Streak: {{streak}} days, Knowledge: {{known}} concepts. Better than {{rank}}% of devs!",
+    "streak": "Day Streak",
+    "concepts": "Concepts",
+    "percentile": "Top {{rank}}%",
+    "dev_week": "of devs this week",
+    "story": "Share to Story",
+    "friends": "Send to Friends",
+    "hint": "Friends who join via your link get 1 week of Pro!"
+  },
+  "subscription": {
+    "plans": "Subscription Plans",
+    "current": "Current Plan",
+    "free": "Free",
+    "pro": "Pro",
+    "admin": "Admin",
+    "monthly": "Monthly",
+    "monthly_short": "mo",
+    "yearly": "Yearly",
+    "active": "Active",
+    "expires": "Expires",
+    "cancelled": "Cancelled",
+    "renewable": "Renewable",
+    "upgrade": "Upgrade Now",
+    "stars": "Telegram Stars",
+    "ton": "TON Crypto",
+    "ton_title": "Payment via TON",
+    "ton_desc": "Send exact amount to address below",
+    "ton_check": "I paid, check now",
+    "ton_poll_hint": "We check every 30 seconds",
+    "processing": "Processing payment...",
+    "success_title": "Welcome to Pro!",
+    "success_desc": "Your subscription is active. All features unlocked.",
+    "select_free": "Select Free",
+    "discount": "discount",
+    "history": "Payment History",
+    "users": "Users",
+    "pay_ton": "Pay via TON",
+    "junior": "Junior",
+    "middle": "Middle",
+    "senior": "Senior"
+  },
+  "card": {
+    "tap_for_answer": "Tap for answer",
+    "short_answer": "Short answer:",
+    "dont_know": "Don't know",
+    "know": "Know"
+  }
+}

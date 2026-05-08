@@ -1,21 +1,24 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import Header from './components/Header';
 import QuestionCard from './components/QuestionCard';
 import SwipeButtons from './components/SwipeButtons';
 import TestMode from './components/TestMode';
 import BugHuntingMode from './components/BugHuntingMode';
 import BlitzMode from './components/BlitzMode';
-import MockInterviewMode from './components/MockInterviewMode';
 import ConceptLinker from './components/ConceptLinker';
 import CodeCompletionMode from './components/CodeCompletionMode';
-import ResumeAnalyzer from './components/ResumeAnalyzer';
 import ExplanationModal from './components/ExplanationModal';
-import SubscriptionPlans from './components/SubscriptionPlans';
-import AdminPanel from './components/AdminPanel';
 import ShareCard from './components/ShareCard';
 import { SkeletonCard } from './components/Skeleton';
-import useStore from './store/useStore';
+
+// Lazy load heavy/optional components
+const MockInterviewMode = lazy(() => import('./components/MockInterviewMode'));
+const ResumeAnalyzer = lazy(() => import('./components/ResumeAnalyzer'));
+const SubscriptionPlans = lazy(() => import('./components/SubscriptionPlans'));
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
+const CategorySelection = lazy(() => import('./components/CategorySelection'));
 import { CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import './App.css';
 
 function getTelegramInitData() {
@@ -65,6 +68,7 @@ function App() {
     switchLanguage,
     stats,
   } = useStore();
+  const { t } = useTranslation();
 
   const [initState, setInitState] = useState('waiting_telegram');
   const [screen, setScreen] = useState('category');
@@ -131,7 +135,7 @@ function App() {
     return (
       <div className="app-loading">
         <SkeletonCard />
-        <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>Connecting to Telegram...</p>
+        <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>{t('auth.connecting')}</p>
       </div>
     );
   }
@@ -140,7 +144,7 @@ function App() {
     return (
       <div className="app-loading">
         <SkeletonCard />
-        <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>Signing you in...</p>
+        <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>{t('auth.signing_in')}</p>
       </div>
     );
   }
@@ -148,13 +152,13 @@ function App() {
   if (initState === 'error') {
     return (
       <div className="app-loading">
-        <p style={{ fontSize: 16, fontWeight: 600 }}>Ошибка запуска приложения</p>
+        <p style={{ fontSize: 16, fontWeight: 600 }}>{t('auth.startup_error')}</p>
         <p style={{ fontSize: 11, opacity: 0.6, marginTop: 8, textAlign: 'center', padding: '0 24px' }}>{authError}</p>
         <button
           onClick={() => window.location.reload()}
           style={{ marginTop: 20, padding: '12px 24px', borderRadius: 12, background: '#5c7cfa', color: '#fff', border: 'none', fontSize: 15, cursor: 'pointer' }}
         >
-          Перезапустить
+          {t('auth.restart')}
         </button>
       </div>
     );
@@ -183,16 +187,16 @@ function App() {
       return (
         <div className="completion-screen">
           <CheckCircle size={64} color="#51cf66" />
-          <h2>Отличная работа!</h2>
-          <p>Вы просмотрели все доступные вопросы</p>
+          <h2>{t('completion.title')}</h2>
+          <p>{t('completion.desc')}</p>
           <button onClick={() => setScreen('category')}>
-            Выбрать другие темы
+            {t('completion.choose_other')}
           </button>
           <button 
             onClick={() => setShowShare(true)}
             style={{ marginTop: 10, background: 'rgba(51, 154, 240, 0.1)', color: '#339af0' }}
           >
-            Поделиться результатом
+            {t('completion.share')}
           </button>
         </div>
       );
@@ -244,7 +248,9 @@ function App() {
         onAdminClick={() => setScreen('admin')}
       />
       <div className="card-container">
-        {renderMode()}
+        <Suspense fallback={<SkeletonCard />}>
+          {renderMode()}
+        </Suspense>
       </div>
       {learningMode === 'swipe' && (
         <SwipeButtons

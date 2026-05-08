@@ -237,6 +237,9 @@ app.post('/api/auth/login', async (req, res) => {
         is_admin: ADMIN_IDS.has(String(user.telegram_id)),
       },
     });
+
+    // Track login
+    metricsService.trackEvent(user.telegram_id, 'user_login', { plan });
   } catch (error) {
     console.error('Error in /auth/login:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -424,7 +427,10 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
 
     // Include questionId in job payload so worker can backfill questions table
     await enqueueJob(type, { questionText, shortAnswer, category, userId, questionId, language });
-    return res.json({ status: 'pending' });
+    res.json({ status: 'pending' });
+
+    // Track generation request
+    metricsService.trackEvent(userId, 'ai_generation_requested', { mode, questionId });
   } catch (err) {
     console.error('Error in /api/generate/:type:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -481,11 +487,16 @@ app.post('/api/questions/swipe',
       const { questionId, status } = req.body;
       const userId = req.userId;
       await pool.query(
-        `INSERT INTO user_progress (user_id, question_id, status, updated_at) VALUES ($1,$2,$3,CURRENT_TIMESTAMP)
-         ON CONFLICT (user_id, question_id) DO UPDATE SET status=EXCLUDED.status, updated_at=CURRENT_TIMESTAMP`,
+        `INSERT INTO user_progress (user_id, question_id, status, updated_at)
+         VALUES ($1,$2,$3,CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id, question_id) DO UPDATE
+           SET status=EXCLUDED.status, updated_at=CURRENT_TIMESTAMP`,
         [userId, questionId, status]
       );
       res.json({ success: true });
+
+      // Track swipe
+      metricsService.trackEvent(userId, 'question_swiped', { questionId, status });
     } catch { res.status(500).json({ error: 'Internal server error' }); }
   }
 );
@@ -624,6 +635,9 @@ app.post('/api/questions/explain', async (req, res) => {
     pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [explanation, questionId]).catch(() => { });
 
     res.json({ explanation, cached: false });
+
+    // Track explanation request
+    metricsService.trackEvent(userId, 'ai_explanation_requested', { questionId, cached: false });
   } catch (error) {
     console.error('Error in /questions/explain:', error.message);
     // Return the real error message — helps diagnose model/key issues in production
@@ -819,8 +833,12 @@ app.get('/api/billing/history', async (req, res) => {
 
 app.delete('/api/billing/subscription', async (req, res) => {
   try {
-    const result = await billingService.cancelSubscription(req.userId);
+    const userId = req.userId;
+    const result = await billingService.cancelSubscription(userId);
     res.json(result);
+
+    // Track cancellation
+    metricsService.trackEvent(userId, 'subscription_cancelled');
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   TrendingUp, Settings, Layout, GraduationCap, Bug,
-  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X
+  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import './Header.css';
@@ -18,7 +18,7 @@ const MODES = [
 ];
 const BOTTOM_VISIBLE = 4;
 
-const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange }) => {
+const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick }) => {
   const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -49,6 +49,9 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
               </button>
               <button className="action-btn" onClick={onResumeClick} type="button"><FileText size={20} /></button>
               <button className="action-btn" onClick={onSettingsClick} type="button"><Settings size={20} /></button>
+              {user?.plan === 'admin' && (
+                <button className="action-btn admin-btn" onClick={onAdminClick} type="button"><ShieldCheck size={20} /></button>
+              )}
             </div>
           </div>
 

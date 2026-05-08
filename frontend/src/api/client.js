@@ -210,6 +210,10 @@ class ApiClient {
     return this.request('/admin/users');
   }
 
+  async getAdminMetrics() {
+    return this.request('/admin/metrics');
+  }
+
   // sendStarsInvoice: triggers Bot API sendInvoice, returns { sent: true }
   async sendStarsInvoice(planId, interval = 'monthly') {
     return this.request('/billing/stars/invoice', {

@@ -12,6 +12,7 @@ import ResumeAnalyzer from './components/ResumeAnalyzer';
 import ExplanationModal from './components/ExplanationModal';
 import CategorySelection from './components/CategorySelection';
 import SubscriptionPlans from './components/SubscriptionPlans';
+import AdminPanel from './components/AdminPanel';
 import { SkeletonCard } from './components/Skeleton';
 import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
@@ -153,6 +154,7 @@ function App() {
   if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} />;
   if (screen === 'resume') return <ResumeAnalyzer onBack={() => setScreen('main')} />;
   if (screen === 'subscriptions') return <SubscriptionPlans onBack={() => setScreen('main')} />;
+  if (screen === 'admin') return <AdminPanel onBack={() => setScreen('main')} />;
 
   const renderMode = () => {
     // Non-swipe modes manage their own empty/loading states.
@@ -224,6 +226,7 @@ function App() {
         onResumeClick={() => setScreen('resume')}
         onSubscriptionClick={() => setScreen('subscriptions')}
         onLanguageChange={handleLanguageChange}
+        onAdminClick={() => setScreen('admin')}
       />
       <div className="card-container">
         {renderMode()}

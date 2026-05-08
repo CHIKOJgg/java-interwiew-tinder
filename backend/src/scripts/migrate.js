@@ -238,20 +238,13 @@ const migrations = [
     `
   },
 
-  // ── 014: Events table for analytics ────────────────────────────────
+  // ── 014: Events table enhancement ──────────────────────────────────
   {
-    id: '014_events_table',
+    id: '014_analytics_enhancement',
     sql: `
-      CREATE TABLE IF NOT EXISTS analytics_events (
-        id BIGSERIAL PRIMARY KEY,
-        user_id BIGINT,
-        event_name VARCHAR(60),
-        properties JSONB,
-        latency_ms INT,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      );
-      CREATE INDEX IF NOT EXISTS idx_events_name_date ON analytics_events(event_name, created_at);
-      CREATE INDEX IF NOT EXISTS idx_events_user_date ON analytics_events(user_id, created_at);
+      ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS properties JSONB;
+      -- Ensure event_type is our primary filter column
+      CREATE INDEX IF NOT EXISTS idx_analytics_type_date ON analytics_events(event_type, created_at);
     `
   }
 ];

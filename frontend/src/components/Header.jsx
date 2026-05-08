@@ -1,31 +1,32 @@
-import React, { useState, useCallback } from 'react';
 import {
   TrendingUp, Settings, Layout, GraduationCap, Bug,
-  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck
+  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, Languages
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import './Header.css';
 
 const LANG_LABELS = { Java: '☕ Java', Python: '🐍 Python', TypeScript: '🔷 TS' };
 const MODES = [
-  { id: 'swipe', icon: Layout, title: 'Карточки', short: 'Свайп' },
-  { id: 'test', icon: GraduationCap, title: 'Тест', short: 'Тест' },
-  { id: 'bug-hunting', icon: Bug, title: 'Охота на баги', short: 'Баги' },
-  { id: 'blitz', icon: Zap, title: 'Блиц', short: 'Блиц' },
-  { id: 'mock-interview', icon: Mic, title: 'Мок-интервью', short: 'Интервью' },
-  { id: 'concept-linker', icon: Link, title: 'Связи понятий', short: 'Связи' },
-  { id: 'code-completion', icon: Braces, title: 'Код', short: 'Код' },
+  { id: 'swipe', icon: Layout, titleKey: 'modes.swipe', shortKey: 'modes.swipe' },
+  { id: 'test', icon: GraduationCap, titleKey: 'modes.test', shortKey: 'modes.test' },
+  { id: 'bug-hunting', icon: Bug, titleKey: 'modes.bug_hunting', shortKey: 'modes.bug_hunting' },
+  { id: 'blitz', icon: Zap, titleKey: 'modes.blitz', shortKey: 'modes.blitz' },
+  { id: 'mock-interview', icon: Mic, titleKey: 'modes.mock_interview', shortKey: 'modes.mock_interview' },
+  { id: 'concept-linker', icon: Link, titleKey: 'modes.concept_linker', shortKey: 'modes.concept_linker' },
+  { id: 'code-completion', icon: Braces, titleKey: 'modes.code_completion', shortKey: 'modes.code_completion' },
 ];
 const BOTTOM_VISIBLE = 4;
 
 const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick }) => {
+  const { t, i18n } = useTranslation();
   const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
   const hasCat = selectedCategories?.length > 0 && (categoryStats?.total || 0) > 0;
   const catProgress = hasCat ? (categoryStats.known / categoryStats.total) * 100 : 0;
-  const topicLabel = selectedCategories?.length === 1 ? selectedCategories[0] : `${selectedCategories?.length} тем`;
+  const topicLabel = selectedCategories?.length === 1 ? selectedCategories[0] : `${selectedCategories?.length} ${t('common.selected')}`;
 
   const handleLang = useCallback((e) => onLanguageChange?.(e.target.value), [onLanguageChange]);
   const isPremium = user?.plan && user.plan !== 'free';
@@ -40,6 +41,11 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
     }
   }, [stats.streak, stats.streakIncreased]);
 
+  const toggleAppLanguage = () => {
+    const nextLang = i18n.language === 'ru' ? 'en' : 'ru';
+    i18n.changeLanguage(nextLang);
+  };
+
   return (
     <>
       <header className="header">
@@ -53,6 +59,9 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
               </select>
             </div>
             <div className="header-actions">
+              <button className="action-btn" onClick={toggleAppLanguage} type="button">
+                <Languages size={20} />
+              </button>
               <button className={`action-btn ${isPremium ? 'premium' : ''}`} onClick={onSubscriptionClick} type="button">
                 <Star size={20} fill={isPremium ? '#fff' : 'none'} />
               </button>
@@ -67,7 +76,7 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
           <div className="stats-container">
             <div className="stats-row">
               <span className="stats-text">
-                Изучено: <strong>{stats.known}</strong>/{stats.totalQuestions}
+                {t('header.studied')}: <strong>{stats.known}</strong>/{stats.totalQuestions}
                 {isPremium && <span className="plan-badge"> · {user.plan === 'admin' ? '👑' : '⭐'} {user.plan}</span>}
                 {stats.streak > 0 && (
                   <span className="streak-badge" title={`Longest: ${stats.longestStreak} days`}>
@@ -95,15 +104,15 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
       <div className={`mode-drawer ${drawerOpen ? 'open' : ''}`}>
         <div className="drawer-handle" />
         <div className="drawer-header">
-          <span>Режим обучения</span>
+          <span>{t('header.learning_mode')}</span>
           <button className="drawer-close" onClick={() => setDrawerOpen(false)} type="button"><X size={18} /></button>
         </div>
         <div className="drawer-modes">
-          {MODES.map(({ id, icon: Icon, title }) => (
+          {MODES.map(({ id, icon: Icon, titleKey }) => (
             <button key={id} className={`drawer-mode-btn ${learningMode === id ? 'active' : ''}`}
               onClick={() => { setLearningMode(id); setDrawerOpen(false); }} type="button">
               <div className="drawer-mode-icon"><Icon size={22} /></div>
-              <span className="drawer-mode-label">{title}</span>
+              <span className="drawer-mode-label">{t(titleKey)}</span>
               {learningMode === id && <div className="drawer-active-dot" />}
             </button>
           ))}
@@ -111,16 +120,16 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
       </div>
 
       <nav className="bottom-nav">
-        {MODES.slice(0, BOTTOM_VISIBLE).map(({ id, icon: Icon, short }) => (
+        {MODES.slice(0, BOTTOM_VISIBLE).map(({ id, icon: Icon, shortKey }) => (
           <button key={id} className={`bottom-nav-item ${learningMode === id ? 'active' : ''}`}
             onClick={() => setLearningMode(id)} type="button">
-            <Icon size={22} /><span>{short}</span>
+            <Icon size={22} /><span>{t(shortKey)}</span>
           </button>
         ))}
         <button className={`bottom-nav-item ${extraActive ? 'active' : ''}`}
           onClick={() => setDrawerOpen(p => !p)} type="button">
           <ChevronUp size={22} style={{ transform: drawerOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }} />
-          <span>Ещё</span>
+          <span>{t('header.more')}</span>
         </button>
       </nav>
     </>

@@ -27,6 +27,16 @@ export function SkeletonText({ lines = 3, width }) {
   );
 }
 
+export function SkeletonGrid({ count = 6 }) {
+  return (
+    <div className="skeleton-grid">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="skeleton-grid-item shimmer" />
+      ))}
+    </div>
+  );
+}
+
 export function SkeletonExplanation() {
   return (
     <div className="skeleton-explanation">

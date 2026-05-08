@@ -14,6 +14,7 @@ import { sendStarsInvoice, answerPreCheckout, sendTelegramMessage, activateStars
 import { createTonInvoice, getUserPendingInvoice, pollPendingInvoices } from './services/billing/tonService.js';
 import { metricsService } from './services/metricsService.js';
 import { referralService } from './services/referralService.js';
+import { updateMastery, getDueCount } from './services/questionService.js';
 import jwt from 'jsonwebtoken';
 import { authMiddleware, requireAdmin, ADMIN_IDS } from './middleware/auth.js';
 import redis, { isConnected as isRedisConnected } from './config/redis.js';
@@ -187,7 +188,7 @@ app.post('/api/auth/login', async (req, res) => {
             `INSERT INTO user_subscriptions (user_id, plan_id, status, expires_at, payment_id, payment_provider)
              VALUES ($1, 'pro', 'active', NULL, 'admin_grant', 'system')
              ON CONFLICT DO NOTHING`,
-            [user.telegram_id]
+          [user.telegram_id]
           ).catch(() => { });
         });
         await pool.query(
@@ -362,34 +363,36 @@ app.get('/api/questions/feed', async (req, res) => {
       ? 'AND q.category = ANY($cat)'
       : '';
 
-    // Build query with named-position params to handle dynamic cat filter
-    let query, params;
-    if (selectedCategories.length > 0) {
-      query = `
-        SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
-               q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language
-        FROM questions q
-        LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
-        WHERE (up.id IS NULL OR up.status = 'unknown')
-          AND q.language = $2
-          AND q.category = ANY($3)
-          ${modeFilter}
-        ORDER BY RANDOM() LIMIT $4`;
-      params = [userId, language, selectedCategories, limit];
-    } else {
-      query = `
-        SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
-               q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language
-        FROM questions q
-        LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
-        WHERE (up.id IS NULL OR up.status = 'unknown')
-          AND q.language = $2
-          ${modeFilter}
-        ORDER BY RANDOM() LIMIT $3`;
-      params = [userId, language, limit];
-    }
+    // Spaced Repetition Ordering logic:
+    // 1. Questions due for review (next_review <= today)
+    // 2. Never-seen questions
+    // 3. Questions seen but not yet due (pushed to end)
+    const baseQuery = `
+      SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
+             q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language,
+             COALESCE(qm.next_review, '1970-01-01'::DATE) as review_date
+      FROM questions q
+      LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+      LEFT JOIN question_mastery qm ON q.id = qm.question_id AND qm.user_id = $1
+      WHERE (up.id IS NULL OR up.status = 'unknown' OR qm.next_review <= CURRENT_DATE)
+        AND q.language = $2
+        ${selectedCategories.length > 0 ? 'AND q.category = ANY($3)' : ''}
+        ${modeFilter}
+      ORDER BY 
+        CASE 
+          WHEN qm.next_review <= CURRENT_DATE THEN 0  -- Due now
+          WHEN up.id IS NULL THEN 1                  -- New
+          ELSE 2                                     -- Seen but not due
+        END ASC,
+        review_date ASC,
+        RANDOM() 
+      LIMIT ${selectedCategories.length > 0 ? '$4' : '$3'}`;
+    
+    params = selectedCategories.length > 0 
+      ? [userId, language, selectedCategories, limit] 
+      : [userId, language, limit];
 
-    const result = await pool.query(query, params);
+    const result = await pool.query(baseQuery, params);
 
     // If no questions found, return empty array with helpful meta
     // (don't 500 — TypeScript or newly added languages may legitimately have 0 questions)
@@ -552,6 +555,9 @@ app.post('/api/questions/swipe',
       // Update streak on every swipe
       const streakData = await updateStreak(userId);
 
+      // Spaced Repetition: update mastery
+      await updateMastery(userId, questionId, status === 'known' ? 5 : 0).catch(() => {});
+
       res.json({ success: true, streak: streakData });
 
       // Track swipe
@@ -559,6 +565,23 @@ app.post('/api/questions/swipe',
     } catch { res.status(500).json({ error: 'Internal server error' }); }
   }
 );
+
+// ─── Undo Swipe ────────────────────────────────────────────────────────
+app.delete('/api/questions/swipe/:questionId', async (req, res) => {
+  try {
+    const { questionId } = req.params;
+    const userId = req.userId;
+    // We only allow deleting the record to revert the 'known'/'unknown' status.
+    // We don't revert streaks here to avoid abuse, but we remove the progress.
+    await pool.query(
+      'DELETE FROM user_progress WHERE user_id = $1 AND question_id = $2',
+      [userId, questionId]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─── Test answer ──────────────────────────────────────────────────────
 app.post('/api/questions/test-answer',
@@ -939,39 +962,6 @@ app.get('/api/billing/ton/check', async (req, res) => {
   }
 });
 
-
-validateBody({ planId: { required: true } }),
-  async (req, res) => {
-    try {
-      // Redirect legacy calls to checkout or return error
-      const result = await billingService.createCheckoutSession(req.userId, req.body.planId);
-      res.json(result);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-
-app.get('/api/subscription/history', async (req, res) => {
-  try {
-    const history = await billingService.getHistory(req.userId);
-    res.json({ history });
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
-});
-
-// Cancel subscription
-app.post('/api/subscription/cancel',
-  async (req, res) => {
-    try {
-      const result = await billingService.cancelSubscription(req.userId);
-      res.json(result);
-    } catch (err) {
-      console.error('Cancel subscription error:', err.message);
-      res.status(500).json({ error: err.message || 'Internal server error' });
-    }
-  }
-);
-
 // ─── Admin Endpoints ──────────────────────────────────────────────────
 
 // Grant plan (admin-only)
@@ -1141,6 +1131,20 @@ app.get('/api/stats', async (req, res) => {
     console.error('Stats error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+app.get('/api/questions/due-count', async (req, res) => {
+  try {
+    const count = await getDueCount(req.userId, req.query.language || 'Java');
+    res.json({ count });
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
+});
+
+app.post('/api/questions/mastery', validateBody({ questionId: { required: true }, quality: { required: true } }), async (req, res) => {
+  try {
+    const result = await updateMastery(req.userId, req.body.questionId, req.body.quality);
+    res.json(result);
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
 // ─── Server ───────────────────────────────────────────────────────────

@@ -246,6 +246,17 @@ const migrations = [
       -- Ensure event_type is our primary filter column
       CREATE INDEX IF NOT EXISTS idx_analytics_type_date ON analytics_events(event_type, created_at);
     `
+  },
+
+  // ── 015: User streaks ─────────────────────────────────────────────
+  {
+    id: '015_user_streaks',
+    sql: `
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS current_streak INT DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity_date DATE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS longest_streak INT DEFAULT 0;
+      CREATE INDEX IF NOT EXISTS idx_users_streak_activity ON users(last_activity_date);
+    `
   }
 ];
 

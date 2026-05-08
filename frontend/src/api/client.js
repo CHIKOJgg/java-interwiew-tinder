@@ -254,6 +254,10 @@ class ApiClient {
       method: 'DELETE'
     });
   }
+
+  async getPercentile(score) {
+    return this.request(`/stats/percentile?language=${this.language}&score=${score}`);
+  }
 }
 
 export default new ApiClient();

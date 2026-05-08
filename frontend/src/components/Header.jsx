@@ -31,6 +31,15 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
   const isPremium = user?.plan && user.plan !== 'free';
   const extraActive = MODES.slice(BOTTOM_VISIBLE).some(m => m.id === learningMode);
 
+  const [showStreakAnim, setShowStreakAnim] = useState(false);
+  useEffect(() => {
+    if (stats.streakIncreased) {
+      setShowStreakAnim(true);
+      const t = setTimeout(() => setShowStreakAnim(false), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [stats.streak, stats.streakIncreased]);
+
   return (
     <>
       <header className="header">
@@ -60,6 +69,12 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
               <span className="stats-text">
                 Изучено: <strong>{stats.known}</strong>/{stats.totalQuestions}
                 {isPremium && <span className="plan-badge"> · {user.plan === 'admin' ? '👑' : '⭐'} {user.plan}</span>}
+                {stats.streak > 0 && (
+                  <span className="streak-badge" title={`Longest: ${stats.longestStreak} days`}>
+                    🔥 {stats.streak}
+                    {showStreakAnim && <span className="streak-anim">+1</span>}
+                  </span>
+                )}
               </span>
               {hasCat && (
                 <span className="topic-counter" title={selectedCategories?.join(', ')}>

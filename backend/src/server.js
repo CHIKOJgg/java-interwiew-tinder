@@ -374,7 +374,8 @@ app.get('/api/questions/feed', async (req, res) => {
       FROM questions q
       LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
       LEFT JOIN question_mastery qm ON q.id = qm.question_id AND qm.user_id = $1
-      WHERE (up.id IS NULL OR up.status = 'unknown' OR qm.next_review <= CURRENT_DATE)
+      WHERE q.is_active = TRUE 
+        AND (up.id IS NULL OR up.status = 'unknown' OR qm.next_review <= CURRENT_DATE)
         AND q.language = $2
         ${selectedCategories.length > 0 ? 'AND q.category = ANY($3)' : ''}
         ${modeFilter}
@@ -580,6 +581,47 @@ app.delete('/api/questions/swipe/:questionId', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Report Question ───────────────────────────────────────────────────
+app.post('/api/questions/:questionId/report', async (req, res) => {
+  try {
+    const { questionId } = req.params;
+    const { reason, comment } = req.body;
+    const userId = req.userId;
+    
+    await pool.query(
+      'INSERT INTO question_reports (question_id, user_id, reason, comment) VALUES ($1, $2, $3, $4)',
+      [questionId, userId, reason, comment]
+    );
+
+    // Check if question has 5+ unresolved reports
+    const countRes = await pool.query(
+      'SELECT COUNT(*) FROM question_reports WHERE question_id = $1 AND resolved = FALSE',
+      [questionId]
+    );
+    const count = parseInt(countRes.rows[0].count);
+
+    if (count >= 5) {
+      await pool.query('UPDATE questions SET is_active = FALSE WHERE id = $1', [questionId]);
+      
+      // Get question text for notification
+      const qRes = await pool.query('SELECT question_text FROM questions WHERE id = $1', [questionId]);
+      const text = qRes.rows[0]?.question_text || 'Unknown';
+      
+      const adminMsg = `⚠️ Question ${questionId} has 5 reports.\n\nText: "${text}"\nIt has been automatically hidden from the deck. Review at Admin Panel.`;
+      
+      // Send to all admins
+      for (const adminId of ADMIN_IDS) {
+        sendTelegramMessage(adminId, adminMsg).catch(() => {});
+      }
+    }
+
+    res.json({ success: true, count });
+  } catch (err) {
+    console.error('Report error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1021,6 +1063,64 @@ app.post('/api/admin/clear-cache', async (req, res) => {
     await pool.query('DELETE FROM ai_cache');
     res.json({ success: true, message: 'AI Cache cleared' });
   } catch { res.status(500).json({ error: 'Internal server error' }); }
+});
+
+// ─── Admin Moderation ──────────────────────────────────────────────────
+app.get('/api/admin/reports', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT q.id, q.question_text, q.short_answer, q.is_active,
+             COUNT(qr.id) as report_count,
+             json_agg(json_build_object('reason', qr.reason, 'comment', qr.comment, 'created_at', qr.created_at)) as reports
+      FROM questions q
+      JOIN question_reports qr ON q.id = qr.question_id
+      WHERE qr.resolved = FALSE
+      GROUP BY q.id
+      ORDER BY report_count DESC
+    `);
+    res.json({ reports: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/reports/:questionId/approve', async (req, res) => {
+  try {
+    const { questionId } = req.params;
+    await pool.query('UPDATE question_reports SET resolved = TRUE WHERE question_id = $1', [questionId]);
+    await pool.query('UPDATE questions SET is_active = TRUE WHERE id = $1', [questionId]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/questions/:questionId', async (req, res) => {
+  try {
+    const { questionId } = req.params;
+    await pool.query('UPDATE questions SET is_active = FALSE WHERE id = $1', [questionId]);
+    await pool.query('UPDATE question_reports SET resolved = TRUE WHERE question_id = $1', [questionId]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/admin/questions/:questionId', async (req, res) => {
+  try {
+    const { questionId } = req.params;
+    const { question_text, short_answer } = req.body;
+    await pool.query(
+      'UPDATE questions SET question_text = $1, short_answer = $2, is_active = TRUE WHERE id = $3',
+      [question_text, short_answer, questionId]
+    );
+    await pool.query('UPDATE question_reports SET resolved = TRUE WHERE question_id = $1', [questionId]);
+    // Clear cache for this question to reflect updates
+    await pool.query('UPDATE questions SET cached_explanation = NULL, bug_hunting_data = NULL, blitz_data = NULL, code_completion_data = NULL WHERE id = $1', [questionId]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── Viral Percentile Stats ──────────────────────────────────────────

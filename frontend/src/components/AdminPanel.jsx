@@ -14,8 +14,10 @@ import {
 
 const AdminPanel = ({ onBack }) => {
   const [metrics, setMetrics] = useState(null);
+  const [reports, setReports] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editingQuestion, setEditingQuestion] = useState(null);
 
   useEffect(() => {
     fetchMetrics();
@@ -24,8 +26,12 @@ const AdminPanel = ({ onBack }) => {
   const fetchMetrics = async () => {
     try {
       setIsLoading(true);
-      const data = await apiClient.getAdminMetrics();
-      setMetrics(data);
+      const [metricsData, reportsData] = await Promise.all([
+        apiClient.getAdminMetrics(),
+        apiClient.getAdminReports().catch(() => ({ reports: [] }))
+      ]);
+      setMetrics(metricsData);
+      setReports(reportsData.reports || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -102,6 +108,59 @@ const AdminPanel = ({ onBack }) => {
             <span className="stat-value">{activity.mau}</span>
             <span className="stat-label">MAU (30d)</span>
           </div>
+        </div>
+      </section>
+
+      <section className="admin-section moderation-section">
+        <h3>Reported Questions ({reports?.length || 0})</h3>
+        <div className="reports-list">
+          {!reports || reports.length === 0 ? (
+            <p className="no-reports">No pending reports.</p>
+          ) : (
+            reports.map((q) => (
+              <div key={q.id} className="report-item">
+                <div className="report-header-info">
+                  <span className="report-q-id">#{q.id}</span>
+                  <span className="report-count-badge">{q.report_count} flags</span>
+                  {q.is_active === false && <span className="report-hidden-badge">Hidden</span>}
+                </div>
+                
+                {editingQuestion === q.id ? (
+                  <div className="report-edit-form">
+                    <textarea id={`edit-q-${q.id}`} defaultValue={q.question_text} rows={3} />
+                    <textarea id={`edit-a-${q.id}`} defaultValue={q.short_answer} rows={3} />
+                    <div className="report-actions">
+                      <button onClick={async () => {
+                        const newQ = document.getElementById(`edit-q-${q.id}`).value;
+                        const newA = document.getElementById(`edit-a-${q.id}`).value;
+                        await apiClient.updateQuestion(q.id, newQ, newA);
+                        setEditingQuestion(null);
+                        fetchMetrics();
+                      }}>Save & Approve</button>
+                      <button onClick={() => setEditingQuestion(null)} className="btn-secondary">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="report-q-text">{q.question_text}</p>
+                    <div className="report-reasons">
+                      {q.reports.slice(0, 3).map((r, i) => (
+                        <div key={i} className="report-reason-item">
+                          <strong>{r.reason}</strong> {r.comment && `- ${r.comment}`}
+                        </div>
+                      ))}
+                      {q.reports.length > 3 && <div className="report-reason-item">...and {q.reports.length - 3} more</div>}
+                    </div>
+                    <div className="report-actions">
+                      <button onClick={async () => { await apiClient.approveReport(q.id); fetchMetrics(); }} className="btn-success">Approve</button>
+                      <button onClick={() => setEditingQuestion(q.id)} className="btn-secondary">Edit</button>
+                      <button onClick={async () => { await apiClient.deleteQuestion(q.id); fetchMetrics(); }} className="btn-danger">Hide</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </section>
 

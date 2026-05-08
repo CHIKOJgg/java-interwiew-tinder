@@ -262,6 +262,33 @@ class ApiClient {
   async getReferralStats() {
     return this.request('/referrals/stats');
   }
+
+  async reportQuestion(questionId, reason, comment) {
+    return this.request(`/questions/${questionId}/report`, {
+      method: 'POST',
+      body: JSON.stringify({ reason, comment })
+    });
+  }
+
+  // --- Admin ---
+  async getAdminReports() {
+    return this.request('/admin/reports');
+  }
+
+  async approveReport(questionId) {
+    return this.request(`/admin/reports/${questionId}/approve`, { method: 'POST' });
+  }
+
+  async deleteQuestion(questionId) {
+    return this.request(`/admin/questions/${questionId}`, { method: 'DELETE' });
+  }
+
+  async updateQuestion(questionId, question_text, short_answer) {
+    return this.request(`/admin/questions/${questionId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ question_text, short_answer })
+    });
+  }
 }
 
 export default new ApiClient();

@@ -91,6 +91,9 @@ export async function activateStarsSubscription(userId, planId, interval, charge
     await client.query('COMMIT');
     logger.info({ userId, planId, chargeId }, '⭐ Stars subscription activated');
 
+    // Process referral conversion if applicable
+    import('../referralService.js').then(m => m.referralService.processConversion(userId)).catch(() => {});
+
     // Track subscription start
     metricsService.trackEvent(userId, 'subscription_started', { planId, interval, provider: 'stars' });
 

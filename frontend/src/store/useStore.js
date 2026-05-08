@@ -42,10 +42,10 @@ const useStore = create((set, get) => ({
   isLoadingExplanation: false,
 
   // ─── Auth ──────────────────────────────────────────────────────────
-  login: async (initData) => {
+  login: async (initData, referralId) => {
     try {
       set({ isLoading: true });
-      const response = await apiClient.login(initData);
+      const response = await apiClient.login(initData, referralId);
       const { user, token } = response;
       const lang = user.language || 'Java';
       apiClient.setLanguage(lang);

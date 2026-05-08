@@ -1,6 +1,6 @@
-import dotenv from 'dotenv';
 import crypto from 'crypto';
 import pool from '../config/database.js';
+import redis from '../config/redis.js';
 import { getLanguage } from './languageRegistry.js';
 
 dotenv.config();
@@ -115,6 +115,22 @@ function validateParsed(mode, parsed) {
 
 // ─── Cache — read ─────────────────────────────────────────────────────
 async function readCache(clusterId, mode, language) {
+  const redisKey = `ai:${mode}:${language}:${clusterId}`;
+  
+  // 1. Check Redis first
+  if (redis) {
+    try {
+      const cached = await redis.get(redisKey);
+      if (cached) {
+        console.log(`🚀 Redis Cache hit [${mode}/${language}]`);
+        return cached;
+      }
+    } catch (err) {
+      console.warn('Redis cache read error:', err.message);
+    }
+  }
+
+  // 2. Fallback to PostgreSQL
   try {
     const { rows } = await pool.query(
       `SELECT response FROM ai_cache
@@ -122,7 +138,14 @@ async function readCache(clusterId, mode, language) {
        ORDER BY created_at DESC LIMIT 1`,
       [clusterId, mode, PROMPT_VERSION, language]
     );
-    return rows.length > 0 ? rows[0].response : null;
+    const result = rows.length > 0 ? rows[0].response : null;
+    
+    // Backfill Redis if found in DB
+    if (result && redis) {
+      redis.setex(redisKey, 2592000, result).catch(() => {}); // 30 days
+    }
+    
+    return result;
   } catch (err) {
     console.error('Cache read error:', err.message);
     return null;
@@ -144,6 +167,7 @@ async function writeCache(clusterId, mode, language, content, isJson) {
   }
 
   try {
+    // 1. Write to PostgreSQL (permanent)
     await pool.query(
       `INSERT INTO ai_cache (cluster_id, mode, model, prompt_version, language, response)
        VALUES ($1,$2,$3,$4,$5,$6)
@@ -151,6 +175,12 @@ async function writeCache(clusterId, mode, language, content, isJson) {
          SET response=EXCLUDED.response, created_at=CURRENT_TIMESTAMP`,
       [clusterId, mode, MODEL, PROMPT_VERSION, language, content]
     );
+
+    // 2. Write to Redis (fast, 30 days TTL)
+    if (redis) {
+      const redisKey = `ai:${mode}:${language}:${clusterId}`;
+      await redis.setex(redisKey, 2592000, content);
+    }
   } catch (err) {
     console.error('Cache write error:', err.message);
   }
@@ -239,9 +269,28 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
   }
 
   // 2. Dedup concurrent identical requests
+  // Local dedup (same instance)
   if (pendingRequests.has(dedupKey)) {
-    console.log(`⏳ Joining in-flight [${mode}/${language}]`);
+    console.log(`⏳ Joining in-flight [${mode}/${language}] (local)`);
     return pendingRequests.get(dedupKey);
+  }
+
+  // Distributed dedup hint (other instances)
+  // We use a short-lived key in Redis to signal that this is being generated
+  if (redis) {
+    const lockKey = `lock:${dedupKey}`;
+    const isLocked = await redis.get(lockKey);
+    if (isLocked) {
+       console.log(`⏳ Joining in-flight [${mode}/${language}] (distributed wait)`);
+       // Poll for result for 3 seconds max, then fall through to generate if still missing
+       for (let i = 0; i < 6; i++) {
+         await new Promise(r => setTimeout(r, 500));
+         const result = await readCache(clusterId, mode, language);
+         if (result) return isJson ? parseAIResponse(result) : result;
+       }
+    }
+    // Set lock for 60s
+    redis.setex(lockKey, 60, '1').catch(() => {});
   }
 
   // 3. Call AI, validate, cache

@@ -14,6 +14,7 @@ import { createTonInvoice, getUserPendingInvoice, pollPendingInvoices } from './
 import { metricsService } from './services/metricsService.js';
 import jwt from 'jsonwebtoken';
 import { authMiddleware, requireAdmin, ADMIN_IDS } from './middleware/auth.js';
+import redis, { isConnected as isRedisConnected } from './config/redis.js';
 
 dotenv.config();
 
@@ -94,7 +95,14 @@ app.use(sanitizeBody);
 app.use(requestLogger);
 
 // ─── Health ──────────────────────────────────────────────────────────
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/health', async (req, res) => {
+  const redisOk = await isRedisConnected();
+  res.json({ 
+    status: 'ok', 
+    redis: redisOk ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString() 
+  });
+});
 
 // ─── Languages ───────────────────────────────────────────────────────
 app.get('/api/languages', (req, res) => res.json({ languages: getAvailableLanguages() }));

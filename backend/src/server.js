@@ -62,9 +62,9 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
         const { userId, planId } = session.metadata;
         if (userId && planId) {
           await billingService.activateSubscription(
-            userId, 
-            planId, 
-            session.subscription, 
+            userId,
+            planId,
+            session.subscription,
             session.customer
           );
         }
@@ -104,10 +104,10 @@ app.use(requestLogger);
 // ─── Health ──────────────────────────────────────────────────────────
 app.get('/health', async (req, res) => {
   const redisOk = await isRedisConnected();
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     redis: redisOk ? 'connected' : 'disconnected',
-    timestamp: new Date().toISOString() 
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -704,10 +704,10 @@ app.post('/api/billing/stars/create-invoice', async (req, res) => {
   try {
     const { planId } = req.body;
     const userId = req.userId;
-    
+
     // Telegram Stars: 1 month Pro = 250 Stars
     const amount = planId === 'pro' ? 250 : 500;
-    
+
     const response = await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/createInvoiceLink`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -720,10 +720,10 @@ app.post('/api/billing/stars/create-invoice', async (req, res) => {
         prices: [{ label: 'Pro Plan', amount }]
       })
     });
-    
+
     const result = await response.json();
     if (!result.ok) throw new Error(result.description || 'Failed to create invoice link');
-    
+
     res.json({ url: result.result });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -772,11 +772,11 @@ app.post('/api/bot/webhook', async (req, res) => {
     }
   } catch (error) {
     console.error('Webhook processing failed:', error.message);
-    Sentry.captureException(error, { 
-      extra: { 
+    Sentry.captureException(error, {
+      extra: {
         updateId: update.update_id,
         userId: update.message?.from?.id || update.pre_checkout_query?.from?.id
-      } 
+      }
     });
   }
 });
@@ -852,8 +852,8 @@ app.get('/api/billing/ton/check', async (req, res) => {
       fulfilled: false,
       invoiceId: invoice.invoice_id,
       amountTon: parseFloat(invoice.amount_ton),
-      address:   process.env.TON_WALLET_ADDRESS,
-      comment:   invoice.invoice_id,
+      address: process.env.TON_WALLET_ADDRESS,
+      comment: invoice.invoice_id,
       expiresAt: invoice.expires_at,
     });
   } catch (err) {
@@ -862,7 +862,7 @@ app.get('/api/billing/ton/check', async (req, res) => {
 });
 
 
-  validateBody({ planId: { required: true } }),
+validateBody({ planId: { required: true } }),
   async (req, res) => {
     try {
       // Redirect legacy calls to checkout or return error
@@ -872,7 +872,7 @@ app.get('/api/billing/ton/check', async (req, res) => {
       res.status(500).json({ error: error.message });
     }
   }
-);
+
 
 app.get('/api/subscription/history', async (req, res) => {
   try {

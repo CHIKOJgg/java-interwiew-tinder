@@ -236,6 +236,23 @@ const migrations = [
       ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP;
       CREATE INDEX IF NOT EXISTS idx_users_subscription ON users(subscription_plan);
     `
+  },
+
+  // ── 014: Events table for analytics ────────────────────────────────
+  {
+    id: '014_events_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS analytics_events (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT,
+        event_name VARCHAR(60),
+        properties JSONB,
+        latency_ms INT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_events_name_date ON analytics_events(event_name, created_at);
+      CREATE INDEX IF NOT EXISTS idx_events_user_date ON analytics_events(user_id, created_at);
+    `
   }
 ];
 

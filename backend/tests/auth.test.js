@@ -37,7 +37,11 @@ vi.mock('../src/config/redis.js', () => ({
   isConnected: vi.fn().mockResolvedValue(true),
 }));
 
-// 2. Import app after mocks are established
+// 2. Set test env BEFORE importing app
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test_secret';
+process.env.ADMIN_TELEGRAM_IDS = '123456789';
+
 const { default: app } = await import('../src/server.js');
 const { default: pool } = await import('../src/config/database.js');
 
@@ -47,11 +51,11 @@ describe('Auth Integration Tests', () => {
   const USER_ID = '987654321';
 
   beforeAll(() => {
+    // These are already set globally but ensure local consistency
     process.env.JWT_SECRET = JWT_SECRET;
     process.env.ADMIN_TELEGRAM_IDS = ADMIN_ID;
-    process.env.NODE_ENV = 'development';
-    // Clear BOT_TOKEN to force mockValidation in /auth/login
-    process.env.BOT_TOKEN = ''; 
+    process.env.NODE_ENV = 'test';
+    process.env.BOT_TOKEN = ''; // Force mockValidation
   });
 
   afterEach(() => {

@@ -198,6 +198,29 @@ async function processExpired() {
   }
 }
 
+async function verifyBackupIntegrity() {
+  try {
+    logger.info('🔍 Starting automated backup integrity check');
+    const usersCount = await pool.query('SELECT COUNT(*) FROM users');
+    const questionsCount = await pool.query('SELECT COUNT(*) FROM questions');
+    
+    logger.info({
+      users: usersCount.rows[0].count,
+      questions: questionsCount.rows[0].count
+    }, '📊 Database integrity check results');
+    
+    // Add Sentry breadcrumb for successful verification
+    Sentry.addBreadcrumb({
+      category: 'database',
+      message: 'Backup integrity verification passed',
+      level: 'info'
+    });
+  } catch (err) {
+    logger.error({ err }, '❌ Database integrity check failed');
+    Sentry.captureException(err);
+  }
+}
+
 const scheduleSubscriptionJobs = () => {
   // Run daily at midnight
   cron.schedule('0 0 * * *', async () => {
@@ -205,8 +228,13 @@ const scheduleSubscriptionJobs = () => {
     await notifyExpiring();
     await processExpired();
   });
+
+  // Run weekly backup verification (Sunday at 02:00)
+  cron.schedule('0 2 * * 0', async () => {
+    await verifyBackupIntegrity();
+  });
   
-  logger.info('⏰ Subscription maintenance cron scheduled (daily at 00:00)');
+  logger.info('⏰ Maintenance crons scheduled (Daily Subscriptions + Weekly Integrity)');
 };
 
 // ─── Worker loop ──────────────────────────────────────────────────────

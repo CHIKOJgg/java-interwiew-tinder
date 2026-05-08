@@ -1,39 +1,40 @@
-import crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
+import pinoHttp from 'pino-http';
+import logger from '../config/logger.js';
 
 /**
- * Structured logging middleware
+ * Structured logging middleware using pino-http
  * Logs: userId, endpoint, latency, method, status, correlationId
  */
-export function requestLogger(req, res, next) {
-  const correlationId = req.headers['x-correlation-id'] || crypto.randomUUID();
-  const start = Date.now();
-
-  req.correlationId = correlationId;
-  res.setHeader('X-Correlation-Id', correlationId);
-
-  const originalEnd = res.end;
-  res.end = function (...args) {
-    const latency = Date.now() - start;
-    const log = {
-      ts: new Date().toISOString(),
-      correlationId,
+export const requestLogger = pinoHttp({
+  logger,
+  genReqId: (req) => req.headers['x-correlation-id'] || uuidv4(),
+  customProps: (req) => ({
+    userId: req.userId || req.body?.userId || req.query?.userId || null,
+  }),
+  serializers: {
+    req: (req) => ({
+      id: req.id,
       method: req.method,
-      path: req.path,
-      status: res.statusCode,
-      latency_ms: latency,
-      userId: req.body?.userId || req.query?.userId || null
-    };
-    console.log(JSON.stringify(log));
-    originalEnd.apply(res, args);
-  };
-
-  next();
-}
+      url: req.url,
+      // query: req.query, // optionally include
+    }),
+    res: (res) => ({
+      statusCode: res.statusCode,
+    }),
+  },
+  customLogLevel: (req, res, err) => {
+    if (res.statusCode >= 500 || err) return 'error';
+    if (res.statusCode >= 400) return 'warn';
+    return 'info';
+  },
+  customSuccessMessage: (req, res) => `${req.method} ${req.url} completed ${res.statusCode}`,
+  customErrorMessage: (req, res, err) => `${req.method} ${req.url} failed: ${err.message}`,
+});
 
 /**
  * Input validation middleware factory
  * Validates body fields against a schema object.
- * Schema: { fieldName: { required: bool, type: string, maxLength: number } }
  */
 export function validateBody(schema) {
   return (req, res, next) => {

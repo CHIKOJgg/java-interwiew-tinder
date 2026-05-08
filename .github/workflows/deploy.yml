@@ -1,0 +1,65 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main, staging ]
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy-staging:
+    needs: ci
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Fly.io
+        uses: superfly/flyctl-actions/setup-flyctl@master
+      
+      - name: Deploy Backend to Staging
+        run: flyctl deploy --remote-only --app java-interwiew-tinder-staging
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          
+      - name: Run Migrations (Staging)
+        run: flyctl ssh console --app java-interwiew-tinder-staging -C "node src/scripts/migrate.js"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deploy Frontend to Vercel (Staging)
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          alias-domains: staging.interview-tinder.vercel.app
+
+  deploy-production:
+    needs: ci
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Fly.io
+        uses: superfly/flyctl-actions/setup-flyctl@master
+      
+      - name: Deploy Backend to Production
+        run: flyctl deploy --remote-only --app java-interwiew-tinder
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Run Migrations (Production)
+        run: flyctl ssh console --app java-interwiew-tinder -C "node src/scripts/migrate.js"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deploy Frontend to Vercel (Production)
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'

@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import pool from '../config/database.js';
 import redis from '../config/redis.js';
+import logger from '../config/logger.js';
 import { getLanguage } from './languageRegistry.js';
 
 dotenv.config();
@@ -11,7 +12,7 @@ const PROMPT_VERSION = 'v2'; // bump version so old bad-response cache entries a
 const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS || '45000');
 
 if (!OPENROUTER_API_KEY) {
-  console.error('⚠️  OPENROUTER_API_KEY is not set — all AI calls will fail');
+  logger.error('⚠️  OPENROUTER_API_KEY is not set — all AI calls will fail');
 }
 
 // ─── Cluster ID ────────────────────────────────────────────────────────
@@ -122,11 +123,11 @@ async function readCache(clusterId, mode, language) {
     try {
       const cached = await redis.get(redisKey);
       if (cached) {
-        console.log(`🚀 Redis Cache hit [${mode}/${language}]`);
+        logger.info({ mode, language, clusterId }, '🚀 Redis Cache hit');
         return cached;
       }
     } catch (err) {
-      console.warn('Redis cache read error:', err.message);
+      logger.warn({ err, mode, language }, 'Redis cache read error');
     }
   }
 
@@ -147,7 +148,7 @@ async function readCache(clusterId, mode, language) {
     
     return result;
   } catch (err) {
-    console.error('Cache read error:', err.message);
+    logger.error({ err, clusterId, mode }, 'Cache read error');
     return null;
   }
 }
@@ -158,10 +159,9 @@ async function writeCache(clusterId, mode, language, content, isJson) {
   // Bad responses (prose, schema descriptions) must NOT enter the cache.
   if (isJson) {
     try {
-      const parsed = parseAIResponse(content);
       validateParsed(mode, parsed);
     } catch (err) {
-      console.error(`❌ NOT caching invalid JSON for mode='${mode}': ${err.message}`);
+      logger.error({ err, mode, clusterId }, '❌ NOT caching invalid JSON');
       return; // skip cache write
     }
   }
@@ -182,7 +182,7 @@ async function writeCache(clusterId, mode, language, content, isJson) {
       await redis.setex(redisKey, 2592000, content);
     }
   } catch (err) {
-    console.error('Cache write error:', err.message);
+    logger.error({ err, clusterId, mode }, 'Cache write error');
   }
 }
 
@@ -235,7 +235,7 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature) 
   if (!content?.trim()) throw new Error('Empty response from OpenRouter');
 
   const usedModel = data.model || MODEL;
-  console.log(`✅ OpenRouter [${usedModel}] → ${content.length} chars`);
+  logger.info({ model: usedModel, chars: content.length }, '✅ OpenRouter response received');
   return content.trim();
 }
 
@@ -247,7 +247,7 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
   // 1. DB cache hit
   const cached = await readCache(clusterId, mode, language);
   if (cached) {
-    console.log(`📦 Cache hit [${mode}/${language}]`);
+    logger.info({ mode, language }, '📦 Cache hit');
     if (isJson) {
       try {
         const parsed = parseAIResponse(cached);
@@ -255,7 +255,7 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
         return parsed;
       } catch (err) {
         // Cached response is invalid (old bad entry) — log and re-generate
-        console.error(`Cached JSON invalid for [${mode}], regenerating: ${err.message}`);
+        logger.error({ err, mode }, 'Cached JSON invalid, regenerating');
         // Delete the bad cache entry so it doesn't block future good responses
         const cid = generateClusterId(questionText, language);
         pool.query(
@@ -271,7 +271,7 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
   // 2. Dedup concurrent identical requests
   // Local dedup (same instance)
   if (pendingRequests.has(dedupKey)) {
-    console.log(`⏳ Joining in-flight [${mode}/${language}] (local)`);
+    logger.info({ dedupKey }, '⏳ Joining in-flight (local)');
     return pendingRequests.get(dedupKey);
   }
 
@@ -281,7 +281,7 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
     const lockKey = `lock:${dedupKey}`;
     const isLocked = await redis.get(lockKey);
     if (isLocked) {
-       console.log(`⏳ Joining in-flight [${mode}/${language}] (distributed wait)`);
+       logger.info({ dedupKey }, '⏳ Joining in-flight (distributed wait)');
        // Poll for result for 3 seconds max, then fall through to generate if still missing
        for (let i = 0; i < 6; i++) {
          await new Promise(r => setTimeout(r, 500));

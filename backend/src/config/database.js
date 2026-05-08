@@ -19,13 +19,15 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
+import logger from './logger.js';
+
 // Test connection
 pool.on('connect', () => {
-  console.log('✅ Database connected successfully');
+  logger.info('✅ Database connected successfully');
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Unexpected database error:', err);
+  logger.error({ err }, '❌ Unexpected database error');
 });
 
 export default pool;

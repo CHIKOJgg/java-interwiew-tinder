@@ -3,6 +3,8 @@ import Redis from 'ioredis';
 const redisUrl = process.env.REDIS_URL;
 let redis = null;
 
+import logger from './logger.js';
+
 if (redisUrl) {
   redis = new Redis(redisUrl, {
     maxRetriesPerRequest: 3,
@@ -20,14 +22,14 @@ if (redisUrl) {
   });
 
   redis.on('error', (err) => {
-    console.error('Redis connection error:', err.message);
+    logger.error({ err }, 'Redis connection error');
   });
 
   redis.on('connect', () => {
-    console.log('✅ Redis connected successfully');
+    logger.info('✅ Redis connected successfully');
   });
 } else {
-  console.warn('⚠️ REDIS_URL not found. Redis features will be disabled (falling back to memory/DB).');
+  logger.warn('⚠️ REDIS_URL not found. Redis features will be disabled (falling back to memory/DB).');
 }
 
 /**

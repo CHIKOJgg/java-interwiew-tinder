@@ -1,4 +1,5 @@
 import pool from '../../config/database.js';
+import { metricsService } from '../metricsService.js';
 
 const TG_API = `https://api.telegram.org/bot${process.env.BOT_TOKEN}`;
 
@@ -89,6 +90,10 @@ export async function activateStarsSubscription(userId, planId, interval, charge
 
     await client.query('COMMIT');
     logger.info({ userId, planId, chargeId }, '⭐ Stars subscription activated');
+
+    // Track subscription start
+    metricsService.trackEvent(userId, 'subscription_started', { planId, interval, provider: 'stars' });
+
     return { success: true };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});

@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import * as Sentry from "@sentry/node";
 
 /**
  * Middleware to verify JWT token from Authorization header
@@ -16,6 +17,10 @@ export const authMiddleware = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = decoded.userId;
     req.userPlan = decoded.plan;
+    
+    // Set Sentry user context
+    Sentry.setUser({ id: String(req.userId) });
+    
     next();
   } catch (error) {
     console.error('JWT verification failed:', error.message);

@@ -105,17 +105,23 @@ const StatusBanner = ({ status, onCancel }) => {
 
   const isAdmin = status.plan === 'admin' || status.is_admin;
   const expires = status.expires_at ? new Date(status.expires_at).toLocaleDateString('ru-RU') : null;
+  const isCancelled = status.is_cancelled;
 
   return (
-    <div className={`status-banner ${isAdmin ? 'admin' : 'pro'}`}>
+    <div className={`status-banner ${isAdmin ? 'admin' : 'pro'} ${isCancelled ? 'cancelled' : ''}`}>
       <div className="status-info">
         {isAdmin ? <Shield size={18} /> : <Star size={18} />}
         <div>
           <strong>{isAdmin ? '👑 Admin — Unlimited' : `⭐ ${status.plan_name || 'Pro'} активен`}</strong>
-          {expires && !isAdmin && <span className="expires-at"><Clock size={12} /> до {expires}</span>}
+          {expires && !isAdmin && (
+            <span className="expires-at">
+              <Clock size={12} /> {isCancelled ? 'Доступ до' : 'Продление'} {expires}
+            </span>
+          )}
+          {isCancelled && <span className="cancelled-tag">Отмена запланирована</span>}
         </div>
       </div>
-      {!isAdmin && (
+      {!isAdmin && !isCancelled && (
         <button className="cancel-btn" onClick={onCancel}>
           <X size={14} /> Отменить
         </button>
@@ -131,10 +137,13 @@ const SubscriptionPlans = ({ onBack }) => {
   const [status, setStatus] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [purchasing, setPurchasing] = useState(null);
+  const [purchasing, setPurchasing] = useState(null); // planId being purchased
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState(null);
   const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [toast, setToast] = useState(null);           // { text, type }
+  const [polling, setPolling] = useState(false);      // polling after invoice send
 
   const isAdmin = user?.plan === 'admin' || user?.is_admin;
 
@@ -144,7 +153,7 @@ const SubscriptionPlans = ({ onBack }) => {
     try {
       const [plansRes, statusRes] = await Promise.all([
         apiClient.getPlans(),
-        apiClient.getSubscriptionStatus(),
+        apiClient.getBillingInfo(),
       ]);
       setPlans(plansRes.plans || []);
       setStatus(statusRes);
@@ -156,34 +165,74 @@ const SubscriptionPlans = ({ onBack }) => {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { 
+    fetchAll();
+    // Check for ?success=true (Stripe redirect — kept for compatibility)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      setShowSuccess(true);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [fetchAll]);
 
-  const handleSubscribe = async (planId) => {
-    if (purchasing) return;
+  // Toast helper
+  const showToast = (text, type = 'info') => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 5000);
+  };
+
+  // Poll /api/billing/info every 3 s for up to 60 s after Stars invoice is sent.
+  // When plan changes from 'free', show success screen.
+  useEffect(() => {
+    if (!polling) return;
+    let checks = 0;
+    const MAX_CHECKS = 20; // 60 s total
+    const interval = setInterval(async () => {
+      checks++;
+      try {
+        const info = await apiClient.getBillingInfo();
+        if (info.plan && info.plan !== 'free') {
+          clearInterval(interval);
+          setPolling(false);
+          setStatus(info);
+          setShowSuccess(true);
+          if (window.Telegram?.WebApp?.initData) {
+            login(window.Telegram.WebApp.initData).catch(() => {});
+          }
+        }
+      } catch {}
+      if (checks >= MAX_CHECKS) {
+        clearInterval(interval);
+        setPolling(false);
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [polling, login]);
+
+  // Stars: primary payment — sends invoice to Telegram chat, then polls
+  const handleSubscribeStars = async (planId, interval = 'monthly') => {
+    if (purchasing || polling) return;
     try {
       setPurchasing(planId);
-      await apiClient.subscribe(planId);
-      // Re-fetch user data so plan badge updates in Header
-      if (window.Telegram?.WebApp?.initData) {
-        await login(window.Telegram.WebApp.initData).catch(() => {});
-      }
-      await fetchAll();
-    } catch (e) {
-      alert(`Ошибка: ${e.message}`);
-    } finally {
+      await apiClient.sendStarsInvoice(planId, interval);
       setPurchasing(null);
+      setPolling(true);
+      showToast('Проверьте чат Telegram — счёт отправлен. Оплатите там, и план активируется автоматически.', 'info');
+    } catch (e) {
+      setPurchasing(null);
+      showToast(`Ошибка: ${e.message}`, 'error');
     }
   };
 
   const handleCancel = async () => {
     if (!cancelConfirm) { setCancelConfirm(true); return; }
     try {
-      await apiClient.cancelSubscription();
+      await apiClient.deleteSubscription();
       setCancelConfirm(false);
+      await fetchAll();
       if (window.Telegram?.WebApp?.initData) {
         await login(window.Telegram.WebApp.initData).catch(() => {});
       }
-      await fetchAll();
     } catch (e) {
       alert(`Ошибка отмены: ${e.message}`);
     }
@@ -191,7 +240,7 @@ const SubscriptionPlans = ({ onBack }) => {
 
   const fetchHistory = async () => {
     try {
-      const res = await apiClient.getSubscriptionHistory();
+      const res = await apiClient.getBillingHistory();
       setHistory(res.history || []);
       setShowHistory(true);
     } catch {}
@@ -230,6 +279,31 @@ const SubscriptionPlans = ({ onBack }) => {
         status={status}
         onCancel={handleCancel}
       />
+
+      {showSuccess && (
+        <div className="success-celebration">
+          <div className="confetti-wrap">✨ 🎊 💎 🎊 ✨</div>
+          <h2>Добро пожаловать в Pro!</h2>
+          <p>Ваша подписка успешно активирована. Все возможности открыты.</p>
+          <button onClick={() => setShowSuccess(false)}>Отлично!</button>
+        </div>
+      )}
+      {/* Toast notification */}
+      {toast && (
+        <div className={`billing-toast ${toast.type}`}>
+          {toast.type === 'error' ? <AlertCircle size={16} /> : <Star size={16} fill="#ffd43b" />}
+          {toast.text}
+        </div>
+      )}
+
+      {/* Polling indicator */}
+      {polling && (
+        <div className="polling-indicator">
+          <span className="pulse-dot" />
+          Ожидание подтверждения оплаты из Telegram...
+        </div>
+      )}
+
       {cancelConfirm && (
         <div className="cancel-confirm">
           <AlertCircle size={16} />
@@ -287,13 +361,47 @@ const SubscriptionPlans = ({ onBack }) => {
                   )}
                 </ul>
 
-                <button
-                  className={`subscribe-btn ${isCurrent ? 'current' : plan.id === 'pro' ? 'pro' : ''}`}
-                  disabled={isCurrent || isBuying}
-                  onClick={() => !isCurrent && handleSubscribe(plan.id)}
-                >
-                  {isCurrent ? '✓ Текущий план' : isBuying ? 'Обработка...' : plan.price_monthly === 0 ? 'Выбрать' : 'Купить'}
-                </button>
+                {/* ── Pro plan: active subscription info or purchase buttons ── */}
+                {isCurrent && plan.id === 'pro' && status?.expires_at && (
+                  <p className="renewal-info">
+                    <Clock size={12} />
+                    {status.is_cancelled
+                      ? `Доступ до ${new Date(status.expires_at).toLocaleDateString('ru-RU')}`
+                      : `Продление ${new Date(status.expires_at).toLocaleDateString('ru-RU')}`
+                    }
+                  </p>
+                )}
+
+                <div className="plan-actions">
+                  {isCurrent ? (
+                    <button className="subscribe-btn current" disabled>✓ Текущий план</button>
+                  ) : plan.id === 'free' ? (
+                    <button className="subscribe-btn" disabled={isBuying}
+                      onClick={() => handleSubscribeStars(plan.id)}>
+                      Выбрать бесплатно
+                    </button>
+                  ) : (
+                    <>
+                      {/* Primary CTA: Stars */}
+                      <button
+                        id={`stars-btn-${plan.id}`}
+                        className="stars-btn primary"
+                        disabled={isBuying || polling}
+                        onClick={() => handleSubscribeStars(plan.id, 'monthly')}
+                      >
+                        <Star size={16} fill="#ffd43b" />
+                        {isBuying ? 'Отправка...' : polling ? 'Ожидание оплаты...' : '450 Stars / месяц'}
+                      </button>
+                      <button
+                        className="stars-btn yearly"
+                        disabled={isBuying || polling}
+                        onClick={() => handleSubscribeStars(plan.id, 'yearly')}
+                      >
+                        <Star size={14} fill="#ffd43b" /> 3000 Stars / год (скидка 44%)
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -320,9 +428,14 @@ const SubscriptionPlans = ({ onBack }) => {
               ? <p className="no-history">История пуста</p>
               : history.map((h, i) => (
                   <div key={i} className="history-item">
-                    <span className={`plan-tag ${h.plan_id}`}>{h.plan_name || h.plan_id}</span>
-                    <span className="history-status">{h.status}</span>
-                    <span className="history-date">{new Date(h.created_at).toLocaleDateString('ru-RU')}</span>
+                    <div className="history-main">
+                      <span className={`plan-tag ${h.plan_id}`}>{h.plan_name || h.plan_id}</span>
+                      <span className="history-provider">{h.payment_provider === 'stripe' ? '💳 Card' : '⭐ Stars'}</span>
+                    </div>
+                    <div className="history-meta">
+                      <span className="history-status">{h.status}</span>
+                      <span className="history-date">{new Date(h.created_at).toLocaleDateString('ru-RU')}</span>
+                    </div>
                   </div>
                 ))
             }

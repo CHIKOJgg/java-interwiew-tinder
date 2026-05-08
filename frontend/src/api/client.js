@@ -209,6 +209,33 @@ class ApiClient {
   async getAdminUsers() {
     return this.request('/admin/users');
   }
+
+  // sendStarsInvoice: triggers Bot API sendInvoice, returns { sent: true }
+  async sendStarsInvoice(planId, interval = 'monthly') {
+    return this.request('/billing/stars/invoice', {
+      method: 'POST',
+      body: JSON.stringify({ planId, interval }),
+    });
+  }
+
+  // Keep old alias for backward compatibility
+  async createStarsInvoice(planId, interval = 'monthly') {
+    return this.sendStarsInvoice(planId, interval);
+  }
+
+  async getBillingInfo() {
+    return this.request('/billing/info');
+  }
+
+  async getBillingHistory() {
+    return this.request('/billing/history');
+  }
+
+  async deleteSubscription() {
+    return this.request('/billing/subscription', {
+      method: 'DELETE'
+    });
+  }
 }
 
 export default new ApiClient();

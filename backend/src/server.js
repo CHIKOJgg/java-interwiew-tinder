@@ -9,6 +9,7 @@ import { getLanguage, getAvailableLanguages, getCategories } from './services/la
 import { requestLogger, validateBody, sanitizeBody } from './middleware/logging.js';
 import { rateLimit, requireEntitlement, trackEvent } from './middleware/rateLimiter.js';
 import { billingService } from './services/billingService.js';
+import { sendStarsInvoice, answerPreCheckout, sendTelegramMessage, activateStarsSubscription } from './services/billing/starsService.js';
 import { metricsService } from './services/metricsService.js';
 import jwt from 'jsonwebtoken';
 import { authMiddleware, requireAdmin, ADMIN_IDS } from './middleware/auth.js';
@@ -33,6 +34,60 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id'],
 }));
+// ─── Stripe Webhook (MUST be before express.json) ─────────────────────
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const { userId, planId } = session.metadata;
+        if (userId && planId) {
+          await billingService.activateSubscription(
+            userId, 
+            planId, 
+            session.subscription, 
+            session.customer
+          );
+        }
+        break;
+      }
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object;
+        const customerId = subscription.customer;
+        // Look up user by stripe_customer_id
+        const { rows } = await pool.query('SELECT telegram_id FROM users WHERE stripe_customer_id = $1', [customerId]);
+        if (rows.length > 0) {
+          await billingService.cancelSubscription(rows[0].telegram_id);
+        }
+        break;
+      }
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object;
+        console.warn(`💳 Payment failed for customer ${invoice.customer}. Invoice: ${invoice.id}`);
+        // TODO: Send Telegram notification to user
+        break;
+      }
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error(`Webhook handler error [${event.type}]:`, err.message);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
 app.use(express.json({ limit: '1mb' }));
 app.use(sanitizeBody);
 app.use(requestLogger);
@@ -625,11 +680,130 @@ app.get('/api/subscription/status', async (req, res) => {
   } catch { res.json({ plan: 'free', status: 'active' }); }
 });
 
+app.post('/api/billing/stars/create-invoice', async (req, res) => {
+  try {
+    const { planId } = req.body;
+    const userId = req.userId;
+    
+    // Telegram Stars: 1 month Pro = 250 Stars
+    const amount = planId === 'pro' ? 250 : 500;
+    
+    const response = await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/createInvoiceLink`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: `Pro Plan (${planId})`,
+        description: 'Доступ ко всем функциям Java Interview Tinder на 1 месяц',
+        payload: JSON.stringify({ userId: String(userId), planId }),
+        provider_token: '', // Empty for Stars
+        currency: 'XTR',
+        prices: [{ label: 'Pro Plan', amount }]
+      })
+    });
+    
+    const result = await response.json();
+    if (!result.ok) throw new Error(result.description || 'Failed to create invoice link');
+    
+    res.json({ url: result.result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─── Telegram Bot Webhook ───────────────────────────────────────────
+// Handles pre_checkout_query and successful_payment for Stars billing.
+app.post('/api/bot/webhook', async (req, res) => {
+  // Always respond 200 immediately — Telegram retries on non-200
+  res.json({ ok: true });
+
+  const update = req.body;
+  try {
+    // 1. Pre-checkout: must answer within 10 seconds
+    if (update.pre_checkout_query) {
+      const pcq = update.pre_checkout_query;
+      try {
+        const { userId, planId } = JSON.parse(pcq.invoice_payload);
+        if (!userId || !planId) throw new Error('Invalid payload');
+        await answerPreCheckout(pcq.id, true);
+      } catch (err) {
+        console.error('pre_checkout_query failed:', err.message);
+        await answerPreCheckout(pcq.id, false, 'Payment validation failed. Please try again.');
+      }
+      return;
+    }
+
+    // 2. Successful payment — activate subscription
+    const message = update.message || update.edited_message;
+    if (message?.successful_payment) {
+      const payment = message.successful_payment;
+      const { userId, planId, interval } = JSON.parse(payment.invoice_payload);
+      console.log(`💰 Stars payment: user=${userId} plan=${planId} interval=${interval}`);
+
+      await activateStarsSubscription(
+        userId, planId, interval ?? 'monthly',
+        payment.telegram_payment_charge_id
+      );
+
+      await sendTelegramMessage(message.chat.id,
+        `🎉 Payment confirmed! Your Pro plan is now active.\n` +
+        `Plan: ${interval === 'yearly' ? 'Annual' : 'Monthly'} Pro\n` +
+        `Enjoy unlimited AI explanations and all study modes!`
+      );
+    }
+  } catch (err) {
+    console.error('Bot webhook handler error:', err.message);
+  }
+});
+
+// ─── Stars invoice: sends invoice to user's Telegram chat ───────────
+app.post('/api/billing/stars/invoice',
+  validateBody({ planId: { required: true } }),
+  async (req, res) => {
+    try {
+      const { planId, interval = 'monthly' } = req.body;
+      await sendStarsInvoice(req.userId, planId, interval);
+      res.json({ sent: true });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// ─── Billing info (current plan + renewal date) ──────────────────────
+app.get('/api/billing/info', async (req, res) => {
+  try {
+    const info = await billingService.getBillingInfo(req.userId);
+    res.json(info);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/billing/history', async (req, res) => {
+  try {
+    const history = await billingService.getHistory(req.userId, 5);
+    res.json({ history });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/billing/subscription', async (req, res) => {
+  try {
+    const result = await billingService.cancelSubscription(req.userId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 app.post('/api/subscription/subscribe',
   validateBody({ planId: { required: true } }),
   async (req, res) => {
     try {
-      const result = await billingService.createSubscription(req.userId, req.body.planId);
+      // Redirect legacy calls to checkout or return error
+      const result = await billingService.createCheckoutSession(req.userId, req.body.planId);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: error.message });

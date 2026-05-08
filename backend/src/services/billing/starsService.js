@@ -51,6 +51,8 @@ export async function sendTelegramMessage(chatId, text) {
   });
 }
 
+import logger from '../../config/logger.js';
+
 // ─── Activate subscription after confirmed payment ─────────────────
 // Idempotent: ON CONFLICT … DO UPDATE so replays are harmless.
 export async function activateStarsSubscription(userId, planId, interval, chargeId) {
@@ -86,11 +88,11 @@ export async function activateStarsSubscription(userId, planId, interval, charge
     );
 
     await client.query('COMMIT');
-    console.log(`⭐ Stars subscription activated: user=${userId} plan=${planId} charge=${chargeId}`);
+    logger.info({ userId, planId, chargeId }, '⭐ Stars subscription activated');
     return { success: true };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('activateStarsSubscription error:', err.message);
+    logger.error({ err, userId, chargeId }, 'activateStarsSubscription error');
     throw err;
   } finally {
     client.release();

@@ -16,6 +16,7 @@ import { metricsService } from './services/metricsService.js';
 import jwt from 'jsonwebtoken';
 import { authMiddleware, requireAdmin, ADMIN_IDS } from './middleware/auth.js';
 import redis, { isConnected as isRedisConnected } from './config/redis.js';
+import logger from './config/logger.js';
 
 dotenv.config();
 
@@ -36,7 +37,7 @@ const ALLOWED_ORIGINS = new Set(
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || ALLOWED_ORIGINS.has(origin) || isDev) return cb(null, true);
-    console.warn(`CORS blocked: ${origin}`);
+    logger.warn({ origin }, 'CORS blocked');
     cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -51,7 +52,7 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    logger.error({ err }, 'Stripe webhook signature verification failed');
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -757,7 +758,7 @@ app.post('/api/bot/webhook', async (req, res) => {
     if (message?.successful_payment) {
       const payment = message.successful_payment;
       const { userId, planId, interval } = JSON.parse(payment.invoice_payload);
-      console.log(`💰 Stars payment: user=${userId} plan=${planId} interval=${interval}`);
+      logger.info({ userId, planId, interval }, '💰 Stars payment received');
 
       await activateStarsSubscription(
         userId, planId, interval ?? 'monthly',
@@ -771,7 +772,7 @@ app.post('/api/bot/webhook', async (req, res) => {
       );
     }
   } catch (error) {
-    console.error('Webhook processing failed:', error.message);
+    logger.error({ err: error, update }, 'Webhook processing failed');
     Sentry.captureException(error, {
       extra: {
         updateId: update.update_id,
@@ -1033,8 +1034,8 @@ app.listen(PORT, () => {
 
   // ── TON payment poller: every 30 s, check for fulfilled invoices ──
   if (process.env.TON_WALLET_ADDRESS) {
-    console.log('💫 TON poller started (30 s interval)');
-    setInterval(() => pollPendingInvoices().catch(console.error), 30_000);
+    logger.info('💫 TON poller started (30 s interval)');
+    setInterval(() => pollPendingInvoices().catch(err => logger.error({ err }, 'TON poller error')), 30_000);
   }
 });
 

@@ -14,6 +14,7 @@
 
 import { createHash, randomBytes } from 'crypto';
 import pool from '../../config/database.js';
+import logger from '../../config/logger.js';
 
 // ─── Config ────────────────────────────────────────────────────────────
 const TON_WALLET  = process.env.TON_WALLET_ADDRESS ?? '';
@@ -60,7 +61,7 @@ export async function createTonInvoice(userId, planId, interval = 'monthly') {
     [invoiceId, userId, planId, interval, amountTon, expiresAt]
   );
 
-  console.log(`💎 TON invoice created: ${invoiceId} user=${userId} amount=${amountTon} TON`);
+  logger.info({ userId, invoiceId, amountTon }, '💎 TON invoice created');
   return { address: TON_WALLET, amountTon, comment: invoiceId, invoiceId, expiresAt };
 }
 
@@ -157,16 +158,16 @@ export async function activateTonSubscription(userId, planId, interval, txHash, 
     }
 
     await client.query('COMMIT');
-    console.log(`✅ TON subscription activated: user=${userId} plan=${planId} tx=${txHash}`);
+    logger.info({ userId, planId, txHash }, '✅ TON subscription activated');
     return { success: true };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     // If it's a unique_violation on ton_tx_hash, it's a replay — safe to ignore
     if (err.code === '23505') {
-      console.log(`⚠️ TON tx ${txHash} already processed (duplicate ignored)`);
+      logger.warn({ txHash }, '⚠️ TON tx already processed (duplicate ignored)');
       return { success: true, duplicate: true };
     }
-    console.error('activateTonSubscription error:', err.message);
+    logger.error({ err, userId, txHash }, 'activateTonSubscription error');
     throw err;
   } finally {
     client.release();
@@ -186,7 +187,7 @@ export async function pollPendingInvoices() {
     );
     pending = rows;
   } catch (err) {
-    console.error('TON poller DB error:', err.message);
+    logger.error({ err }, 'TON poller DB error');
     return;
   }
 
@@ -196,7 +197,7 @@ export async function pollPendingInvoices() {
   try {
     transactions = await fetchRecentTransactions(TON_WALLET);
   } catch (err) {
-    console.error('TON Center fetch error:', err.message);
+    logger.error({ err }, 'TON Center fetch error');
     return;
   }
 
@@ -204,10 +205,10 @@ export async function pollPendingInvoices() {
     try {
       const fulfilled = await tryFulfillInvoice(invoice, transactions);
       if (fulfilled) {
-        console.log(`💎 TON invoice ${invoice.invoice_id} fulfilled`);
+        logger.info({ invoiceId: invoice.invoice_id }, '💎 TON invoice fulfilled');
       }
     } catch (err) {
-      console.error(`TON poller error for ${invoice.invoice_id}:`, err.message);
+      logger.error({ err, invoiceId: invoice.invoice_id }, 'TON poller error for invoice');
     }
   }
 }

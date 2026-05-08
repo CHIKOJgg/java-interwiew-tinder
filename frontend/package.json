@@ -11,7 +11,9 @@
   "dependencies": {
     "@react-spring/web": "^9.7.5",
     "@sentry/react": "^10.52.0",
+    "html2canvas": "^1.4.1",
     "i18next": "^26.0.10",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

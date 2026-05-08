@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -17,6 +18,12 @@ import { authMiddleware, requireAdmin, ADMIN_IDS } from './middleware/auth.js';
 import redis, { isConnected as isRedisConnected } from './config/redis.js';
 
 dotenv.config();
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+  tracesSampleRate: 0.1,
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -104,6 +111,10 @@ app.get('/health', async (req, res) => {
   });
 });
 
+// ─── Sentry Debug ────────────────────────────────────────────────────
+app.get('/debug-sentry', (req, res) => {
+  throw new Error('Sentry backend test error');
+});
 // ─── Languages ───────────────────────────────────────────────────────
 app.get('/api/languages', (req, res) => res.json({ languages: getAvailableLanguages() }));
 
@@ -756,13 +767,21 @@ app.post('/api/bot/webhook', async (req, res) => {
       await sendTelegramMessage(message.chat.id,
         `🎉 Payment confirmed! Your Pro plan is now active.\n` +
         `Plan: ${interval === 'yearly' ? 'Annual' : 'Monthly'} Pro\n` +
-        `Enjoy unlimited AI explanations and all study modes!`
+        `Enjoy unlimited interviews and deep theory explanations!`
       );
     }
-  } catch (err) {
-    console.error('Bot webhook handler error:', err.message);
+  } catch (error) {
+    console.error('Webhook processing failed:', error.message);
+    Sentry.captureException(error, { 
+      extra: { 
+        updateId: update.update_id,
+        userId: update.message?.from?.id || update.pre_checkout_query?.from?.id
+      } 
+    });
   }
 });
+
+Sentry.setupExpressErrorHandler(app);
 
 // ─── Stars invoice: sends invoice to user's Telegram chat ───────────
 app.post('/api/billing/stars/invoice',

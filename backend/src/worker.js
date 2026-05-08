@@ -1,9 +1,13 @@
+import * as Sentry from "@sentry/node";
+import cron from 'node-cron';
 import pool from './config/database.js';
+import logger from './config/logger.js';
 import {
   generateExplanation, generateTestOptions, generateBuggyCode,
   generateBlitzStatement, generateCodeCompletion,
 } from './services/aiService.js';
 import { initQueueTable } from './services/queueService.js';
+import { sendTelegramMessage } from './services/billing/starsService.js';
 
 // ─── Question-column backfill map ────────────────────────────────────
 // After each AI generation, write the parsed result back into the questions
@@ -20,7 +24,7 @@ const BACKFILL = {
     // result is a parsed array of wrong-answer strings
     const options = Array.isArray(result) ? result : (result?.options || []);
     if (!options.length) {
-      console.warn(`Backfill skip [test] q=${qId}: AI returned empty options array`);
+      logger.warn({ qId }, 'Backfill skip [test]: AI returned empty options array');
       return; // Don't save [] to postgres ARRAY column — causes malformed array literal error
     }
     await pool.query(
@@ -30,7 +34,7 @@ const BACKFILL = {
   },
   bug: async (qId, result) => {
     if (!result?.code || !result?.bug || !Array.isArray(result?.options) || !result.options.length) {
-      console.warn(`Backfill skip [bug] q=${qId}: incomplete result`);
+      logger.warn({ qId }, 'Backfill skip [bug]: incomplete result');
       return;
     }
     await pool.query(
@@ -46,7 +50,7 @@ const BACKFILL = {
   },
   code: async (qId, result) => {
     if (!result?.snippet || !result?.correctPart || !Array.isArray(result?.options) || !result.options.length) {
-      console.warn(`Backfill skip [code] q=${qId}: incomplete result`);
+      logger.warn({ qId }, 'Backfill skip [code]: incomplete result');
       return;
     }
     await pool.query(
@@ -63,7 +67,7 @@ const processJob = async (job) => {
   const lang = p.language || 'Java';
   const qId = p.questionId || null;  // may be absent for warm-up jobs
 
-  console.log(`👷 Job ${id}: ${task_type} [${lang}]${qId ? ` q=${qId}` : ''}`);
+  logger.info({ jobId: id, task_type, lang, qId }, '👷 Processing job');
 
   let result;
   try {
@@ -84,14 +88,14 @@ const processJob = async (job) => {
         result = await generateCodeCompletion(p.questionText, p.category, p.userId, lang);
         break;
       default:
-        console.warn(`Unknown task type: ${task_type}`);
+        logger.warn({ task_type }, 'Unknown task type');
         result = null;
     }
 
     // Backfill the questions table so answer endpoints can find correct answers
     if (result !== null && result !== undefined && qId && BACKFILL[task_type]) {
       await BACKFILL[task_type](qId, result).catch(err =>
-        console.error(`Backfill error [${task_type}] q=${qId}:`, err.message)
+        logger.error({ err, task_type, qId }, 'Backfill error')
       );
     }
 
@@ -101,9 +105,9 @@ const processJob = async (job) => {
        WHERE id=$1`,
       [id]
     );
-    console.log(`✅ Job ${id} done`);
+    logger.info({ jobId: id }, '✅ Job done');
   } catch (err) {
-    console.error(`❌ Job ${id} failed:`, err.message);
+    logger.error({ err, jobId: id }, '❌ Job failed');
     await pool.query(
       `UPDATE ai_jobs
        SET status='failed', attempts=attempts+1, error_message=$2,
@@ -115,10 +119,100 @@ const processJob = async (job) => {
   }
 };
 
+// ─── Subscription Lifecycle Jobs ──────────────────────────────────────
+
+async function notifyExpiring() {
+  try {
+    // Notify users whose subscription expires in exactly 3 days
+    const { rows } = await pool.query(`
+      SELECT user_id, expires_at, plan_id 
+      FROM user_subscriptions 
+      WHERE status='active' 
+        AND expires_at::date = (CURRENT_DATE + INTERVAL '3 days')::date
+    `);
+
+    logger.info({ count: rows.length }, '🔔 Processing expiring subscription notifications');
+
+    for (const sub of rows) {
+      const daysLeft = 3;
+      const msg = `⚠️ Your ${sub.plan_id.toUpperCase()} plan expires in ${daysLeft} days.\n\nRenew now to keep your progress and unlimited access!`;
+      
+      await sendTelegramMessage(sub.user_id, msg).catch(err => {
+        logger.error({ err, userId: sub.user_id }, 'Failed to send expiry reminder');
+        Sentry.addBreadcrumb({ category: 'billing', message: `Expiry reminder failed for ${sub.user_id}` });
+      });
+    }
+  } catch (err) {
+    logger.error({ err }, 'Error in notifyExpiring job');
+    Sentry.captureException(err);
+  }
+}
+
+async function processExpired() {
+  try {
+    // 1. Find subscriptions that just expired
+    const { rows } = await pool.query(`
+      SELECT user_id, plan_id 
+      FROM user_subscriptions 
+      WHERE status='active' AND expires_at < NOW()
+    `);
+
+    if (rows.length === 0) return;
+
+    logger.info({ count: rows.length }, '📉 Processing expired subscriptions');
+
+    for (const sub of rows) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        
+        // Update subscription status
+        await client.query(
+          "UPDATE user_subscriptions SET status='expired', updated_at=NOW() WHERE user_id=$1 AND status='active'",
+          [sub.user_id]
+        );
+
+        // Downgrade user record
+        await client.query(
+          "UPDATE users SET subscription_plan='free', subscription_expires_at=NULL WHERE telegram_id=$1",
+          [sub.user_id]
+        );
+
+        await client.query('COMMIT');
+        
+        await sendTelegramMessage(sub.user_id, 
+          `ℹ️ Your Pro subscription has expired. You've been moved to the Free plan.`
+        ).catch(() => {});
+
+      } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        logger.error({ err, userId: sub.user_id }, 'Failed to downgrade user');
+        Sentry.captureException(err);
+      } finally {
+        client.release();
+      }
+    }
+  } catch (err) {
+    logger.error({ err }, 'Error in processExpired job');
+    Sentry.captureException(err);
+  }
+}
+
+const scheduleSubscriptionJobs = () => {
+  // Run daily at midnight
+  cron.schedule('0 0 * * *', async () => {
+    logger.info('⏰ Starting daily subscription maintenance jobs');
+    await notifyExpiring();
+    await processExpired();
+  });
+  
+  logger.info('⏰ Subscription maintenance cron scheduled (daily at 00:00)');
+};
+
 // ─── Worker loop ──────────────────────────────────────────────────────
 const runWorker = async () => {
   await initQueueTable();
-  console.log('👷 Background worker started (concurrency=3)');
+  logger.info({ concurrency: 3 }, '👷 Background worker started');
 
   const CONCURRENCY = 3;
   let activeJobs = 0;
@@ -150,13 +244,16 @@ const runWorker = async () => {
         pollAndProcess(); // fill concurrency slots
       }
     } catch (err) {
-      console.error('Worker polling error:', err.message);
+      logger.error({ err }, 'Worker polling error');
     }
   };
 
   setInterval(() => {
     if (activeJobs < CONCURRENCY) pollAndProcess();
   }, 2000);
+
+  // Start cron jobs
+  scheduleSubscriptionJobs();
 };
 
 runWorker();

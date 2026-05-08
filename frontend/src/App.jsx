@@ -10,9 +10,9 @@ import ConceptLinker from './components/ConceptLinker';
 import CodeCompletionMode from './components/CodeCompletionMode';
 import ResumeAnalyzer from './components/ResumeAnalyzer';
 import ExplanationModal from './components/ExplanationModal';
-import CategorySelection from './components/CategorySelection';
 import SubscriptionPlans from './components/SubscriptionPlans';
 import AdminPanel from './components/AdminPanel';
+import ShareCard from './components/ShareCard';
 import { SkeletonCard } from './components/Skeleton';
 import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
@@ -63,11 +63,13 @@ function App() {
     login, swipeCard, closeExplanation, hasMoreQuestions, loadQuestions,
     learningMode,
     switchLanguage,
+    stats,
   } = useStore();
 
   const [initState, setInitState] = useState('waiting_telegram');
   const [screen, setScreen] = useState('category');
   const [authError, setAuthError] = useState(null);
+  const [showShare, setShowShare] = useState(false);
 
   const cardRefs = useRef([]);
 
@@ -179,6 +181,12 @@ function App() {
           <button onClick={() => setScreen('category')}>
             Выбрать другие темы
           </button>
+          <button 
+            onClick={() => setShowShare(true)}
+            style={{ marginTop: 10, background: 'rgba(51, 154, 240, 0.1)', color: '#339af0' }}
+          >
+            Поделиться результатом
+          </button>
         </div>
       );
     }
@@ -244,6 +252,12 @@ function App() {
         isLoading={isLoadingExplanation}
         onClose={closeExplanation}
       />
+      {showShare && (
+        <ShareCard 
+          stats={stats} 
+          onBack={() => setShowShare(false)} 
+        />
+      )}
     </div>
   );
 }

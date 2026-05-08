@@ -21,7 +21,7 @@ const useStore = create((set, get) => ({
   _loadingLock: false,
   learningMode: 'swipe',
 
-  stats: { known: 0, unknown: 0, totalSeen: 0, totalQuestions: 0 },
+  stats: { known: 0, unknown: 0, totalSeen: 0, totalQuestions: 0, streak: 0, longestStreak: 0 },
   // Selected categories and per-category progress (§3)
   selectedCategories: [],
   categoryStats: { known: 0, total: 0 },
@@ -152,7 +152,23 @@ const useStore = create((set, get) => ({
       stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 },
       currentIndex: s.currentIndex + 1,
     }));
-    apiClient.recordSwipe(questionId, status).catch(console.error);
+    
+    try {
+      const response = await apiClient.recordSwipe(questionId, status);
+      if (response.streak) {
+        set(s => ({
+          stats: { 
+            ...s.stats, 
+            streak: response.streak.current, 
+            longestStreak: response.streak.longest,
+            streakIncreased: response.streak.increased
+          }
+        }));
+      }
+    } catch (err) {
+      console.error('Swipe recording failed:', err);
+    }
+
     if (direction === 'left') get().loadExplanation(questionId);
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
   },

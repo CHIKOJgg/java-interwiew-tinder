@@ -221,6 +221,28 @@ async function verifyBackupIntegrity() {
   }
 }
 
+async function notifyStreakReminders() {
+  try {
+    // Find users who were active yesterday but NOT today
+    const { rows } = await pool.query(`
+      SELECT telegram_id, current_streak 
+      FROM users 
+      WHERE last_activity_date = (CURRENT_DATE - INTERVAL '1 day')::date
+        AND current_streak > 0
+    `);
+
+    logger.info({ count: rows.length }, '🔥 Processing streak reminder notifications');
+
+    for (const user of rows) {
+      const msg = `🔥 Your ${user.current_streak}-day streak ends today — swipe 3 questions to keep it alive!`;
+      await sendTelegramMessage(user.telegram_id, msg).catch(() => {});
+    }
+  } catch (err) {
+    logger.error({ err }, 'Error in notifyStreakReminders job');
+    Sentry.captureException(err);
+  }
+}
+
 const scheduleSubscriptionJobs = () => {
   // Run daily at midnight
   cron.schedule('0 0 * * *', async () => {
@@ -233,8 +255,14 @@ const scheduleSubscriptionJobs = () => {
   cron.schedule('0 2 * * 0', async () => {
     await verifyBackupIntegrity();
   });
+
+  // Run daily streak reminders at 08:00 UTC
+  cron.schedule('0 8 * * *', async () => {
+    logger.info('⏰ Starting daily streak reminder job');
+    await notifyStreakReminders();
+  });
   
-  logger.info('⏰ Maintenance crons scheduled (Daily Subscriptions + Weekly Integrity)');
+  logger.info('⏰ Maintenance crons scheduled (Daily Subscriptions + Weekly Integrity + Streak Reminders)');
 };
 
 // ─── Worker loop ──────────────────────────────────────────────────────

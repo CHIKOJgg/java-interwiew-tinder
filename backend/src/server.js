@@ -468,6 +468,49 @@ async function resolveAIData(questionId, columnName, cacheMode) {
   return { data, question: row };
 }
 
+async function updateStreak(userId) {
+  try {
+    const { rows } = await pool.query(
+      'SELECT current_streak, last_activity_date, longest_streak FROM users WHERE telegram_id = $1',
+      [userId]
+    );
+    if (rows.length === 0) return null;
+
+    const user = rows[0];
+    const today = new Date().toISOString().split('T')[0];
+    const lastActivity = user.last_activity_date ? new Date(user.last_activity_date).toISOString().split('T')[0] : null;
+
+    if (lastActivity === today) {
+      return { current: user.current_streak, longest: user.longest_streak, increased: false };
+    }
+
+    let newStreak = 1;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    if (lastActivity === yesterdayStr) {
+      newStreak = user.current_streak + 1;
+    }
+
+    const newLongest = Math.max(user.longest_streak, newStreak);
+    
+    await pool.query(
+      'UPDATE users SET current_streak = $1, last_activity_date = $2, longest_streak = $3 WHERE telegram_id = $4',
+      [newStreak, today, newLongest, userId]
+    );
+
+    if (newStreak > user.current_streak) {
+      metricsService.trackEvent(userId, 'streak_increased', { streak: newStreak });
+    }
+
+    return { current: newStreak, longest: newLongest, increased: newStreak > user.current_streak };
+  } catch (err) {
+    logger.error({ err, userId }, 'Failed to update streak');
+    return null;
+  }
+}
+
 async function recordProgress(userId, questionId, isCorrect) {
   const status = isCorrect ? 'known' : 'unknown';
   await pool.query(
@@ -493,7 +536,11 @@ app.post('/api/questions/swipe',
            SET status=EXCLUDED.status, updated_at=CURRENT_TIMESTAMP`,
         [userId, questionId, status]
       );
-      res.json({ success: true });
+
+      // Update streak on every swipe
+      const streakData = await updateStreak(userId);
+
+      res.json({ success: true, streak: streakData });
 
       // Track swipe
       metricsService.trackEvent(userId, 'question_swiped', { questionId, status });
@@ -974,6 +1021,39 @@ app.post('/api/admin/clear-cache', async (req, res) => {
   } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
+// ─── Viral Percentile Stats ──────────────────────────────────────────
+app.get('/api/stats/percentile', async (req, res) => {
+  try {
+    const { language = 'Java', score } = req.query;
+    const currentScore = parseInt(score) || 0;
+
+    // We calculate percentile based on 'known' count of all users in this language
+    // Better than X% of users who have studied this month
+    const statsResult = await pool.query(`
+      WITH user_scores AS (
+        SELECT up.user_id, COUNT(*) as score
+        FROM user_progress up
+        JOIN questions q ON q.id = up.question_id
+        WHERE q.language = $1 AND up.status = 'known'
+          AND up.updated_at > NOW() - INTERVAL '30 days'
+        GROUP BY up.user_id
+      )
+      SELECT 
+        (SELECT COUNT(*) FROM user_scores WHERE score <= $2) as below_count,
+        (SELECT COUNT(*) FROM user_scores) as total_count
+    `, [language, currentScore]);
+
+    const { below_count, total_count } = statsResult.rows[0];
+    const percentile = total_count > 0 
+      ? Math.round((parseInt(below_count) / parseInt(total_count)) * 100) 
+      : 100;
+
+    res.json({ percentile });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Category-scoped stats (§3 topic counter) ────────────────────────
 app.get('/api/stats/categories', async (req, res) => {
   try {
@@ -1026,11 +1106,17 @@ app.get('/api/stats', async (req, res) => {
       'SELECT COUNT(*) as total FROM questions WHERE language = $1', [language]
     );
 
+    const userStreak = await pool.query(
+      'SELECT current_streak, longest_streak FROM users WHERE telegram_id = $1', [userId]
+    );
+
     res.json({
       known: parseInt(result.rows[0].known_count || 0),
       unknown: parseInt(result.rows[0].unknown_count || 0),
       totalSeen: parseInt(result.rows[0].total_seen || 0),
       totalQuestions: parseInt(totalResult.rows[0].total || 0),
+      streak: userStreak.rows[0]?.current_streak || 0,
+      longestStreak: userStreak.rows[0]?.longest_streak || 0,
     });
   } catch (err) {
     console.error('Stats error:', err.message);

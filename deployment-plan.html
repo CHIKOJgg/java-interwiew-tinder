@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deployment Protocol | Java Interview Tinder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b;
+      --bg-alt: #18181b;
+      --border: #27272a;
+      --text: #fafafa;
+      --text-muted: #a1a1aa;
+      --accent: #8b5cf6;
+      --accent-glow: rgba(139, 92, 246, 0.3);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      
+      --fly: #a78bfa;
+      --vercel: #ffffff;
+      --supabase: #3ecf8e;
+      --redis: #f43f5e;
+      --telegram: #38bdf8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.05), transparent 30%),
+        radial-gradient(circle at 85% 30%, rgba(62, 207, 142, 0.05), transparent 30%);
+      background-attachment: fixed;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 24px;
+      width: 100%;
+    }
+
+    header {
+      margin-bottom: 48px;
+      text-align: center;
+      position: relative;
+    }
+
+    .badge-hybrid {
+      display: inline-block;
+      padding: 6px 14px;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      color: var(--fly);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.15rem;
+      max-width: 650px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Progress Section */
+    .progress-container {
+      background: rgba(24, 24, 27, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 48px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .progress-title {
+      font-weight: 600;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .progress-stats {
+      color: var(--accent);
+      font-family: 'Fira Code', monospace;
+      font-weight: 500;
+      font-size: 1.1rem;
+    }
+
+    .progress-bar-bg {
+      height: 8px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      background: linear-gradient(90deg, var(--accent), #d8b4fe);
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    /* Tabs Navigation */
+    .tabs {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 16px;
+      margin-bottom: 32px;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+
+    .tab {
+      background: rgba(24, 24, 27, 0.6);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tab:hover {
+      background: rgba(39, 39, 42, 0.8);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+
+    .tab.active {
+      background: rgba(139, 92, 246, 0.15);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 24px var(--accent-glow);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Phase Content */
+    .phase-content {
+      display: none;
+      animation: fadeIn 0.4s ease forwards;
+    }
+    .phase-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .phase-header {
+      margin-bottom: 24px;
+    }
+    .phase-header h2 {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .phase-header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    /* Step Cards */
+    .step-card {
+      background: rgba(24, 24, 27, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 16px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .step-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: rgba(24, 24, 27, 0.7);
+    }
+
+    .step-card.completed {
+      background: rgba(16, 185, 129, 0.03);
+      border-color: rgba(16, 185, 129, 0.2);
+    }
+
+    .step-header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      background: rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .checkbox svg {
+      width: 16px;
+      height: 16px;
+      color: transparent;
+      transition: color 0.2s;
+      stroke-width: 3;
+    }
+
+    .step-card.completed .checkbox {
+      background: var(--success);
+      border-color: var(--success);
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+    }
+
+    .step-card.completed .checkbox svg {
+      color: #000;
+    }
+
+    .step-title {
+      font-size: 1.15rem;
+      font-weight: 500;
+      flex: 1;
+      transition: color 0.3s;
+    }
+
+    .step-card.completed .step-title {
+      color: var(--text-muted);
+      text-decoration: line-through;
+    }
+
+    .chevron {
+      color: var(--text-muted);
+      transition: transform 0.3s ease;
+      display: flex;
+    }
+
+    .step-card.expanded .chevron {
+      transform: rotate(180deg);
+    }
+
+    .step-body {
+      padding: 0 24px 24px 68px;
+      display: none;
+      color: #d4d4d8;
+      line-height: 1.7;
+      font-size: 1.05rem;
+    }
+
+    .step-card.expanded .step-body {
+      display: block;
+      animation: slideDown 0.3s ease forwards;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Typography inside steps */
+    .step-body p {
+      margin-bottom: 12px;
+    }
+    .step-body ul {
+      margin-left: 20px;
+      margin-bottom: 12px;
+    }
+    .step-body li {
+      margin-bottom: 6px;
+    }
+    .step-body code {
+      background: rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9em;
+      color: #e4e4e7;
+    }
+
+    /* Code Blocks */
+    .code-block {
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin: 16px 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .code-header {
+      background: rgba(255,255,255,0.05);
+      padding: 10px 16px;
+      font-size: 0.8rem;
+      font-family: 'Fira Code', monospace;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .code-content {
+      padding: 16px;
+      overflow-x: auto;
+    }
+
+    .code-content pre {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: #a78bfa;
+      margin: 0;
+    }
+
+    .copy-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: var(--text);
+      color: #000;
+    }
+
+    .copy-btn.copied {
+      background: var(--success);
+      border-color: var(--success);
+      color: #000;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin: 16px 0;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      border: 1px solid transparent;
+    }
+
+    .alert-info {
+      background: rgba(139, 92, 246, 0.08);
+      border-color: rgba(139, 92, 246, 0.3);
+      color: #e4e4e7;
+    }
+
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #e4e4e7;
+    }
+    
+    .alert-success {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #e4e4e7;
+    }
+
+    .alert-icon {
+      font-size: 1.4rem;
+      flex-shrink: 0;
+      margin-top: -2px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-left: 12px;
+      vertical-align: middle;
+    }
+
+    .badge-required {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .badge-optional {
+      background: rgba(161, 161, 170, 0.15);
+      color: #d4d4d8;
+      border: 1px solid rgba(161, 161, 170, 0.3);
+    }
+
+    /* Control buttons */
+    .controls {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 40px;
+    }
+
+    .btn {
+      background: rgba(24, 24, 27, 0.6);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: rgba(39, 39, 42, 0.8);
+      color: var(--text);
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #f87171;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="badge-hybrid">✨ Hybrid Production Deployment</div>
+      <h1>Deployment Protocol</h1>
+      <p class="subtitle">Complete step-by-step infrastructure launch plan for Java Interview Tinder. Employs a hybrid backend strategy: UI-managed API alongside a locally built background worker to bypass remote-builder limitations.</p>
+    </header>
+
+    <div class="progress-container">
+      <div class="progress-header">
+        <div class="progress-title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          System Rollout Progress
+        </div>
+        <div class="progress-stats"><span id="completed-count">0</span> / <span id="total-count">0</span> Steps</div>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs-container">
+      <!-- Tabs injected by JS -->
+    </div>
+
+    <div id="phases-container">
+      <!-- Phases injected by JS -->
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-danger" id="reset-btn">Reset All Progress</button>
+    </div>
+  </div>
+
+  <script>
+    // Configuration Data
+    const deploymentData = [
+      {
+        id: "phase-data",
+        title: "Database & Cache",
+        icon: "var(--supabase)",
+        desc: "Initialize remote PostgreSQL and Upstash Redis clusters.",
+        steps: [
+          {
+            id: "db-create",
+            title: "Create Supabase Project",
+            req: "Required",
+            content: `
+              <p>Log in to <a href="https://supabase.com" target="_blank" style="color:var(--accent)">Supabase</a> and create a new project in your preferred region.</p>
+              <p>Go to <strong>Project Settings &rarr; Database</strong> and copy the Connection String (URI).</p>
+              <div class="alert alert-warning">
+                <div class="alert-icon">⚠️</div>
+                <div>Replace <code>[YOUR-PASSWORD]</code> in the URI. Use the direct connection (port 5432) for Fly.io compatibility, not the transaction pooler.</div>
+              </div>
+            `
+          },
+          {
+            id: "db-migrate",
+            title: "Run Migrations & Seed Data",
+            req: "Required",
+            content: `
+              <p>Export your database URL locally and run the initialization scripts to build the schema and inject initial questions.</p>
+              <div class="code-block">
+                <div class="code-header">Terminal</div>
+                <div class="code-content">
+                  <pre>export DATABASE_URL="postgresql://postgres:[password]@db.xxxx.supabase.co:5432/postgres"
+cd backend
+npm install
+npm run init-db
+npm run seed-db</pre>
+                </div>
+              </div>
+            `
+          },
+          {
+            id: "redis-create",
+            title: "Provision Upstash Redis",
+            req: "Required",
+            content: `
+              <p>Create a Redis database in <a href="https://upstash.com" target="_blank" style="color:var(--accent)">Upstash</a>. Ideally, select the same physical region as your Fly.io deployment to minimize latency.</p>
+              <p>Copy the <code>REDIS_URL</code> provided in the dashboard.</p>
+            `
+          }
+        ]
+      },
+      {
+        id: "phase-api",
+        title: "Backend API (Fly UI)",
+        icon: "var(--fly)",
+        desc: "Deploy the primary API layer using the Fly.io Web Dashboard.",
+        steps: [
+          {
+            id: "api-create",
+            title: "Launch App via Fly Dashboard",
+            req: "Required",
+            content: `
+              <p>Log into the Fly.io Dashboard. Click <strong>Launch App</strong> or use the GitHub integration to connect your repository.</p>
+              <p>Configure the app name (e.g., <code>java-interview-tinder-api</code>) and select the region.</p>
+            `
+          },
+          {
+            id: "api-secrets",
+            title: "Configure Production Secrets",
+            req: "Required",
+            content: `
+              <p>Navigate to the <strong>Secrets</strong> section of your new Fly app dashboard and inject the required environment variables:</p>
+              <ul>
+                <li><code>DATABASE_URL</code> (from Supabase)</li>
+                <li><code>REDIS_URL</code> (from Upstash)</li>
+                <li><code>BOT_TOKEN</code> (from Telegram @BotFather)</li>
+                <li><code>OPENROUTER_API_KEY</code></li>
+                <li><code>NODE_ENV=production</code></li>
+              </ul>
+            `
+          },
+          {
+            id: "api-deploy",
+            title: "Trigger API Deployment",
+            req: "Required",
+            content: `
+              <p>Trigger the deployment directly via the Fly Dashboard UI. Wait for the health checks to pass and note the provided <code>.fly.dev</code> URL.</p>
+            `
+          }
+        ]
+      },
+      {
+        id: "phase-worker",
+        title: "Worker (Local CLI)",
+        icon: "var(--warning)",
+        desc: "Deploy the background worker manually bypassing remote builders.",
+        steps: [
+          {
+            id: "worker-create",
+            title: "Create Worker App",
+            req: "Required",
+            content: `
+              <p>Because the worker requires a different process configuration, we provision it as a separate app via the terminal.</p>
+              <div class="code-block">
+                <div class="code-header">Terminal</div>
+                <div class="code-content">
+                  <pre>flyctl apps create interview-tinder-worker</pre>
+                </div>
+              </div>
+            `
+          },
+          {
+            id: "worker-secrets",
+            title: "Sync Worker Secrets",
+            req: "Required",
+            content: `
+              <p>The worker requires identical database and redis access as the API.</p>
+              <div class="code-block">
+                <div class="code-header">Terminal</div>
+                <div class="code-content">
+                  <pre>flyctl secrets set DATABASE_URL="..." REDIS_URL="..." NODE_ENV="production" --app interview-tinder-worker</pre>
+                </div>
+              </div>
+            `
+          },
+          {
+            id: "worker-deploy",
+            title: "Execute Local Build Deployment",
+            req: "Required",
+            content: `
+              <div class="alert alert-success">
+                <div class="alert-icon">💡</div>
+                <div><strong>The Hybrid Solution:</strong> Using <code>--local-only</code> bypasses Fly's unstable remote builders. This requires Docker to be running locally on your machine.</div>
+              </div>
+              <p>From inside your backend directory, execute the deployment referencing the specific worker TOML file.</p>
+              <div class="code-block">
+                <div class="code-header">Terminal (backend/ directory)</div>
+                <div class="code-content">
+                  <pre>flyctl deploy -c fly.worker.toml --local-only</pre>
+                </div>
+              </div>
+            `
+          }
+        ]
+      },
+      {
+        id: "phase-vercel",
+        title: "Frontend (Vercel)",
+        icon: "var(--vercel)",
+        desc: "Ship the React Vite frontend to Vercel's Edge Network.",
+        steps: [
+          {
+            id: "vercel-link",
+            title: "Link Vercel Project",
+            req: "Required",
+            content: `
+              <p>Ensure the Vercel CLI is installed, then link your frontend directory.</p>
+              <div class="code-block">
+                <div class="code-header">Terminal (frontend/ directory)</div>
+                <div class="code-content">
+                  <pre>vercel login
+vercel link</pre>
+                </div>
+              </div>
+            `
+          },
+          {
+            id: "vercel-env",
+            title: "Set VITE_API_URL",
+            req: "Required",
+            content: `
+              <p>Set your API connection string pointing to the Fly.io API app deployed in Phase 2.</p>
+              <div class="code-block">
+                <div class="code-header">Terminal</div>
+                <div class="code-content">
+                  <pre>vercel env add VITE_API_URL production</pre>
+                </div>
+              </div>
+              <p><em>(e.g., <code>https://java-interview-tinder-api.fly.dev/api</code>)</em></p>
+            `
+          },
+          {
+            id: "vercel-deploy",
+            title: "Deploy Production Build",
+            req: "Required",
+            content: `
+              <div class="code-block">
+                <div class="code-header">Terminal</div>
+                <div class="code-content">
+                  <pre>vercel --prod</pre>
+                </div>
+              </div>
+              <p>Copy the generated production URL (e.g., <code>https://java-interview-tinder.vercel.app</code>).</p>
+            `
+          }
+        ]
+      },
+      {
+        id: "phase-final",
+        title: "Final Integration",
+        icon: "var(--telegram)",
+        desc: "Wire the frontend into Telegram and perform end-to-end testing.",
+        steps: [
+          {
+            id: "tg-link",
+            title: "Set Telegram Web App URL",
+            req: "Required",
+            content: `
+              <p>Return to <strong>@BotFather</strong> on Telegram.</p>
+              <p>Send <code>/setmenubutton</code>, select your bot, and paste your Vercel Production URL.</p>
+            `
+          },
+          {
+            id: "tg-verify",
+            title: "End-to-End Verification",
+            req: "Required",
+            content: `
+              <p>Open your bot on Telegram and launch the Mini App.</p>
+              <ul>
+                <li>Verify questions load (DB connection valid).</li>
+                <li>Request an AI hint (Redis cache & OpenRouter valid).</li>
+                <li>Check worker logs to ensure telemetry/background jobs process successfully.</li>
+              </ul>
+              <div class="code-block">
+                <div class="code-header">Check Worker Logs</div>
+                <div class="code-content">
+                  <pre>fly logs -a interview-tinder-worker</pre>
+                </div>
+              </div>
+            `
+          }
+        ]
+      }
+    ];
+
+    // State Management
+    let completedSteps = new Set(JSON.parse(localStorage.getItem('deploy_progress') || '[]'));
+    let totalSteps = 0;
+
+    // Initialization
+    function init() {
+      const tabsContainer = document.getElementById('tabs-container');
+      const phasesContainer = document.getElementById('phases-container');
+      
+      deploymentData.forEach((phase, index) => {
+        totalSteps += phase.steps.length;
+
+        // Render Tab
+        const tab = document.createElement('div');
+        tab.className = `tab ${index === 0 ? 'active' : ''}`;
+        tab.onclick = () => switchTab(index);
+        tab.innerHTML = `
+          <div class="dot" style="background-color: ${phase.icon}"></div>
+          ${phase.title}
+        `;
+        tabsContainer.appendChild(tab);
+
+        // Render Phase Content
+        const phaseEl = document.createElement('div');
+        phaseEl.className = `phase-content ${index === 0 ? 'active' : ''}`;
+        phaseEl.id = `content-${index}`;
+        
+        let stepsHtml = phase.steps.map(step => {
+          const isDone = completedSteps.has(step.id);
+          const badgeClass = step.req === 'Required' ? 'badge-required' : 'badge-optional';
+          return `
+            <div class="step-card ${isDone ? 'completed' : ''}" id="card-${step.id}">
+              <div class="step-header" onclick="toggleStep('${step.id}')">
+                <div class="checkbox" onclick="toggleComplete(event, '${step.id}')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="step-title">${step.title} <span class="badge ${badgeClass}">${step.req}</span></div>
+                <div class="chevron">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+              </div>
+              <div class="step-body">
+                ${step.content}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        phaseEl.innerHTML = `
+          <div class="phase-header">
+            <h2>${phase.title}</h2>
+            <p>${phase.desc}</p>
+          </div>
+          <div class="steps-container">
+            ${stepsHtml}
+          </div>
+        `;
+        phasesContainer.appendChild(phaseEl);
+      });
+
+      document.getElementById('total-count').textContent = totalSteps;
+      
+      // Setup copy buttons
+      setTimeout(setupCopyButtons, 100);
+      updateProgress();
+    }
+
+    // Interactivity Functions
+    function switchTab(index) {
+      document.querySelectorAll('.tab').forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+      });
+      document.querySelectorAll('.phase-content').forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+      });
+    }
+
+    function toggleStep(stepId) {
+      const card = document.getElementById(`card-${stepId}`);
+      card.classList.toggle('expanded');
+    }
+
+    function toggleComplete(event, stepId) {
+      event.stopPropagation();
+      const card = document.getElementById(`card-${stepId}`);
+      
+      if (completedSteps.has(stepId)) {
+        completedSteps.delete(stepId);
+        card.classList.remove('completed');
+      } else {
+        completedSteps.add(stepId);
+        card.classList.add('completed');
+        // Auto-collapse when completed
+        card.classList.remove('expanded');
+      }
+      
+      saveProgress();
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const count = completedSteps.size;
+      document.getElementById('completed-count').textContent = count;
+      
+      const percentage = (count / totalSteps) * 100;
+      document.getElementById('progress-bar').style.width = `${percentage}%`;
+    }
+
+    function saveProgress() {
+      localStorage.setItem('deploy_progress', JSON.stringify(Array.from(completedSteps)));
+    }
+
+    function setupCopyButtons() {
+      document.querySelectorAll('.code-block').forEach(block => {
+        const header = block.querySelector('.code-header');
+        if (!header) return;
+        
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = 'Copy';
+        
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const pre = block.querySelector('pre');
+          navigator.clipboard.writeText(pre.textContent).then(() => {
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+              btn.textContent = 'Copy';
+              btn.classList.remove('copied');
+            }, 2000);
+          });
+        };
+        
+        header.appendChild(btn);
+      });
+    }
+
+    // Reset functionality
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      if (confirm('Are you sure you want to reset all deployment progress?')) {
+        completedSteps.clear();
+        saveProgress();
+        document.querySelectorAll('.step-card').forEach(card => {
+          card.classList.remove('completed');
+        });
+        updateProgress();
+      }
+    });
+
+    // Run
+    init();
+  </script>
+</body>
+</html>

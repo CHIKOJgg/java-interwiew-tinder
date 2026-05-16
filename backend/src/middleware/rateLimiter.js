@@ -123,7 +123,7 @@ async function incrementCounter(userId, field) {
 
 export function rateLimit(limitType = 'requests') {
   return async (req, res, next) => {
-    const userId = req.body?.userId || req.query?.userId;
+    const userId = req.userId || req.body?.userId || req.query?.userId;
     if (!userId || isAdmin(userId)) return next();
 
     const limits = await getUserLimits(userId);
@@ -207,7 +207,7 @@ export function rateLimit(limitType = 'requests') {
 
 export function requireEntitlement(feature, value) {
   return async (req, res, next) => {
-    const userId = req.body?.userId || req.query?.userId;
+    const userId = req.userId || req.body?.userId || req.query?.userId;
     if (!userId || isAdmin(userId)) return next();
 
     const limits = await getUserLimits(userId);

@@ -36,17 +36,14 @@ export const validateTelegramWebAppData = (initData, botToken) => {
       .update(dataCheckString)
       .digest('hex');
 
-    // Validate
-    if (calculatedHash !== hash) {
-      console.log('Hash mismatch');
-      console.log('Expected:', calculatedHash);
-      console.log('Received:', hash);
+    // Validate using timing-safe comparison to prevent timing attacks
+    const hashBuffer = Buffer.from(calculatedHash, 'hex');
+    const receivedBuffer = Buffer.from(hash, 'hex');
 
-      // Временно пропускаем валидацию для тестирования
-      console.log('⚠️ Skipping hash validation for now');
-
-      // Продолжаем работу даже с неверным хешем
-      // TODO: Разобраться почему хеш не совпадает
+    if (hashBuffer.length !== receivedBuffer.length ||
+        !crypto.timingSafeEqual(hashBuffer, receivedBuffer)) {
+      console.warn('❌ Telegram initData hash mismatch — rejecting request');
+      return null;
     }
 
     // Parse user data

@@ -16,7 +16,7 @@ const MockInterviewMode = lazy(() => import('./components/MockInterviewMode'));
 const ResumeAnalyzer = lazy(() => import('./components/ResumeAnalyzer'));
 const SubscriptionPlans = lazy(() => import('./components/SubscriptionPlans'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
-import CodeCompletionMode from './components/CodeCompletionMode';
+import CategorySelection from './components/CategorySelection';
 import ReportSheet from './components/ReportSheet';
 import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
@@ -180,40 +180,30 @@ function App() {
   if (screen === 'admin') return <AdminPanel onBack={() => setScreen('main')} />;
 
   const renderMode = () => {
-    // Non-swipe modes manage their own empty/loading states.
-    // Routing them through hasMoreQuestions() causes "Отличная работа"
-    // to fire whenever the feed returns 0 (AI data not yet generated).
-    if (learningMode === 'test') return <TestMode />;
-    if (learningMode === 'bug-hunting') return <BugHuntingMode />;
-    if (learningMode === 'blitz') return <BlitzMode />;
-    if (learningMode === 'mock-interview') return <MockInterviewMode />;
-    if (learningMode === 'concept-linker') return <ConceptLinker />;
-    if (learningMode === 'code-completion') return <CodeCompletionMode />;
-
-    // Swipe mode: show skeleton during load, completion screen when exhausted
-    if (isLoadingQuestions) return <SkeletonCard />;
-
-    if (!hasMoreQuestions()) {
-      return (
-        <div className="completion-screen">
-          <CheckCircle size={64} color="#51cf66" />
-          <h2>{t('completion.title')}</h2>
-          <p>{t('completion.desc')}</p>
-          <button onClick={() => setScreen('category')}>
-            {t('completion.choose_other')}
-          </button>
-          <button 
-            onClick={() => setShowShare(true)}
-            style={{ marginTop: 10, background: 'rgba(51, 154, 240, 0.1)', color: '#339af0' }}
-          >
-            {t('completion.share')}
-          </button>
-        </div>
-      );
-    }
-
     switch (learningMode) {
       case 'swipe':
+        // Swipe mode: show skeleton during load, completion screen when exhausted
+        if (isLoadingQuestions) return <SkeletonCard />;
+
+        if (!hasMoreQuestions()) {
+          return (
+            <div className="completion-screen">
+              <CheckCircle size={64} color="#51cf66" />
+              <h2>{t('completion.title')}</h2>
+              <p>{t('completion.desc')}</p>
+              <button onClick={() => setScreen('category')}>
+                {t('completion.choose_other')}
+              </button>
+              <button 
+                onClick={() => setShowShare(true)}
+                style={{ marginTop: 10, background: 'rgba(51, 154, 240, 0.1)', color: '#339af0' }}
+              >
+                {t('completion.share')}
+              </button>
+            </div>
+          );
+        }
+
         return (
           <div className="card-stack">
             {questions.slice(currentIndex, currentIndex + 3).map((q, index) => (
@@ -223,7 +213,6 @@ function App() {
                 style={{ zIndex: 3 - index }}
               >
                 {index === 0 ? (
-                  // ── Active card: full QuestionCard with flip ──
                   <QuestionCard
                     ref={el => (cardRefs.current[currentIndex] = el)}
                     question={q}
@@ -231,7 +220,6 @@ function App() {
                     canSwipe={true}
                   />
                 ) : (
-                  // ── Peek cards: blank gradient shell only, no text bleeding ──
                   <div className="card-peek-shell" />
                 )}
               </div>

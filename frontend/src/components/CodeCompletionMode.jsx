@@ -29,7 +29,7 @@ function SnippetBlock({ snippet, selected, result, codeLanguage }) {
 
 const CodeCompletionMode = () => {
   const { questions, currentIndex, submitCodeCompletionAnswer, isLoadingQuestions,
-    hasMoreQuestions, fetchGeneration, language } = useStore();
+    hasMoreQuestions, fetchGeneration, advanceQuestion, language } = useStore();
 
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

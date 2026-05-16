@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Bug, Check, X, Loader2, AlertTriangle } from 'lucide-react';
 import { highlight } from '../utils/highlight';
@@ -8,6 +9,7 @@ import './BugHuntingMode.css';
 const BugHuntingMode = () => {
   const { questions, currentIndex, submitBugHuntAnswer, isLoadingQuestions,
     hasMoreQuestions, fetchGeneration, advanceQuestion, language } = useStore();
+  const { t } = useTranslation();
 
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,7 +55,7 @@ const BugHuntingMode = () => {
     advanceQuestion();
   };
 
-  if (isLoadingQuestions) return <LoadingCard text="Загрузка вопросов..." />;
+  if (isLoadingQuestions) return <LoadingCard text={t('common.loading_questions', 'Loading questions...')} />;
   if (!hasMoreQuestions()) return null;
 
   if (hasError) return (
@@ -61,12 +63,12 @@ const BugHuntingMode = () => {
       <AlertTriangle size={40} color="#ff6b6b" />
       <p style={{ color: '#ff6b6b', marginTop: 12, textAlign: 'center' }}>{bugData.message}</p>
       <button className="retry-btn" onClick={() => fetchGeneration('bug', currentQuestion.id, 0)}>
-        Попробовать снова
+        {t('common.retry', 'Try again')}
       </button>
     </div>
   );
 
-  if (!bugData) return <LoadingCard text="Подготовка кода..." />;
+  if (!bugData) return <LoadingCard text={t('bug.preparing_code', 'Preparing code snippet...')} />;
 
   return (
     <div className="bug-hunting-mode">
@@ -76,7 +78,7 @@ const BugHuntingMode = () => {
           <span className="bug-category">{currentQuestion.category}</span>
         </div>
 
-        <p className="bug-instruction">Найди баг в коде:</p>
+        <p className="bug-instruction">{t('bug.find_bug', 'Find the bug in this code:')}</p>
 
         {/* §5 — highlighted code block */}
         <div
@@ -107,17 +109,17 @@ const BugHuntingMode = () => {
 
         {!result ? (
           <button className="submit-bug-button" disabled={!selectedOption || isSubmitting} onClick={handleSubmit}>
-            {isSubmitting ? <Loader2 className="spinner" size={18} /> : 'Проверить'}
+            {isSubmitting ? <Loader2 className="spinner" size={18} /> : t('bug.check', 'Check')}
           </button>
         ) : (
           <div className="bug-result-feedback">
             {result.isCorrect
-              ? <div className="feedback-correct"><Check size={18} /><span>Верно! Вы нашли баг.</span></div>
-              : <div className="feedback-incorrect"><X size={18} /><span>Неверно. Правильно: <strong>{result.correctAnswer}</strong></span></div>
+              ? <div className="feedback-correct"><Check size={18} /><span>{t('bug.correct', 'Correct! You found the bug.')}</span></div>
+              : <div className="feedback-incorrect"><X size={18} /><span>{t('bug.incorrect', 'Incorrect. Correct:')} <strong>{result.correctAnswer}</strong></span></div>
             }
             {/* §11 — next button always appears, not only on correct */}
             <button className="next-bug-button" onClick={handleNext}>
-              Следующая задача →
+              {t('bug.next_task', 'Next task →')}
             </button>
           </div>
         )}

@@ -1,6 +1,7 @@
 import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import TinderCard from 'react-tinder-card';
 import { RotateCcw, Flag } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import './QuestionCard.css';
 
 const categoryColors = {
@@ -24,6 +25,7 @@ const difficultyColors = {
 };
 
 const QuestionCard = forwardRef(({ question, onSwipe, canSwipe = true }, ref) => {
+  const { t } = useTranslation();
   const [isFlipped, setIsFlipped] = useState(false);
   const tinderRef = useRef(null);
 
@@ -127,13 +129,13 @@ const QuestionCard = forwardRef(({ question, onSwipe, canSwipe = true }, ref) =>
               type="button"
             >
               <RotateCcw size={15} />
-              <span>Нажми для ответа</span>
+              <span>{t('card.flip_hint', 'Tap for answer')}</span>
             </button>
             <button
               className="report-flag"
               onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('report-question', { detail: question.id })); }}
               type="button"
-              title="Сообщить об ошибке"
+              title={t('card.report_error', 'Report error')}
             >
               <Flag size={16} />
             </button>

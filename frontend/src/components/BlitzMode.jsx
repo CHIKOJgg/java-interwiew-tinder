@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Timer, Zap, Check, X, Trophy, Play } from 'lucide-react';
 import './BlitzMode.css';
@@ -31,6 +32,7 @@ const BlitzMode = () => {
     fetchGeneration,
     advanceQuestion,
   } = useStore();
+  const { t } = useTranslation();
 
   const [feedback, setFeedback] = useState(null); // 'correct' | 'incorrect'
   const [localBlitzData, setLocalBlitzData] = useState(null);
@@ -77,6 +79,7 @@ const BlitzMode = () => {
     setTimeout(() => {
       setFeedback(null);
       setLocalBlitzData(null);
+      advanceQuestion();
     }, 350);
   };
 
@@ -85,11 +88,11 @@ const BlitzMode = () => {
       <div className="blitz-start-screen">
         <div className="blitz-start-card">
           <Zap size={64} className="zap-icon" />
-          <h1>Блиц-режим</h1>
-          <p>Ответьте на максимальное количество вопросов за 60 секунд. Только Правда или Ложь!</p>
+          <h1>{t('blitz.title', 'Blitz Mode')}</h1>
+          <p>{t('blitz.description', 'Answer as many questions as possible in 60 seconds. True or False only!')}</p>
           <button className="start-blitz-button" onClick={startBlitz}>
             <Play size={20} />
-            <span>Поехали!</span>
+            <span>{t('blitz.start', 'Go!')}</span>
           </button>
         </div>
       </div>
@@ -101,13 +104,13 @@ const BlitzMode = () => {
       <div className="blitz-results-screen">
         <div className="blitz-results-card">
           <Trophy size={64} className="trophy-icon" />
-          <h1>Время вышло!</h1>
+          <h1>{t('blitz.time_up', 'Time Up!')}</h1>
           <div className="final-score">
-            <span>Ваш результат:</span>
+            <span>{t('blitz.result', 'Your score:')}</span>
             <strong>{blitzScore}</strong>
           </div>
           <button className="retry-blitz-button" onClick={startBlitz}>
-            Попробовать еще раз
+            {t('blitz.retry', 'Try Again')}
           </button>
         </div>
       </div>

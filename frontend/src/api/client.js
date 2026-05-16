@@ -11,18 +11,20 @@ class ApiClient {
   setLanguage(language) { this.language = language; }
 
   async getAuthHeaders() {
-    // We import the store dynamically to avoid circular dependencies if any
-    const { default: useStore } = await import('../store/useStore');
-    const token = useStore.getState().token;
+    if (!this._store) {
+      const { default: useStore } = await import('../store/useStore');
+      this._store = useStore;
+    }
+    const token = this._store.getState().token;
     return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
 
 
   // ─── Auth ──────────────────────────────────────────────────────────
-  async login(initData) {
+  async login(initData, referralId) {
     const response = await this.request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ initData }),
+      body: JSON.stringify({ initData, referralId }),
     });
     if (response.user) {
       this.setUserId(response.user.telegram_id);

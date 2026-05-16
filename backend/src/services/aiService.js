@@ -160,6 +160,7 @@ async function writeCache(clusterId, mode, language, content, isJson) {
   // Bad responses (prose, schema descriptions) must NOT enter the cache.
   if (isJson) {
     try {
+      const parsed = parseAIResponse(content);
       validateParsed(mode, parsed);
     } catch (err) {
       logger.error({ err, mode, clusterId }, '❌ NOT caching invalid JSON');

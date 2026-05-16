@@ -64,7 +64,12 @@ const useStore = create((set, get) => ({
 
   logout: () => {
     sessionStorage.removeItem(`${CACHE_KEY}_token`);
-    localStorage.clear(); // Clear all other caches
+    // Only clear our own keys from localStorage to avoid nuking other app data
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith(CACHE_KEY)) {
+        localStorage.removeItem(key);
+      }
+    });
     set({
       user: null,
       token: null,
@@ -169,7 +174,8 @@ const useStore = create((set, get) => ({
       console.error('Swipe recording failed:', err);
     }
 
-    if (direction === 'left') get().loadExplanation(questionId);
+    // Bug 29 fix: Don't auto-open explanation on swipe left to avoid interrupting the flow
+    // if (direction === 'left') get().loadExplanation(questionId);
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
   },
 
@@ -305,6 +311,15 @@ const useStore = create((set, get) => ({
 
     const typeMap = { test: 'options', bug: 'bugHuntingData', blitz: 'blitzData', code: 'codeCompletionData' };
     const dataKey = typeMap[type];
+
+    // Reset error state when starting a fresh attempt so the UI shows loading again
+    if (_attempt === 0) {
+      set(state => ({
+        questions: state.questions.map(q =>
+          q.id === questionId ? { ...q, [dataKey]: null } : q
+        ),
+      }));
+    }
 
     // Bug 5 fix: terminal failure after MAX_ATTEMPTS — set a sentinel so the
     // component can show an error instead of spinning forever

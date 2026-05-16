@@ -160,7 +160,7 @@ app.get('/api/categories', async (req, res) => {
     );
     res.json({ language, categories: result.rows.map(r => ({ name: r.category, count: parseInt(r.count) })) });
   } catch (error) {
-    console.error('Error fetching categories:', error);
+    logger.error({ err: error }, 'Error fetching categories');
     res.status(500).json({ error: 'Failed to fetch categories' });
   }
 });
@@ -287,7 +287,7 @@ app.post('/api/auth/login', async (req, res) => {
     // Track login
     metricsService.trackEvent(user.telegram_id, 'user_login', { plan });
   } catch (error) {
-    console.error('Error in /auth/login:', error);
+    logger.error({ err: error }, 'Error in /auth/login');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -360,7 +360,7 @@ app.post('/api/preferences/language', validateBody({ language: { required: true 
     await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => { });
     res.json({ success: true });
   } catch (err) {
-    console.error('Error updating language preference:', err);
+    logger.error({ err }, 'Error updating language preference');
     res.status(500).json({ error: 'Failed to update language' });
   }
 });
@@ -441,7 +441,7 @@ app.get('/api/questions/feed', async (req, res) => {
 
     res.json({ questions, meta: { language, mode, total: questions.length } });
   } catch (error) {
-    console.error('Error in /questions/feed:', error.message);
+    logger.error({ err: error }, 'Error in /questions/feed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -477,7 +477,7 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
     // Track generation request
     metricsService.trackEvent(userId, 'ai_generation_requested', { mode, questionId });
   } catch (err) {
-    console.error('Error in /api/generate/:type:', err);
+    logger.error({ err }, 'Error in /api/generate/:type');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -649,7 +649,7 @@ app.post('/api/questions/:questionId/report', async (req, res) => {
 
     res.json({ success: true, count });
   } catch (err) {
-    console.error('Report error:', err.message);
+    logger.error({ err }, 'Report error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -687,7 +687,7 @@ app.post('/api/questions/bug-hunt-answer',
       await recordProgress(userId, questionId, isCorrect);
       res.json({ success: true, isCorrect, correctAnswer: correctBug });
     } catch (err) {
-      console.error('bug-hunt-answer error:', err.message);
+      logger.error({ err }, 'bug-hunt-answer error');
       res.status(500).json({ error: 'Internal server error' });
     }
   }
@@ -714,7 +714,7 @@ app.post('/api/questions/blitz-answer',
       await recordProgress(userId, questionId, isCorrect);
       res.json({ success: true, isCorrect });
     } catch (err) {
-      console.error('blitz-answer error:', err.message);
+      logger.error({ err }, 'blitz-answer error');
       res.status(500).json({ error: 'Internal server error' });
     }
   }
@@ -735,7 +735,7 @@ app.post('/api/questions/code-completion-answer',
       await recordProgress(userId, questionId, isCorrect);
       res.json({ success: true, isCorrect, correctAnswer: correctPart });
     } catch (err) {
-      console.error('code-completion-answer error:', err.message);
+      logger.error({ err }, 'code-completion-answer error');
       res.status(500).json({ error: 'Internal server error' });
     }
   }
@@ -779,7 +779,7 @@ app.post('/api/questions/explain', async (req, res) => {
     }
 
     // ── 3. Call AI — let errors bubble so the client knows what failed ─
-    console.log(`🤖 Generating explanation for question ${questionId} (${question.language || 'Java'})`);
+    logger.info({ questionId, language: question.language || 'Java' }, '🤖 Generating explanation');
     const explanation = await generateExplanation(
       question.question_text, question.short_answer, userId || null, question.language || 'Java'
     );
@@ -792,7 +792,7 @@ app.post('/api/questions/explain', async (req, res) => {
     // Track explanation request
     metricsService.trackEvent(userId, 'ai_explanation_requested', { questionId, cached: false });
   } catch (error) {
-    console.error('Error in /questions/explain:', error.message);
+    logger.error({ err: error, questionId }, 'Error in /questions/explain');
     // Return the real error message — helps diagnose model/key issues in production
     res.status(500).json({
       error: 'AI explanation failed',
@@ -914,7 +914,7 @@ app.post('/api/bot/webhook', async (req, res) => {
         if (!userId || !planId) throw new Error('Invalid payload');
         await answerPreCheckout(pcq.id, true);
       } catch (err) {
-        console.error('pre_checkout_query failed:', err.message);
+        logger.error({ err }, 'pre_checkout_query failed');
         await answerPreCheckout(pcq.id, false, 'Payment validation failed. Please try again.');
       }
       return;
@@ -1092,11 +1092,32 @@ app.get('/api/admin/metrics', async (req, res) => {
   } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
-app.post('/api/admin/clear-cache', async (req, res) => {
+app.post('/api/admin/clear-cache', requireAdmin, async (req, res) => {
   try {
-    await pool.query('DELETE FROM ai_cache');
-    res.json({ success: true, message: 'AI Cache cleared' });
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+    const { mode, language } = req.body;
+    let query = 'DELETE FROM ai_cache';
+    const params = [];
+
+    if (mode || language) {
+      query += ' WHERE 1=1';
+      if (mode) { params.push(mode); query += ` AND mode = $${params.length}`; }
+      if (language) { params.push(language); query += ` AND language = $${params.length}`; }
+    }
+
+    const result = await pool.query(query, params);
+    logger.info({ mode, language, count: result.rowCount }, '🗑️ AI Cache cleared by admin');
+    
+    // Redis invalidation (simple flush for now if no specific keys targetable)
+    if (redis && (!mode && !language)) {
+      const keys = await redis.keys('ai:*');
+      if (keys.length > 0) await redis.del(...keys);
+    }
+
+    res.json({ success: true, message: `AI Cache cleared (${result.rowCount} rows)` });
+  } catch (err) {
+    logger.error({ err }, 'Clear cache failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // ─── Admin Moderation ──────────────────────────────────────────────────
@@ -1223,7 +1244,7 @@ app.get('/api/stats/categories', async (req, res) => {
       total: parseInt(result.rows[0].total || 0),
     });
   } catch (err) {
-    console.error('Category stats error:', err.message);
+    logger.error({ err }, 'Category stats error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1263,7 +1284,7 @@ app.get('/api/stats', async (req, res) => {
       longestStreak: userStreak.rows[0]?.longest_streak || 0,
     });
   } catch (err) {
-    console.error('Stats error:', err.message);
+    logger.error({ err }, 'Stats error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

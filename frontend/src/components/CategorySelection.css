@@ -28,8 +28,30 @@
 }
 
 .category-header {
+  position: relative;
   text-align: center;
   margin-bottom: 20px;
+  padding-top: 10px;
+}
+
+.back-btn-absolute {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: none;
+  border: none;
+  color: var(--tg-theme-text-color, #495057);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+
+.back-btn-absolute:active {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .category-header h1 {

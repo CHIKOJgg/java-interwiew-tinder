@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Link, CheckCircle2, RefreshCw, Loader2, Sparkles } from 'lucide-react';
 import './ConceptLinker.css';
@@ -11,6 +12,7 @@ const ConceptLinker = () => {
     hasMoreQuestions,
     loadQuestions
   } = useStore();
+  const { t } = useTranslation();
 
   const LEVEL_SIZE = 5;
 
@@ -80,7 +82,7 @@ const ConceptLinker = () => {
     return (
       <div className="linker-loading">
         <Loader2 className="spinner" size={48} />
-        <p>Подготовка пазла...</p>
+        <p>{t('linker.preparing', 'Preparing puzzle...')}</p>
       </div>
     );
   }
@@ -96,13 +98,13 @@ const ConceptLinker = () => {
             <span>Concept Linker</span>
           </div>
           <div className="level-progress">
-            {matches.length} / {terms.length} найдено
+            {t('linker.found_count', { count: matches.length, total: terms.length, defaultValue: '{{count}} / {{total}} found' })}
           </div>
         </div>
 
         <div className="linker-grid">
           <div className="terms-column">
-            <h3>Термины</h3>
+            <h3>{t('linker.terms', 'Terms')}</h3>
             {terms.map(term => {
               const isMatched = matches.some(m => m.termId === term.id);
               const isSelected = selectedTerm === term.id;
@@ -121,7 +123,7 @@ const ConceptLinker = () => {
           </div>
 
           <div className="defs-column">
-            <h3>Определения</h3>
+            <h3>{t('linker.definitions', 'Definitions')}</h3>
             {definitions.map(def => {
               const isMatched = matches.some(m => m.defId === def.id);
               const isSelected = selectedDef === def.id;
@@ -144,8 +146,8 @@ const ConceptLinker = () => {
           <div className="level-complete-overlay">
             <div className="complete-card">
               <Sparkles size={48} className="sparkles-icon" />
-              <h2>Все связи установлены!</h2>
-              <p>Вы отлично разбираетесь в этих концепциях.</p>
+              <h2>{t('linker.complete_title', 'All links established!')}</h2>
+              <p>{t('linker.complete_desc', "You've mastered these concepts.")}</p>
               <button className="next-level-btn" onClick={() => {
                 // Advance by the level size; load more questions if running low
                 const nextIndex = currentIndex + LEVEL_SIZE;
@@ -154,7 +156,7 @@ const ConceptLinker = () => {
                   loadQuestions(true);
                 }
               }}>
-                <span>Следующий набор</span>
+                <span>{t('linker.next_set', 'Next set')}</span>
                 <RefreshCw size={18} />
               </button>
             </div>

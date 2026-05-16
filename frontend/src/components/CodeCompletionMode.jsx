@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Code2, Check, X, Loader2, Braces, AlertTriangle } from 'lucide-react';
 import { highlight } from '../utils/highlight';
@@ -30,6 +31,7 @@ function SnippetBlock({ snippet, selected, result, codeLanguage }) {
 const CodeCompletionMode = () => {
   const { questions, currentIndex, submitCodeCompletionAnswer, isLoadingQuestions,
     hasMoreQuestions, fetchGeneration, advanceQuestion, language } = useStore();
+  const { t } = useTranslation();
 
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,7 +70,7 @@ const CodeCompletionMode = () => {
     advanceQuestion();
   };
 
-  if (isLoadingQuestions) return <LoadingCard text="Загрузка вопросов..." />;
+  if (isLoadingQuestions) return <LoadingCard text={t('common.loading_questions', 'Loading questions...')} />;
   if (!hasMoreQuestions()) return null;
 
   if (hasError) return (
@@ -76,12 +78,12 @@ const CodeCompletionMode = () => {
       <AlertTriangle size={40} color="#ff6b6b" />
       <p style={{ color: '#ff6b6b', marginTop: 12, textAlign: 'center' }}>{completionData.message}</p>
       <button className="retry-btn" onClick={() => fetchGeneration('code', currentQuestion.id, 0)}>
-        Попробовать снова
+        {t('common.retry', 'Try again')}
       </button>
     </div>
   );
 
-  if (!completionData) return <LoadingCard text="Подготовка кода..." />;
+  if (!completionData) return <LoadingCard text={t('code_completion.preparing', 'Preparing code fragment...')} />;
 
   return (
     <div className="code-completion-mode">
@@ -91,7 +93,7 @@ const CodeCompletionMode = () => {
           <span className="topic-badge">{currentQuestion.category}</span>
         </div>
 
-        <p className="completion-instruction">Выбери правильное продолжение:</p>
+        <p className="completion-instruction">{t('code_completion.instruction', 'Complete the code fragment:')}</p>
 
         {/* §5 — syntax-highlighted snippet with ___ replaced */}
         <SnippetBlock
@@ -123,19 +125,19 @@ const CodeCompletionMode = () => {
         {!result ? (
           <button className="submit-completion-button"
             disabled={!selectedOption || isSubmitting} onClick={handleSubmit}>
-            {isSubmitting ? <Loader2 className="spinner" size={18} /> : 'Завершить'}
+            {isSubmitting ? <Loader2 className="spinner" size={18} /> : t('code_completion.submit', 'Finish')}
           </button>
         ) : (
           <div className="completion-result-feedback">
             {result.isCorrect
-              ? <div className="feedback-correct"><Check size={18} /><span>Идеально!</span></div>
+              ? <div className="feedback-correct"><Check size={18} /><span>{t('code_completion.correct', 'Perfect!')}</span></div>
               : <div className="feedback-incorrect"><X size={18} />
-                <span>Неверно. Правильно: <code>{result.correctAnswer}</code></span>
+                <span>{t('code_completion.incorrect', 'Incorrect. Correct:')} <code>{result.correctAnswer}</code></span>
               </div>
             }
             {/* §12 — next button always appears */}
             <button className="next-completion-button" onClick={handleNext}>
-              Следующий фрагмент →
+              {t('code_completion.next', 'Next fragment →')}
             </button>
           </div>
         )}

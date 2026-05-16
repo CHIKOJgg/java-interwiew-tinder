@@ -39,11 +39,11 @@ const AdminPanel = () => {
     if (!targetId.trim()) return;
     try {
       await apiClient.grantPlan(targetId.trim(), planId, parseInt(months));
-      setGrantMsg(`✅ Plan ${planId} granted to ${targetId}`);
+      setGrantMsg(`✅ ${t('admin.plan_granted', { plan: planId, user: targetId, defaultValue: 'Plan {{plan}} granted to {{user}}' })}`);
       setTargetId('');
       fetchUsers();
     } catch (e) {
-      setGrantMsg(`❌ Error: ${e.message}`);
+      setGrantMsg(`❌ ${t('common.error')}: ${e.message}`);
     }
   };
 
@@ -57,7 +57,7 @@ const AdminPanel = () => {
 
       {open && (
         <div className="admin-content">
-          <h3>Grant Subscription</h3>
+          <h3>{t('admin.grant_title', 'Grant Subscription')}</h3>
           <div className="admin-grant-form">
             <input
               className="admin-input"
@@ -70,12 +70,12 @@ const AdminPanel = () => {
               <option value="pro">Pro</option>
             </select>
             <select className="admin-select" value={months} onChange={e => setMonths(e.target.value)}>
-              <option value={1}>1 month</option>
-              <option value={3}>3 months</option>
-              <option value={12}>12 months</option>
-              <option value={0}>Lifetime</option>
+              <option value={1}>{t('admin.month_1', '1 month')}</option>
+              <option value={3}>{t('admin.months_3', '3 months')}</option>
+              <option value={12}>{t('admin.months_12', '12 months')}</option>
+              <option value={0}>{t('admin.lifetime', 'Lifetime')}</option>
             </select>
-            <button className="admin-btn" onClick={handleGrant}>Grant</button>
+            <button className="admin-btn" onClick={handleGrant}>{t('admin.grant_btn', 'Grant')}</button>
           </div>
           {grantMsg && <p className="admin-msg">{grantMsg}</p>}
 
@@ -83,7 +83,10 @@ const AdminPanel = () => {
           {loading ? <p>{t('common.loading')}</p> : (
             <div className="admin-users-table">
               <div className="admin-table-header">
-                <span>ID</span><span>Name</span><span>Plan</span><span>Seen</span>
+                <span>{t('admin.col_id', 'ID')}</span>
+                <span>{t('admin.col_name', 'Name')}</span>
+                <span>{t('admin.col_plan', 'Plan')}</span>
+                <span>{t('admin.col_seen', 'Seen')}</span>
               </div>
               {users.slice(0, 20).map(u => (
                 <div key={u.telegram_id} className="admin-table-row">
@@ -107,7 +110,7 @@ const StatusBanner = ({ status, onCancel }) => {
   if (!status || status.plan === 'free') return null;
 
   const isAdmin = status.plan === 'admin' || status.is_admin;
-  const expires = status.expires_at ? new Date(status.expires_at).toLocaleDateString('ru-RU') : null;
+  const expires = status.expires_at ? new Date(status.expires_at).toLocaleDateString() : null;
   const isCancelled = status.is_cancelled;
 
   return (
@@ -115,7 +118,7 @@ const StatusBanner = ({ status, onCancel }) => {
       <div className="status-info">
         {isAdmin ? <Shield size={18} /> : <Star size={18} />}
         <div>
-          <strong>{isAdmin ? `👑 ${t('subscription.admin')} — Unlimited` : `⭐ ${t('subscription.pro')} ${t('subscription.active')}`}</strong>
+          <strong>{isAdmin ? `👑 ${t('subscription.admin')} — ${t('subscription.unlimited', 'Unlimited')}` : `⭐ ${t('subscription.pro')} ${t('subscription.active')}`}</strong>
           {expires && !isAdmin && (
             <span className="expires-at">
               <Clock size={12} /> {isCancelled ? t('subscription.expires') : t('subscription.renewable')} {expires}
@@ -159,7 +162,7 @@ const TonModal = ({ invoice, onCheck, onCancel, polling }) => {
 
         <div className="ton-modal-body">
           <div className="ton-field">
-            <label>Сумма</label>
+            <label>{t('subscription.ton_amount', 'Amount')}</label>
             <div className="ton-value-row">
               <span className="ton-amount-val">{invoice.amountTon} TON</span>
               <button onClick={() => handleCopy(invoice.amountTon.toString(), 'amount')}>
@@ -169,7 +172,7 @@ const TonModal = ({ invoice, onCheck, onCancel, polling }) => {
           </div>
 
           <div className="ton-field">
-            <label>Адрес кошелька</label>
+            <label>{t('subscription.ton_address', 'Wallet Address')}</label>
             <div className="ton-value-row address">
               <span className="ton-address-val">{invoice.address}</span>
               <button onClick={() => handleCopy(invoice.address, 'address')}>
@@ -179,14 +182,14 @@ const TonModal = ({ invoice, onCheck, onCancel, polling }) => {
           </div>
 
           <div className="ton-field">
-            <label>Комментарий (ОБЯЗАТЕЛЬНО)</label>
+            <label>{t('subscription.ton_comment', 'Comment (REQUIRED)')}</label>
             <div className="ton-value-row comment">
               <span className="ton-comment-val">{invoice.comment}</span>
               <button onClick={() => handleCopy(invoice.comment, 'comment')}>
                 {copied === 'comment' ? <CheckCircle size={16} color="#51cf66" /> : <Copy size={16} />}
               </button>
             </div>
-            <p className="ton-warning">Без комментария платеж не будет зачислен автоматически!</p>
+            <p className="ton-warning">{t('subscription.ton_comment_warning', 'Payment will not be credited automatically without the comment!')}</p>
           </div>
         </div>
 
@@ -232,7 +235,7 @@ const SubscriptionPlans = ({ onBack }) => {
       setPlans(plansRes.plans || []);
       setStatus(statusRes);
     } catch (e) {
-      setError('Не удалось загрузить данные о подписке.');
+      setError(t('subscription.load_error', 'Failed to load subscription data.'));
       console.error(e);
     } finally {
       setLoading(false);
@@ -291,7 +294,7 @@ const SubscriptionPlans = ({ onBack }) => {
       await apiClient.sendStarsInvoice(planId, interval);
       setPurchasing(null);
       setPolling(true);
-      showToast('Проверьте чат Telegram — счёт отправлен. Оплатите там, и план активируется автоматически.', 'info');
+      showToast(t('subscription.check_telegram', 'Check Telegram chat — invoice sent. Pay there and plan will activate automatically.'), 'info');
     }
     catch (e) {
       setPurchasing(null);
@@ -326,7 +329,7 @@ const SubscriptionPlans = ({ onBack }) => {
           login(window.Telegram.WebApp.initData).catch(() => { });
         }
       } else {
-        showToast('Платеж пока не найден. Подождите 30-60 секунд после отправки.', 'info');
+        showToast(t('subscription.ton_not_found', 'Payment not found yet. Wait 30-60s after sending.'), 'info');
       }
     } catch (e) {
       showToast(`Ошибка проверки: ${e.message}`, 'error');
@@ -382,7 +385,7 @@ const SubscriptionPlans = ({ onBack }) => {
       {error && (
         <div className="sub-error">
           <AlertCircle size={16} /> {error}
-          <button onClick={fetchAll}>Повторить</button>
+          <button onClick={fetchAll}>{t('common.retry')}</button>
         </div>
       )}
 
@@ -418,17 +421,17 @@ const SubscriptionPlans = ({ onBack }) => {
       {polling && (
         <div className="polling-indicator">
           <span className="pulse-dot" />
-          Ожидание подтверждения оплаты из Telegram...
+          {t('subscription.waiting_payment', 'Waiting for payment confirmation from Telegram...')}
         </div>
       )}
 
       {cancelConfirm && (
         <div className="cancel-confirm">
           <AlertCircle size={16} />
-          Точно отменить? Доступ сохранится до конца оплаченного периода.
+          {t('subscription.cancel_confirm', 'Are you sure? Access remains until end of period.')}
           <div className="cancel-confirm-btns">
-            <button className="confirm-yes" onClick={handleCancel}>Да, отменить</button>
-            <button className="confirm-no" onClick={() => setCancelConfirm(false)}>Нет</button>
+            <button className="confirm-yes" onClick={handleCancel}>{t('common.yes_cancel', 'Yes, cancel')}</button>
+            <button className="confirm-no" onClick={() => setCancelConfirm(false)}>{t('common.no')}</button>
           </div>
         </div>
       )}
@@ -461,21 +464,21 @@ const SubscriptionPlans = ({ onBack }) => {
                 </div>
 
                 <ul className="plan-features">
-                  <li><Check size={14} color="#51cf66" /> {plan.requests_per_day || '∞'} вопросов/день</li>
+                  <li><Check size={14} color="#51cf66" /> {plan.requests_per_day || '∞'} {t('subscription.questions_per_day', 'questions/day')}</li>
                   {langs.length > 0 && (
                     <li><Check size={14} color="#51cf66" /> {langs.join(', ')}</li>
                   )}
                   {plan.ai_generations_per_month > 0 && (
-                    <li><Check size={14} color="#51cf66" /> {plan.ai_generations_per_month} AI генераций/мес</li>
+                    <li><Check size={14} color="#51cf66" /> {plan.ai_generations_per_month} {t('subscription.ai_gens_per_month', 'AI generations/mo')}</li>
                   )}
                   {plan.resume_analysis_limit > 0 && (
-                    <li><Check size={14} color="#51cf66" /> {plan.resume_analysis_limit} анализов резюме</li>
+                    <li><Check size={14} color="#51cf66" /> {plan.resume_analysis_limit} {t('subscription.resume_analyses', 'resume analyses')}</li>
                   )}
                   {plan.interview_eval_limit > 0 && (
-                    <li><Check size={14} color="#51cf66" /> {plan.interview_eval_limit} мок-интервью</li>
+                    <li><Check size={14} color="#51cf66" /> {plan.interview_eval_limit} {t('subscription.mock_interviews', 'mock interviews')}</li>
                   )}
                   {modes.length > 0 && (
-                    <li><Check size={14} color="#51cf66" /> {modes.length} режимов обучения</li>
+                    <li><Check size={14} color="#51cf66" /> {modes.length} {t('subscription.modes_count', 'learning modes')}</li>
                   )}
                 </ul>
 
@@ -484,8 +487,8 @@ const SubscriptionPlans = ({ onBack }) => {
                   <p className="renewal-info">
                     <Clock size={12} />
                     {status.is_cancelled
-                      ? `Доступ до ${new Date(status.expires_at).toLocaleDateString('ru-RU')}`
-                      : `Продление ${new Date(status.expires_at).toLocaleDateString('ru-RU')}`
+                      ? `${t('subscription.access_until', 'Access until')} ${new Date(status.expires_at).toLocaleDateString()}`
+                      : `${t('subscription.renewal', 'Renewal')} ${new Date(status.expires_at).toLocaleDateString()}`
                     }
                   </p>
                 )}
@@ -538,8 +541,8 @@ const SubscriptionPlans = ({ onBack }) => {
       {isAdmin && (
         <div className="admin-unlimited-msg">
           <Shield size={48} color="#748ffc" />
-          <h2>Admin — Unlimited Access</h2>
-          <p>У вас полный доступ ко всем функциям, без ограничений.</p>
+          <h2>{t('subscription.admin_unlimited_title', 'Admin — Unlimited Access')}</h2>
+          <p>{t('subscription.admin_unlimited_desc', 'You have full access to all features, without limits.')}</p>
         </div>
       )}
 
@@ -552,16 +555,16 @@ const SubscriptionPlans = ({ onBack }) => {
         {showHistory && (
           <div className="history-list">
             {history.length === 0
-              ? <p className="no-history">История пуста</p>
+              ? <p className="no-history">{t('subscription.no_history', 'History is empty')}</p>
               : history.map((h, i) => (
                 <div key={i} className="history-item">
                   <div className="history-main">
                     <span className={`plan-tag ${h.plan_id}`}>{h.plan_name || h.plan_id}</span>
-                    <span className="history-provider">{h.payment_provider === 'stripe' ? '💳 Card' : '⭐ Stars'}</span>
+                    <span className="history-provider">{h.payment_provider === 'stripe' ? `💳 ${t('subscription.card', 'Card')}` : `⭐ ${t('subscription.stars', 'Stars')}`}</span>
                   </div>
                   <div className="history-meta">
-                    <span className="history-status">{h.status}</span>
-                    <span className="history-date">{new Date(h.created_at).toLocaleDateString('ru-RU')}</span>
+                    <span className="history-status">{t(`subscription.status_${h.status}`, h.status)}</span>
+                    <span className="history-date">{new Date(h.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
               ))

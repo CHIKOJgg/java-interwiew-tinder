@@ -110,5 +110,9 @@
     "short_answer": "Short answer:",
     "dont_know": "Don't know",
     "know": "Know"
+  },
+  "language": {
+    "title": "Choose Tech Stack",
+    "subtitle": "Select the language you want to practice"
   }
 }

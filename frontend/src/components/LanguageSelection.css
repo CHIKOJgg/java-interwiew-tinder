@@ -1,0 +1,119 @@
+.language-selection {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.language-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.language-header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--tg-theme-text-color, #2d3436);
+  margin-bottom: 8px;
+}
+
+.language-header p {
+  color: var(--tg-theme-hint-color, #868e96);
+  font-size: 16px;
+}
+
+.language-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.language-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 24px;
+  background: var(--tg-theme-bg-color, #fff);
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+}
+
+.language-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--lang-color);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.language-card:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.language-card.active {
+  background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+  border-color: var(--lang-color);
+  border-width: 2.5px;
+}
+
+.language-emoji {
+  font-size: 32px;
+  background: rgba(0, 0, 0, 0.03);
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  transition: transform 0.2s;
+}
+
+.language-card:hover .language-emoji {
+  transform: scale(1.1);
+}
+
+.language-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--tg-theme-text-color, #2d3436);
+}
+
+.active-badge {
+  margin-left: auto;
+  background: var(--lang-color);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 14px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 480px) {
+  .language-selection {
+    padding: 20px 16px;
+  }
+  
+  .language-card {
+    padding: 16px 20px;
+  }
+  
+  .language-emoji {
+    width: 50px;
+    height: 50px;
+    font-size: 26px;
+  }
+  
+  .language-name {
+    font-size: 18px;
+  }
+}

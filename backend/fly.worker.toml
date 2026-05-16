@@ -1,4 +1,4 @@
-app = "interview-tinder-worker"
+app = "interview-tinder-worker-1"
 primary_region = "fra"
 
 [build]

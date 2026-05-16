@@ -15,7 +15,8 @@
     "worker": "node src/worker.js",
     "test": "vitest run tests/",
     "lint": "echo 'No linter configured'",
-    "vercel-build": "echo 'Build completed'"
+    "vercel-build": "echo 'Build completed'",
+    "setup-db": "npm run init-db && npm run migrate && npm run migrate-stars && npm run migrate-ton && npm run seed-db && node src/scripts/seed-java-2.js && node src/scripts/seed-python.js"
   },
   "keywords": [
     "telegram",

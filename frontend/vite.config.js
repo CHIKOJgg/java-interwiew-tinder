@@ -39,7 +39,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
-          'ui': ['framer-motion', 'lucide-react'],
+          'ui': ['lucide-react', 'zustand'],
           'ai': ['./src/components/ExplanationModal']
         }
       }

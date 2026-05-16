@@ -2530,11 +2530,6 @@ const seedDatabase = async () => {
   try {
     console.log('🌱 Starting database seeding...');
 
-    // Clear existing questions
-    await client.query('DELETE FROM user_progress');
-    await client.query('DELETE FROM questions');
-    console.log('🗑️  Cleared existing data');
-
     // Insert questions
     let insertedCount = 0;
     for (const q of questions) {

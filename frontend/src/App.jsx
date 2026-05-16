@@ -17,6 +17,7 @@ const ResumeAnalyzer = lazy(() => import('./components/ResumeAnalyzer'));
 const SubscriptionPlans = lazy(() => import('./components/SubscriptionPlans'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 import CategorySelection from './components/CategorySelection';
+import LanguageSelection from './components/LanguageSelection';
 import ReportSheet from './components/ReportSheet';
 import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
@@ -73,7 +74,7 @@ function App() {
   const { t } = useTranslation();
 
   const [initState, setInitState] = useState('waiting_telegram');
-  const [screen, setScreen] = useState('category');
+  const [screen, setScreen] = useState('language');
   const [authError, setAuthError] = useState(null);
   const [showShare, setShowShare] = useState(false);
   const [undoToast, setUndoToast] = useState(false);
@@ -108,7 +109,7 @@ function App() {
 
         if (cancelled) return;
         setInitState('ready');
-        setScreen('category');
+        setScreen('language');
         loadQuestions().catch(console.error);
       } catch (err) {
         if (cancelled) return;
@@ -174,7 +175,8 @@ function App() {
     );
   }
 
-  if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} />;
+  if (screen === 'language') return <LanguageSelection onSelect={() => setScreen('category')} />;
+  if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('language')} />;
   if (screen === 'resume') return <ResumeAnalyzer onBack={() => setScreen('main')} />;
   if (screen === 'subscriptions') return <SubscriptionPlans onBack={() => setScreen('main')} />;
   if (screen === 'admin') return <AdminPanel onBack={() => setScreen('main')} />;
@@ -191,7 +193,7 @@ function App() {
               <CheckCircle size={64} color="#51cf66" />
               <h2>{t('completion.title')}</h2>
               <p>{t('completion.desc')}</p>
-              <button onClick={() => setScreen('category')}>
+              <button onClick={() => setScreen('language')}>
                 {t('completion.choose_other')}
               </button>
               <button 
@@ -239,7 +241,7 @@ function App() {
   return (
     <div className="app">
       <Header
-        onSettingsClick={() => setScreen('category')}
+        onSettingsClick={() => setScreen('language')}
         onResumeClick={() => setScreen('resume')}
         onSubscriptionClick={() => setScreen('subscriptions')}
         onLanguageChange={handleLanguageChange}

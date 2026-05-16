@@ -6,7 +6,7 @@ import api from '../api/client';
 import useStore from '../store/useStore';
 import './CategorySelection.css';
 
-const CategorySelection = ({ onComplete }) => {
+const CategorySelection = ({ onComplete, onBack }) => {
   const { t } = useTranslation();
   const { setSelectedCategories, user } = useStore();
   const [categories, setCategories] = useState([]);
@@ -98,7 +98,7 @@ const CategorySelection = ({ onComplete }) => {
         <p style={{ textAlign: 'center', opacity: 0.6 }}>{t('category.empty_desc', 'Please choose another language or check back later.')}</p>
         <button
           className="start-button"
-          onClick={onComplete}
+          onClick={onBack || onComplete}
           style={{ marginTop: 8 }}
         >
           {t('common.back')}
@@ -110,7 +110,7 @@ const CategorySelection = ({ onComplete }) => {
   return (
     <div className="category-selection">
       <div className="category-header">
-        <button className="back-btn-absolute" onClick={onComplete}>
+        <button className="back-btn-absolute" onClick={onBack || onComplete}>
           <ArrowLeft size={24} />
         </button>
         <h1>{t('common.choose_topics')}</h1>

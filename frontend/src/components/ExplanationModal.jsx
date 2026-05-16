@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, BookOpen, MapPin, Code2, Lightbulb, ChevronRight } from 'lucide-react';
 import { SkeletonExplanation } from './Skeleton';
 import { highlight } from '../utils/highlight';
@@ -22,6 +23,7 @@ function CodeBlock({ code, language }) {
 }
 
 function StructuredExplanation({ data, language }) {
+  const { t } = useTranslation();
   return (
     <div className="structured-explanation">
       {/* Title */}
@@ -34,7 +36,7 @@ function StructuredExplanation({ data, language }) {
         <section className="exp-section">
           <div className="exp-section-header">
             <BookOpen size={15} />
-            <span>Теория</span>
+            <span>{t('explanation.theory', 'Theory')}</span>
           </div>
           <p className="exp-theory">{data.theory}</p>
         </section>
@@ -45,7 +47,7 @@ function StructuredExplanation({ data, language }) {
         <section className="exp-section">
           <div className="exp-section-header">
             <MapPin size={15} />
-            <span>Где применяется</span>
+            <span>{t('explanation.usage', 'Where used')}</span>
           </div>
           <ul className="exp-list">
             {data.where_used.map((item, i) => (
@@ -60,7 +62,7 @@ function StructuredExplanation({ data, language }) {
         <section className="exp-section">
           <div className="exp-section-header">
             <Code2 size={15} />
-            <span>Пример кода</span>
+            <span>{t('explanation.example', 'Code example')}</span>
           </div>
           <CodeBlock code={data.code_example} language={language} />
         </section>
@@ -71,7 +73,7 @@ function StructuredExplanation({ data, language }) {
         <section className="exp-section">
           <div className="exp-section-header">
             <Lightbulb size={15} />
-            <span>Ключевые моменты</span>
+            <span>{t('explanation.tips', 'Key points')}</span>
           </div>
           <ul className="exp-list key-points">
             {data.key_points.map((pt, i) => (
@@ -162,6 +164,7 @@ function PlainExplanation({ text, codeLanguage }) {
 
 // ─── Main component ───────────────────────────────────────────────────
 const ExplanationModal = ({ isOpen, explanation, isLoading, onClose }) => {
+  const { t } = useTranslation();
   const { language } = useStore();
 
   const { isJson, data } = useMemo(() => {
@@ -183,7 +186,7 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>🎓 Разбор</h2>
+          <h2>🎓 {t('explanation.title', 'Explanation')}</h2>
           <button className="close-button" onClick={onClose}><X size={22} /></button>
         </div>
 
@@ -199,7 +202,7 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose }) => {
 
         {!isLoading && (
           <div className="modal-footer">
-            <button className="action-button" onClick={onClose}>Далее →</button>
+            <button className="action-button" onClick={onClose}>{t('common.next', 'Next')} →</button>
           </div>
         )}
       </div>

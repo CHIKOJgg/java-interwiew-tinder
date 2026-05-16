@@ -5,23 +5,23 @@ import { useTranslation } from 'react-i18next';
 import './QuestionCard.css';
 
 const categoryColors = {
-  'Java Core': '#ff6b6b',
-  Collections: '#4ecdc4',
-  Multithreading: '#95e1d3',
-  OOP: '#f38181',
-  Spring: '#38ada9',
-  JVM: '#786fa6',
-  Exceptions: '#f8b500',
-  'Stream API': '#6c5ce7',
-  'Design Patterns': '#a29bfe',
-  Testing: '#fd79a8',
-  Database: '#00b894',
+  'Java Core': 'var(--color-java-core)',
+  Collections: 'var(--color-collections)',
+  Multithreading: 'var(--color-multithreading)',
+  OOP: 'var(--color-oop)',
+  Spring: 'var(--color-spring)',
+  JVM: 'var(--color-jvm)',
+  Exceptions: 'var(--color-exceptions)',
+  'Stream API': 'var(--color-stream-api)',
+  'Design Patterns': 'var(--color-design-patterns)',
+  Testing: 'var(--color-testing)',
+  Database: 'var(--color-database)',
 };
 
 const difficultyColors = {
-  Junior: '#51cf66',
-  Middle: '#fcc419',
-  Senior: '#ff6b6b',
+  Junior: 'var(--color-junior)',
+  Middle: 'var(--color-middle)',
+  Senior: 'var(--color-senior)',
 };
 
 const QuestionCard = forwardRef(({ question, onSwipe, canSwipe = true }, ref) => {
@@ -72,11 +72,13 @@ const QuestionCard = forwardRef(({ question, onSwipe, canSwipe = true }, ref) =>
     touchStart.current = null;
   };
 
-  // Mouse click for desktop
+  // Mouse click for desktop (PointerEvent usually)
   const handleClick = (e) => {
-    // pointerType is 'mouse' on desktop, 'touch' or 'pen' on mobile.
-    // We handle touch via the touch events above; handle mouse here.
-    if (e.pointerType !== 'touch') flip();
+    // nativeEvent.pointerType is 'mouse' on desktop, 'touch' or 'pen' on mobile.
+    // We handle touch via the custom tap detection in touchEnd; handle mouse here.
+    if (e.nativeEvent.pointerType === 'mouse' || !e.nativeEvent.pointerType) {
+      flip();
+    }
   };
 
   const onCardSwipe = (direction) => {
@@ -156,13 +158,13 @@ const QuestionCard = forwardRef(({ question, onSwipe, canSwipe = true }, ref) =>
             </div>
 
             <div className="answer-content">
-              <div className="answer-label">Краткий ответ:</div>
+              <div className="answer-label">{t('card.short_answer', 'Short answer')}:</div>
               <p>{question.shortAnswer}</p>
             </div>
 
             <div className="swipe-instructions">
-              <span className="swipe-hint left">← Не знаю</span>
-              <span className="swipe-hint right">Знаю →</span>
+              <span className="swipe-hint left">← {t('card.dont_know', "Don't know")}</span>
+              <span className="swipe-hint right">{t('card.know', 'Know')} →</span>
             </div>
           </div>
         </div>

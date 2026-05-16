@@ -4,6 +4,24 @@
   box-sizing: border-box;
 }
 
+:root {
+  --color-junior: #51cf66;
+  --color-middle: #fcc419;
+  --color-senior: #ff6b6b;
+  
+  --color-java-core: #ff6b6b;
+  --color-collections: #4ecdc4;
+  --color-multithreading: #95e1d3;
+  --color-oop: #f38181;
+  --color-spring: #38ada9;
+  --color-jvm: #786fa6;
+  --color-exceptions: #f8b500;
+  --color-stream-api: #6c5ce7;
+  --color-design-patterns: #a29bfe;
+  --color-testing: #fd79a8;
+  --color-database: #00b894;
+}
+
 /* ─── FIX 3: Mobile height fix ───────────────────────────────────────────────
    On mobile browsers (including Telegram WebView), 100vh can be unreliable
    and height: 100% requires every ancestor to have an explicit height.

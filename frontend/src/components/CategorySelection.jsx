@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, Gift, Copy, Share2 } from 'lucide-react';
+import { Check, Gift, Copy, Share2, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonGrid } from './Skeleton';
 import api from '../api/client';
@@ -61,7 +61,7 @@ const CategorySelection = ({ onComplete }) => {
 
   const handleSave = async () => {
     if (selectedCategories.length === 0) {
-      alert('Выберите хотя бы одну категорию');
+      alert(t('category.select_at_least_one', 'Please select at least one category'));
       return;
     }
     try {
@@ -72,7 +72,7 @@ const CategorySelection = ({ onComplete }) => {
       onComplete();
     } catch (error) {
       console.error('Error saving preferences:', error);
-      alert('Ошибка сохранения настроек');
+      alert(t('category.save_error', 'Error saving preferences'));
     } finally {
       setSaving(false);
     }
@@ -94,8 +94,8 @@ const CategorySelection = ({ onComplete }) => {
     return (
       <div className="category-selection" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16, padding: 24 }}>
         <div style={{ fontSize: 48 }}>📭</div>
-        <h2 style={{ textAlign: 'center' }}>Вопросы для этого языка ещё не добавлены</h2>
-        <p style={{ textAlign: 'center', opacity: 0.6 }}>Выберите другой язык или вернитесь позже — база вопросов пополняется.</p>
+        <h2 style={{ textAlign: 'center' }}>{t('category.empty_title', 'No questions for this language yet')}</h2>
+        <p style={{ textAlign: 'center', opacity: 0.6 }}>{t('category.empty_desc', 'Please choose another language or check back later.')}</p>
         <button
           className="start-button"
           onClick={onComplete}
@@ -110,6 +110,9 @@ const CategorySelection = ({ onComplete }) => {
   return (
     <div className="category-selection">
       <div className="category-header">
+        <button className="back-btn-absolute" onClick={onComplete}>
+          <ArrowLeft size={24} />
+        </button>
         <h1>{t('common.choose_topics')}</h1>
         <p>{t('common.choose_topics_desc', 'Select categories for study')}</p>
       </div>
@@ -142,11 +145,13 @@ const CategorySelection = ({ onComplete }) => {
           <p className="referral-text">{t('referral.desc')}</p>
           
           <div className="referral-link-box" onClick={() => {
-            const link = `https://t.me/${window.Telegram?.WebApp?.initDataUnsafe?.receiver?.username || 'JavaInterviewTinderBot'}?start=${user?.telegram_id}`;
+            const botUsername = 'JavaInterviewTinderBot';
+            const link = `https://t.me/${botUsername}?start=${user?.telegram_id}`;
             navigator.clipboard.writeText(link);
-            alert(t('referral.copied'));
+            // BUG-28: feedback for copying
+            alert(t('referral.copied', 'Link copied!'));
           }}>
-            <span className="ref-url">t.me/your_referral_link</span>
+            <span className="ref-url">t.me/{user?.telegram_id ? `...${user.telegram_id}` : 'your_link'}</span>
             <Copy size={16} />
           </div>
 

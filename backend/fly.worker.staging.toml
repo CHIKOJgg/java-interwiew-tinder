@@ -1,0 +1,15 @@
+app = "interview-tinder-worker-staging"
+primary_region = "fra"
+
+[build]
+
+[env]
+  NODE_ENV = "staging"
+
+[processes]
+  worker = "node src/worker.js"
+
+[[vm]]
+  size      = "shared-cpu-1x"
+  memory    = "256mb"
+  processes = ["worker"]

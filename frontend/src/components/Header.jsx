@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   TrendingUp, Settings, Layout, GraduationCap, Bug,
   Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, Languages

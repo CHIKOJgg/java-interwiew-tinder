@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Check, X, Loader2, AlertCircle } from 'lucide-react';
 import './TestMode.css';
@@ -21,6 +22,7 @@ const TestMode = () => {
     advanceQuestion,
     isLoadingQuestions,
   } = useStore();
+  const { t } = useTranslation();
 
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,7 +82,7 @@ const TestMode = () => {
     return (
       <div className="test-mode-loading">
         <Loader2 className="spinner" size={44} />
-        <p>Загрузка вопросов…</p>
+        <p>{t('test.loading_questions', 'Loading questions...')}</p>
       </div>
     );
   }
@@ -89,8 +91,8 @@ const TestMode = () => {
     return (
       <div className="test-mode-loading">
         <AlertCircle size={44} opacity={0.4} />
-        <p>Нет доступных вопросов для теста</p>
-        <p style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>Варианты ответов ещё генерируются</p>
+        <p>{t('test.no_questions', 'No questions available for the test')}</p>
+        <p style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>{t('test.generating_options', 'Answer options are still being generated')}</p>
       </div>
     );
   }
@@ -101,7 +103,7 @@ const TestMode = () => {
     return (
       <div className="test-mode-loading">
         <Loader2 className="spinner" size={44} />
-        <p>Загрузка…</p>
+        <p>{t('common.loading', 'Loading...')}</p>
       </div>
     );
   }
@@ -151,21 +153,21 @@ const TestMode = () => {
             onClick={handleSubmit}
             type="button"
           >
-            {isSubmitting ? <Loader2 className="spinner" size={18} /> : 'Ответить'}
+            {isSubmitting ? <Loader2 className="spinner" size={18} /> : t('test.submit', 'Answer')}
           </button>
         ) : (
           <div className="test-result-feedback">
             {result.isCorrect ? (
               <div className="feedback-correct">
-                <Check size={22} /><span>Правильно!</span>
+                <Check size={22} /><span>{t('test.correct', 'Correct!')}</span>
               </div>
             ) : (
               <div className="feedback-incorrect">
-                <X size={22} /><span>Неверно</span>
+                <X size={22} /><span>{t('test.incorrect', 'Incorrect')}</span>
               </div>
             )}
             <button className="next-test-button" onClick={handleNext} type="button">
-              Следующий вопрос →
+              {t('test.next_question', 'Next question →')}
             </button>
           </div>
         )}

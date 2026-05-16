@@ -374,14 +374,7 @@ const useStore = create((set, get) => ({
   },
 
   closeExplanation: () => {
-    const { learningMode, currentIndex } = get();
     set({ showExplanation: false, currentExplanation: null });
-    // bug-hunting: advance after wrong answer (component shows feedback then user taps next,
-    // but we still advance here so the next question loads after modal closes)
-    // test + code-completion: component calls advanceQuestion() itself — don't double-advance
-    if (learningMode === 'bug-hunting') {
-      set({ currentIndex: currentIndex + 1 });
-    }
   },
 
   getCurrentQuestion: () => get().questions[get().currentIndex],

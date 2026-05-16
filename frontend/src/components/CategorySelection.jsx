@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Gift, Copy, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonGrid } from './Skeleton';

@@ -60,7 +60,25 @@ const globalLimiter = expressRateLimit({
 // Apply the rate limiting middleware to all requests
 app.use(globalLimiter);
 // ─── Stripe Webhook (MUST be before express.json) ─────────────────────
+// NOTE: Stripe is not the active payment provider (Stars is).
+// This endpoint is a placeholder. If Stripe is enabled, import the SDK:
+//   import Stripe from 'stripe';
+//   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  // Guard: only process if Stripe is actually configured with a real key
+  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('placeholder')) {
+    return res.status(501).json({ error: 'Stripe payments are not configured on this server' });
+  }
+
+  let stripe;
+  try {
+    const Stripe = (await import('stripe')).default;
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  } catch (err) {
+    logger.error({ err }, 'Stripe SDK not installed');
+    return res.status(501).json({ error: 'Stripe SDK not available' });
+  }
+
   const sig = req.headers['stripe-signature'];
   let event;
 
@@ -89,7 +107,6 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
       case 'customer.subscription.deleted': {
         const subscription = event.data.object;
         const customerId = subscription.customer;
-        // Look up user by stripe_customer_id
         const { rows } = await pool.query('SELECT telegram_id FROM users WHERE stripe_customer_id = $1', [customerId]);
         if (rows.length > 0) {
           await billingService.cancelSubscription(rows[0].telegram_id);
@@ -98,17 +115,16 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
       }
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
-        console.warn(`💳 Payment failed for customer ${invoice.customer}. Invoice: ${invoice.id}`);
-        // TODO: Send Telegram notification to user
+        logger.warn({ customer: invoice.customer, invoiceId: invoice.id }, '💳 Payment failed');
         break;
       }
       default:
-        console.log(`Unhandled event type ${event.type}`);
+        logger.info({ eventType: event.type }, 'Unhandled Stripe event type');
     }
 
     res.json({ received: true });
   } catch (err) {
-    console.error(`Webhook handler error [${event.type}]:`, err.message);
+    logger.error({ err, eventType: event.type }, 'Webhook handler error');
     res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
@@ -171,18 +187,11 @@ app.post('/api/auth/login', async (req, res) => {
          username = EXCLUDED.username,
          first_name = EXCLUDED.first_name,
          last_name = EXCLUDED.last_name
-       RETURNING *`,
+       RETURNING *, (xmax = 0) AS is_new_user`,
       [userData.telegram_id, userData.username, userData.first_name, userData.last_name]
     );
     const user = result.rows[0];
-
-    // Track referral if this is a new user and referralId is provided
-    if (referralId && result.rowCount > 0 && !result.rows[0].created_at) { 
-      // Note: result.rowCount > 0 and checking if created_at is fresh (or using a separate flag)
-      // Actually, ON CONFLICT will return the row. We should check if it's a new insert.
-    }
-    // Correct logic for new user detection:
-    const isNewUser = result.rows[0].created_at > new Date(Date.now() - 5000);
+    const isNewUser = user.is_new_user;
     if (referralId && isNewUser) {
       await referralService.trackReferral(referralId, user.telegram_id);
     }
@@ -212,17 +221,28 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Background warm-up: pre-enqueue AI generation jobs for this user's next questions
-    try {
-      const preload = await pool.query(
-        `SELECT q.question_text, q.short_answer, q.language FROM questions q
-         LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
-         WHERE up.id IS NULL OR up.status = 'unknown' ORDER BY RANDOM() LIMIT 5`,
-        [user.telegram_id]
-      );
-      preload.rows.forEach(q => {
-        enqueueJob('explanation', { questionText: q.question_text, shortAnswer: q.short_answer, userId: user.telegram_id, language: q.language || 'Java' }).catch(() => { });
-      });
-    } catch (e) { console.error('Preload error:', e.message); }
+    // This is fire-and-forget to keep login latency low.
+    (async () => {
+      try {
+        const preload = await pool.query(
+          `SELECT q.id, q.question_text, q.short_answer, q.language FROM questions q
+           LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+           WHERE up.id IS NULL OR up.status = 'unknown' LIMIT 5`,
+          [user.telegram_id]
+        );
+        for (const q of preload.rows) {
+          enqueueJob('explanation', { 
+            questionId: q.id, 
+            questionText: q.question_text, 
+            shortAnswer: q.short_answer, 
+            userId: user.telegram_id, 
+            language: q.language || 'Java' 
+          }).catch(() => { });
+        }
+      } catch (e) { 
+        logger.error({ err: e, userId: user.telegram_id }, 'Preload error'); 
+      }
+    })();
 
     // Resolve plan
     let plan = 'free';
@@ -372,10 +392,6 @@ app.get('/api/questions/feed', async (req, res) => {
       ? `AND COALESCE(jsonb_array_length(to_jsonb(q.options)), 0) >= 4`
       : '';
 
-    const catFilter = selectedCategories.length > 0
-      ? 'AND q.category = ANY($cat)'
-      : '';
-
     // Spaced Repetition Ordering logic:
     // 1. Questions due for review (next_review <= today)
     // 2. Never-seen questions
@@ -402,7 +418,7 @@ app.get('/api/questions/feed', async (req, res) => {
         RANDOM() 
       LIMIT ${selectedCategories.length > 0 ? '$4' : '$3'}`;
     
-    params = selectedCategories.length > 0 
+    const params = selectedCategories.length > 0 
       ? [userId, language, selectedCategories, limit] 
       : [userId, language, limit];
 
@@ -648,7 +664,7 @@ app.post('/api/questions/test-answer',
       const qRes = await pool.query('SELECT short_answer FROM questions WHERE id=$1', [questionId]);
       if (!qRes.rows[0]) return res.status(404).json({ error: 'Question not found' });
       const correctAnswer = qRes.rows[0].short_answer;
-      const norm = s => (s || '').trim().toLowerCase();
+      const norm = s => (s || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
       const isCorrect = norm(answer) === norm(correctAnswer);
       await recordProgress(userId, questionId, isCorrect);
       res.json({ success: true, isCorrect, correctAnswer });
@@ -1046,9 +1062,12 @@ app.post('/api/admin/grant-plan', async (req, res) => {
   }
 });
 
-// List all users (admin-only)
+// List all users (admin-only) with pagination
 app.get('/api/admin/users', async (req, res) => {
   try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const offset = parseInt(req.query.offset) || 0;
+
     const { rows } = await pool.query(`
       SELECT u.telegram_id, u.username, u.first_name, u.subscription_plan,
              u.subscription_expires_at, u.created_at,
@@ -1056,9 +1075,11 @@ app.get('/api/admin/users', async (req, res) => {
       FROM users u
       LEFT JOIN user_progress up ON up.user_id = u.telegram_id
       GROUP BY u.telegram_id, u.username, u.first_name, u.subscription_plan, u.subscription_expires_at, u.created_at
-      ORDER BY u.created_at DESC LIMIT 100
-    `);
-    res.json({ users: rows });
+      ORDER BY u.created_at DESC 
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    
+    res.json({ users: rows, limit, offset });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1154,14 +1175,15 @@ app.get('/api/stats/percentile', async (req, res) => {
         GROUP BY up.user_id
       )
       SELECT 
-        (SELECT COUNT(*) FROM user_scores WHERE score <= $2) as below_count,
-        (SELECT COUNT(*) FROM user_scores) as total_count
+        COUNT(*) FILTER (WHERE score <= $2) as below_count,
+        COUNT(*) as total_count
+      FROM user_scores
     `, [language, currentScore]);
 
     const { below_count, total_count } = statsResult.rows[0];
     const percentile = total_count > 0 
-      ? Math.round((parseInt(below_count) / parseInt(total_count)) * 100) 
-      : 100;
+      ? Math.round((parseInt(below_count || 0) / parseInt(total_count || 1)) * 100) 
+      : 99;
 
     res.json({ percentile });
   } catch (err) {

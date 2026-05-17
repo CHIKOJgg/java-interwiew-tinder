@@ -9,9 +9,22 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const { Pool } = pg;
 
+let dbUrl = process.env.DATABASE_URL;
+if (dbUrl) {
+  try {
+    const url = new URL(dbUrl);
+    if (url.searchParams.has('sslmode')) {
+      url.searchParams.delete('sslmode');
+      dbUrl = url.toString();
+    }
+  } catch (e) {
+    dbUrl = dbUrl.replace(/[\?&]sslmode=[^&]+/g, '');
+  }
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString: dbUrl,
+  ssl: process.env.NODE_ENV !== 'development' ? { rejectUnauthorized: false } : false,
   // Keep pool small — Supabase session pooler (port 6543) caps at 15 connections total
   // With backend (max:5) + worker (max:3) = 8 connections max, well under the limit
   max: 5,

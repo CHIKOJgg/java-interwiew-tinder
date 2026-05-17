@@ -191,6 +191,7 @@ const CategorySelection = ({ onComplete, onBack }) => {
 // Separate component prevents re-render of the whole grid on every toggle.
 // Uses pointer events only (no onTouchEnd + onClick double-fire).
 const CategoryCard = React.memo(({ category, isSelected, onToggle }) => {
+  const { t } = useTranslation();
   const handlePointerUp = (e) => {
     // Only fire for primary button / touch
     if (e.button !== undefined && e.button !== 0) return;

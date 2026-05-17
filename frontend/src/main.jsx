@@ -16,16 +16,24 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
 });
 
-const ErrorScreen = () => (
+const ErrorScreen = ({ error }) => (
   <div style={{
     height: '100vh', display: 'flex', flexDirection: 'column',
     alignItems: 'center', justifyContent: 'center', padding: 24,
-    textAlign: 'center', background: '#f8f9fa', color: '#212529'
+    textAlign: 'center', background: '#f8f9fa', color: '#212529',
+    overflowY: 'auto'
   }}>
     <h1 style={{ fontSize: 24, marginBottom: 12 }}>Something went wrong</h1>
     <p style={{ opacity: 0.7, marginBottom: 24 }}>
       An unexpected error occurred. Our team has been notified.
     </p>
+    {error && (
+      <div style={{ background: '#ffeeee', color: '#cc0000', padding: 12, borderRadius: 8, textAlign: 'left', fontSize: 12, marginBottom: 24, maxWidth: '100%', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
+        <strong>{error.toString()}</strong>
+        <br/><br/>
+        {error.componentStack || error.stack}
+      </div>
+    )}
     <button
       onClick={() => window.location.reload()}
       style={{
@@ -45,7 +53,7 @@ async function bootstrap() {
 
     ReactDOM.createRoot(document.getElementById('root')).render(
       <React.StrictMode>
-        <Sentry.ErrorBoundary fallback={<ErrorScreen />}>
+        <Sentry.ErrorBoundary fallback={({ error }) => <ErrorScreen error={error} />}>
           <App />
         </Sentry.ErrorBoundary>
       </React.StrictMode>

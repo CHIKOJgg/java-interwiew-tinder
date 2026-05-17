@@ -86,9 +86,9 @@ const BugHuntingMode = () => {
           dangerouslySetInnerHTML={{ __html: highlightedCode }}
         />
 
-        <div className="bug-options">
+        <div className="options-list">
           {bugData.options?.map((option, index) => {
-            let cls = 'bug-option';
+            let cls = 'option-item';
             if (selectedOption === option) cls += ' selected';
             if (result) {
               const norm = s => (s || '').trim().toLowerCase();

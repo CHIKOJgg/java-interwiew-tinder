@@ -177,9 +177,9 @@ function App() {
 
   if (screen === 'language') return <LanguageSelection onSelect={() => setScreen('category')} />;
   if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('language')} />;
-  if (screen === 'resume') return <ResumeAnalyzer onBack={() => setScreen('main')} />;
-  if (screen === 'subscriptions') return <SubscriptionPlans onBack={() => setScreen('main')} />;
-  if (screen === 'admin') return <AdminPanel onBack={() => setScreen('main')} />;
+  if (screen === 'resume') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ResumeAnalyzer onBack={() => setScreen('main')} /></Suspense>;
+  if (screen === 'subscriptions') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SubscriptionPlans onBack={() => setScreen('main')} /></Suspense>;
+  if (screen === 'admin') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AdminPanel onBack={() => setScreen('main')} /></Suspense>;
 
   const renderMode = () => {
     switch (learningMode) {
@@ -231,7 +231,7 @@ function App() {
       case 'test': return <TestMode />;
       case 'bug-hunting': return <BugHuntingMode />;
       case 'blitz': return <BlitzMode />;
-      case 'mock-interview': return <MockInterviewMode />;
+      case 'mock-interview': return <Suspense fallback={<SkeletonCard />}><MockInterviewMode /></Suspense>;
       case 'concept-linker': return <ConceptLinker />;
       case 'code-completion': return <CodeCompletionMode />;
       default: return <TestMode />;

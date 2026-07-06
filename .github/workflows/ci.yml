@@ -21,7 +21,7 @@ jobs:
         run: npm ci
         working-directory: backend
       - name: Lint
-        run: npm run lint || echo "Lint skipped (not configured)"
+        run: npm run lint
         working-directory: backend
       - name: Test
         run: npm test

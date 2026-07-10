@@ -22,9 +22,11 @@ class ApiClient {
 
   // ─── Auth ──────────────────────────────────────────────────────────
   async login(initData, referralId) {
+    const body = { initData };
+    if (referralId) body.referralId = referralId;
     const response = await this.request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ initData, referralId }),
+      body: JSON.stringify(body),
     });
     if (response.user) {
       this.setUserId(response.user.telegram_id);

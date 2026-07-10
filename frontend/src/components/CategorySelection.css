@@ -251,6 +251,79 @@
   }
 }
 
+@media (max-width: 400px) {
+  .category-selection {
+    padding: 10px;
+  }
+  .category-header {
+    margin-bottom: 14px;
+    padding-top: 6px;
+  }
+  .category-header h1 {
+    font-size: 20px;
+  }
+  .category-header p {
+    font-size: 13px;
+  }
+  .category-card {
+    padding: 11px 14px;
+    gap: 10px;
+  }
+  .category-name {
+    font-size: 14px;
+  }
+  .category-count {
+    font-size: 11px;
+  }
+  .category-checkbox {
+    width: 20px;
+    height: 20px;
+  }
+  .categories-grid {
+    gap: 8px;
+    max-height: calc(100vh - 260px);
+  }
+  .start-button {
+    padding: 12px;
+    font-size: 15px;
+  }
+  .referral-card {
+    padding: 14px;
+  }
+  .referral-title h3 {
+    font-size: 14px;
+  }
+  .referral-stats {
+    gap: 6px;
+  }
+  .ref-val {
+    font-size: 15px;
+  }
+  .ref-lab {
+    font-size: 8px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .categories-grid {
+    grid-template-columns: 1fr 1fr;
+    max-height: calc(100vh - 220px);
+  }
+  .category-card {
+    padding: 8px 12px;
+  }
+  .category-name {
+    font-size: 12px;
+  }
+  .referral-section {
+    margin-top: 12px;
+    margin-bottom: 12px;
+  }
+  .referral-card {
+    padding: 12px;
+  }
+}
+
 .referral-section {
   margin-top: 24px;
   margin-bottom: 24px;

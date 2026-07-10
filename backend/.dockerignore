@@ -1,0 +1,12 @@
+node_modules
+npm-debug*
+.git
+.gitignore
+.env
+.env.*
+tests
+coverage
+*.md
+fly.toml
+fly.*.toml
+vercel.json

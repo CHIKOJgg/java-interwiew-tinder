@@ -475,3 +475,110 @@
   transition: background .2s;
 }
 .ton-btn-mini:hover:not(:disabled) { background: rgba(0, 152, 234, 0.15); }
+
+@media (max-width: 480px) {
+  .plans-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+  .plan-card {
+    padding: 18px;
+    border-radius: 16px;
+  }
+  .plan-name {
+    font-size: 18px;
+  }
+  .price-amount {
+    font-size: 28px;
+  }
+  .plan-features li {
+    font-size: 12px;
+  }
+  .subscribe-btn {
+    padding: 11px;
+    font-size: 14px;
+  }
+  .sub-header {
+    padding: 12px;
+  }
+  .sub-header h1 {
+    font-size: 18px;
+  }
+  .status-banner {
+    margin: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 400px) {
+  .subscription-container {
+    padding: 0 0 20px;
+  }
+  .plan-card {
+    padding: 14px;
+  }
+  .plan-icon-wrap {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 10px;
+  }
+  .plan-price {
+    margin-bottom: 14px;
+  }
+  .price-amount {
+    font-size: 24px;
+  }
+  .plan-features {
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .plan-features li {
+    font-size: 11px;
+  }
+  .stars-btn {
+    padding: 10px;
+    font-size: 13px;
+  }
+  .ton-modal {
+    padding: 18px;
+    border-radius: 16px;
+  }
+  .ton-amount-val {
+    font-size: 16px;
+  }
+  .ton-value-row {
+    padding: 10px 14px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .subscription-container {
+    padding: 0 0 10px;
+  }
+  .plans-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 8px;
+  }
+  .plan-card {
+    padding: 12px;
+  }
+  .plan-icon-wrap {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 8px;
+  }
+  .plan-name {
+    font-size: 16px;
+  }
+  .price-amount {
+    font-size: 22px;
+  }
+  .plan-features li {
+    font-size: 11px;
+    gap: 6px;
+  }
+}

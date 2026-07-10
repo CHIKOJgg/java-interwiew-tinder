@@ -2146,7 +2146,7 @@ export const newQuestions = [
         ]
     }
 ];
-const newQuestions2 = [
+/* const newQuestions2 = [
     // ==================== JAVA CORE (30 вопросов) ====================
     {
         category: 'Java Core',
@@ -2195,7 +2195,7 @@ const newQuestions2 = [
     {
         category: 'Java Core',
         question: 'Как выполняются текстовые блоки (text blocks) и как они обрабатывают пробелы?',
-        short_answer: 'Текстовый блок начинается с тройных кавычек. Общие начальные пробелы удаляются (stripIndent). Можно экранировать символы, использовать escape-последовательности \s для принудительного пробела.',
+        short_answer: 'Текстовый блок начинается с тройных кавычек. Общие начальные пробелы удаляются (stripIndent). Можно экранировать символы, использовать escape-последовательности \\s для принудительного пробела.',
         options: [
             'Сохраняют все пробелы как есть',
             'Удаляют общие начальные пробелы, сохраняют относительный отступ',
@@ -4358,12 +4358,13 @@ const newQuestions2 = [
         ]
     }
 ];
+*/
 
 // Всего 200 вопросов.
 // Итого создано 200 вопросов. Для вставки в существующий массив questions используйте:
 // const allQuestions = [...questions, ...newQuestions];
 // или добавьте содержимое newQuestions внутрь исходного массива.
-const newCategoryQuestions = [
+/* const newCategoryQuestions = [
     // ==================== SQL (15 вопросов) ====================
     {
         category: 'SQL',
@@ -6034,6 +6035,7 @@ const newCategoryQuestions = [
         ]
     }
 ];
+*/
 
 // Теперь вы можете скомбинировать все массивы:
 // const allQuestions = [...questions, ...newQuestions, ...newCategoryQuestions];

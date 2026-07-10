@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import useStore from '../store/useStore';
 import { Code2, Check, X, Loader2, Braces, AlertTriangle } from 'lucide-react';
 import { highlight } from '../utils/highlight';
@@ -23,7 +24,7 @@ function SnippetBlock({ snippet, selected, result, codeLanguage }) {
   return (
     <div
       className="hl-code-block snippet-block"
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   );
 }

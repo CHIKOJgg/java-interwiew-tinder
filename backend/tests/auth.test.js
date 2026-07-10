@@ -7,7 +7,10 @@ vi.mock('../src/config/database.js', () => ({
   default: {
     query: vi.fn(),
     on: vi.fn(),
-    connect: vi.fn(),
+    connect: vi.fn().mockReturnValue({
+      query: vi.fn(),
+      release: vi.fn(),
+    }),
   }
 }));
 

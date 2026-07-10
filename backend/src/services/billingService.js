@@ -1,4 +1,5 @@
 import pool from '../config/database.js';
+import logger from '../config/logger.js';
 import { activateStarsSubscription } from './billing/starsService.js';
 
 /**
@@ -49,7 +50,7 @@ export const billingService = {
       console.log(`✅ Subscription cancelled: user=${userId}`);
       return { success: true };
     } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
+      await client.query('ROLLBACK').catch(err => logger.error({ err }, 'ROLLBACK failed after billing error'));
       console.error('cancelSubscription error:', err.message);
       throw err;
     } finally {

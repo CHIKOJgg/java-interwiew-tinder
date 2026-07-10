@@ -6,12 +6,14 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /*
-   * Padding-bottom accounts for:
-   *   56px  bottom nav
-   *   80px  SwipeButtons height (only visible in swipe mode, but padding is always present)
-   *   12px  gap between buttons and nav
-   */
+  padding-top: env(safe-area-inset-top, 0px);
+  /* Default: just clear the fixed bottom nav (+ safe area).
+     In swipe mode (.app.swipe-mode) we also reserve space for SwipeButtons. */
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 8px);
+}
+
+/* Swipe mode shows the floating SwipeButtons — reserve space for them */
+.app.swipe-mode {
   padding-bottom: calc(56px + 80px + 12px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -38,9 +40,10 @@
 /* ── Content area ────────────────────────────────────────────────────── */
 .card-container {
   flex: 1;
+  min-height: 0;
   position: relative;
-  /* overflow visible so TinderCard swipe animation isn't clipped */
-  overflow: visible;
+  /* clip so oversized cards never overlap Header / SwipeButtons */
+  overflow: hidden;
   padding: 10px 16px 0;
   display: flex;
   align-items: center;
@@ -52,7 +55,8 @@
   position: relative;
   width: 100%;
   max-width: 420px;
-  height: min(480px, 58vh);
+  height: 100%;
+  max-height: 72vh;
 }
 
 .card-wrapper {
@@ -190,5 +194,101 @@
 @media (max-height: 600px) {
   .card-stack {
     height: min(360px, 50vh);
+  }
+}
+
+@media (max-width: 400px) {
+  .card-container {
+    padding: 6px 10px 0;
+  }
+  .card-stack {
+    height: min(420px, 52vh);
+  }
+  .card-face {
+    padding: 16px 14px 14px;
+  }
+  .question-content h2 {
+    font-size: clamp(15px, 4vw, 19px);
+  }
+  .answer-content p {
+    font-size: clamp(13px, 3.8vw, 17px);
+  }
+  .badges-container {
+    margin-bottom: 10px;
+  }
+  .category-badge,
+  .difficulty-badge {
+    padding: 3px 10px;
+    font-size: 10px;
+  }
+  .flip-hint {
+    padding: 10px 14px;
+    font-size: 12px;
+    min-height: 40px;
+  }
+  .report-flag {
+    bottom: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+  }
+  .swipe-instructions {
+    padding: 10px 12px;
+    margin-top: 10px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .card-stack {
+    height: min(340px, 70vh);
+  }
+  .card-container {
+    padding: 4px 12px 0;
+  }
+  .card-face {
+    padding: 12px 14px 10px;
+    border-radius: 16px;
+  }
+  .badges-container {
+    margin-bottom: 6px;
+  }
+  .question-content {
+    padding: 4px 0;
+  }
+  .question-content h2 {
+    font-size: clamp(14px, 3.5vw, 18px);
+  }
+  .answer-content p {
+    font-size: clamp(12px, 3vw, 15px);
+  }
+  .flip-hint {
+    padding: 8px 12px;
+    font-size: 11px;
+    min-height: 36px;
+  }
+  .answer-content {
+    gap: 6px;
+  }
+}
+
+@media (max-height: 500px) {
+  .app,
+  .app.swipe-mode {
+    padding-bottom: calc(40px + 60px + 8px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ── Landscape layout ──────────────────────────────────────────────── */
+@media (orientation: landscape) {
+  .card-container {
+    padding-left: 80px;
+    padding-right: 80px;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 700px) {
+  .card-container {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }

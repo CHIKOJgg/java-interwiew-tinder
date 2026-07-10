@@ -83,10 +83,9 @@ export const referralService = {
       
       await sendTelegramMessage(referrer_id, 
         `🎉 ${name} subscribed via your link — you got 7 free Pro days!`
-      ).catch(() => {});
-
+      ).catch(err => logger.error({ err }, 'Referral update failed'));
     } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
+      await client.query('ROLLBACK').catch(e => logger.error({ e }, 'ROLLBACK failed after referral error'));
       logger.error({ err, referredId }, 'processConversion error');
     } finally {
       client.release();

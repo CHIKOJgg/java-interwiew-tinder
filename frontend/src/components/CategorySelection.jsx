@@ -59,20 +59,27 @@ const CategorySelection = ({ onComplete, onBack }) => {
   const selectAll = () => setLocalSelected(categories.map((c) => c.name));
   const deselectAll = () => setLocalSelected([]);
 
+  const showPopup = (message) => {
+    if (window.Telegram?.WebApp?.showPopup) {
+      window.Telegram.WebApp.showPopup({ title: '', message, buttons: [{ type: 'ok' }] });
+    } else {
+      window.alert(message);
+    }
+  };
+
   const handleSave = async () => {
     if (selectedCategories.length === 0) {
-      alert(t('category.select_at_least_one', 'Please select at least one category'));
+      showPopup(t('category.select_at_least_one', 'Please select at least one category'));
       return;
     }
     try {
       setSaving(true);
       await api.updatePreferences(selectedCategories);
-      // Persist into store so Header topic counter can read them (§3)
       setSelectedCategories(selectedCategories);
       onComplete();
     } catch (error) {
       console.error('Error saving preferences:', error);
-      alert(t('category.save_error', 'Error saving preferences'));
+      showPopup(t('category.save_error', 'Error saving preferences'));
     } finally {
       setSaving(false);
     }
@@ -145,13 +152,13 @@ const CategorySelection = ({ onComplete, onBack }) => {
           <p className="referral-text">{t('referral.desc')}</p>
           
           <div className="referral-link-box" onClick={() => {
-            const botUsername = 'JavaInterviewTinderBot';
-            const link = `https://t.me/${botUsername}?start=${user?.telegram_id}`;
+            const link = `https://t.me/JavaInterviewTinderBot?start=${user?.telegram_id}`;
             navigator.clipboard.writeText(link);
-            // BUG-28: feedback for copying
-            alert(t('referral.copied', 'Link copied!'));
+            showPopup(t('referral.copied', 'Link copied!'));
           }}>
-            <span className="ref-url">t.me/{user?.telegram_id ? `...${user.telegram_id}` : 'your_link'}</span>
+            <span className="ref-url">
+              {user?.telegram_id ? `t.me/JavaInterviewTinderBot?start=${user.telegram_id}` : t('referral.loading', 'Loading...')}
+            </span>
             <Copy size={16} />
           </div>
 

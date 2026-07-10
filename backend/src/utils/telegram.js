@@ -40,9 +40,11 @@ export const validateTelegramWebAppData = (initData, botToken) => {
     const hashBuffer = Buffer.from(calculatedHash, 'hex');
     const receivedBuffer = Buffer.from(hash, 'hex');
 
-    if (hashBuffer.length !== receivedBuffer.length ||
-        !crypto.timingSafeEqual(hashBuffer, receivedBuffer)) {
-      console.warn('❌ Telegram initData hash mismatch — rejecting request');
+    if (
+      hashBuffer.length !== receivedBuffer.length ||
+      !crypto.timingSafeEqual(hashBuffer, receivedBuffer)
+    ) {
+      logger.warn({ hash, calculatedHash }, '❌ Telegram initData hash mismatch — rejecting request');
       return null;
     }
 
@@ -63,8 +65,8 @@ export const validateTelegramWebAppData = (initData, botToken) => {
       first_name: user.first_name || null,
       last_name: user.last_name || null,
     };
-  } catch (error) {
-    console.error('Error validating Telegram data:', error);
+  } catch (err) {
+    console.error('Error validating Telegram data:', err);
     return null;
   }
 };
@@ -74,7 +76,9 @@ export const validateTelegramWebAppData = (initData, botToken) => {
  */
 export const mockValidation = (initData) => {
   if (process.env.NODE_ENV === 'production' && !process.env.BOT_TOKEN) {
-    throw new Error('Production guard: BOT_TOKEN is missing. Mock validation is blocked in production.');
+    throw new Error(
+      'Production guard: BOT_TOKEN is missing. Mock validation is blocked in production.',
+    );
   }
   try {
     const urlParams = new URLSearchParams(initData);
@@ -97,7 +101,7 @@ export const mockValidation = (initData) => {
       first_name: user.first_name || null,
       last_name: user.last_name || null,
     };
-  } catch (error) {
+  } catch {
     // Return mock user on any error in dev mode
     return {
       telegram_id: 123456789,

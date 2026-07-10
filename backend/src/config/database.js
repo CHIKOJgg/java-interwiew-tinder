@@ -17,8 +17,8 @@ if (dbUrl) {
       url.searchParams.delete('sslmode');
       dbUrl = url.toString();
     }
-  } catch (e) {
-    dbUrl = dbUrl.replace(/[\?&]sslmode=[^&]+/g, '');
+  } catch {
+    dbUrl = dbUrl.replace(/[?&]sslmode=[^&]+/g, '');
   }
 }
 

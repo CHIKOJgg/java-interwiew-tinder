@@ -1,17 +1,6 @@
 import pool from '../config/database.js';
 import redis from '../config/redis.js';
-
-// No longer using local Map for limits caching — use Redis
-// const limitsCache = new Map();
-
-// ─── Admin bypass ─────────────────────────────────────────────────────
-// Set ADMIN_TELEGRAM_IDS=123456789,987654321 in .env to grant unlimited access
-const ADMIN_IDS = new Set(
-  (process.env.ADMIN_TELEGRAM_IDS || '')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean)
-);
+import ADMIN_IDS from '../config/admin.js';
 
 function isAdmin(userId) {
   return ADMIN_IDS.has(String(userId));
@@ -41,11 +30,10 @@ async function getUserLimits(userId) {
       const cached = await redis.get(cacheKey);
       if (cached) return JSON.parse(cached);
     } catch (err) {
-      console.warn('Redis read error in getUserLimits:', err.message);
+      logger.warn({ err }, 'Redis read error in getUserLimits:');
     }
   }
 
-  try {
     const { rows } = await pool.query(`
       SELECT
         COALESCE(sp.requests_per_day,         ${FREE_DEFAULTS.requests_per_day})      as requests_per_day,
@@ -79,7 +67,7 @@ async function getUserLimits(userId) {
 
     // 2. Save to Redis with 60s TTL
     if (redis) {
-      redis.setex(cacheKey, 60, JSON.stringify(limits)).catch(() => {});
+      redis.setex(cacheKey, 60, JSON.stringify(limits)).catch(err => logger.warn({ err }, 'Redis cache write failed:'));
     }
     
     return limits;
@@ -115,7 +103,7 @@ async function incrementCounter(userId, field) {
     `, [userId]);
     
     // Invalidate limits cache
-    if (redis) redis.del(`limits:${userId}`).catch(() => {});
+    if (redis) redis.del(`limits:${userId}`).catch(err => console.warn('Redis limits invalidation failed:', err.message));
   } catch (err) {
     console.error('Error incrementing counter:', err.message);
   }
@@ -123,7 +111,7 @@ async function incrementCounter(userId, field) {
 
 export function rateLimit(limitType = 'requests') {
   return async (req, res, next) => {
-    const userId = req.userId || req.body?.userId || req.query?.userId;
+    const userId = req.userId;
     if (!userId || isAdmin(userId)) return next();
 
     const limits = await getUserLimits(userId);
@@ -135,10 +123,10 @@ export function rateLimit(limitType = 'requests') {
       await pool.query(
         'UPDATE user_rate_limits SET requests_today = 0, daily_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1',
         [userId]
-      ).catch(() => {});
+      ).catch(err => console.error('Failed to reset daily rate limits:', err.message));
       if (redis) {
-        redis.del(`limits:${userId}`).catch(() => {});
-        redis.del(`counter:${userId}:requests_today`).catch(() => {});
+        redis.del(`limits:${userId}`).catch(err => console.warn('Redis del failed:', err.message));
+        redis.del(`counter:${userId}:requests_today`).catch(err => console.warn('Redis counter del failed:', err.message));
       }
     }
     if (limits.monthly_reset_at && new Date(limits.monthly_reset_at).getMonth() !== now.getMonth()) {
@@ -146,12 +134,12 @@ export function rateLimit(limitType = 'requests') {
         `UPDATE user_rate_limits SET ai_generations_this_month = 0, resume_analyses_this_month = 0,
          interview_evals_this_month = 0, monthly_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
         [userId]
-      ).catch(() => {});
+      ).catch(err => console.error('Failed to reset monthly rate limits:', err.message));
       if (redis) {
-        redis.del(`limits:${userId}`).catch(() => {});
+        redis.del(`limits:${userId}`).catch(err => console.warn('Redis del failed:', err.message));
         redis.keys(`counter:${userId}:*_month`).then(keys => {
           if (keys.length > 0) redis.del(...keys);
-        }).catch(() => {});
+        }).catch(err => console.warn('Redis monthly keys cleanup failed:', err.message));
       }
     }
 
@@ -207,7 +195,7 @@ export function rateLimit(limitType = 'requests') {
 
 export function requireEntitlement(feature, value) {
   return async (req, res, next) => {
-    const userId = req.userId || req.body?.userId || req.query?.userId;
+    const userId = req.userId;
     if (!userId || isAdmin(userId)) return next();
 
     const limits = await getUserLimits(userId);

@@ -1,7 +1,7 @@
 .header {
   background: var(--tg-theme-bg-color, #fff);
   border-bottom: 1px solid rgba(0, 0, 0, 0.07);
-  padding: 10px 14px 8px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 8px;
   position: relative;
   z-index: 10;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
@@ -163,6 +163,116 @@
   align-items: stretch;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 400px) {
+  .bottom-nav-item {
+    font-size: 8px;
+    padding: 4px 2px;
+    min-height: 44px;
+  }
+  .bottom-nav-item svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .bottom-nav-item {
+    min-height: 40px;
+    padding: 4px 4px;
+    font-size: 8px;
+  }
+  .bottom-nav-item svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 380px) {
+  .bottom-nav-item span {
+    display: none;
+  }
+  .bottom-nav-item {
+    gap: 0;
+    font-size: 0;
+  }
+  .bottom-nav-item svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (max-width: 400px) {
+  .header {
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 6px;
+  }
+  .header-title h1 {
+    font-size: 14px;
+  }
+  .header-actions {
+    gap: 4px;
+  }
+  .action-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .lang-select {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  .stats-text {
+    font-size: 10px;
+  }
+  .plan-badge {
+    font-size: 9px;
+  }
+  .topic-counter {
+    font-size: 9px;
+  }
+  .streak-badge {
+    font-size: 8px;
+    padding: 1px 6px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .header {
+    padding: calc(4px + env(safe-area-inset-top, 0px)) 10px 4px;
+  }
+  .header-top {
+    margin-bottom: 4px;
+  }
+  .header-title h1 {
+    font-size: 13px;
+  }
+  .action-btn {
+    width: 30px;
+    height: 30px;
+  }
+  .stats-container {
+    gap: 2px;
+  }
+  .stats-row {
+    gap: 4px;
+  }
+  .stats-text {
+    font-size: 9px;
+  }
+  .progress-bar {
+    height: 3px;
+  }
+}
+
+@media (max-width: 360px) {
+  .action-btn {
+    width: 30px;
+    height: 30px;
+  }
+  .lang-select {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
 }
 
 .bottom-nav-item {

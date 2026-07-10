@@ -62,28 +62,28 @@ export function parseAIResponse(content) {
   if (!content?.trim()) throw new Error('Empty AI response');
   const text = content.trim();
 
-  try { return JSON.parse(text); } catch { }
+  try { return JSON.parse(text); } catch { /* ignore */ }
 
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenced) { try { return JSON.parse(fenced[1].trim()); } catch { } }
+  if (fenced) { try { return JSON.parse(fenced[1].trim()); } catch { /* ignore */ } }
 
   const obj = text.match(/\{[\s\S]*\}/);
-  if (obj) { try { return JSON.parse(obj[0]); } catch { } }
+  if (obj) { try { return JSON.parse(obj[0]); } catch { /* ignore */ } }
 
   const arr = text.match(/\[[\s\S]*\]/);
-  if (arr) { try { return JSON.parse(arr[0]); } catch { } }
+  if (arr) { try { return JSON.parse(arr[0]); } catch { /* ignore */ } }
 
   try {
     return JSON.parse(
       text.replace(/[\r\n]+/g, ' ').replace(/,\s*([}\]])/g, '$1')
     );
-  } catch { }
+  } catch { /* ignore */ }
 
   // Stage 6: try to repair truncated JSON (model hit token limit mid-string)
   const repaired = repairTruncatedJSON(text);
   if (repaired) {
-    try { return JSON.parse(repaired); } catch { }
-    try { return JSON.parse(repaired.replace(/[\r\n]+/g, ' ').replace(/,\s*([}\]])/g, '$1')); } catch { }
+    try { return JSON.parse(repaired); } catch { /* ignore */ }
+    try { return JSON.parse(repaired.replace(/[\r\n]+/g, ' ').replace(/,\s*([}\]])/g, '$1')); } catch { /* ignore */ }
   }
 
   throw new Error('No valid JSON found: ' + text.substring(0, 200));
@@ -144,7 +144,7 @@ async function readCache(clusterId, mode, language) {
     
     // Backfill Redis if found in DB
     if (result && redis) {
-      redis.setex(redisKey, 2592000, result).catch(() => {}); // 30 days
+      redis.setex(redisKey, 2592000, result).catch(err => logger.warn({ err }, 'Redis backfill failed'));
     }
     
     return result;
@@ -292,7 +292,7 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
        }
     }
     // Set lock for 60s
-    redis.setex(lockKey, 60, '1').catch(() => {});
+    redis.setex(lockKey, 60, '1').catch(err => logger.warn({ err }, 'Redis lock set failed'));
   }
 
   // 3. Call AI, validate, cache

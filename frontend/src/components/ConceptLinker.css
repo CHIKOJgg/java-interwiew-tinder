@@ -249,3 +249,69 @@
     opacity: 1;
   }
 }
+
+@media (max-width: 480px) {
+  .linker-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .terms-column h3,
+  .defs-column h3 {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+}
+
+@media (max-width: 400px) {
+  .linker-container {
+    padding: 16px;
+    border-radius: 18px;
+  }
+  .linker-item {
+    padding: 10px;
+    font-size: 12px;
+    min-height: 56px;
+  }
+  .linker-badge {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+  .level-progress {
+    font-size: 12px;
+  }
+  .complete-card {
+    padding: 28px 20px;
+    width: 92%;
+  }
+  .complete-card h2 {
+    font-size: 20px;
+  }
+  .concept-linker-mode {
+    padding: 10px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .concept-linker-mode {
+    padding: 6px;
+    height: calc(100vh - 100px);
+  }
+  .linker-container {
+    padding: 12px;
+    border-radius: 14px;
+  }
+  .linker-item {
+    padding: 8px;
+    font-size: 11px;
+    min-height: 44px;
+  }
+  .linker-grid {
+    gap: 8px;
+  }
+}
+
+@media (max-height: 500px) {
+  .concept-linker-mode {
+    height: calc(100vh - 100px);
+  }
+}

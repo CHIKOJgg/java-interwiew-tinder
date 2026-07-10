@@ -292,3 +292,72 @@
 }
 
 .snippet-block { margin-bottom: 14px; }
+
+@media (max-width: 400px) {
+  .code-completion-mode {
+    padding: 10px;
+  }
+  .completion-card {
+    padding: 16px;
+    border-radius: 18px;
+    gap: 12px;
+  }
+  .snippet-container {
+    border-radius: 12px;
+  }
+  .snippet-block {
+    padding: 14px;
+  }
+  .snippet-block code {
+    font-size: 12px;
+  }
+  .completion-option {
+    padding: 11px;
+  }
+  .completion-option code {
+    font-size: 12px;
+  }
+  .submit-completion-button,
+  .next-completion-button {
+    padding: 13px;
+    font-size: 14px;
+  }
+  .completion-instruction {
+    font-size: 14px;
+  }
+  .completion-badge {
+    font-size: 10px;
+    padding: 4px 10px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .code-completion-mode {
+    padding: 6px;
+    height: calc(100vh - 100px);
+  }
+  .completion-card {
+    padding: 12px;
+    gap: 8px;
+    border-radius: 14px;
+  }
+  .snippet-block {
+    padding: 10px;
+  }
+  .options-grid {
+    gap: 6px;
+  }
+  .completion-option {
+    padding: 8px 10px;
+  }
+  .submit-completion-button {
+    padding: 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-height: 500px) {
+  .code-completion-mode {
+    height: calc(100vh - 100px);
+  }
+}

@@ -2,10 +2,10 @@ import { create } from 'zustand';
 import apiClient from '../api/client';
 
 const CACHE_KEY = 'interview_tinder_cache';
-function saveToLocal(key, data) { try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { } }
+function saveToLocal(key, data) { try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { /* ignore */ } }
 function loadFromLocal(key) { try { return JSON.parse(localStorage.getItem(`${CACHE_KEY}_${key}`)); } catch { return null; } }
 
-function saveToSession(key, data) { try { sessionStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { } }
+function saveToSession(key, data) { try { sessionStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { /* ignore */ } }
 function loadFromSession(key) { try { return JSON.parse(sessionStorage.getItem(`${CACHE_KEY}_${key}`)); } catch { return null; } }
 
 const useStore = create((set, get) => ({

@@ -174,7 +174,7 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose }) => {
     try {
       const parsed = JSON.parse(trimmed);
       if (parsed.theory || parsed.title) return { isJson: true, data: parsed };
-    } catch { }
+    } catch { /* ignore */ }
     return { isJson: false, data: null };
   }, [explanation]);
 

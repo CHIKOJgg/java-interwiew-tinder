@@ -33,7 +33,7 @@ describe('Rate Limiter Middleware', () => {
   });
 
   beforeEach(() => {
-    req = { body: {}, query: {} };
+    req = { body: {}, query: {}, userId: undefined };
     res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn()
@@ -43,7 +43,7 @@ describe('Rate Limiter Middleware', () => {
   });
 
   it('should allow admin bypass', async () => {
-    req.body.userId = 'admin123';
+    req.userId = 'admin123';
     const middleware = rateLimit('requests');
     await middleware(req, res, next);
     expect(next).toHaveBeenCalled();
@@ -51,7 +51,7 @@ describe('Rate Limiter Middleware', () => {
   });
 
   it('should block if rate limit exceeded', async () => {
-    req.body.userId = 'user123';
+    req.userId = 'user123';
     pool.query.mockResolvedValueOnce({
       rows: [{
         requests_per_day: 5,
@@ -71,7 +71,7 @@ describe('Rate Limiter Middleware', () => {
   });
 
   it('should allow if under rate limit and increment counter', async () => {
-    req.body.userId = 'user123';
+    req.userId = 'user123';
     pool.query.mockResolvedValueOnce({
       rows: [{
         requests_per_day: 5,

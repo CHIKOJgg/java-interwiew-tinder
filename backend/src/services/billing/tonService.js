@@ -1,32 +1,19 @@
-/**
- * TON Crypto Payment Service
- *
- * Payment flow:
- *   1. createTonInvoice()  → returns { address, amountTon, comment, invoiceId, expiresAt }
- *   2. User sends TON to the address with the unique comment
- *   3. pollPendingInvoices() runs every 30 s (started in server.js)
- *      → hits TON Center API, finds matching tx, calls activateTonSubscription()
- *   4. Frontend polls GET /api/billing/ton/check every 5 s until fulfilled
- *
- * Idempotency: unique index on user_subscriptions.ton_tx_hash prevents
- * double-activation if the poller fires twice for the same tx.
- */
 
-import { createHash, randomBytes } from 'crypto';
+
+import { randomBytes } from 'crypto';
 import pool from '../../config/database.js';
 import logger from '../../config/logger.js';
 
 // ─── Config ────────────────────────────────────────────────────────────
-const TON_WALLET  = process.env.TON_WALLET_ADDRESS ?? '';
-const TONCENTER   = 'https://toncenter.com/api/v2';
-const API_KEY     = process.env.TON_CENTER_API_KEY ?? '';     // optional, raises rate-limit
-const NANOTONS    = 1_000_000_000n;                           // 1 TON = 1e9 nanoton
+const TON_WALLET = process.env.TON_WALLET_ADDRESS ?? '';
+const TONCENTER = 'https://toncenter.com/api/v2';
+const API_KEY = process.env.TON_CENTER_API_KEY ?? '';     // optional, raises rate-limit
 const INVOICE_TTL = 15 * 60 * 1_000;                         // 15 minutes
 
 function getPriceTon(planId, interval) {
   if (planId === 'pro') {
     const monthly = parseFloat(process.env.TON_PRO_MONTHLY_AMOUNT ?? '2.0');
-    const yearly  = parseFloat(process.env.TON_PRO_YEARLY_AMOUNT  ?? '13.0');
+    const yearly = parseFloat(process.env.TON_PRO_YEARLY_AMOUNT ?? '13.0');
     return interval === 'yearly' ? yearly : monthly;
   }
   throw new Error(`Unknown plan: ${planId}`);
@@ -97,11 +84,11 @@ async function tryFulfillInvoice(invoice, transactions) {
     const msg = tx.in_msg;
     if (!msg || !msg.message) continue;
 
-    const comment    = msg.message.trim();
-    const valueNano  = BigInt(msg.value ?? '0');
+    const comment = msg.message.trim();
+    const valueNano = BigInt(msg.value ?? '0');
 
     if (comment !== invoice.invoice_id) continue;
-    if (valueNano < expectedNanotons)   continue;
+    if (valueNano < expectedNanotons) continue;
 
     // Match found
     const txHash = tx.transaction_id?.hash ?? tx.hash ?? String(tx.utime);
@@ -120,7 +107,7 @@ export async function activateTonSubscription(userId, planId, interval, txHash, 
   try {
     await client.query('BEGIN');
 
-    const isYearly  = interval === 'yearly';
+    const isYearly = interval === 'yearly';
     const expiresAt = new Date();
     isYearly
       ? expiresAt.setFullYear(expiresAt.getFullYear() + 1)
@@ -161,11 +148,11 @@ export async function activateTonSubscription(userId, planId, interval, txHash, 
     logger.info({ userId, planId, txHash }, '✅ TON subscription activated');
 
     // Process referral conversion if applicable
-    import('../referralService.js').then(m => m.referralService.processConversion(userId)).catch(() => {});
+    import('../referralService.js').then(m => m.referralService.processConversion(userId)).catch(() => { });
 
     return { success: true };
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
+    await client.query('ROLLBACK').catch(() => { });
     // If it's a unique_violation on ton_tx_hash, it's a replay — safe to ignore
     if (err.code === '23505') {
       logger.warn({ txHash }, '⚠️ TON tx already processed (duplicate ignored)');

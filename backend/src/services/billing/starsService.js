@@ -92,14 +92,14 @@ export async function activateStarsSubscription(userId, planId, interval, charge
     logger.info({ userId, planId, chargeId }, '⭐ Stars subscription activated');
 
     // Process referral conversion if applicable
-    import('../referralService.js').then(m => m.referralService.processConversion(userId)).catch(() => {});
+    import('../referralService.js').then(m => m.referralService.processConversion(userId)).catch(err => logger.error({ err, userId }, 'Referral conversion failed after Stars payment'));
 
     // Track subscription start
     metricsService.trackEvent(userId, 'subscription_started', { planId, interval, provider: 'stars' });
 
     return { success: true };
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
+    await client.query('ROLLBACK').catch(err => logger.error({ err }, 'ROLLBACK failed after Stars activation error'));
     logger.error({ err, userId, chargeId }, 'activateStarsSubscription error');
     throw err;
   } finally {

@@ -20,17 +20,9 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 
-  /*
-   * CRITICAL for mobile flip:
-   * "touch-action: none" was the culprit — it tells the browser to hand
-   * ALL touch input to JS, which means the browser never fires the
-   * synthetic "click" event that pointerType==='touch' relies on.
-   * We need "touch-action: pan-y" so swipe-left/right is handled by
-   * TinderCard via JS, while our touchstart/end handlers do tap detection.
-   *
-   * Do NOT use "touch-action: none" here.
-   */
-  touch-action: pan-y;
+  /* Let react-tinder-card handle all touch gestures (swipe).
+     "none" stops the browser from hijacking the gesture as a scroll. */
+  touch-action: none;
 }
 
 /* ── 3-D flip container ───────────────────────────────────────────── */
@@ -178,6 +170,8 @@
   justify-content: center;
   gap: 12px;
   overflow-y: auto;
+  /* Allow vertical scroll of long answers, but keep horizontal swipe for the lib */
+  touch-action: pan-y;
 }
 
 .answer-label {

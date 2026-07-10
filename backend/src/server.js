@@ -7,9 +7,9 @@ import pool from './config/database.js';
 import { validateTelegramWebAppData, mockValidation } from './utils/telegram.js';
 import { generateExplanation, evaluateInterviewAnswer, analyzeResume, checkCache } from './services/aiService.js';
 import { enqueueJob } from './services/queueService.js';
-import { getLanguage, getAvailableLanguages, getCategories } from './services/languageRegistry.js';
+import { getAvailableLanguages } from './services/languageRegistry.js';
 import { requestLogger, validateBody, sanitizeBody } from './middleware/logging.js';
-import { rateLimit, requireEntitlement, trackEvent } from './middleware/rateLimiter.js';
+import { rateLimit } from './middleware/rateLimiter.js';
 import { billingService } from './services/billingService.js';
 import { sendStarsInvoice, answerPreCheckout, sendTelegramMessage, activateStarsSubscription } from './services/billing/starsService.js';
 import { createTonInvoice, getUserPendingInvoice, pollPendingInvoices } from './services/billing/tonService.js';
@@ -17,11 +17,17 @@ import { metricsService } from './services/metricsService.js';
 import { referralService } from './services/referralService.js';
 import { updateMastery, getDueCount } from './services/questionService.js';
 import jwt from 'jsonwebtoken';
-import { authMiddleware, requireAdmin, ADMIN_IDS } from './middleware/auth.js';
+import { authMiddleware, requireAdmin } from './middleware/auth.js';
+import ADMIN_IDS from './config/admin.js';
 import redis, { isConnected as isRedisConnected } from './config/redis.js';
 import logger from './config/logger.js';
 
 dotenv.config();
+
+if (process.env.NODE_ENV !== 'test' && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 16)) {
+  console.error('FATAL: JWT_SECRET must be at least 16 characters long');
+  process.exit(1);
+}
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
@@ -36,7 +42,7 @@ const ALLOWED_ORIGINS = new Set(
   (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
 );
 
-// ─── Global Middleware ───────────────────────────────────────────────
+
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || ALLOWED_ORIGINS.has(origin) || isDev) return cb(null, true);
@@ -144,7 +150,7 @@ app.get('/health', async (req, res) => {
 });
 
 // ─── Sentry Debug ────────────────────────────────────────────────────
-app.get('/debug-sentry', (req, res) => {
+app.get('/debug-sentry', (_req, _res) => {
   throw new Error('Sentry backend test error');
 });
 // ─── Languages ───────────────────────────────────────────────────────
@@ -210,14 +216,16 @@ app.post('/api/auth/login', async (req, res) => {
             `INSERT INTO user_subscriptions (user_id, plan_id, status, expires_at, payment_id, payment_provider)
              VALUES ($1, 'pro', 'active', NULL, 'admin_grant', 'system')
              ON CONFLICT DO NOTHING`,
-          [user.telegram_id]
+            [user.telegram_id]
           ).catch(() => { });
         });
         await pool.query(
           `UPDATE users SET subscription_plan = 'pro' WHERE telegram_id = $1`,
           [user.telegram_id]
-        ).catch(() => { });
-      } catch { }
+        ).catch(err => logger.error({ err, userId: user.telegram_id }, 'Failed to update admin subscription plan'));
+      } catch (err) {
+        logger.error({ err, userId: user.telegram_id }, 'Admin auto-grant failed');
+      }
     }
 
     // Background warm-up: pre-enqueue AI generation jobs for this user's next questions
@@ -231,16 +239,16 @@ app.post('/api/auth/login', async (req, res) => {
           [user.telegram_id]
         );
         for (const q of preload.rows) {
-          enqueueJob('explanation', { 
-            questionId: q.id, 
-            questionText: q.question_text, 
-            shortAnswer: q.short_answer, 
-            userId: user.telegram_id, 
-            language: q.language || 'Java' 
-          }).catch(() => { });
+          enqueueJob('explanation', {
+            questionId: q.id,
+            questionText: q.question_text,
+            shortAnswer: q.short_answer,
+            userId: user.telegram_id,
+            language: q.language || 'Java'
+          }).catch(err => logger.error({ err }, 'Failed to enqueue preload job'));
         }
-      } catch (e) { 
-        logger.error({ err: e, userId: user.telegram_id }, 'Preload error'); 
+      } catch (e) {
+        logger.error({ err: e, userId: user.telegram_id }, 'Preload error');
       }
     })();
 
@@ -257,7 +265,9 @@ app.post('/api/auth/login', async (req, res) => {
           [user.telegram_id]
         );
         if (subResult.rows.length > 0) plan = subResult.rows[0].plan_id;
-      } catch { }
+      } catch (err) {
+        logger.error({ err, userId: user.telegram_id }, 'Failed to resolve subscription plan');
+      }
     }
 
     const token = jwt.sign(
@@ -373,7 +383,6 @@ app.get('/api/questions/feed', async (req, res) => {
     const mode = req.query.mode || 'swipe';
     const limit = Math.min(parseInt(req.query.limit) || 5, 10);
 
-    // Load user's category preferences (only apply if they match current language)
     const prefsResult = await pool.query(
       'SELECT selected_categories, selected_language FROM user_preferences WHERE telegram_id = $1',
       [userId]
@@ -382,20 +391,10 @@ app.get('/api/questions/feed', async (req, res) => {
     const savedLang = prefs?.selected_language || 'Java';
     const selectedCategories = (savedLang === language) ? (prefs?.selected_categories || []) : [];
 
-    // ── Mode-specific WHERE clause ─────────────────────────────────────
-    // Exclude questions that are missing required AI-generated data for the
-    // mode — they'd cause 404s on answer submission.
-    // Test mode: ONLY return questions with pre-populated options (array length >= 4).
-    // All other modes get all questions and load AI data on-demand.
-    // This eliminates all fetchGeneration calls from TestMode.
     const modeFilter = (mode === 'test')
       ? `AND COALESCE(jsonb_array_length(to_jsonb(q.options)), 0) >= 4`
       : '';
 
-    // Spaced Repetition Ordering logic:
-    // 1. Questions due for review (next_review <= today)
-    // 2. Never-seen questions
-    // 3. Questions seen but not yet due (pushed to end)
     const baseQuery = `
       SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
              q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language,
@@ -410,16 +409,16 @@ app.get('/api/questions/feed', async (req, res) => {
         ${modeFilter}
       ORDER BY 
         CASE 
-          WHEN qm.next_review <= CURRENT_DATE THEN 0  -- Due now
-          WHEN up.id IS NULL THEN 1                  -- New
-          ELSE 2                                     -- Seen but not due
+          WHEN qm.next_review <= CURRENT_DATE THEN 0
+          WHEN up.id IS NULL THEN 1
+          ELSE 2
         END ASC,
         review_date ASC,
         RANDOM() 
       LIMIT ${selectedCategories.length > 0 ? '$4' : '$3'}`;
-    
-    const params = selectedCategories.length > 0 
-      ? [userId, language, selectedCategories, limit] 
+
+    const params = selectedCategories.length > 0
+      ? [userId, language, selectedCategories, limit]
       : [userId, language, limit];
 
     const result = await pool.query(baseQuery, params);
@@ -505,7 +504,7 @@ async function resolveAIData(questionId, columnName, cacheMode) {
       try {
         data = JSON.parse(cached);
         // Opportunistically backfill so next hit is fast
-        pool.query(`UPDATE questions SET ${columnName}=$1 WHERE id=$2`, [JSON.stringify(data), questionId]).catch(() => { });
+        pool.query(`UPDATE questions SET ${columnName}=$1 WHERE id=$2`, [JSON.stringify(data), questionId]).catch(err => logger.error({ err, questionId }, 'Failed to backfill AI data'));
       } catch { data = null; }
     }
   }
@@ -539,7 +538,7 @@ async function updateStreak(userId) {
     }
 
     const newLongest = Math.max(user.longest_streak, newStreak);
-    
+
     await pool.query(
       'UPDATE users SET current_streak = $1, last_activity_date = $2, longest_streak = $3 WHERE telegram_id = $4',
       [newStreak, today, newLongest, userId]
@@ -586,7 +585,7 @@ app.post('/api/questions/swipe',
       const streakData = await updateStreak(userId);
 
       // Spaced Repetition: update mastery
-      await updateMastery(userId, questionId, status === 'known' ? 5 : 0).catch(() => {});
+      await updateMastery(userId, questionId, status === 'known' ? 5 : 0).catch(() => { });
 
       res.json({ success: true, streak: streakData });
 
@@ -609,7 +608,8 @@ app.delete('/api/questions/swipe/:questionId', async (req, res) => {
     );
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err }, 'Undo swipe error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -619,7 +619,7 @@ app.post('/api/questions/:questionId/report', async (req, res) => {
     const { questionId } = req.params;
     const { reason, comment } = req.body;
     const userId = req.userId;
-    
+
     await pool.query(
       'INSERT INTO question_reports (question_id, user_id, reason, comment) VALUES ($1, $2, $3, $4)',
       [questionId, userId, reason, comment]
@@ -634,16 +634,16 @@ app.post('/api/questions/:questionId/report', async (req, res) => {
 
     if (count >= 5) {
       await pool.query('UPDATE questions SET is_active = FALSE WHERE id = $1', [questionId]);
-      
+
       // Get question text for notification
       const qRes = await pool.query('SELECT question_text FROM questions WHERE id = $1', [questionId]);
       const text = qRes.rows[0]?.question_text || 'Unknown';
-      
+
       const adminMsg = `⚠️ Question ${questionId} has 5 reports.\n\nText: "${text}"\nIt has been automatically hidden from the deck. Review at Admin Panel.`;
-      
+
       // Send to all admins
       for (const adminId of ADMIN_IDS) {
-        sendTelegramMessage(adminId, adminMsg).catch(() => {});
+        sendTelegramMessage(adminId, adminMsg).catch(() => { });
       }
     }
 
@@ -774,7 +774,7 @@ app.post('/api/questions/explain', async (req, res) => {
     const cachedAI = await checkCache(question.question_text, 'explanation', null, question.language || 'Java');
     if (cachedAI) {
       // Backfill the questions table cache too
-      pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cachedAI, questionId]).catch(() => { });
+      pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cachedAI, questionId]).catch(err => logger.error({ err, questionId }, 'Failed to backfill cached explanation'));
       return res.json({ explanation: cachedAI, cached: true });
     }
 
@@ -785,18 +785,16 @@ app.post('/api/questions/explain', async (req, res) => {
     );
 
     // Backfill both caches asynchronously
-    pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [explanation, questionId]).catch(() => { });
+    pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [explanation, questionId]).catch(err => logger.error({ err, questionId }, 'Failed to persist explanation'));
 
     res.json({ explanation, cached: false });
 
     // Track explanation request
     metricsService.trackEvent(userId, 'ai_explanation_requested', { questionId, cached: false });
   } catch (error) {
-    logger.error({ err: error, questionId }, 'Error in /questions/explain');
-    // Return the real error message — helps diagnose model/key issues in production
+    logger.error({ err: error, questionId: req.body?.questionId }, 'Error in /questions/explain');
     res.status(500).json({
       error: 'AI explanation failed',
-      detail: error.message,
     });
   }
 });
@@ -894,7 +892,8 @@ app.post('/api/billing/stars/create-invoice', async (req, res) => {
 
     res.json({ url: result.result });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error({ err: error }, 'Create invoice link error');
+    res.status(500).json({ error: 'Failed to create invoice link' });
   }
 });
 
@@ -960,7 +959,8 @@ app.post('/api/billing/stars/invoice',
       await sendStarsInvoice(req.userId, planId, interval);
       res.json({ sent: true });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      logger.error({ err: error }, 'Stars invoice error');
+      res.status(500).json({ error: 'Failed to send invoice' });
     }
   }
 );
@@ -971,7 +971,8 @@ app.get('/api/billing/info', async (req, res) => {
     const info = await billingService.getBillingInfo(req.userId);
     res.json(info);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err }, 'Billing info error');
+    res.status(500).json({ error: 'Failed to get billing info' });
   }
 });
 
@@ -980,7 +981,8 @@ app.get('/api/billing/history', async (req, res) => {
     const history = await billingService.getHistory(req.userId, 5);
     res.json({ history });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err }, 'Billing history error');
+    res.status(500).json({ error: 'Failed to get billing history' });
   }
 });
 
@@ -993,7 +995,8 @@ app.delete('/api/billing/subscription', async (req, res) => {
     // Track cancellation
     metricsService.trackEvent(userId, 'subscription_cancelled');
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error({ err: error }, 'Cancel subscription error');
+    res.status(500).json({ error: 'Failed to cancel subscription' });
   }
 });
 
@@ -1010,7 +1013,8 @@ app.post('/api/billing/ton/invoice',
       const invoice = await createTonInvoice(req.userId, planId, interval);
       res.json(invoice);
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      logger.error({ err }, 'TON invoice error');
+      res.status(500).json({ error: 'Failed to create TON invoice' });
     }
   }
 );
@@ -1029,7 +1033,8 @@ app.get('/api/billing/ton/check', async (req, res) => {
       expiresAt: invoice.expires_at,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err }, 'TON check error');
+    res.status(500).json({ error: 'Failed to check TON payment' });
   }
 });
 
@@ -1037,28 +1042,36 @@ app.get('/api/billing/ton/check', async (req, res) => {
 
 // Grant plan (admin-only)
 app.post('/api/admin/grant-plan', async (req, res) => {
+  const client = await pool.connect();
   try {
     const { targetUserId, planId, months = 12 } = req.body;
     const expiresAt = months === 0 ? null : new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000);
-    await pool.query('BEGIN');
-    await pool.query(
-      `UPDATE user_subscriptions SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND status = 'active'`,
-      [targetUserId]
-    );
-    await pool.query(
-      `INSERT INTO user_subscriptions (user_id, plan_id, status, expires_at, payment_id, payment_provider)
-       VALUES ($1, $2, 'active', $3, 'admin_grant', 'admin')`,
-      [targetUserId, planId, expiresAt]
-    );
-    await pool.query(
-      `UPDATE users SET subscription_plan = $1, subscription_expires_at = $2 WHERE telegram_id = $3`,
-      [planId, expiresAt, targetUserId]
-    );
-    await pool.query('COMMIT');
-    res.json({ success: true, message: `Granted ${planId} to ${targetUserId}` });
+    await client.query('BEGIN');
+    try {
+      await client.query(
+        `UPDATE user_subscriptions SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND status = 'active'`,
+        [targetUserId]
+      );
+      await client.query(
+        `INSERT INTO user_subscriptions (user_id, plan_id, status, expires_at, payment_id, payment_provider)
+         VALUES ($1, $2, 'active', $3, 'admin_grant', 'admin')`,
+        [targetUserId, planId, expiresAt]
+      );
+      await client.query(
+        `UPDATE users SET subscription_plan = $1, subscription_expires_at = $2 WHERE telegram_id = $3`,
+        [planId, expiresAt, targetUserId]
+      );
+      await client.query('COMMIT');
+      res.json({ success: true, message: `Granted ${planId} to ${targetUserId}` });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    }
   } catch (err) {
-    await pool.query('ROLLBACK').catch(() => { });
-    res.status(500).json({ error: err.message });
+    logger.error({ err }, 'Grant plan failed');
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
   }
 });
 
@@ -1078,10 +1091,11 @@ app.get('/api/admin/users', async (req, res) => {
       ORDER BY u.created_at DESC 
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
-    
+
     res.json({ users: rows, limit, offset });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err }, 'Admin users error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1106,7 +1120,7 @@ app.post('/api/admin/clear-cache', requireAdmin, async (req, res) => {
 
     const result = await pool.query(query, params);
     logger.info({ mode, language, count: result.rowCount }, '🗑️ AI Cache cleared by admin');
-    
+
     // Redis invalidation (simple flush for now if no specific keys targetable)
     if (redis && (!mode && !language)) {
       const keys = await redis.keys('ai:*');
@@ -1135,7 +1149,8 @@ app.get('/api/admin/reports', async (req, res) => {
     `);
     res.json({ reports: rows });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err }, 'Admin reports error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1146,7 +1161,8 @@ app.post('/api/admin/reports/:questionId/approve', async (req, res) => {
     await pool.query('UPDATE questions SET is_active = TRUE WHERE id = $1', [questionId]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err }, 'Approve report error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1157,7 +1173,8 @@ app.delete('/api/admin/questions/:questionId', async (req, res) => {
     await pool.query('UPDATE question_reports SET resolved = TRUE WHERE question_id = $1', [questionId]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err }, 'Delete question error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1174,7 +1191,8 @@ app.put('/api/admin/questions/:questionId', async (req, res) => {
     await pool.query('UPDATE questions SET cached_explanation = NULL, bug_hunting_data = NULL, blitz_data = NULL, code_completion_data = NULL WHERE id = $1', [questionId]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err }, 'Update question error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1202,13 +1220,14 @@ app.get('/api/stats/percentile', async (req, res) => {
     `, [language, currentScore]);
 
     const { below_count, total_count } = statsResult.rows[0];
-    const percentile = total_count > 0 
-      ? Math.round((parseInt(below_count || 0) / parseInt(total_count || 1)) * 100) 
+    const percentile = total_count > 0
+      ? Math.round((parseInt(below_count || 0) / parseInt(total_count || 1)) * 100)
       : 99;
 
     res.json({ percentile });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logger.error({ err }, 'Percentile error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1226,7 +1245,7 @@ app.get('/api/stats/categories', async (req, res) => {
     const { language = 'Java', categories } = req.query;
 
     let cats = [];
-    try { cats = JSON.parse(decodeURIComponent(categories || '[]')); } catch { }
+    try { cats = JSON.parse(decodeURIComponent(categories || '[]')); } catch { /* ignore */ }
 
     if (cats.length === 0) return res.json({ known: 0, total: 0 });
 
@@ -1306,15 +1325,7 @@ app.post('/api/questions/mastery', validateBody({ questionId: { required: true }
 // ─── Server ───────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`
-╔════════════════════════════════════════════════╗
-║   🚀 Interview Tinder Backend                  ║
-╠════════════════════════════════════════════════╣
-║   Port: ${String(PORT).padEnd(39)}║
-║   Mode: ${(isDev ? 'Development' : 'Production').padEnd(39)}║
-║   Admins: ${String(ADMIN_IDS.size).padEnd(37)}║
-╚════════════════════════════════════════════════╝
-    `);
+    logger.info({ port: PORT, mode: isDev ? 'development' : 'production', admins: ADMIN_IDS.size }, 'Server started');
 
     // ── TON payment poller: every 30 s, check for fulfilled invoices ──
     if (process.env.TON_WALLET_ADDRESS) {

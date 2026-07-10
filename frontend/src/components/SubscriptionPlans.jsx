@@ -274,10 +274,12 @@ const SubscriptionPlans = ({ onBack }) => {
           setStatus(info);
           setShowSuccess(true);
           if (window.Telegram?.WebApp?.initData) {
-            login(window.Telegram.WebApp.initData).catch(() => { });
+            login(window.Telegram.WebApp.initData).catch(err => console.error('Re-login after payment failed:', err));
           }
         }
-      } catch { }
+      } catch (err) {
+        console.error('Payment polling error:', err);
+      }
       if (checks >= MAX_CHECKS) {
         clearInterval(interval);
         setPolling(false);
@@ -357,7 +359,7 @@ const SubscriptionPlans = ({ onBack }) => {
       const res = await apiClient.getBillingHistory();
       setHistory(res.history || []);
       setShowHistory(true);
-    } catch { }
+    } catch { /* ignore */ }
   };
 
   if (loading) {

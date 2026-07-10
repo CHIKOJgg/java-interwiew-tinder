@@ -281,3 +281,83 @@
     transform: translateY(-8px);
   }
 }
+
+@media (max-width: 400px) {
+  .blitz-mode {
+    padding: 10px;
+    gap: 10px;
+  }
+  .blitz-timer,
+  .blitz-current-score {
+    padding: 6px 12px;
+    font-size: 14px;
+    gap: 6px;
+  }
+  .blitz-card {
+    padding: 20px 16px;
+    gap: 14px;
+    border-radius: 18px;
+  }
+  .blitz-statement {
+    font-size: 18px;
+    min-height: 60px;
+  }
+  .blitz-btn {
+    padding: 14px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+  .blitz-actions {
+    gap: 10px;
+  }
+  .blitz-start-card,
+  .blitz-results-card {
+    padding: 32px 20px;
+  }
+  .blitz-start-card h2,
+  .blitz-results-card h2 {
+    font-size: 22px;
+  }
+  .final-score strong {
+    font-size: 56px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .blitz-mode {
+    padding: 8px;
+    gap: 8px;
+    height: calc(100vh - 100px);
+  }
+  .blitz-header {
+    margin-bottom: 0;
+  }
+  .blitz-card {
+    padding: 14px 16px;
+    gap: 10px;
+    border-radius: 14px;
+  }
+  .blitz-statement {
+    font-size: 16px;
+    min-height: 40px;
+  }
+  .blitz-btn {
+    padding: 10px;
+    font-size: 13px;
+  }
+  .blitz-timer,
+  .blitz-current-score {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+  .blitz-start-screen,
+  .blitz-results-screen {
+    height: calc(100vh - 100px);
+  }
+}
+
+@media (max-height: 500px) {
+  .blitz-mode {
+    height: calc(100vh - 100px);
+  }
+}

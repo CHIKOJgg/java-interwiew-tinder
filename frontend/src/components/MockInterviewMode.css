@@ -242,3 +242,81 @@
     transform: rotate(360deg);
   }
 }
+
+@media (max-width: 400px) {
+  .interview-chat {
+    padding: 12px;
+    gap: 14px;
+  }
+  .message-group {
+    max-width: 96%;
+  }
+  .message-bubble {
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: 14px;
+  }
+  .message-avatar {
+    width: 28px;
+    height: 28px;
+  }
+  .message-avatar svg {
+    width: 14px;
+    height: 14px;
+  }
+  .interview-input-area {
+    padding: 10px 12px;
+  }
+  .interview-input-area textarea {
+    font-size: 14px;
+    height: 40px;
+    padding: 8px 12px;
+  }
+  .send-btn {
+    width: 40px;
+    height: 40px;
+  }
+  .evaluation-card {
+    padding: 12px;
+  }
+  .score-badge {
+    font-size: 12px;
+    padding: 3px 10px;
+  }
+  .evaluation-feedback {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .mock-interview-mode {
+    height: calc(100vh - 100px);
+    border-radius: 16px;
+  }
+  .interview-chat {
+    padding: 10px;
+    gap: 10px;
+  }
+  .message-bubble {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .interview-input-area {
+    padding: 8px 12px;
+  }
+  .interview-input-area textarea {
+    height: 36px;
+    font-size: 13px;
+  }
+  .send-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-height: 500px) {
+  .mock-interview-mode {
+    height: calc(100vh - 100px);
+  }
+}

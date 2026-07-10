@@ -10,7 +10,7 @@ const ConceptLinker = () => {
     currentIndex,
     isLoadingQuestions,
     hasMoreQuestions,
-    loadQuestions
+    loadQuestions,
   } = useStore();
   const { t } = useTranslation();
 
@@ -27,17 +27,25 @@ const ConceptLinker = () => {
   // Initialize a "level" with 5 questions
   useEffect(() => {
     if (questions.length > 0) {
-      const levelQuestions = questions.slice(currentIndex, currentIndex + LEVEL_SIZE);
+      const levelQuestions = questions.slice(
+        currentIndex,
+        currentIndex + LEVEL_SIZE,
+      );
 
-      const newTerms = levelQuestions.map(q => ({
+      const newTerms = levelQuestions.map((q) => ({
         id: q.id,
-        text: q.question.length > 50 ? q.question.substring(0, 50) + '...' : q.question
+        text:
+          q.question.length > 50
+            ? q.question.substring(0, 50) + '...'
+            : q.question,
       }));
 
-      const newDefs = levelQuestions.map(q => ({
-        id: q.id,
-        text: q.shortAnswer
-      })).sort(() => Math.random() - 0.5);
+      const newDefs = levelQuestions
+        .map((q) => ({
+          id: q.id,
+          text: q.shortAnswer,
+        }))
+        .sort(() => Math.random() - 0.5);
 
       setTerms(newTerms);
       setDefinitions(newDefs);
@@ -47,13 +55,13 @@ const ConceptLinker = () => {
   }, [questions, currentIndex]);
 
   const handleTermClick = (termId) => {
-    if (isLevelComplete || matches.some(m => m.termId === termId)) return;
+    if (isLevelComplete || matches.some((m) => m.termId === termId)) return;
     setSelectedTerm(termId);
     if (selectedDef) checkMatch(termId, selectedDef);
   };
 
   const handleDefClick = (defId) => {
-    if (isLevelComplete || matches.some(m => m.defId === defId)) return;
+    if (isLevelComplete || matches.some((m) => m.defId === defId)) return;
     setSelectedDef(defId);
     if (selectedTerm) checkMatch(selectedTerm, defId);
   };
@@ -98,15 +106,19 @@ const ConceptLinker = () => {
             <span>Concept Linker</span>
           </div>
           <div className="level-progress">
-            {t('linker.found_count', { count: matches.length, total: terms.length, defaultValue: '{{count}} / {{total}} found' })}
+            {t('linker.found_count', {
+              count: matches.length,
+              total: terms.length,
+              defaultValue: '{{count}} / {{total}} found',
+            })}
           </div>
         </div>
 
         <div className="linker-grid">
           <div className="terms-column">
             <h3>{t('linker.terms', 'Terms')}</h3>
-            {terms.map(term => {
-              const isMatched = matches.some(m => m.termId === term.id);
+            {terms.map((term) => {
+              const isMatched = matches.some((m) => m.termId === term.id);
               const isSelected = selectedTerm === term.id;
               const isWrong = wrongMatch?.termId === term.id;
 
@@ -124,8 +136,8 @@ const ConceptLinker = () => {
 
           <div className="defs-column">
             <h3>{t('linker.definitions', 'Definitions')}</h3>
-            {definitions.map(def => {
-              const isMatched = matches.some(m => m.defId === def.id);
+            {definitions.map((def) => {
+              const isMatched = matches.some((m) => m.defId === def.id);
               const isSelected = selectedDef === def.id;
               const isWrong = wrongMatch?.defId === def.id;
 
@@ -147,7 +159,9 @@ const ConceptLinker = () => {
             <div className="complete-card">
               <Sparkles size={48} className="sparkles-icon" />
               <h2>{t('linker.complete_title', 'All links established!')}</h2>
-              <p>{t('linker.complete_desc', "You've mastered these concepts.")}</p>
+              <p>
+                {t('linker.complete_desc', "You've mastered these concepts.")}
+              </p>
               <button className="next-level-btn" onClick={() => {
                 // Advance by the level size; load more questions if running low
                 const nextIndex = currentIndex + LEVEL_SIZE;

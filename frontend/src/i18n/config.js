@@ -28,7 +28,7 @@ i18n
     lng: getInitialLanguage(),
     fallbackLng: 'en',
     interpolation: {
-      escapeValue: false
+      escapeValue: false // React already escapes, safe to disable
     }
   });
 

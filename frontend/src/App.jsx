@@ -1,16 +1,3 @@
-import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
-import Header from './components/Header';
-import QuestionCard from './components/QuestionCard';
-import SwipeButtons from './components/SwipeButtons';
-import TestMode from './components/TestMode';
-import BugHuntingMode from './components/BugHuntingMode';
-import BlitzMode from './components/BlitzMode';
-import ConceptLinker from './components/ConceptLinker';
-import CodeCompletionMode from './components/CodeCompletionMode';
-import ExplanationModal from './components/ExplanationModal';
-import ShareCard from './components/ShareCard';
-import { SkeletonCard } from './components/Skeleton';
-
 // Lazy load heavy/optional components
 const MockInterviewMode = lazy(() => import('./components/MockInterviewMode'));
 const ResumeAnalyzer = lazy(() => import('./components/ResumeAnalyzer'));
@@ -239,7 +226,7 @@ function App() {
   };
 
   return (
-    <div className="app">
+    <div className={`app ${learningMode === 'swipe' ? 'swipe-mode' : ''}`}>
       <Header
         onSettingsClick={() => setScreen('language')}
         onResumeClick={() => setScreen('resume')}

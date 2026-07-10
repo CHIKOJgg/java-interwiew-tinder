@@ -78,7 +78,7 @@ export function sanitizeText(text) {
   if (typeof text !== 'string') return text;
   return text
     .replace(/\r\n/g, '\n')
-    .replace(/\x00/g, '')           // null bytes
+    .replace(new RegExp(String.fromCharCode(0), 'g'), '')
     .replace(/<script[^>]*>/gi, '') // basic XSS
     .replace(/<\/script>/gi, '')
     .slice(0, 10000);               // hard cap

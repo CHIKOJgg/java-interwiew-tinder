@@ -271,3 +271,48 @@
     transform: rotate(360deg);
   }
 }
+
+@media (max-width: 400px) {
+  .test-card {
+    padding: 14px 12px;
+    gap: 10px;
+  }
+  .test-question {
+    font-size: clamp(14px, 4vw, 17px);
+  }
+  .option-item {
+    padding: 11px 12px;
+    font-size: 13px;
+    min-height: 44px;
+    gap: 8px;
+  }
+  .submit-test-button,
+  .next-test-button {
+    padding: 12px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+  .feedback-correct,
+  .feedback-incorrect {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .test-mode {
+    padding: 2px 0 8px;
+  }
+  .test-card {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .options-list {
+    gap: 6px;
+  }
+  .option-item {
+    padding: 8px 10px;
+    min-height: 38px;
+    font-size: 12px;
+  }
+}

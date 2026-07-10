@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Share2, Trophy, Flame, Target, Users, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../api/client';

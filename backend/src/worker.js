@@ -9,10 +9,6 @@ import {
 import { initQueueTable } from './services/queueService.js';
 import { sendTelegramMessage } from './services/billing/starsService.js';
 
-// ─── Question-column backfill map ────────────────────────────────────
-// After each AI generation, write the parsed result back into the questions
-// table so that answer-validation endpoints can find the correct answers
-// without needing to re-query ai_cache.
 const BACKFILL = {
   explanation: async (qId, result) => {
     await pool.query(
@@ -21,7 +17,6 @@ const BACKFILL = {
     );
   },
   test: async (qId, result) => {
-    // result is a parsed array of wrong-answer strings
     const options = Array.isArray(result) ? result : (result?.options || []);
     if (!options.length) {
       logger.warn({ qId }, 'Backfill skip [test]: AI returned empty options array');
@@ -136,7 +131,7 @@ async function notifyExpiring() {
     for (const sub of rows) {
       const daysLeft = 3;
       const msg = `⚠️ Your ${sub.plan_id.toUpperCase()} plan expires in ${daysLeft} days.\n\nRenew now to keep your progress and unlimited access!`;
-      
+
       await sendTelegramMessage(sub.user_id, msg).catch(err => {
         logger.error({ err, userId: sub.user_id }, 'Failed to send expiry reminder');
         Sentry.addBreadcrumb({ category: 'billing', message: `Expiry reminder failed for ${sub.user_id}` });
@@ -165,7 +160,7 @@ async function processExpired() {
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-        
+
         // Update subscription status
         await client.query(
           "UPDATE user_subscriptions SET status='expired', updated_at=NOW() WHERE user_id=$1 AND status='active'",
@@ -179,13 +174,13 @@ async function processExpired() {
         );
 
         await client.query('COMMIT');
-        
-        await sendTelegramMessage(sub.user_id, 
+
+        await sendTelegramMessage(sub.user_id,
           `ℹ️ Your Pro subscription has expired. You've been moved to the Free plan.`
-        ).catch(() => {});
+        ).catch(() => { });
 
       } catch (err) {
-        await client.query('ROLLBACK').catch(() => {});
+        await client.query('ROLLBACK').catch(() => { });
         logger.error({ err, userId: sub.user_id }, 'Failed to downgrade user');
         Sentry.captureException(err);
       } finally {
@@ -203,12 +198,12 @@ async function verifyBackupIntegrity() {
     logger.info('🔍 Starting automated backup integrity check');
     const usersCount = await pool.query('SELECT COUNT(*) FROM users');
     const questionsCount = await pool.query('SELECT COUNT(*) FROM questions');
-    
+
     logger.info({
       users: usersCount.rows[0].count,
       questions: questionsCount.rows[0].count
     }, '📊 Database integrity check results');
-    
+
     // Add Sentry breadcrumb for successful verification
     Sentry.addBreadcrumb({
       category: 'database',
@@ -235,7 +230,7 @@ async function notifyStreakReminders() {
 
     for (const user of rows) {
       const msg = `🔥 Your ${user.current_streak}-day streak ends today — swipe 3 questions to keep it alive!`;
-      await sendTelegramMessage(user.telegram_id, msg).catch(() => {});
+      await sendTelegramMessage(user.telegram_id, msg).catch(() => { });
     }
   } catch (err) {
     logger.error({ err }, 'Error in notifyStreakReminders job');
@@ -261,7 +256,7 @@ const scheduleSubscriptionJobs = () => {
     logger.info('⏰ Starting daily streak reminder job');
     await notifyStreakReminders();
   });
-  
+
   logger.info('⏰ Maintenance crons scheduled (Daily Subscriptions + Weekly Integrity + Streak Reminders)');
 };
 

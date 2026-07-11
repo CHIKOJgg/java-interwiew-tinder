@@ -394,6 +394,8 @@ app.get('/api/questions/feed', async (req, res) => {
     const language = req.query.language || 'Java';
     const mode = req.query.mode || 'swipe';
     const limit = Math.min(parseInt(req.query.limit) || 5, 10);
+    const cursor = Math.max(0, parseInt(req.query.cursor) || 0);
+    const seed = String(req.query.seed || 'default');
 
     const prefsResult = await pool.query(
       'SELECT selected_categories, selected_language FROM user_preferences WHERE telegram_id = $1',
@@ -407,6 +409,13 @@ app.get('/api/questions/feed', async (req, res) => {
       ? `AND COALESCE(jsonb_array_length(to_jsonb(q.options)), 0) >= 4`
       : '';
 
+    // Stable per-session ordering via md5(seed) instead of RANDOM(), which
+    // reshuffled on every page and caused duplicate questions across pages.
+    const hasCats = selectedCategories.length > 0;
+    const seedParam = hasCats ? '$4' : '$3';
+    const limitParam = hasCats ? '$5' : '$4';
+    const cursorParam = hasCats ? '$6' : '$5';
+
     const baseQuery = `
       SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
              q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language,
@@ -417,7 +426,7 @@ app.get('/api/questions/feed', async (req, res) => {
       WHERE q.is_active = TRUE 
         AND (up.id IS NULL OR up.status = 'unknown' OR qm.next_review <= CURRENT_DATE)
         AND q.language = $2
-        ${selectedCategories.length > 0 ? 'AND q.category = ANY($3)' : ''}
+        ${hasCats ? 'AND q.category = ANY($3)' : ''}
         ${modeFilter}
       ORDER BY 
         CASE 
@@ -426,12 +435,12 @@ app.get('/api/questions/feed', async (req, res) => {
           ELSE 2
         END ASC,
         review_date ASC,
-        RANDOM() 
-      LIMIT ${selectedCategories.length > 0 ? '$4' : '$3'}`;
+        md5(q.id::text || ${seedParam}) ASC
+      LIMIT ${limitParam} OFFSET ${cursorParam}`;
 
-    const params = selectedCategories.length > 0
-      ? [userId, language, selectedCategories, limit]
-      : [userId, language, limit];
+    const params = hasCats
+      ? [userId, language, selectedCategories, seed, limit, cursor]
+      : [userId, language, seed, limit, cursor];
 
     const result = await pool.query(baseQuery, params);
 
@@ -450,7 +459,11 @@ app.get('/api/questions/feed', async (req, res) => {
       language: row.language || 'Java',
     }));
 
-    res.json({ questions, meta: { language, mode, total: questions.length } });
+    const hasMore = questions.length === limit;
+    res.json({
+      questions,
+      meta: { language, mode, total: questions.length, cursor, nextCursor: cursor + questions.length, hasMore }
+    });
   } catch (error) {
     logger.error({ err: error }, 'Error in /questions/feed');
     res.status(500).json({ error: 'Internal server error' });

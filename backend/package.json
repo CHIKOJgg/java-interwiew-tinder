@@ -30,7 +30,6 @@
   "license": "MIT",
   "dependencies": {
     "@logtail/pino": "^0.5.8",
-    "@paddle/paddle-node-sdk": "^3.8.0",
     "@sentry/node": "^10.52.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
@@ -53,7 +52,6 @@
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9.39.4",
     "globals": "^17.6.0",
-    "jest": "^30.4.1",
     "supertest": "^7.2.2",
     "vitest": "^4.1.5"
   }

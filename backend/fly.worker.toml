@@ -6,6 +6,9 @@ primary_region = "fra"
 [env]
   NODE_ENV = "production"
 
+[deploy]
+  release_command = "node src/scripts/migrate.js"
+
 [processes]
   worker = "node src/worker.js"
 

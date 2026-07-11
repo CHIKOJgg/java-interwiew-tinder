@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import { X, BookOpen, MapPin, Code2, Lightbulb, ChevronRight } from 'lucide-react';
 import { SkeletonExplanation } from './Skeleton';
 import { highlight } from '../utils/highlight';
@@ -13,7 +14,7 @@ import useStore from '../store/useStore';
 // Falls back to plain text if explanation is not JSON (old format / error).
 
 function CodeBlock({ code, language }) {
-  const html = useMemo(() => highlight(code || '', language), [code, language]);
+  const html = useMemo(() => DOMPurify.sanitize(highlight(code || '', language)), [code, language]);
   return (
     <div
       className="hl-code-block"

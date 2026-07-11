@@ -1,4 +1,5 @@
 import pool from '../config/database.js';
+import logger from '../config/logger.js';
 
 export async function initQueueTable() {
   await pool.query(`
@@ -31,7 +32,7 @@ export async function enqueueJob(taskType, payload) {
       [taskType, JSON.stringify(payload)]
     );
   } catch (err) {
-    console.error('Enqueue error:', err.message);
+    logger.error({ err }, 'Enqueue error');
   }
 }
 
@@ -45,6 +46,6 @@ export async function cleanOldJobs(daysOld = 7) {
       [daysOld]
     );
   } catch (err) {
-    console.error('Clean jobs error:', err.message);
+    logger.error({ err }, 'Clean jobs error');
   }
 }

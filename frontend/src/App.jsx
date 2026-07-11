@@ -1,4 +1,5 @@
 // Lazy load heavy/optional components
+import { lazy, Suspense } from 'react';
 const MockInterviewMode = lazy(() => import('./components/MockInterviewMode'));
 const ResumeAnalyzer = lazy(() => import('./components/ResumeAnalyzer'));
 const SubscriptionPlans = lazy(() => import('./components/SubscriptionPlans'));

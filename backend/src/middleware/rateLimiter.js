@@ -90,7 +90,7 @@ async function incrementCounter(userId, field) {
       const ttl = field.includes('month') ? 2592000 : 86400; // rough 30d or 1d
       await redis.expire(redisKey, ttl);
     } catch (err) {
-      console.warn('Redis increment failed:', err.message);
+      logger.warn({ err }, 'Redis increment failed');
     }
   }
 
@@ -105,9 +105,9 @@ async function incrementCounter(userId, field) {
     `, [userId]);
     
     // Invalidate limits cache
-    if (redis) redis.del(`limits:${userId}`).catch(err => console.warn('Redis limits invalidation failed:', err.message));
+    if (redis)         redis.del(`limits:${userId}`).catch(err => logger.warn({ err }, 'Redis limits invalidation failed'));
   } catch (err) {
-    console.error('Error incrementing counter:', err.message);
+      logger.error({ err }, 'Error incrementing counter');
   }
 }
 
@@ -125,10 +125,10 @@ export function rateLimit(limitType = 'requests') {
       await pool.query(
         'UPDATE user_rate_limits SET requests_today = 0, daily_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1',
         [userId]
-      ).catch(err => console.error('Failed to reset daily rate limits:', err.message));
+      ).catch(err => logger.error({ err }, 'Failed to reset daily rate limits'));
       if (redis) {
-        redis.del(`limits:${userId}`).catch(err => console.warn('Redis del failed:', err.message));
-        redis.del(`counter:${userId}:requests_today`).catch(err => console.warn('Redis counter del failed:', err.message));
+        redis.del(`limits:${userId}`).catch(err => logger.warn({ err }, 'Redis del failed'));
+        redis.del(`counter:${userId}:requests_today`).catch(err => logger.warn({ err }, 'Redis counter del failed'));
       }
     }
     if (limits.monthly_reset_at && new Date(limits.monthly_reset_at).getMonth() !== now.getMonth()) {
@@ -136,12 +136,12 @@ export function rateLimit(limitType = 'requests') {
         `UPDATE user_rate_limits SET ai_generations_this_month = 0, resume_analyses_this_month = 0,
          interview_evals_this_month = 0, monthly_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
         [userId]
-      ).catch(err => console.error('Failed to reset monthly rate limits:', err.message));
+      ).catch(err => logger.error({ err }, 'Failed to reset monthly rate limits'));
       if (redis) {
-        redis.del(`limits:${userId}`).catch(err => console.warn('Redis del failed:', err.message));
+        redis.del(`limits:${userId}`).catch(err => logger.warn({ err }, 'Redis del failed'));
         redis.keys(`counter:${userId}:*_month`).then(keys => {
           if (keys.length > 0) redis.del(...keys);
-        }).catch(err => console.warn('Redis monthly keys cleanup failed:', err.message));
+        }).catch(err => logger.warn({ err }, 'Redis monthly keys cleanup failed'));
       }
     }
 

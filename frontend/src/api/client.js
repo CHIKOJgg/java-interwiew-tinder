@@ -36,8 +36,11 @@ class ApiClient {
   }
 
   // ─── Questions ─────────────────────────────────────────────────────
-  async getQuestionsFeed(limit = 5, mode = 'swipe') {
-    return this.request(`/questions/feed?limit=${limit}&mode=${mode}&language=${this.language}`);
+  async getQuestionsFeed(limit = 5, mode = 'swipe', { cursor = 0, seed } = {}) {
+    const params = new URLSearchParams({ limit: String(limit), mode, language: this.language });
+    if (seed) params.set('seed', seed);
+    params.set('cursor', String(cursor));
+    return this.request(`/questions/feed?${params.toString()}`);
   }
 
   async recordSwipe(questionId, status) {

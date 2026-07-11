@@ -19,6 +19,9 @@ const useStore = create((set, get) => ({
   currentIndex: 0,
   isLoadingQuestions: false,
   _loadingLock: false,
+  hasMore: true,
+  feedCursor: 0,
+  feedSeed: '',
   learningMode: 'swipe',
 
   stats: { known: 0, unknown: 0, totalSeen: 0, totalQuestions: 0, streak: 0, longestStreak: 0 },
@@ -107,21 +110,43 @@ const useStore = create((set, get) => ({
   // ─── Questions ─────────────────────────────────────────────────────
   loadQuestions: async (append = false) => {
     if (get()._loadingLock) return;
+    // No point fetching more once the backend reported the end of the feed.
+    if (append && !get().hasMore) return;
+    const mode = get().learningMode;
+    let { feedCursor, feedSeed } = get();
+    if (!append) {
+      feedCursor = 0;
+      feedSeed = Math.random().toString(36).slice(2);
+    }
     set({ _loadingLock: true, isLoadingQuestions: !append });
     try {
-      const mode = get().learningMode;
-      const response = await apiClient.getQuestionsFeed(5, mode);
+      const response = await apiClient.getQuestionsFeed(5, mode, { cursor: feedCursor, seed: feedSeed });
+      const newQs = response.questions || [];
+      const hasMore = response.meta?.hasMore ?? (newQs.length === 5);
       if (append) {
-        set(s => ({ questions: [...s.questions, ...response.questions], isLoadingQuestions: false, _loadingLock: false }));
+        set(s => ({
+          questions: [...s.questions, ...newQs],
+          feedCursor: s.feedCursor + newQs.length,
+          hasMore,
+          isLoadingQuestions: false,
+          _loadingLock: false,
+        }));
       } else {
-        set({ questions: response.questions, currentIndex: 0, isLoadingQuestions: false, _loadingLock: false });
+        set({
+          questions: newQs,
+          currentIndex: 0,
+          feedCursor: newQs.length,
+          hasMore,
+          isLoadingQuestions: false,
+          _loadingLock: false,
+        });
       }
-      saveToLocal(`questions_${mode}`, response.questions);
+      saveToLocal(`questions_${mode}`, newQs);
     } catch (error) {
       if (!append) {
         const cached = loadFromLocal(`questions_${get().learningMode}`);
         if (cached?.length > 0) {
-          set({ questions: cached, currentIndex: 0, isLoadingQuestions: false, _loadingLock: false });
+          set({ questions: cached, currentIndex: 0, feedCursor: cached.length, hasMore: false, isLoadingQuestions: false, _loadingLock: false });
           return;
         }
       }
@@ -393,7 +418,7 @@ const useStore = create((set, get) => ({
   },
 
   getCurrentQuestion: () => get().questions[get().currentIndex],
-  hasMoreQuestions: () => get().currentIndex < get().questions.length,
+  hasMoreQuestions: () => get().currentIndex < get().questions.length || get().hasMore,
 }));
 
 export default useStore;

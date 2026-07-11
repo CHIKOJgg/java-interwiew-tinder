@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import logger from '../config/logger.js';
 
 /**
  * Validates Telegram Mini App initData
@@ -12,7 +13,7 @@ export const validateTelegramWebAppData = (initData, botToken) => {
     const hash = urlParams.get('hash');
 
     if (!hash) {
-      console.log('No hash in initData');
+      logger.debug('No hash in initData');
       return null;
     }
 
@@ -51,13 +52,13 @@ export const validateTelegramWebAppData = (initData, botToken) => {
     // Parse user data
     const userParam = urlParams.get('user');
     if (!userParam) {
-      console.log('No user parameter in initData');
+      logger.debug('No user parameter in initData');
       return null;
     }
 
     const user = JSON.parse(userParam);
 
-    console.log('✅ User data parsed:', user.id);
+    logger.debug({ telegramId: user.id }, '✅ User data parsed');
 
     return {
       telegram_id: user.id,
@@ -66,7 +67,7 @@ export const validateTelegramWebAppData = (initData, botToken) => {
       last_name: user.last_name || null,
     };
   } catch (err) {
-    console.error('Error validating Telegram data:', err);
+    logger.error({ err }, 'Error validating Telegram data');
     return null;
   }
 };

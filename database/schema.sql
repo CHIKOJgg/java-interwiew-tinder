@@ -53,9 +53,10 @@ CREATE TABLE IF NOT EXISTS question_mastery (
     id               SERIAL PRIMARY KEY,
     user_id          BIGINT NOT NULL REFERENCES users(telegram_id) ON DELETE CASCADE,
     question_id      INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
-    mastery_level    INTEGER   DEFAULT 0,
+    ease_factor      DOUBLE PRECISION DEFAULT 2.5,
+    interval_days    INTEGER   DEFAULT 0,
+    repetitions      INTEGER   DEFAULT 0,
     next_review      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_reviewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, question_id)
 );
 
@@ -179,12 +180,13 @@ CREATE TABLE IF NOT EXISTS analytics_events (
 
 -- ─── 11. Payments (TON) ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS pending_ton_invoices (
-    id            SERIAL PRIMARY KEY,
+    invoice_id    VARCHAR(255) PRIMARY KEY,
     user_id       BIGINT      NOT NULL REFERENCES users(telegram_id) ON DELETE CASCADE,
     plan_id       VARCHAR(50) NOT NULL,
+    interval      VARCHAR(20),
     amount_ton    DECIMAL(10,4),
-    wallet_address VARCHAR(255),
-    status        VARCHAR(20) DEFAULT 'pending',
+    fulfilled     BOOLEAN     DEFAULT FALSE,
+    tx_hash       VARCHAR(255),
     expires_at    TIMESTAMP,
     created_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP
 );

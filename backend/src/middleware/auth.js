@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import * as Sentry from "@sentry/node";
+import logger from '../config/logger.js';
 import ADMIN_IDS from '../config/admin.js';
 
 /**

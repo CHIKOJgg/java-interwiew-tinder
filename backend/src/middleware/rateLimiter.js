@@ -1,5 +1,6 @@
 import pool from '../config/database.js';
 import redis from '../config/redis.js';
+import logger from '../config/logger.js';
 import ADMIN_IDS from '../config/admin.js';
 
 function isAdmin(userId) {
@@ -32,8 +33,9 @@ async function getUserLimits(userId) {
     } catch (err) {
       logger.warn({ err }, 'Redis read error in getUserLimits:');
     }
-  }
+    }
 
+  try {
     const { rows } = await pool.query(`
       SELECT
         COALESCE(sp.requests_per_day,         ${FREE_DEFAULTS.requests_per_day})      as requests_per_day,
@@ -72,7 +74,7 @@ async function getUserLimits(userId) {
     
     return limits;
   } catch (err) {
-    console.error('Error fetching user limits:', err.message);
+    logger.error({ err }, 'Error fetching user limits');
     return { ...FREE_DEFAULTS, _fetchedAt: Date.now() };
   }
 }

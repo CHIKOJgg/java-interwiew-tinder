@@ -273,6 +273,68 @@ const migrations = [
       );
       CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);
     `
+  },
+
+  // ── 017: Question mastery (SM-2 spaced repetition) ────────────────
+  // Columns MUST match services/questionService.js (ease_factor, interval_days,
+  // repetitions, next_review). Do not use the legacy mastery_level schema.
+  {
+    id: '017_question_mastery',
+    sql: `
+      CREATE TABLE IF NOT EXISTS question_mastery (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(telegram_id) ON DELETE CASCADE,
+        question_id INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+        ease_factor DOUBLE PRECISION DEFAULT 2.5,
+        interval_days INTEGER DEFAULT 0,
+        repetitions INTEGER DEFAULT 0,
+        next_review TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, question_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_question_mastery_user ON question_mastery(user_id, next_review);
+    `
+  },
+
+  // ── 018: Question reports / moderation queue ──────────────────────
+  {
+    id: '018_question_reports',
+    sql: `
+      CREATE TABLE IF NOT EXISTS question_reports (
+        id SERIAL PRIMARY KEY,
+        question_id INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+        user_id BIGINT REFERENCES users(telegram_id) ON DELETE SET NULL,
+        reason VARCHAR(50) NOT NULL,
+        comment TEXT,
+        resolved BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_question_reports_unresolved
+        ON question_reports(question_id, resolved);
+    `
+  },
+
+  // ── 019: Pending TON invoices ─────────────────────────────────────
+  // Columns MUST match services/billing/tonService.js (invoice_id, interval,
+  // fulfilled, tx_hash). Do not use the legacy id/wallet_address/status schema.
+  {
+    id: '019_pending_ton_invoices',
+    sql: `
+      CREATE TABLE IF NOT EXISTS pending_ton_invoices (
+        invoice_id VARCHAR(255) PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(telegram_id) ON DELETE CASCADE,
+        plan_id VARCHAR(50) NOT NULL,
+        interval VARCHAR(20),
+        amount_ton DECIMAL(10,4),
+        fulfilled BOOLEAN DEFAULT FALSE,
+        tx_hash VARCHAR(255),
+        expires_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_pending_ton_tx_hash
+        ON pending_ton_invoices(tx_hash) WHERE tx_hash IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS idx_pending_ton_pending
+        ON pending_ton_invoices(fulfilled, expires_at);
+    `
   }
 ];
 

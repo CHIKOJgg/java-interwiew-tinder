@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/node";
+import crypto from 'crypto';
 import express from 'express';
 import cors from 'cors';
 import expressRateLimit from 'express-rate-limit';
@@ -141,9 +142,18 @@ app.use(requestLogger);
 
 // ─── Health ──────────────────────────────────────────────────────────
 app.get('/health', async (req, res) => {
+  let dbOk = false;
+  try {
+    await pool.query('SELECT 1');
+    dbOk = true;
+  } catch (err) {
+    logger.error({ err }, 'Health check: Postgres unreachable');
+  }
   const redisOk = await isRedisConnected();
-  res.json({
-    status: 'ok',
+  const healthy = dbOk && redisOk;
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? 'ok' : 'degraded',
+    db: dbOk ? 'connected' : 'disconnected',
     redis: redisOk ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString()
   });
@@ -899,8 +909,34 @@ app.post('/api/billing/stars/create-invoice', async (req, res) => {
 
 // ─── Telegram Bot Webhook ───────────────────────────────────────────
 // Handles pre_checkout_query and successful_payment for Stars billing.
+// Verifies X-Telegram-Bot-Api-Secret-Token (set via setWebhook secret_token)
+// to prevent forged successful_payment updates that would grant free plans.
+function verifyWebhookSecret(req) {
+  const expected = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (!expected) {
+    // No secret configured: warn in production so operators enable it.
+    if (process.env.NODE_ENV === 'production') {
+      logger.warn('TELEGRAM_WEBHOOK_SECRET is not set — bot webhook is unauthenticated');
+    }
+    return true;
+  }
+  const received = req.headers['x-telegram-bot-api-secret-token'];
+  if (!received || received.length !== expected.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
+
 app.post('/api/bot/webhook', async (req, res) => {
-  // Always respond 200 immediately — Telegram retries on non-200
+  // Validate the request BEFORE acknowledging it to Telegram.
+  if (!verifyWebhookSecret(req)) {
+    logger.warn('Bot webhook rejected: invalid secret token');
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  // Respond 200 so Telegram does not retry a legit update.
   res.json({ ok: true });
 
   const update = req.body;

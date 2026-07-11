@@ -11,3 +11,11 @@ Thumbs.db
 # Ignore secrets
 .env
 *.ps1
+
+# Ignore coverage reports
+coverage/
+backend/coverage/
+
+# Ignore local pnpm store
+.pnpm-store/
+

@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/node";
 import crypto from 'crypto';
 import express from 'express';
+import helmet from 'helmet';
 import cors from 'cors';
 import expressRateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
@@ -37,6 +38,7 @@ Sentry.init({
 });
 
 const app = express();
+app.use(helmet());
 const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV === 'development';
 const ALLOWED_ORIGINS = new Set(
@@ -522,6 +524,14 @@ async function resolveAIData(questionId, columnName, cacheMode) {
   return { data, question: row };
 }
 
+// Local calendar date as 'YYYY-MM-DD' (server local time, not UTC).
+function localDateStr(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 async function updateStreak(userId) {
   try {
     const { rows } = await pool.query(
@@ -531,8 +541,12 @@ async function updateStreak(userId) {
     if (rows.length === 0) return null;
 
     const user = rows[0];
-    const today = new Date().toISOString().split('T')[0];
-    const lastActivity = user.last_activity_date ? new Date(user.last_activity_date).toISOString().split('T')[0] : null;
+    // last_activity_date is a DATE column → already a 'YYYY-MM-DD' string in DB.
+    // Use the server's local calendar day (not UTC) so the streak boundary
+    // aligns with a real midnight rather than 00:00 UTC. True per-user-local
+    // days would require storing the user's timezone (follow-up).
+    const today = localDateStr();
+    const lastActivity = user.last_activity_date || null;
 
     if (lastActivity === today) {
       return { current: user.current_streak, longest: user.longest_streak, increased: false };
@@ -541,7 +555,7 @@ async function updateStreak(userId) {
     let newStreak = 1;
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = localDateStr(yesterday);
 
     if (lastActivity === yesterdayStr) {
       newStreak = user.current_streak + 1;
@@ -984,6 +998,17 @@ app.post('/api/bot/webhook', async (req, res) => {
   }
 });
 
+// Custom error handler: log every unhandled error, then delegate to Sentry.
+// Registered BEFORE Sentry so we capture structured logs and Sentry still
+// sends the final response to the client.
+app.use((err, req, res, next) => {
+  logger.error(
+    { err, path: req.path, method: req.method, userId: req.userId },
+    'Unhandled error'
+  );
+  next(err);
+});
+
 Sentry.setupExpressErrorHandler(app);
 
 // ─── Stars invoice: sends invoice to user's Telegram chat ───────────
@@ -1373,5 +1398,10 @@ if (process.env.NODE_ENV !== 'test') {
 
 process.on('SIGTERM', async () => { await pool.end(); process.exit(0); });
 process.on('SIGINT', async () => { await pool.end(); process.exit(0); });
+
+// 404 handler — must be registered after all routes.
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
 
 export default app;

@@ -7,6 +7,9 @@ primary_region = "fra"
   NODE_ENV = "production"
   PORT = "3000"
 
+[deploy]
+  release_command = "node src/scripts/migrate.js"
+
 [http_service]
   internal_port = 3000
   force_https = true

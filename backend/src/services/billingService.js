@@ -47,11 +47,11 @@ export const billingService = {
       );
 
       await client.query('COMMIT');
-      console.log(`✅ Subscription cancelled: user=${userId}`);
+      logger.info({ userId }, '✅ Subscription cancelled');
       return { success: true };
     } catch (err) {
       await client.query('ROLLBACK').catch(err => logger.error({ err }, 'ROLLBACK failed after billing error'));
-      console.error('cancelSubscription error:', err.message);
+      logger.error({ err }, 'cancelSubscription error');
       throw err;
     } finally {
       client.release();
@@ -74,7 +74,7 @@ export const billingService = {
       );
       return rows;
     } catch (err) {
-      console.error('getHistory error:', err.message);
+      logger.error({ err }, 'getHistory error');
       return [];
     }
   },
@@ -104,7 +104,7 @@ export const billingService = {
         provider:     r.payment_provider,
       };
     } catch (err) {
-      console.error('getBillingInfo error:', err.message);
+      logger.error({ err }, 'getBillingInfo error');
       return { plan: 'free', status: 'active' };
     }
   },

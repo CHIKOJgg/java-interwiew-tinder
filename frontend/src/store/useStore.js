@@ -393,10 +393,17 @@ const useStore = create((set, get) => ({
   },
 
   // ─── Explanation ───────────────────────────────────────────────────
-  loadExplanation: async (questionId) => {
+  loadExplanation: async (questionId, _attempt = 0) => {
     set({ isLoadingExplanation: true, showExplanation: true });
     try {
       const response = await apiClient.getExplanation(questionId);
+      // Backend generates explanations asynchronously via the worker; when
+      // it is not ready yet it returns { status: 'pending' }. Poll a few
+      // times before giving up.
+      if (response.status === 'pending' && _attempt < 8) {
+        await new Promise(r => setTimeout(r, 1500));
+        return get().loadExplanation(questionId, _attempt + 1);
+      }
       set({ currentExplanation: response.explanation, isLoadingExplanation: false });
     } catch (err) {
       // Surface the real server error so the user (and you) can see what failed

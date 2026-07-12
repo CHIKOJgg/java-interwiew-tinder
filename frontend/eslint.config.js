@@ -6,6 +6,17 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 export default [
   js.configs.recommended,
   {
+    // Node-side config/build scripts (vite config, etc.) need Node globals.
+    files: ['**/*.{mjs,cjs}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+    },
+  },
+  {
     files: ['**/*.{js,jsx}'],
     plugins: {
       react: reactPlugin,

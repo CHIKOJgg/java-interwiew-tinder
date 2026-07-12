@@ -1,6 +1,12 @@
 -- ══════════════════════════════════════════════════════════════════
---  Interview Tinder — Complete Database Schema (Production-Ready)
+--  Interview Tinder — Reference Database Schema
 -- ══════════════════════════════════════════════════════════════════
+--
+--  ⚠️  ЭТОТ ФАЙЛ — СПРАВОЧНАЯ КОПИЯ. Авторитетный источник схемы —
+--  `backend/src/scripts/migrate.js` (и migrate-stars/migrate-ton).
+--  При деплое ВСЕГДА запускайте `npm run setup-db` из backend/,
+--  который прогоняет идемпотентные миграции. Не применяйте этот файл
+--  напрямую в проде, чтобы не возникло расхождение (drift) со скриптами.
 
 -- ─── 1. Users ──────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (

@@ -39,6 +39,8 @@ export default [
       'no-console': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
+      'react/jsx-uses-vars': 'error',
+      'react/jsx-uses-react': 'error',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
     },

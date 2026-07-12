@@ -76,7 +76,6 @@ function App() {
   const [screen, setScreen] = useState('language');
   const [authError, setAuthError] = useState(null);
   const [showShare, setShowShare] = useState(false);
-  const [undoToast, setUndoToast] = useState(false);
   const [reportingQuestionId, setReportingQuestionId] = useState(null);
 
   const cardRefs = useRef([]);

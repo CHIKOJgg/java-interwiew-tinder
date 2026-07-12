@@ -31,6 +31,23 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.JWT_SECRET || process.env.J
   process.exit(1);
 }
 
+// ─── Production pre-flight checks ─────────────────────────────────────
+// Fail-fast on missing critical configuration so mis-deploys are obvious
+// instead of silently serving broken auth/payments.
+if (process.env.NODE_ENV === 'production') {
+  const critical = ['DATABASE_URL', 'BOT_TOKEN', 'JWT_SECRET', 'TELEGRAM_WEBHOOK_SECRET', 'OPENROUTER_API_KEY'];
+  const missing = critical.filter(k => !process.env[k]);
+  if (missing.length) {
+    logger.error({ missing }, '⚠️ Production environment is missing critical variables');
+  }
+  if (!process.env.ALLOWED_ORIGINS) {
+    logger.warn('ALLOWED_ORIGINS is not set — CORS will reject all non-dev origins in production');
+  }
+  if (process.env.NODE_ENV === 'production' && process.env.OPENROUTER_API_KEY) {
+    logger.info('✅ Production secrets present');
+  }
+}
+
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.NODE_ENV || 'development',

@@ -7,7 +7,7 @@ import expressRateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import pool from './config/database.js';
 import { validateTelegramWebAppData, mockValidation } from './utils/telegram.js';
-import { generateExplanation, evaluateInterviewAnswer, analyzeResume, checkCache } from './services/aiService.js';
+import { evaluateInterviewAnswer, analyzeResume, checkCache } from './services/aiService.js';
 import { enqueueJob } from './services/queueService.js';
 import { getAvailableLanguages } from './services/languageRegistry.js';
 import { requestLogger, validateBody, sanitizeBody } from './middleware/logging.js';
@@ -537,6 +537,30 @@ async function resolveAIData(questionId, columnName, cacheMode) {
   return { data, question: row };
 }
 
+// Wait (server-side) for the background worker to produce an explanation,
+// polling the DB/Redis cache. Keeps the synchronous contract with clients
+// while the heavy AI work runs in a separate worker process.
+async function waitForExplanation(questionText, questionId, language = 'Java', maxMs = 30000) {
+  const deadline = Date.now() + maxMs;
+  while (Date.now() < deadline) {
+    try {
+      const { rows } = await pool.query('SELECT cached_explanation FROM questions WHERE id=$1', [questionId]);
+      if (rows[0]?.cached_explanation) return rows[0].cached_explanation;
+
+      const cached = await checkCache(questionText, 'explanation', null, language);
+      if (cached) {
+        pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cached, questionId])
+          .catch(() => {});
+        return cached;
+      }
+    } catch (err) {
+      logger.error({ err, questionId }, 'waitForExplanation poll error');
+    }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  return null;
+}
+
 // Local calendar date as 'YYYY-MM-DD' (server local time, not UTC).
 function localDateStr(d = new Date()) {
   const y = d.getFullYear();
@@ -789,7 +813,7 @@ app.post('/api/questions/interview-evaluate', rateLimit('interview'), async (req
 });
 
 // ─── Explanation ──────────────────────────────────────────────────────
-app.post('/api/questions/explain', async (req, res) => {
+app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) => {
   try {
     const { questionId } = req.body;
     const userId = req.userId;
@@ -815,19 +839,35 @@ app.post('/api/questions/explain', async (req, res) => {
       return res.json({ explanation: cachedAI, cached: true });
     }
 
-    // ── 3. Call AI — let errors bubble so the client knows what failed ─
-    logger.info({ questionId, language: question.language || 'Java' }, '🤖 Generating explanation');
-    const explanation = await generateExplanation(
-      question.question_text, question.short_answer, userId || null, question.language || 'Java'
-    );
+    // ── 3. Not cached: generate via the background worker, wait for the ──
+    // result server-side. This offloads the (slow) AI call to a separate
+    // worker process so THIS process stays free to serve other requests.
+    // The request still resolves with the explanation once the worker is
+    // done (most questions are pre-warmed at login, so usually instant).
+    const language = question.language || 'Java';
+    logger.info({ questionId, language }, '🤖 Generating explanation (queued)');
 
-    // Backfill both caches asynchronously
-    pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [explanation, questionId]).catch(err => logger.error({ err, questionId }, 'Failed to persist explanation'));
+    await enqueueJob('explanation', {
+      questionText: question.question_text,
+      shortAnswer: question.short_answer,
+      userId: userId || null,
+      questionId,
+      language,
+    }).catch(err => logger.error({ err, questionId }, 'Failed to enqueue explanation job'));
 
-    res.json({ explanation, cached: false });
+    const explanation = await waitForExplanation(question.question_text, questionId, language);
+    if (explanation) {
+      res.json({ explanation, cached: false });
+      metricsService.trackEvent(userId, 'ai_explanation_requested', { questionId, cached: false });
+      return;
+    }
 
-    // Track explanation request
-    metricsService.trackEvent(userId, 'ai_explanation_requested', { questionId, cached: false });
+    // Worker hasn't finished yet — the job stays queued and the client can
+    // poll (it already retries on `pending`).
+    res.json({
+      status: 'pending',
+      message: 'Объяснение ещё генерируется. Попробуйте ещё раз через пару секунд.',
+    });
   } catch (error) {
     logger.error({ err: error, questionId: req.body?.questionId }, 'Error in /questions/explain');
     res.status(500).json({
@@ -1397,20 +1437,36 @@ app.post('/api/questions/mastery', validateBody({ questionId: { required: true }
 });
 
 // ─── Server ───────────────────────────────────────────────────────────
+let server = null;
+let tonTimer = null;
+
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, '0.0.0.0', () => {
+  server = app.listen(PORT, '0.0.0.0', () => {
     logger.info({ port: PORT, mode: isDev ? 'development' : 'production', admins: ADMIN_IDS.size }, 'Server started');
 
     // ── TON payment poller: every 30 s, check for fulfilled invoices ──
     if (process.env.TON_WALLET_ADDRESS) {
       logger.info('💫 TON poller started (30 s interval)');
-      setInterval(() => pollPendingInvoices().catch(err => logger.error({ err }, 'TON poller error')), 30_000);
+      tonTimer = setInterval(() => pollPendingInvoices().catch(err => logger.error({ err }, 'TON poller error')), 30_000);
     }
   });
 }
 
-process.on('SIGTERM', async () => { await pool.end(); process.exit(0); });
-process.on('SIGINT', async () => { await pool.end(); process.exit(0); });
+// Graceful shutdown: stop accepting new connections, then drain the DB pool.
+async function shutdown(signal) {
+  logger.info({ signal }, '🛑 Received shutdown signal — draining...');
+  if (tonTimer) clearInterval(tonTimer);
+  if (server) server.close(() => logger.info('HTTP server closed'));
+  try {
+    await pool.end();
+  } catch (err) {
+    logger.error({ err }, 'Error closing pool during shutdown');
+  }
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 // 404 handler — must be registered after all routes.
 app.use((req, res) => {

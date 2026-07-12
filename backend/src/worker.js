@@ -261,12 +261,13 @@ const scheduleSubscriptionJobs = () => {
 };
 
 // ─── Worker loop ──────────────────────────────────────────────────────
+let activeJobs = 0;
+
 const runWorker = async () => {
   await initQueueTable();
   logger.info({ concurrency: 3 }, '👷 Background worker started');
 
   const CONCURRENCY = 3;
-  let activeJobs = 0;
 
   const pollAndProcess = async () => {
     if (activeJobs >= CONCURRENCY) return;
@@ -300,11 +301,35 @@ const runWorker = async () => {
   };
 
   setInterval(() => {
+    if (shuttingDown) return;
     if (activeJobs < CONCURRENCY) pollAndProcess();
   }, 2000);
 
   // Start cron jobs
   scheduleSubscriptionJobs();
 };
+
+// ─── Graceful shutdown ────────────────────────────────────────────────
+let shuttingDown = false;
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info({ signal }, '🛑 Worker shutting down — finishing in-flight jobs...');
+  // Give in-flight jobs a moment to complete, then drain the pool.
+  const grace = setInterval(() => {
+    if (activeJobs <= 0) {
+      clearInterval(grace);
+      pool.end().then(() => process.exit(0)).catch(() => process.exit(0));
+    }
+  }, 1000);
+  // Hard cap so we never hang forever.
+  setTimeout(() => {
+    clearInterval(grace);
+    pool.end().then(() => process.exit(0)).catch(() => process.exit(0));
+  }, 30000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 runWorker();

@@ -18,6 +18,8 @@ import BugHuntingMode from './components/BugHuntingMode';
 import BlitzMode from './components/BlitzMode';
 import ConceptLinker from './components/ConceptLinker';
 import CodeCompletionMode from './components/CodeCompletionMode';
+import PaywallModal from './components/PaywallModal';
+import ProNudge from './components/ProNudge';
 import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -69,6 +71,7 @@ function App() {
     learningMode,
     switchLanguage,
     stats,
+    closePaywall,
   } = useStore();
   const { t } = useTranslation();
 
@@ -129,6 +132,12 @@ function App() {
   const handleLanguageChange = async (newLang) => {
     await switchLanguage(newLang);
     setScreen('category');
+  };
+
+  // From the paywall: close the prompt and jump to the Pro plans screen.
+  const handleUpgrade = () => {
+    closePaywall();
+    setScreen('subscriptions');
   };
 
   const handleSwipe = (direction) => {
@@ -250,6 +259,9 @@ function App() {
           {renderMode()}
         </Suspense>
       </div>
+
+      <ProNudge onOpenSubscription={() => setScreen('subscriptions')} />
+
       {learningMode === 'swipe' && (
         <SwipeButtons
           onSwipeLeft={() => handleButtonSwipe('left')}
@@ -275,6 +287,7 @@ function App() {
           onClose={() => setReportingQuestionId(null)} 
         />
       )}
+      <PaywallModal onUpgrade={handleUpgrade} />
     </div>
   );
 }

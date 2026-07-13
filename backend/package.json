@@ -12,13 +12,14 @@
     "migrate": "node src/scripts/migrate.js",
     "migrate-stars": "node src/scripts/migrate-stars.js",
     "migrate-ton": "node src/scripts/migrate-ton.js",
+    "migrate-ukassa": "node src/scripts/migrate-ukassa.js",
     "worker": "node src/worker.js",
     "test": "vitest run tests/",
     "test:coverage": "vitest run tests/ --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "vercel-build": "echo 'Build completed'",
-    "setup-db": "npm run init-db && npm run migrate && npm run migrate-stars && npm run migrate-ton && npm run seed-db && node src/scripts/seed-java-2.js && node src/scripts/seed-python.js"
+    "setup-db": "npm run init-db && npm run migrate && npm run migrate-stars && npm run migrate-ton && npm run migrate-ukassa && npm run seed-db && node src/scripts/seed-java-2.js && node src/scripts/seed-python.js"
   },
   "keywords": [
     "telegram",

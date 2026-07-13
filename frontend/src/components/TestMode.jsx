@@ -21,6 +21,7 @@ const TestMode = () => {
     submitTestAnswer,
     advanceQuestion,
     isLoadingQuestions,
+    fetchGeneration,
   } = useStore();
   const { t } = useTranslation();
 
@@ -52,6 +53,29 @@ const TestMode = () => {
       setResult(null);
     }
   }, [currentQuestion?.id]);
+
+  // Test options are generated on demand (the backend doesn't pre-fill them).
+  // Trigger generation for the current question, but only once per question.
+  const requestedRef = useRef(new Set());
+  const genError = currentQuestion?.options?.__error;
+  useEffect(() => {
+    if (!currentQuestion) return;
+    const opts = currentQuestion.options;
+    if (Array.isArray(opts) && opts.length > 0) return; // already ready
+    if (opts && opts.__error) return;                   // errored — wait for retry
+    if (requestedRef.current.has(currentQuestion.id)) return;
+    requestedRef.current.add(currentQuestion.id);
+    fetchGeneration('test', currentQuestion.id).catch(() => { });
+  }, [currentQuestion?.id, fetchGeneration]); // eslint-disable-line
+
+  const retryGeneration = () => {
+    const id = currentQuestion?.id;
+    if (!id) return;
+    requestedRef.current.delete(id);
+    // Reset the error sentinel so the effect re-triggers generation
+    set(s => ({ questions: s.questions.map(q => q.id === id ? { ...q, options: null } : q) }));
+    fetchGeneration('test', id, 0).catch(() => { });
+  };
 
   const handleOptionSelect = (option) => {
     if (result || isSubmitting) return;
@@ -97,13 +121,24 @@ const TestMode = () => {
     );
   }
 
+  if (genError) {
+    return (
+      <div className="test-mode-loading">
+        <AlertCircle size={44} color="#ff6b6b" />
+        <p style={{ color: '#ff6b6b', marginTop: 12, textAlign: 'center' }}>{genError.message || t('test.generating_options', 'Answer options are still being generated')}</p>
+        <button className="retry-btn" onClick={retryGeneration}>
+          {t('common.retry', 'Try again')}
+        </button>
+      </div>
+    );
+  }
+
   if (!displayOptions.length) {
-    // This question has no distractors — skip it automatically
-    advanceQuestion();
+    // Options are still being generated — wait instead of skipping the card.
     return (
       <div className="test-mode-loading">
         <Loader2 className="spinner" size={44} />
-        <p>{t('common.loading', 'Loading...')}</p>
+        <p>{t('test.generating_options', 'Answer options are still being generated')}</p>
       </div>
     );
   }

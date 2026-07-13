@@ -11,10 +11,11 @@ import { evaluateInterviewAnswer, analyzeResume, checkCache } from './services/a
 import { enqueueJob } from './services/queueService.js';
 import { getAvailableLanguages } from './services/languageRegistry.js';
 import { requestLogger, validateBody, sanitizeBody } from './middleware/logging.js';
-import { rateLimit } from './middleware/rateLimiter.js';
+import { rateLimit, requireEntitlement } from './middleware/rateLimiter.js';
 import { billingService } from './services/billingService.js';
 import { sendStarsInvoice, answerPreCheckout, sendTelegramMessage, activateStarsSubscription } from './services/billing/starsService.js';
 import { createTonInvoice, getUserPendingInvoice, pollPendingInvoices } from './services/billing/tonService.js';
+import { isUkassaEnabled, createUkassaPayment, handleUkassaEvent, verifyUkassaSignature } from './services/billing/ukassaService.js';
 import { metricsService } from './services/metricsService.js';
 import { referralService } from './services/referralService.js';
 import { updateMastery, getDueCount } from './services/questionService.js';
@@ -154,6 +155,15 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
     res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
+
+// Capture the RAW body for the YooKassa webhook so we can verify its
+// HMAC-SHA256 signature. This MUST be registered before the global
+// express.json() below — otherwise the global parser sets req._body and
+// the webhook's own `verify` callback never fires.
+app.use('/api/billing/ukassa/webhook', express.json({
+  type: ['application/json', 'application/*+json'],
+  verify: (req, _res, buf) => { req.rawBody = buf; },
+}));
 
 app.use(express.json({ limit: '1mb' }));
 app.use(sanitizeBody);
@@ -299,6 +309,29 @@ app.post('/api/auth/login', async (req, res) => {
       }
     }
 
+    // Resolve plan entitlements (available modes/languages) so the client can
+    // render correct locks and the paywall without re-deriving plan rules.
+    const ALL_MODES = ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion'];
+    const ALL_LANGS = ['Java', 'Python', 'TypeScript'];
+    let availableModes = ['swipe', 'test'];
+    let availableLanguages = ALL_LANGS;
+    if (plan === 'admin' || plan === 'pro') {
+      availableModes = ALL_MODES;
+    }
+    if (plan !== 'admin') {
+      try {
+        const planRes = await pool.query(
+          'SELECT available_modes, available_languages FROM subscription_plans WHERE id = $1',
+          [plan]
+        );
+        if (planRes.rows.length > 0) {
+          const normalize = (v) => Array.isArray(v) ? v : (typeof v === 'string' ? v.replace(/[{}"]/g, '').split(',') : v);
+          if (planRes.rows[0].available_modes) availableModes = normalize(planRes.rows[0].available_modes);
+          if (planRes.rows[0].available_languages) availableLanguages = normalize(planRes.rows[0].available_languages);
+        }
+      } catch { /* keep defaults */ }
+    }
+
     const token = jwt.sign(
       { userId: user.telegram_id, plan },
       process.env.JWT_SECRET,
@@ -317,6 +350,8 @@ app.post('/api/auth/login', async (req, res) => {
         parsed_resume_data: user.parsed_resume_data,
         language: user.language || 'Java',
         plan,
+        available_modes: availableModes,
+        available_languages: availableLanguages,
         // NOTE: is_admin is for UI display purposes ONLY. 
         // Security checks MUST be performed server-side using requireAdmin middleware.
         is_admin: ADMIN_IDS.has(String(user.telegram_id)),
@@ -333,8 +368,15 @@ app.post('/api/auth/login', async (req, res) => {
 
 // ─── Protected Routes (JWT required) ──────────────────────────────────
 app.use('/api', (req, res, next) => {
-  // Exclude auth login and languages from global auth
-  if (req.path === '/auth/login' || req.path === '/languages') {
+  // Exclude auth login and languages from global auth.
+  // Also exclude inbound webhooks: they are authenticated by their own
+  // secret-token / signature checks (Telegram Bot API, YooKassa), not JWT.
+  if (
+    req.path === '/auth/login' ||
+    req.path === '/languages' ||
+    req.path.startsWith('/bot/webhook') ||
+    req.path.startsWith('/billing/ukassa/webhook')
+  ) {
     return next();
   }
   authMiddleware(req, res, next);
@@ -405,7 +447,7 @@ app.post('/api/preferences/language', validateBody({ language: { required: true 
 });
 
 // ─── Question Feed ────────────────────────────────────────────────────
-app.get('/api/questions/feed', async (req, res) => {
+app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
   try {
     const userId = req.userId;
     const language = req.query.language || 'Java';
@@ -422,9 +464,10 @@ app.get('/api/questions/feed', async (req, res) => {
     const savedLang = prefs?.selected_language || 'Java';
     const selectedCategories = (savedLang === language) ? (prefs?.selected_categories || []) : [];
 
-    const modeFilter = (mode === 'test')
-      ? `AND COALESCE(jsonb_array_length(to_jsonb(q.options)), 0) >= 4`
-      : '';
+    // Test options are generated lazily on the client (see TestMode), so we
+    // must NOT filter out questions that don't have options yet — otherwise
+    // a fresh database would show an empty test feed forever.
+    const modeFilter = '';
 
     // Stable per-session ordering via md5(seed) instead of RANDOM(), which
     // reshuffled on every page and caused duplicate questions across pages.
@@ -1117,6 +1160,16 @@ app.get('/api/billing/history', async (req, res) => {
   }
 });
 
+// ─── Available payment methods (UI uses this to show/hide options) ─
+// Card (U-Kassa) is opt-in and enabled ONLY when UKASSA_TOKEN is set.
+app.get('/api/billing/methods', async (req, res) => {
+  res.json({
+    stars: !!process.env.BOT_TOKEN,
+    ton: !!process.env.TON_WALLET_ADDRESS,
+    card: isUkassaEnabled(),
+  });
+});
+
 app.delete('/api/billing/subscription', async (req, res) => {
   try {
     const userId = req.userId;
@@ -1168,6 +1221,55 @@ app.get('/api/billing/ton/check', async (req, res) => {
     res.status(500).json({ error: 'Failed to check TON payment' });
   }
 });
+
+// ─── U-Kassa (bank card) routes ─────────────────────────────────────
+// POST /api/billing/ukassa/invoice — create a card payment, returns a
+// redirect URL the client opens to complete the payment.
+app.post('/api/billing/ukassa/invoice',
+  validateBody({ planId: { required: true } }),
+  async (req, res) => {
+    try {
+      if (!isUkassaEnabled()) {
+        return res.status(503).json({ error: 'Card payments are not configured on this server' });
+      }
+      const { planId, interval = 'monthly', returnUrl } = req.body;
+      const redirect = returnUrl || process.env.FRONTEND_URL || 'https://t.me';
+      const result = await createUkassaPayment(req.userId, planId, interval, redirect);
+      res.json(result);
+    } catch (error) {
+      logger.error({ err: error }, 'U-Kassa invoice error');
+      res.status(500).json({ error: error.message || 'Failed to create card payment' });
+    }
+  }
+);
+
+// POST /api/billing/ukassa/webhook — YooKassa asynchronous notification.
+// Must capture the RAW body for HMAC signature verification.
+app.post('/api/billing/ukassa/webhook',
+  express.json({
+    type: ['application/json', 'application/*+json'],
+    verify: (req, _res, buf) => { req.rawBody = buf; },
+  }),
+  async (req, res) => {
+    const sig = req.headers['x-request-signature'];
+    if (!verifyUkassaSignature(req.rawBody, sig)) {
+      logger.warn('U-Kassa webhook rejected: invalid signature');
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // Respond quickly; process asynchronously.
+    res.json({ ok: true });
+
+    try {
+      const result = await handleUkassaEvent(req.body);
+      if (result.activated) {
+        logger.info({ paymentId: result.paymentId }, '💳 U-Kassa webhook: subscription activated');
+      }
+    } catch (err) {
+      logger.error({ err }, 'U-Kassa webhook processing failed');
+    }
+  }
+);
 
 // ─── Admin Endpoints ──────────────────────────────────────────────────
 

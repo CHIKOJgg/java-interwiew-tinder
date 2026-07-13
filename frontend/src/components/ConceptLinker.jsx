@@ -11,6 +11,7 @@ const ConceptLinker = () => {
     isLoadingQuestions,
     hasMoreQuestions,
     loadQuestions,
+    recordLinkerMatches,
   } = useStore();
   const { t } = useTranslation();
 
@@ -75,6 +76,8 @@ const ConceptLinker = () => {
 
       if (newMatches.length === terms.length) {
         setIsLevelComplete(true);
+        // Count each correctly matched question as "known".
+        recordLinkerMatches(newMatches.map((m) => m.termId));
       }
     } else {
       setWrongMatch({ termId, defId });

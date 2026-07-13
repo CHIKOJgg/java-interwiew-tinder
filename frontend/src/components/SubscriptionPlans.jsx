@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import useStore from '../store/useStore';
 import apiClient from '../api/client';
 import { useTranslation } from 'react-i18next';
-import { Check, Star, Shield, Zap, ArrowLeft, X, Clock, ChevronDown, ChevronUp, Users, AlertCircle, Copy, CheckCircle } from 'lucide-react';
+import { Check, Star, Shield, Zap, ArrowLeft, X, Clock, ChevronDown, ChevronUp, Users, AlertCircle, Copy, CheckCircle, CreditCard } from 'lucide-react';
 import './SubscriptionPlans.css';
 
 // ─── Plan config ──────────────────────────────────────────────────────
@@ -212,6 +212,7 @@ const SubscriptionPlans = ({ onBack }) => {
   const [status, setStatus] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [methods, setMethods] = useState({ stars: true, ton: false, card: false });
   const [purchasing, setPurchasing] = useState(null); // planId being purchased
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState(null);
@@ -228,12 +229,14 @@ const SubscriptionPlans = ({ onBack }) => {
     setLoading(true);
     setError(null);
     try {
-      const [plansRes, statusRes] = await Promise.all([
+      const [plansRes, statusRes, methodsRes] = await Promise.all([
         apiClient.getPlans(),
         apiClient.getBillingInfo(),
+        apiClient.getBillingMethods(),
       ]);
       setPlans(plansRes.plans || []);
       setStatus(statusRes);
+      setMethods(methodsRes || { stars: true, ton: false, card: false });
     } catch (e) {
       setError(t('subscription.load_error', 'Failed to load subscription data.'));
       console.error(e);
@@ -337,6 +340,31 @@ const SubscriptionPlans = ({ onBack }) => {
       showToast(`Ошибка проверки: ${e.message}`, 'error');
     } finally {
       setTonPolling(false);
+    }
+  };
+
+  // U-Kassa (bank card): create payment and open the redirect URL in an
+  // external browser. The server webhook activates the plan; we reuse the
+  // Stars-style polling so the UI flips to "success" when the user returns.
+  const handleSubscribeCard = async (planId, interval = 'monthly') => {
+    if (purchasing || polling) return;
+    try {
+      setPurchasing(planId);
+      const returnUrl = window.location.origin + window.location.pathname;
+      const { confirmationUrl } = await apiClient.createUkassaPayment(planId, interval, returnUrl);
+      setPurchasing(null);
+      if (confirmationUrl) {
+        if (window.Telegram?.WebApp?.openLink) {
+          window.Telegram.WebApp.openLink(confirmationUrl);
+        } else {
+          window.open(confirmationUrl, '_blank');
+        }
+        setPolling(true);
+        showToast(t('subscription.card_redirect', 'Pay with your card in the opened window. Your Pro plan activates automatically after a successful payment.'), 'info');
+      }
+    } catch (e) {
+      setPurchasing(null);
+      showToast(`Ошибка U-Kassa: ${e.message}`, 'error');
     }
   };
 
@@ -531,6 +559,27 @@ const SubscriptionPlans = ({ onBack }) => {
                       >
                         💎 {t('subscription.pay_ton', 'Pay via TON')}
                       </button>
+
+                      {/* U-Kassa bank card — only when configured server-side */}
+                      {methods?.card && (
+                        <>
+                          <button
+                            className="card-btn primary"
+                            disabled={isBuying || polling || tonPolling}
+                            onClick={() => handleSubscribeCard(plan.id, 'monthly')}
+                          >
+                            <CreditCard size={16} />
+                            {isBuying ? t('common.saving') : polling ? t('subscription.processing') : `💳 ${t('subscription.pay_card_monthly', 'Card / mo')}`}
+                          </button>
+                          <button
+                            className="card-btn yearly"
+                            disabled={isBuying || polling || tonPolling}
+                            onClick={() => handleSubscribeCard(plan.id, 'yearly')}
+                          >
+                            <CreditCard size={14} /> 💳 {t('subscription.pay_card_yearly', 'Card / year')}
+                          </button>
+                        </>
+                      )}
                     </>
                   )}
                 </div>

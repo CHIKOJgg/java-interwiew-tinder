@@ -115,7 +115,11 @@ class ApiClient {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.detail || err.error || `HTTP ${response.status}`);
+        const thrown = new Error(err.detail || err.error || `HTTP ${response.status}`);
+        thrown.status = response.status;
+        thrown.feature = err.feature || null;
+        thrown.code = err.code || null;
+        throw thrown;
       }
       return response.json();
     } catch (error) {
@@ -250,6 +254,17 @@ class ApiClient {
 
   async getBillingInfo() {
     return this.request('/billing/info');
+  }
+
+  async getBillingMethods() {
+    return this.request('/billing/methods');
+  }
+
+  async createUkassaPayment(planId, interval = 'monthly', returnUrl) {
+    return this.request('/billing/ukassa/invoice', {
+      method: 'POST',
+      body: JSON.stringify({ planId, interval, returnUrl }),
+    });
   }
 
   async getBillingHistory() {

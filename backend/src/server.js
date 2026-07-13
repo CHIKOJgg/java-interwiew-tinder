@@ -467,27 +467,40 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     // Test options are generated lazily on the client (see TestMode), so we
     // must NOT filter out questions that don't have options yet — otherwise
     // a fresh database would show an empty test feed forever.
-    const modeFilter = '';
+
+    // Optional difficulty filter (Junior / Middle / Senior).
+    const difficulties = req.query.difficulties
+      ? (Array.isArray(req.query.difficulties) ? req.query.difficulties : [req.query.difficulties])
+      : null;
 
     // Stable per-session ordering via md5(seed) instead of RANDOM(), which
     // reshuffled on every page and caused duplicate questions across pages.
-    const hasCats = selectedCategories.length > 0;
-    const seedParam = hasCats ? '$4' : '$3';
-    const limitParam = hasCats ? '$5' : '$4';
-    const cursorParam = hasCats ? '$6' : '$5';
+    // Build WHERE + params dynamically so placeholders stay correct with the
+    // optional category / difficulty filters.
+    const where = [
+      'q.is_active = TRUE',
+      "(up.id IS NULL OR up.status = 'unknown' OR qm.next_review <= CURRENT_DATE)",
+      'q.language = $2',
+    ];
+    const params = [userId, language];
+    let p = 3;
+    if (selectedCategories.length > 0) { where.push(`q.category = ANY($${p})`); params.push(selectedCategories); p++; }
+    if (difficulties && difficulties.length) { where.push(`q.difficulty = ANY($${p})`); params.push(difficulties); p++; }
+    const seedParam = `$${p++}`, limitParam = `$${p++}`, cursorParam = `$${p++}`;
+    params.push(seed, limit, cursor);
+
+    const selectCols = `
+      q.id, q.category, q.difficulty, q.question_text, q.short_answer,
+      q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language,
+      COALESCE(qm.next_review, '1970-01-01'::DATE) as review_date,
+      up.status as prev_status`;
 
     const baseQuery = `
-      SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
-             q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language,
-             COALESCE(qm.next_review, '1970-01-01'::DATE) as review_date
+      SELECT ${selectCols}
       FROM questions q
       LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
       LEFT JOIN question_mastery qm ON q.id = qm.question_id AND qm.user_id = $1
-      WHERE q.is_active = TRUE 
-        AND (up.id IS NULL OR up.status = 'unknown' OR qm.next_review <= CURRENT_DATE)
-        AND q.language = $2
-        ${hasCats ? 'AND q.category = ANY($3)' : ''}
-        ${modeFilter}
+      WHERE ${where.join(' AND ')}
       ORDER BY 
         CASE 
           WHEN qm.next_review <= CURRENT_DATE THEN 0
@@ -498,15 +511,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
         md5(q.id::text || ${seedParam}) ASC
       LIMIT ${limitParam} OFFSET ${cursorParam}`;
 
-    const params = hasCats
-      ? [userId, language, selectedCategories, seed, limit, cursor]
-      : [userId, language, seed, limit, cursor];
-
-    const result = await pool.query(baseQuery, params);
-
-    // If no questions found, return empty array with helpful meta
-    // (don't 500 — TypeScript or newly added languages may legitimately have 0 questions)
-    const questions = result.rows.map(row => ({
+    const mapRow = (row) => ({
       id: row.id,
       category: row.category,
       difficulty: row.difficulty,
@@ -517,7 +522,37 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       blitzData: row.blitz_data || null,
       codeCompletionData: row.code_completion_data || null,
       language: row.language || 'Java',
-    }));
+      prevStatus: row.prev_status || null,
+    });
+
+    const result = await pool.query(baseQuery, params);
+    let questions = result.rows.map(mapRow);
+
+    // Endless feed: if the new + due + unseen pool is exhausted (e.g. the user
+    // has marked everything known and no reviews are due), top up with already
+    // known cards for a refresher so the deck never feels "empty".
+    if (questions.length < limit) {
+      const fWhere = ['q.is_active = TRUE', "q.language = $2", "up.status = 'known'"];
+      const fParams = [userId, language];
+      let fp = 3;
+      if (selectedCategories.length > 0) { fWhere.push(`q.category = ANY($${fp})`); fParams.push(selectedCategories); fp++; }
+      if (difficulties && difficulties.length) { fWhere.push(`q.difficulty = ANY($${fp})`); fParams.push(difficulties); fp++; }
+      const fSeed = `$${fp++}`, fLimit = `$${fp++}`;
+      fParams.push(seed, limit - questions.length);
+      const fillerQuery = `
+        SELECT ${selectCols}
+        FROM questions q
+        LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+        LEFT JOIN question_mastery qm ON q.id = qm.question_id AND qm.user_id = $1
+        WHERE ${fWhere.join(' AND ')}
+        ORDER BY md5(q.id::text || ${fSeed}) ASC
+        LIMIT ${fLimit}`;
+      const filler = await pool.query(fillerQuery, fParams);
+      const seen = new Set(questions.map(q => q.id));
+      for (const row of filler.rows) {
+        if (!seen.has(row.id)) questions.push(mapRow(row));
+      }
+    }
 
     const hasMore = questions.length === limit;
     res.json({
@@ -859,6 +894,7 @@ app.post('/api/questions/test-answer',
       const norm = s => (s || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
       const isCorrect = norm(answer) === norm(correctAnswer);
       await recordProgress(userId, questionId, isCorrect);
+      updateStreak(userId).catch(() => {});
       res.json({ success: true, isCorrect, correctAnswer });
     } catch { res.status(500).json({ error: 'Internal server error' }); }
   }
@@ -877,6 +913,7 @@ app.post('/api/questions/bug-hunt-answer',
       const norm = s => (s || '').trim().toLowerCase();
       const isCorrect = norm(answer) === norm(correctBug);
       await recordProgress(userId, questionId, isCorrect);
+      updateStreak(userId).catch(() => {});
       res.json({ success: true, isCorrect, correctAnswer: correctBug });
     } catch (err) {
       logger.error({ err }, 'bug-hunt-answer error');
@@ -904,6 +941,7 @@ app.post('/api/questions/blitz-answer',
         isCorrect = Boolean(clientIsCorrect);
       }
       await recordProgress(userId, questionId, isCorrect);
+      updateStreak(userId).catch(() => {});
       res.json({ success: true, isCorrect });
     } catch (err) {
       logger.error({ err }, 'blitz-answer error');
@@ -925,6 +963,7 @@ app.post('/api/questions/code-completion-answer',
       const normC = s => (s || '').trim().toLowerCase();
       const isCorrect = normC(answer) === normC(correctPart);
       await recordProgress(userId, questionId, isCorrect);
+      updateStreak(userId).catch(() => {});
       res.json({ success: true, isCorrect, correctAnswer: correctPart });
     } catch (err) {
       logger.error({ err }, 'code-completion-answer error');
@@ -939,7 +978,60 @@ app.post('/api/questions/interview-evaluate', rateLimit('interview'), async (req
     const { question, answer, language = 'Java' } = req.body;
     if (!question || !answer) return res.status(400).json({ error: 'question and answer are required' });
     const evaluation = await evaluateInterviewAnswer(question, answer, null, language);
+    if (req.userId) updateStreak(req.userId).catch(() => {});
     res.json(evaluation);
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
+});
+
+// ─── Saved / bookmarked questions ──────────────────────────────────
+const mapSavedRow = (row) => ({
+  id: row.id,
+  category: row.category,
+  difficulty: row.difficulty,
+  question: row.question_text,
+  shortAnswer: row.short_answer,
+  options: row.options || [],
+  bugHuntingData: row.bug_hunting_data || null,
+  blitzData: row.blitz_data || null,
+  codeCompletionData: row.code_completion_data || null,
+  language: row.language || 'Java',
+  saved: true,
+});
+
+app.post('/api/questions/save', validateBody({ questionId: { required: true } }), async (req, res) => {
+  try {
+    const { questionId } = req.body;
+    const userId = req.userId;
+    await pool.query(
+      'INSERT INTO saved_questions (user_id, question_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [userId, questionId]
+    );
+    res.json({ success: true, saved: true });
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
+});
+
+app.delete('/api/questions/save', validateBody({ questionId: { required: true } }), async (req, res) => {
+  try {
+    const { questionId } = req.body;
+    const userId = req.userId;
+    await pool.query('DELETE FROM saved_questions WHERE user_id = $1 AND question_id = $2', [userId, questionId]);
+    res.json({ success: true, saved: false });
+  } catch { res.status(500).json({ error: 'Internal server error' }); }
+});
+
+app.get('/api/questions/saved', async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { rows } = await pool.query(
+      `SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
+              q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language
+       FROM saved_questions sq
+       JOIN questions q ON q.id = sq.question_id
+       WHERE sq.user_id = $1
+       ORDER BY sq.created_at DESC`,
+      [userId]
+    );
+    res.json({ questions: rows.map(mapSavedRow) });
   } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 
@@ -1062,8 +1154,8 @@ app.get('/api/subscription/plans', async (req, res) => {
       // Return default plans if table is empty or missing
       return res.json({
         plans: [
-          { id: 'free', name: 'Free', price_monthly: 0, requests_per_day: 200, available_languages: ['Java', 'Python', 'TypeScript'], available_modes: ['swipe', 'test'] },
-          { id: 'pro', name: 'Pro', price_monthly: 9, requests_per_day: 1000, available_languages: ['Java', 'Python', 'TypeScript'], available_modes: ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion'], resume_analysis_limit: 10, interview_eval_limit: 50 },
+          { id: 'free', name: 'Free', price_monthly: 0, stars_monthly: 0, stars_yearly: 0, requests_per_day: 200, available_languages: ['Java', 'Python', 'TypeScript'], available_modes: ['swipe', 'test'] },
+          { id: 'pro', name: 'Pro', price_monthly: 9, stars_monthly: 450, stars_yearly: 3000, requests_per_day: 1000, available_languages: ['Java', 'Python', 'TypeScript'], available_modes: ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion'], resume_analysis_limit: 10, interview_eval_limit: 50 },
         ],
       });
     }

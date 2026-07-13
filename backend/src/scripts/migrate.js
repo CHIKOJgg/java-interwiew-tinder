@@ -106,11 +106,11 @@ const migrations = [
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      INSERT INTO subscription_plans (id, name, price_monthly, requests_per_day, ai_generations_per_month, available_languages, available_modes, resume_analysis_limit, interview_eval_limit, model_priority)
-      VALUES 
-        ('free', 'Free', 0, 50, 100, '{Java}', '{swipe,test}', 0, 0, 'fast'),
-        ('pro', 'Pro', 9.99, 300, 1000, '{Java,Python}', '{swipe,test,bug-hunting,blitz,code-completion,mock-interview}', 5, 20, 'quality'),
-        ('premium', 'Premium', 19.99, 1000, 5000, '{Java,Python,TypeScript}', '{swipe,test,bug-hunting,blitz,code-completion,mock-interview}', 50, 100, 'quality')
+       INSERT INTO subscription_plans (id, name, price_monthly, requests_per_day, ai_generations_per_month, available_languages, available_modes, resume_analysis_limit, interview_eval_limit, model_priority, stars_monthly, stars_yearly)
+       VALUES 
+         ('free', 'Free', 0, 50, 100, '{Java}', '{swipe,test}', 0, 0, 'fast', 0, 0),
+         ('pro', 'Pro', 9.99, 300, 1000, '{Java,Python}', '{swipe,test,bug-hunting,blitz,code-completion,mock-interview}', 5, 20, 'quality', 450, 3000),
+         ('premium', 'Premium', 19.99, 1000, 5000, '{Java,Python,TypeScript}', '{swipe,test,bug-hunting,blitz,code-completion,mock-interview}', 50, 100, 'quality', 900, 5400)
       ON CONFLICT (id) DO NOTHING;
     `
   },
@@ -345,6 +345,37 @@ const migrations = [
     sql: `
       ALTER TABLE user_rate_limits ADD COLUMN IF NOT EXISTS ai_explanations_today INT DEFAULT 0;
       ALTER TABLE user_rate_limits ADD COLUMN IF NOT EXISTS ai_explain_date DATE;
+    `
+  },
+
+  // ── 021: Telegram Stars pricing on plans ──────────────────────────
+  // Single source of truth for Stars amounts so the invoice, the plans API
+  // and the UI all show the same number (no more "$9/mo vs 450 Stars" drift).
+  {
+    id: '021_plan_stars_pricing',
+    sql: `
+      ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS stars_monthly INT DEFAULT 0;
+      ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS stars_yearly INT DEFAULT 0;
+
+      UPDATE subscription_plans SET stars_monthly = 0,    stars_yearly = 0    WHERE id = 'free';
+      UPDATE subscription_plans SET stars_monthly = 450,  stars_yearly = 3000 WHERE id = 'pro';
+      UPDATE subscription_plans SET stars_monthly = 900,  stars_yearly = 5400 WHERE id = 'premium';
+    `
+  },
+
+  // ── 022: Saved / bookmarked questions ─────────────────────────────
+  // Lets users bookmark questions to review later (requested feature: "can't
+  // save questions I want to come back to").
+  {
+    id: '022_saved_questions',
+    sql: `
+      CREATE TABLE IF NOT EXISTS saved_questions (
+        user_id    BIGINT NOT NULL REFERENCES users(telegram_id) ON DELETE CASCADE,
+        question_id INT   NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, question_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_saved_questions_user ON saved_questions(user_id, created_at DESC);
     `
   }
 ];

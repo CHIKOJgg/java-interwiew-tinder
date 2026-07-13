@@ -541,14 +541,14 @@ const SubscriptionPlans = ({ onBack }) => {
                         onClick={() => handleSubscribeStars(plan.id, 'monthly')}
                       >
                         <Star size={16} fill="#ffd43b" />
-                        {isBuying ? t('common.saving') : polling ? t('subscription.processing') : `450 Stars / ${t('subscription.monthly')}`}
+                        {isBuying ? t('common.saving') : polling ? t('subscription.processing') : `${plan.stars_monthly || 0} Stars / ${t('subscription.monthly')}`}
                       </button>
                       <button
                         className="stars-btn yearly"
                         disabled={isBuying || polling}
                         onClick={() => handleSubscribeStars(plan.id, 'yearly')}
                       >
-                        <Star size={14} fill="#ffd43b" /> 3000 Stars / {t('subscription.yearly')} ({t('subscription.discount', 'discount')} 44%)
+                        <Star size={14} fill="#ffd43b" /> {plan.stars_yearly || 0} Stars / {t('subscription.yearly')} ({t('subscription.discount', 'discount')} {plan.stars_monthly ? Math.round((1 - plan.stars_yearly / (plan.stars_monthly * 12)) * 100) : 0}%)
                       </button>
 
                       {/* TON Payment Option */}

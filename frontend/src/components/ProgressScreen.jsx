@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flame, Target, TrendingUp, RotateCcw, Star, Award } from 'lucide-react';
-import useStore from '../store/useStore';
+import useStore, { readinessFromStats } from '../store/useStore';
 import apiClient from '../api/client';
 import './ProgressScreen.css';
 
@@ -22,8 +22,7 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade }) => {
   const accuracy = answered > 0 ? Math.round((stats.known / answered) * 100) : 0;
   const coverage = stats.totalQuestions > 0 ? Math.round((stats.totalSeen / stats.totalQuestions) * 100) : 0;
   const isRu = i18n.language === 'ru';
-  const readiness = stats.totalQuestions > 0 ? Math.round((stats.known / stats.totalQuestions) * 100) : 0;
-  const readinessTier = readiness >= 80 ? 'ready' : readiness >= 50 ? 'confident' : readiness >= 20 ? 'building' : 'novice';
+  const { readiness, tier: readinessTier } = readinessFromStats(stats);
 
   const bars = [
     { label: t('progress.known', 'Known'), value: stats.known, color: '#51cf66' },
@@ -48,8 +47,8 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade }) => {
             <div className="readiness-title">{t('header.readiness', 'Readiness')}</div>
             <div className={`readiness-tier-badge tier-${readinessTier}`}>{t(`readiness.tier_${readinessTier}`)}</div>
             <p className="readiness-sub">
-              {t('progress.readiness_sub', 'You\'ve mastered {{known}} of {{total}} {{language}} questions.',
-                { known: stats.known, total: stats.totalQuestions, language })}
+              {t('progress.readiness_sub', 'Mix of your accuracy ({{accuracy}}%) and how much you\'ve learned ({{known}} questions). Keep going — it grows as you practice.',
+                { accuracy, known: stats.known })}
             </p>
           </div>
         </div>

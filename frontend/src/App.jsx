@@ -6,6 +6,7 @@ const SubscriptionPlans = lazy(() => import('./components/SubscriptionPlans'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const ReviewMode = lazy(() => import('./components/ReviewMode'));
 const ProgressScreen = lazy(() => import('./components/ProgressScreen'));
+const SavedQuestions = lazy(() => import('./components/SavedQuestions'));
 import CategorySelection from './components/CategorySelection';
 import LanguageSelection from './components/LanguageSelection';
 import ReportSheet from './components/ReportSheet';
@@ -84,6 +85,9 @@ function App() {
   const [authError, setAuthError] = useState(null);
   const [showShare, setShowShare] = useState(false);
   const [reportingQuestionId, setReportingQuestionId] = useState(null);
+  // When the user re-opens the onboarding from the help button, "done" should
+  // return them to the app (not back to language selection).
+  const onboardingReopen = useRef(false);
 
   const cardRefs = useRef([]);
 
@@ -139,7 +143,22 @@ function App() {
     setScreen('category');
   };
 
-  // From the paywall: close the prompt and jump to the Pro plans screen.
+  // Re-open the first-run explainer from the Header help button.
+  const handleHelp = () => {
+    onboardingReopen.current = true;
+    setScreen('onboarding');
+  };
+  // After onboarding: return to the app if it was a re-open, else continue to
+  // language selection (first-time flow).
+  const handleOnboardingDone = () => {
+    if (onboardingReopen.current) {
+      onboardingReopen.current = false;
+      setScreen('main');
+    } else {
+      setScreen('language');
+    }
+  };
+
   const handleUpgrade = () => {
     closePaywall();
     setScreen('subscriptions');
@@ -187,12 +206,13 @@ function App() {
     );
   }
 
-  if (screen === 'onboarding') return <Onboarding onStart={() => setScreen('language')} />;
+  if (screen === 'onboarding') return <Onboarding onStart={handleOnboardingDone} />;
   if (screen === 'language') return <LanguageSelection onSelect={() => setScreen('category')} />;
   if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('language')} />;
   if (screen === 'resume') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ResumeAnalyzer onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'subscriptions') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SubscriptionPlans onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'admin') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AdminPanel onBack={() => setScreen('main')} /></Suspense>;
+  if (screen === 'saved') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SavedQuestions onBack={() => setScreen('main')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
   if (screen === 'progress') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProgressScreen onBack={() => setScreen('main')} onReview={() => setScreen('review')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
   if (screen === 'review') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ReviewMode onBack={() => setScreen('progress')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
 
@@ -262,6 +282,8 @@ function App() {
         onLanguageChange={handleLanguageChange}
         onAdminClick={() => setScreen('admin')}
         onProgressClick={() => setScreen('progress')}
+        onHelpClick={handleHelp}
+        onSavedClick={() => setScreen('saved')}
       />
       <div className="card-container">
         <Suspense fallback={<SkeletonCard />}>

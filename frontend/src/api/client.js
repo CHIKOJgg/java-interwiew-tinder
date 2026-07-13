@@ -36,10 +36,13 @@ class ApiClient {
   }
 
   // ─── Questions ─────────────────────────────────────────────────────
-  async getQuestionsFeed(limit = 5, mode = 'swipe', { cursor = 0, seed } = {}) {
+  async getQuestionsFeed(limit = 5, mode = 'swipe', { cursor = 0, seed, difficulties } = {}) {
     const params = new URLSearchParams({ limit: String(limit), mode, language: this.language });
     if (seed) params.set('seed', seed);
     params.set('cursor', String(cursor));
+    if (Array.isArray(difficulties) && difficulties.length > 0) {
+      difficulties.forEach(d => params.append('difficulties', d));
+    }
     return this.request(`/questions/feed?${params.toString()}`);
   }
 
@@ -236,6 +239,25 @@ class ApiClient {
   // Keep old alias for backward compatibility
   async createStarsInvoice(planId, interval = 'monthly') {
     return this.sendStarsInvoice(planId, interval);
+  }
+
+  // ─── Saved / bookmarked questions ─────────────────────────────────
+  async saveQuestion(questionId) {
+    return this.request('/questions/save', {
+      method: 'POST',
+      body: JSON.stringify({ questionId }),
+    });
+  }
+
+  async unsaveQuestion(questionId) {
+    return this.request('/questions/save', {
+      method: 'DELETE',
+      body: JSON.stringify({ questionId }),
+    });
+  }
+
+  async getSavedQuestions() {
+    return this.request('/questions/saved');
   }
 
   // ─── TON Crypto ────────────────────────────────────────────────────

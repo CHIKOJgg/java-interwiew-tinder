@@ -5,7 +5,7 @@ import React, {
   useImperativeHandle,
 } from 'react';
 import TinderCard from 'react-tinder-card';
-import { RotateCcw, Flag, Sparkles } from 'lucide-react';
+import { RotateCcw, Flag, Sparkles, Bookmark, BookmarkCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import './QuestionCard.css';
@@ -33,9 +33,20 @@ const difficultyColors = {
 const QuestionCard = forwardRef(
   ({ question, onSwipe, canSwipe = true }, ref) => {
   const { t } = useTranslation();
-  const { learningMode, loadExplanation } = useStore();
+  const { learningMode, loadExplanation, savedIds, toggleSave } = useStore();
   const [isFlipped, setIsFlipped] = useState(false);
+  const [saving, setSaving] = useState(false);
   const tinderRef = useRef(null);
+
+  const isSaved = !!savedIds[question.id];
+  const isRepeat = !!question.prevStatus;
+
+  const handleSave = async (e) => {
+    e.stopPropagation();
+    if (saving) return;
+    setSaving(true);
+    try { await toggleSave(question.id, question); } finally { setSaving(false); }
+  };
 
     useImperativeHandle(ref, () => ({
       swipe: (direction) => {
@@ -92,7 +103,25 @@ const QuestionCard = forwardRef(
                 >
                   {question.difficulty}
                 </span>
+                {isRepeat && (
+                  <span
+                    className="repeat-badge"
+                    title={t('card.repeat_title', 'Spaced repetition: you saw this before — great for long-term memory')}
+                  >
+                    ↻ {t('card.repeat', 'Repeat')}
+                  </span>
+                )}
               </div>
+
+              <button
+                className={`bookmark-btn ${isSaved ? 'saved' : ''}`}
+                onClick={handleSave}
+                type="button"
+                title={t('card.bookmark', 'Save to review later')}
+                disabled={saving}
+              >
+                {isSaved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+              </button>
 
               <div className="question-content">
                 <h2>{question.question}</h2>
@@ -179,6 +208,12 @@ const QuestionCard = forwardRef(
                 >
                   <Sparkles size={15} /> {t('card.explain_ai', 'Explain with AI')}
                 </button>
+              )}
+
+              {isRepeat && (
+                <p className="sr-note">
+                  {t('card.sr_note', '↻ Spaced repetition: this card came back because it\'s due for review — that\'s how it sticks in memory.')}
+                </p>
               )}
             </div>
           </div>

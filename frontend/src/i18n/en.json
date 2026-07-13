@@ -14,7 +14,8 @@
     "all": "All",
     "none": "None",
     "selected": "Selected",
-    "questions": "questions"
+    "questions": "questions",
+    "clear": "Clear"
   },
   "header": {
     "studied": "Studied",
@@ -28,7 +29,19 @@
     "daily": "Today: {{done}}/{{goal}} 🎯",
     "daily_done": "Daily goal done! 🎉",
     "daily_pro": "Weekly analytics in Pro",
-    "readiness": "Readiness"
+    "readiness": "Readiness",
+    "help": "How it works",
+    "saved": "Saved"
+  },
+  "category": {
+    "difficulty": "Difficulty",
+    "select_at_least_one": "Please select at least one category",
+    "save_error": "Error saving categories"
+  },
+  "difficulty": {
+    "Junior": "Junior",
+    "Middle": "Middle",
+    "Senior": "Senior"
   },
   "modes": {
     "swipe": "Swipe",
@@ -56,7 +69,8 @@
     "limit_title": "Daily AI limit reached 🔒",
     "limit_desc": "You've used {{used}} of {{limit}} free breakdowns today. A fair cap keeps the app free for everyone.",
     "limit_upgrade": "Unlock Pro — unlimited",
-    "limit_close": "Got it"
+    "limit_close": "Got it",
+    "limit_light": "Daily free AI limit reached ({{used}}/{{limit}}). Upgrade to Pro for unlimited breakdowns."
   },
   "auth": {
     "connecting": "Connecting to Telegram...",
@@ -142,7 +156,11 @@
     "short_answer": "Short answer:",
     "dont_know": "Don't know",
     "know": "Know",
-    "explain_ai": "✨ Explain with AI"
+    "explain_ai": "✨ Explain with AI",
+    "bookmark": "Save to review later",
+    "repeat": "Repeat",
+    "repeat_title": "Spaced repetition: you saw this before — great for long-term memory",
+    "sr_note": "↻ Spaced repetition: this card came back because it's due for review — that's how it sticks in memory."
   },
   "onboarding": {
     "title": "Ready for the interview?",
@@ -197,6 +215,14 @@
     "readiness_tier_building": "Building",
     "readiness_tier_confident": "Confident",
     "readiness_tier_ready": "Almost ready",
-    "readiness_sub": "You've mastered {{known}} of {{total}} {{language}} questions."
+    "readiness_sub": "Mix of your accuracy ({{accuracy}}%) and how much you've learned ({{known}} questions). Keep going — it grows as you practice.",
+    "saved_title": "Saved questions",
+    "saved_empty": "No saved questions yet. Tap the bookmark on any card to save it for later.",
+    "saved_remove": "Remove"
+  },
+  "saved": {
+    "title": "Saved questions",
+    "empty": "No saved questions yet. Tap the bookmark on any card to save it for later.",
+    "remove": "Remove"
   }
 }

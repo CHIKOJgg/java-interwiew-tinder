@@ -51,6 +51,12 @@ const useStore = create((set, get) => ({
   // Selected categories and per-category progress (§3)
   selectedCategories: [],
   categoryStats: { known: 0, total: 0 },
+  // Difficulty filter (Junior / Middle / Senior) — empty = all difficulties.
+  selectedDifficulties: [],
+
+  // ─── Saved / bookmarked questions ────────────────────────────────
+  savedIds: {},          // { [questionId]: true }
+  savedQuestions: [],
 
   // ─── Daily goal ────────────────────────────────────────────────────
   // A reason to come back every day. Counts questions answered today
@@ -76,6 +82,9 @@ const useStore = create((set, get) => ({
   // Set when a free user hits the daily AI-explanation cap — the modal shows
   // a Pro upsell instead of an explanation.
   aiLimitReached: null,
+  // Once the user dismisses the AI-limit upsell, keep it from re-popping on
+  // every subsequent tap within the same session (reduce upsell fatigue).
+  aiLimitDismissed: false,
 
   // ─── Missed ("don't know") sheet ──────────────────────────────────
   // Populated when the user swipes left in swipe mode so we can show the
@@ -108,6 +117,7 @@ const useStore = create((set, get) => ({
        await get().loadQuestions();
        get().loadStats();
        get().initDaily();
+       get().loadSaved();
        return user;
     } catch (error) {
       set({ isLoading: false, _loadingLock: false });
@@ -138,6 +148,41 @@ const useStore = create((set, get) => ({
     set({ selectedCategories: cats });
     // Immediately refresh category-scoped stats
     get().loadStats();
+  },
+
+  // Set difficulty filter (Junior / Middle / Senior); empty = all.
+  setSelectedDifficulties: (diffs) => {
+    set({ selectedDifficulties: diffs });
+  },
+
+  // ─── Saved / bookmarked questions ─────────────────────────────────
+  loadSaved: async () => {
+    try {
+      const { questions } = await apiClient.getSavedQuestions();
+      set({
+        savedQuestions: questions,
+        savedIds: Object.fromEntries(questions.map(q => [q.id, true])),
+      });
+    } catch {
+      // Non-critical — bookmarks just won't show as saved.
+    }
+  },
+  toggleSave: async (questionId, question) => {
+    const saved = !!get().savedIds[questionId];
+    // Optimistic toggle so the heart flips instantly.
+    set(s => ({
+      savedIds: { ...s.savedIds, [questionId]: !saved },
+      savedQuestions: saved
+        ? s.savedQuestions.filter(q => q.id !== questionId)
+        : (s.savedQuestions.some(q => q.id === questionId) ? s.savedQuestions : [...s.savedQuestions, question || { id: questionId }]),
+    }));
+    try {
+      if (saved) await apiClient.unsaveQuestion(questionId);
+      else await apiClient.saveQuestion(questionId);
+    } catch {
+      // Revert on failure
+      set(s => ({ savedIds: { ...s.savedIds, [questionId]: saved } }));
+    }
   },
   // Calls the new /api/preferences/language endpoint which clears stale
   // category filters, then reloads questions for the new language.
@@ -170,7 +215,7 @@ const useStore = create((set, get) => ({
     }
     set({ _loadingLock: true, isLoadingQuestions: !append });
     try {
-      const response = await apiClient.getQuestionsFeed(5, mode, { cursor: feedCursor, seed: feedSeed });
+      const response = await apiClient.getQuestionsFeed(5, mode, { cursor: feedCursor, seed: feedSeed, difficulties: get().selectedDifficulties });
       const newQs = response.questions || [];
       const hasMore = response.meta?.hasMore ?? (newQs.length === 5);
       if (append) {
@@ -521,11 +566,13 @@ const useStore = create((set, get) => ({
       });
     } catch (err) {
       // Free users who hit the daily AI cap get a Pro upsell instead of an error.
+      // After the first dismissal we show a lighter note so it stops nagging.
       if (err?.code === 'DAILY_AI_LIMIT') {
+        const alreadyDismissed = get().aiLimitDismissed;
         set({
           isLoadingExplanation: false,
           currentExplanation: null,
-          aiLimitReached: { used: err.used ?? null, limit: err.limit ?? null },
+          aiLimitReached: { used: err.used ?? null, limit: err.limit ?? null, light: alreadyDismissed },
         });
         return;
       }
@@ -562,7 +609,7 @@ const useStore = create((set, get) => ({
   },
 
   closeExplanation: () => {
-    set({ showExplanation: false, currentExplanation: null, aiLimitReached: null });
+    set(s => ({ showExplanation: false, currentExplanation: null, aiLimitDismissed: s.aiLimitReached ? true : s.aiLimitDismissed, aiLimitReached: null }));
   },
 
   // ─── Review (mistakes) mode ────────────────────────────────────────
@@ -606,5 +653,21 @@ const useStore = create((set, get) => ({
   getCurrentQuestion: () => get().questions[get().currentIndex],
   hasMoreQuestions: () => get().currentIndex < get().questions.length || get().hasMore,
 }));
+
+// ─── Readiness (shared by Header + ProgressScreen) ──────────────────
+// Blend of accuracy (known / answered) and a saturating "coverage" term so the
+// number climbs responsively as the user learns more, instead of being crushed
+// by a 500-question bank (known / totalQuestions felt stuck near 5–10%).
+export function readinessFromStats(stats) {
+  const known = stats.known || 0;
+  const unknown = stats.unknown || 0;
+  const answered = known + unknown;
+  if (answered === 0) return { readiness: 0, tier: 'novice' };
+  const accuracy = known / answered;                       // 0..1
+  const coverage = 1 - Math.exp(-known / 40);              // saturates toward 1
+  const readiness = Math.round(100 * (0.5 * accuracy + 0.5 * coverage));
+  const tier = readiness >= 80 ? 'ready' : readiness >= 50 ? 'confident' : readiness >= 25 ? 'building' : 'novice';
+  return { readiness, tier };
+}
 
 export default useStore;

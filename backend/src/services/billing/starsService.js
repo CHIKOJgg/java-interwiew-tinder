@@ -6,9 +6,23 @@ const TG_API = `https://api.telegram.org/bot${process.env.BOT_TOKEN}`;
 // ─── Send Stars invoice to user's Telegram chat ────────────────────
 export async function sendStarsInvoice(telegramUserId, planId, interval) {
   const isYearly = interval === 'yearly';
-  const amount   = isYearly
-    ? parseInt(process.env.STARS_PRO_YEARLY_AMOUNT  || '3000')
-    : parseInt(process.env.STARS_PRO_MONTHLY_AMOUNT || '450');
+
+  // Single source of truth: pull the Stars amount from the plan in the DB so
+  // the invoice always matches what the UI shows. Fall back to env defaults.
+  let amount;
+  try {
+    const { rows } = await pool.query(
+      `SELECT ${isYearly ? 'stars_yearly' : 'stars_monthly'} AS amount FROM subscription_plans WHERE id = $1`,
+      [planId]
+    );
+    amount = rows[0]?.amount;
+  } catch { /* fall through to env defaults */ }
+  if (!amount) {
+    amount = isYearly
+      ? parseInt(process.env.STARS_PRO_YEARLY_AMOUNT  || '3000')
+      : parseInt(process.env.STARS_PRO_MONTHLY_AMOUNT || '450');
+  }
+
   const label    = isYearly ? 'Pro — 1 year' : 'Pro — 1 month';
   const payload  = JSON.stringify({ userId: telegramUserId.toString(), planId, interval });
 

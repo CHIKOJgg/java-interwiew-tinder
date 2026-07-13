@@ -424,3 +424,50 @@
   color: var(--tg-theme-hint-color, #adb5bd);
   margin-top: 4px;
 }
+
+/* ── Difficulty filter ─────────────────────────────────────────────── */
+.difficulty-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+.difficulty-filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+.difficulty-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.difficulty-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.difficulty-chip.active {
+  color: #fff;
+  border-color: transparent;
+}
+.difficulty-chip.diff-Junior.active { background: var(--color-junior, #51cf66); }
+.difficulty-chip.diff-Middle.active { background: var(--color-middle, #339af0); }
+.difficulty-chip.diff-Senior.active { background: var(--color-senior, #ff6b6b); }
+.difficulty-clear {
+  background: none;
+  border: none;
+  color: #868e96;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}

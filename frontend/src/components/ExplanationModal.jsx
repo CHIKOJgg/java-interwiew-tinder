@@ -195,20 +195,30 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose, onUpgrade }
           {isLoading ? (
             <SkeletonExplanation />
           ) : aiLimitReached ? (
-            <div className="ai-limit-upsell">
-              <div className="ai-limit-lock">🔒</div>
-              <h3>{t('explanation.limit_title', 'Daily AI limit reached')}</h3>
-              <p>
-                {t('explanation.limit_desc', 'You used {{used}} of {{limit}} free breakdowns today.',
-                  { used: aiLimitReached.used, limit: aiLimitReached.limit })}
-              </p>
-              <button className="ai-limit-upgrade" onClick={onUpgrade} type="button">
-                {t('explanation.limit_upgrade', 'Unlock Pro — unlimited')}
-              </button>
-              <button className="action-button ghost" onClick={closeExplanation} type="button">
-                {t('explanation.limit_close', 'Got it')}
-              </button>
-            </div>
+            aiLimitReached.light ? (
+              <div className="ai-limit-upsell light">
+                <p>
+                  {t('explanation.limit_light', 'Daily free AI limit reached ({{used}}/{{limit}}). Upgrade to Pro for unlimited breakdowns.',
+                    { used: aiLimitReached.used, limit: aiLimitReached.limit })}
+                </p>
+                <button className="ai-limit-upgrade small" onClick={onUpgrade} type="button">⭐ Pro</button>
+              </div>
+            ) : (
+              <div className="ai-limit-upsell">
+                <div className="ai-limit-lock">🔒</div>
+                <h3>{t('explanation.limit_title', 'Daily AI limit reached')}</h3>
+                <p>
+                  {t('explanation.limit_desc', 'You used {{used}} of {{limit}} free breakdowns today.',
+                    { used: aiLimitReached.used, limit: aiLimitReached.limit })}
+                </p>
+                <button className="ai-limit-upgrade" onClick={onUpgrade} type="button">
+                  {t('explanation.limit_upgrade', 'Unlock Pro — unlimited')}
+                </button>
+                <button className="action-button ghost" onClick={closeExplanation} type="button">
+                  {t('explanation.limit_close', 'Got it')}
+                </button>
+              </div>
+            )
           ) : isJson ? (
             <StructuredExplanation data={data} language={codeLanguage} />
           ) : (

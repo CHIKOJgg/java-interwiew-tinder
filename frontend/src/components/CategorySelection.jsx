@@ -6,11 +6,14 @@ import api from '../api/client';
 import useStore from '../store/useStore';
 import './CategorySelection.css';
 
+const DIFFICULTIES = ['Junior', 'Middle', 'Senior'];
+
 const CategorySelection = ({ onComplete, onBack }) => {
   const { t } = useTranslation();
-  const { setSelectedCategories, user } = useStore();
+  const { setSelectedCategories, setSelectedDifficulties, selectedDifficulties: savedDiffs, user } = useStore();
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setLocalSelected] = useState([]);
+  const [selectedDifficulties, setLocalDifficulties] = useState(savedDiffs || []);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [refStats, setRefStats] = useState({ total: 0, converted: 0, rewardDays: 0 });
@@ -59,6 +62,12 @@ const CategorySelection = ({ onComplete, onBack }) => {
   const selectAll = () => setLocalSelected(categories.map((c) => c.name));
   const deselectAll = () => setLocalSelected([]);
 
+  const toggleDifficulty = useCallback((diff) => {
+    setLocalDifficulties((prev) =>
+      prev.includes(diff) ? prev.filter((d) => d !== diff) : [...prev, diff]
+    );
+  }, []);
+
   const showPopup = (message) => {
     if (window.Telegram?.WebApp?.showPopup) {
       window.Telegram.WebApp.showPopup({ title: '', message, buttons: [{ type: 'ok' }] });
@@ -72,12 +81,13 @@ const CategorySelection = ({ onComplete, onBack }) => {
       showPopup(t('category.select_at_least_one', 'Please select at least one category'));
       return;
     }
-    try {
-      setSaving(true);
-      await api.updatePreferences(selectedCategories);
-      setSelectedCategories(selectedCategories);
-      onComplete();
-    } catch (error) {
+      try {
+        setSaving(true);
+        await api.updatePreferences(selectedCategories);
+        setSelectedCategories(selectedCategories);
+        setSelectedDifficulties(selectedDifficulties);
+        onComplete();
+      } catch (error) {
       console.error('Error saving preferences:', error);
       showPopup(t('category.save_error', 'Error saving preferences'));
     } finally {
@@ -127,6 +137,31 @@ const CategorySelection = ({ onComplete, onBack }) => {
       <div className="category-actions">
         <button onClick={selectAll} className="action-btn">{t('common.all')}</button>
         <button onClick={deselectAll} className="action-btn">{t('common.none')}</button>
+      </div>
+
+      <div className="difficulty-filter">
+        <span className="difficulty-filter-label">{t('category.difficulty', 'Difficulty')}:</span>
+        <div className="difficulty-chips">
+          {DIFFICULTIES.map((diff) => {
+            const active = selectedDifficulties.includes(diff);
+            return (
+              <button
+                key={diff}
+                className={`difficulty-chip diff-${diff} ${active ? 'active' : ''}`}
+                onClick={() => toggleDifficulty(diff)}
+                type="button"
+              >
+                {active && <Check size={14} />}
+                {t(`difficulty.${diff}`, diff)}
+              </button>
+            );
+          })}
+        </div>
+        {selectedDifficulties.length > 0 && (
+          <button className="difficulty-clear" onClick={() => setLocalDifficulties([])} type="button">
+            {t('common.clear', 'Clear')}
+          </button>
+        )}
       </div>
 
       <div className="categories-grid">

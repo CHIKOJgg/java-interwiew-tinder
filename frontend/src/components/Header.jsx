@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   TrendingUp, Settings, Layout, GraduationCap, Bug,
-  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, Languages, Lock
+  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, Languages, Lock, HelpCircle, Bookmark
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import useStore from '../store/useStore';
+import useStore, { readinessFromStats } from '../store/useStore';
 import './Header.css';
 
 const LANG_LABELS = { Java: '☕ Java', Python: '🐍 Python', TypeScript: '🔷 TS' };
@@ -19,9 +19,9 @@ const MODES = [
 ];
 const BOTTOM_VISIBLE = 4;
 
-const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick }) => {
+const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick, onHelpClick, onSavedClick }) => {
   const { t, i18n } = useTranslation();
-  const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone } = useStore();
+  const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone, savedIds } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
@@ -29,13 +29,27 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
   const catProgress = hasCat ? (categoryStats.known / categoryStats.total) * 100 : 0;
   const topicLabel = selectedCategories?.length === 1 ? selectedCategories[0] : `${selectedCategories?.length} ${t('common.selected')}`;
   const dailyProgress = dailyGoal > 0 ? Math.min((todaySeen / dailyGoal) * 100, 100) : 0;
-  const readiness = stats.totalQuestions > 0 ? Math.round((stats.known / stats.totalQuestions) * 100) : 0;
-  const readinessTier = readiness >= 80 ? 'ready' : readiness >= 50 ? 'confident' : readiness >= 20 ? 'building' : 'novice';
+  const { readiness, tier: readinessTier } = readinessFromStats(stats);
 
   const handleLang = useCallback((e) => onLanguageChange?.(e.target.value), [onLanguageChange]);
   const isPremium = user?.plan && user.plan !== 'free';
   const extraActive = MODES.slice(BOTTOM_VISIBLE).some(m => m.id === learningMode);
-  const showDailyPro = dailyDone && !isPremium;
+
+  // Daily Pro CTA: show at most once per calendar day (not every session) to
+  // cut upsell fatigue. The first time the daily goal is hit today we mark the
+  // day in localStorage so later sessions stay quiet.
+  const [dailyProVisible, setDailyProVisible] = useState(false);
+  useEffect(() => {
+    if (!(dailyDone && !isPremium)) return;
+    try {
+      const key = `jit_daily_pro_${new Date().toISOString().slice(0, 10)}`;
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, '1');
+        setDailyProVisible(true);
+      }
+    } catch { /* ignore */ }
+  }, [dailyDone, isPremium]);
+  const showDailyPro = dailyProVisible;
 
   const [showStreakAnim, setShowStreakAnim] = useState(false);
   useEffect(() => {
@@ -71,6 +85,15 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
                 <Star size={20} fill={isPremium ? '#fff' : 'none'} />
               </button>
               <button className="action-btn" onClick={onResumeClick} type="button"><FileText size={20} /></button>
+              <button className="action-btn" onClick={onHelpClick} type="button" title={t('header.help', 'How it works')}>
+                <HelpCircle size={20} />
+              </button>
+              <button className="action-btn" onClick={onSavedClick} type="button" title={t('header.saved', 'Saved questions')}>
+                <Bookmark size={20} />
+                {Object.values(savedIds).filter(Boolean).length > 0 && (
+                  <span className="saved-count">{Object.values(savedIds).filter(Boolean).length}</span>
+                )}
+              </button>
               <button className="action-btn" onClick={onSettingsClick} type="button"><Settings size={20} /></button>
               {user?.plan === 'admin' && (
                 <button className="action-btn admin-btn" onClick={onAdminClick} type="button"><ShieldCheck size={20} /></button>

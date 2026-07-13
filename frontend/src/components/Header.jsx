@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   TrendingUp, Settings, Layout, GraduationCap, Bug,
-  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, Languages, Lock, HelpCircle, Bookmark
+  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, Languages, Lock, HelpCircle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore, { readinessFromStats } from '../store/useStore';
@@ -19,9 +19,9 @@ const MODES = [
 ];
 const BOTTOM_VISIBLE = 4;
 
-const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick, onHelpClick, onSavedClick }) => {
+const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick, onHelpClick }) => {
   const { t, i18n } = useTranslation();
-  const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone, savedIds } = useStore();
+  const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone, selectedDifficulties } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
@@ -88,12 +88,6 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
               <button className="action-btn" onClick={onHelpClick} type="button" title={t('header.help', 'How it works')}>
                 <HelpCircle size={20} />
               </button>
-              <button className="action-btn" onClick={onSavedClick} type="button" title={t('header.saved', 'Saved questions')}>
-                <Bookmark size={20} />
-                {Object.values(savedIds).filter(Boolean).length > 0 && (
-                  <span className="saved-count">{Object.values(savedIds).filter(Boolean).length}</span>
-                )}
-              </button>
               <button className="action-btn" onClick={onSettingsClick} type="button"><Settings size={20} /></button>
               {user?.plan === 'admin' && (
                 <button className="action-btn admin-btn" onClick={onAdminClick} type="button"><ShieldCheck size={20} /></button>
@@ -114,11 +108,16 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
                   </span>
                 )}
               </span>
-              {hasCat && (
-                <span className="topic-counter" title={selectedCategories?.join(', ')}>
-                  {topicLabel}: <strong>{categoryStats.known}</strong>/{categoryStats.total}
-                </span>
-              )}
+                {hasCat && (
+                  <span className="topic-counter" title={selectedCategories?.join(', ')}>
+                    {topicLabel}: <strong>{categoryStats.known}</strong>/{categoryStats.total}
+                  </span>
+                )}
+                {selectedDifficulties?.length > 0 && (
+                  <span className="diff-chip" title={t('header.diff_filter', 'Difficulty filter')}>
+                    {selectedDifficulties.map(d => t(`difficulty.${d}`, d)).join('+')}
+                  </span>
+                )}
             </div>
             <div className="progress-bar"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
             {hasCat && (

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Flame, Target, TrendingUp, RotateCcw, Star, Award } from 'lucide-react';
+import { Flame, Target, TrendingUp, RotateCcw, Star, Award, Bookmark } from 'lucide-react';
 import useStore, { readinessFromStats } from '../store/useStore';
 import apiClient from '../api/client';
 import './ProgressScreen.css';
 
-const ProgressScreen = ({ onBack, onReview, onUpgrade }) => {
+const ProgressScreen = ({ onBack, onReview, onUpgrade, onSavedClick }) => {
   const { t, i18n } = useTranslation();
-  const { stats, categoryStats, selectedCategories, language, canAccessMode } = useStore();
+  const { stats, categoryStats, selectedCategories, language, canAccessMode, savedIds } = useStore();
   const [percentile, setPercentile] = useState(null);
 
   useEffect(() => {
@@ -129,6 +129,16 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade }) => {
               <Star size={14} /> PRO
             </button>
           )}
+        </div>
+
+        {/* Saved questions */}
+        <div className="progress-card saved-cta" onClick={onSavedClick}>
+          <div className="cta-icon"><Bookmark size={22} /></div>
+          <div className="cta-text">
+            <h4>{t('saved.title', 'Saved questions')}</h4>
+            <p>{t('progress.saved_desc', 'Questions you bookmarked to review later.')}</p>
+          </div>
+          <span className="saved-badge">{Object.values(savedIds).filter(Boolean).length}</span>
         </div>
 
         {/* Upgrade prompt */}

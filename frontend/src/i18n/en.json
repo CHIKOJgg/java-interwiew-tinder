@@ -31,7 +31,8 @@
     "daily_pro": "Weekly analytics in Pro",
     "readiness": "Readiness",
     "help": "How it works",
-    "saved": "Saved"
+    "saved": "Saved",
+    "diff_filter": "Difficulty filter"
   },
   "category": {
     "difficulty": "Difficulty",
@@ -158,6 +159,7 @@
     "know": "Know",
     "explain_ai": "✨ Explain with AI",
     "bookmark": "Save to review later",
+    "bookmark_short": "Save",
     "repeat": "Repeat",
     "repeat_title": "Spaced repetition: you saw this before — great for long-term memory",
     "sr_note": "↻ Spaced repetition: this card came back because it's due for review — that's how it sticks in memory."
@@ -211,6 +213,7 @@
     "coverage": "Deck coverage",
     "topics": "Your topics",
     "go_pro": "Unlock all modes, mistakes review & deep analytics with Pro",
+    "saved_desc": "Questions you bookmarked to review later.",
     "readiness_tier_novice": "Novice",
     "readiness_tier_building": "Building",
     "readiness_tier_confident": "Confident",
@@ -224,5 +227,8 @@
     "title": "Saved questions",
     "empty": "No saved questions yet. Tap the bookmark on any card to save it for later.",
     "remove": "Remove"
+  },
+  "refresher": {
+    "banner": "You've covered all new questions — these are refreshers to lock it in."
   }
 }

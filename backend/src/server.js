@@ -557,7 +557,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     const hasMore = questions.length === limit;
     res.json({
       questions,
-      meta: { language, mode, total: questions.length, cursor, nextCursor: cursor + questions.length, hasMore }
+      meta: { language, mode, total: questions.length, cursor, nextCursor: cursor + questions.length, hasMore, refresher: questions.length < limit }
     });
   } catch (error) {
     logger.error({ err: error }, 'Error in /questions/feed');
@@ -894,8 +894,8 @@ app.post('/api/questions/test-answer',
       const norm = s => (s || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
       const isCorrect = norm(answer) === norm(correctAnswer);
       await recordProgress(userId, questionId, isCorrect);
-      updateStreak(userId).catch(() => {});
-      res.json({ success: true, isCorrect, correctAnswer });
+      const streak = await updateStreak(userId);
+      res.json({ success: true, isCorrect, correctAnswer, streak });
     } catch { res.status(500).json({ error: 'Internal server error' }); }
   }
 );
@@ -913,8 +913,8 @@ app.post('/api/questions/bug-hunt-answer',
       const norm = s => (s || '').trim().toLowerCase();
       const isCorrect = norm(answer) === norm(correctBug);
       await recordProgress(userId, questionId, isCorrect);
-      updateStreak(userId).catch(() => {});
-      res.json({ success: true, isCorrect, correctAnswer: correctBug });
+      const streak = await updateStreak(userId);
+      res.json({ success: true, isCorrect, correctAnswer: correctBug, streak });
     } catch (err) {
       logger.error({ err }, 'bug-hunt-answer error');
       res.status(500).json({ error: 'Internal server error' });
@@ -941,8 +941,8 @@ app.post('/api/questions/blitz-answer',
         isCorrect = Boolean(clientIsCorrect);
       }
       await recordProgress(userId, questionId, isCorrect);
-      updateStreak(userId).catch(() => {});
-      res.json({ success: true, isCorrect });
+      const streak = await updateStreak(userId);
+      res.json({ success: true, isCorrect, streak });
     } catch (err) {
       logger.error({ err }, 'blitz-answer error');
       res.status(500).json({ error: 'Internal server error' });
@@ -963,8 +963,8 @@ app.post('/api/questions/code-completion-answer',
       const normC = s => (s || '').trim().toLowerCase();
       const isCorrect = normC(answer) === normC(correctPart);
       await recordProgress(userId, questionId, isCorrect);
-      updateStreak(userId).catch(() => {});
-      res.json({ success: true, isCorrect, correctAnswer: correctPart });
+      const streak = await updateStreak(userId);
+      res.json({ success: true, isCorrect, correctAnswer: correctPart, streak });
     } catch (err) {
       logger.error({ err }, 'code-completion-answer error');
       res.status(500).json({ error: 'Internal server error' });
@@ -978,8 +978,12 @@ app.post('/api/questions/interview-evaluate', rateLimit('interview'), async (req
     const { question, answer, language = 'Java' } = req.body;
     if (!question || !answer) return res.status(400).json({ error: 'question and answer are required' });
     const evaluation = await evaluateInterviewAnswer(question, answer, null, language);
-    if (req.userId) updateStreak(req.userId).catch(() => {});
-    res.json(evaluation);
+    if (req.userId) {
+      const streak = await updateStreak(req.userId);
+      res.json({ ...evaluation, streak });
+    } else {
+      res.json(evaluation);
+    }
   } catch { res.status(500).json({ error: 'Internal server error' }); }
 });
 

@@ -39,6 +39,9 @@ const useStore = create((set, get) => ({
   hasMore: true,
   feedCursor: 0,
   feedSeed: '',
+  // True when the feed ran out of new/due questions and topped up with already
+  // known cards for review — lets the UI show a "you've covered everything" note.
+  feedRefresher: false,
   learningMode: 'swipe',
 
   // ─── Paywall ───────────────────────────────────────────────────────
@@ -181,7 +184,12 @@ const useStore = create((set, get) => ({
       else await apiClient.saveQuestion(questionId);
     } catch {
       // Revert on failure
-      set(s => ({ savedIds: { ...s.savedIds, [questionId]: saved } }));
+      set(s => ({
+        savedIds: { ...s.savedIds, [questionId]: saved },
+        savedQuestions: saved
+          ? (s.savedQuestions.some(q => q.id === questionId) ? s.savedQuestions : [...s.savedQuestions, question || { id: questionId }])
+          : s.savedQuestions.filter(q => q.id !== questionId),
+      }));
     }
   },
   // Calls the new /api/preferences/language endpoint which clears stale
@@ -218,24 +226,26 @@ const useStore = create((set, get) => ({
       const response = await apiClient.getQuestionsFeed(5, mode, { cursor: feedCursor, seed: feedSeed, difficulties: get().selectedDifficulties });
       const newQs = response.questions || [];
       const hasMore = response.meta?.hasMore ?? (newQs.length === 5);
-      if (append) {
-        set(s => ({
-          questions: [...s.questions, ...newQs],
-          feedCursor: s.feedCursor + newQs.length,
-          hasMore,
-          isLoadingQuestions: false,
-          _loadingLock: false,
-        }));
-      } else {
-        set({
-          questions: newQs,
-          currentIndex: 0,
-          feedCursor: newQs.length,
-          hasMore,
-          isLoadingQuestions: false,
-          _loadingLock: false,
-        });
-      }
+       if (append) {
+         set(s => ({
+           questions: [...s.questions, ...newQs],
+           feedCursor: s.feedCursor + newQs.length,
+           hasMore,
+           feedRefresher: response.meta?.refresher ?? false,
+           isLoadingQuestions: false,
+           _loadingLock: false,
+         }));
+       } else {
+         set({
+           questions: newQs,
+           currentIndex: 0,
+           feedCursor: newQs.length,
+           hasMore,
+           feedRefresher: response.meta?.refresher ?? false,
+           isLoadingQuestions: false,
+           _loadingLock: false,
+         });
+       }
       saveToLocal(`questions_${mode}`, newQs);
     } catch (error) {
       if (error?.feature === 'mode') {
@@ -303,14 +313,7 @@ const useStore = create((set, get) => ({
     try {
       const response = await apiClient.recordSwipe(questionId, status);
       if (response.streak) {
-        set(s => ({
-          stats: { 
-            ...s.stats, 
-            streak: response.streak.current, 
-            longestStreak: response.streak.longest,
-            streakIncreased: response.streak.increased
-          }
-        }));
+        get().applyStreak(response.streak);
       }
     } catch (err) {
       console.error('Swipe recording failed:', err);
@@ -339,6 +342,7 @@ const useStore = create((set, get) => ({
     const response = await apiClient.submitTestAnswer(questionId, answer);
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
+    if (response.streak) get().applyStreak(response.streak);
     get().bumpDaily();
     if (!response.isCorrect) get().loadExplanation(questionId);
     // Do NOT auto-advance — TestMode.handleNext() calls advanceQuestion() after
@@ -351,6 +355,7 @@ const useStore = create((set, get) => ({
     const response = await apiClient.submitBugHuntAnswer(questionId, answer);
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
+    if (response.streak) get().applyStreak(response.streak);
     get().bumpDaily();
     if (!response.isCorrect) get().loadExplanation(questionId);
     // Do NOT auto-advance — BugHuntingMode shows feedback + "Следующая задача" button
@@ -407,6 +412,7 @@ const useStore = create((set, get) => ({
     const response = await apiClient.submitCodeCompletionAnswer(questionId, answer);
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
+    if (response.streak) get().applyStreak(response.streak);
     get().bumpDaily();
     if (!response.isCorrect) get().loadExplanation(questionId);
     else set(s => ({ currentIndex: s.currentIndex + 1 }));
@@ -612,6 +618,22 @@ const useStore = create((set, get) => ({
     set(s => ({ showExplanation: false, currentExplanation: null, aiLimitDismissed: s.aiLimitReached ? true : s.aiLimitDismissed, aiLimitReached: null }));
   },
 
+  // Apply a streak payload returned by any answer endpoint so the Header flame
+  // updates live (not just after a manual stats reload).
+  applyStreak: (streak) => {
+    if (!streak) return;
+    set(s => ({
+      stats: {
+        ...s.stats,
+        streak: streak.current,
+        longestStreak: streak.longest,
+        streakIncreased: streak.increased,
+      },
+    }));
+  },
+
+  dismissRefresher: () => set({ feedRefresher: false }),
+
   // ─── Review (mistakes) mode ────────────────────────────────────────
   reviewQuestions: [],
   currentReviewIndex: 0,
@@ -655,17 +677,17 @@ const useStore = create((set, get) => ({
 }));
 
 // ─── Readiness (shared by Header + ProgressScreen) ──────────────────
-// Blend of accuracy (known / answered) and a saturating "coverage" term so the
-// number climbs responsively as the user learns more, instead of being crushed
-// by a 500-question bank (known / totalQuestions felt stuck near 5–10%).
+// Blend of accuracy (known / answered) and coverage (known questions out of a
+// sensible ~150-q "first milestone"). Weighted toward accuracy so the number
+// feels earned rather than jumping to 60% after a handful of cards.
 export function readinessFromStats(stats) {
   const known = stats.known || 0;
   const unknown = stats.unknown || 0;
   const answered = known + unknown;
   if (answered === 0) return { readiness: 0, tier: 'novice' };
   const accuracy = known / answered;                       // 0..1
-  const coverage = 1 - Math.exp(-known / 40);              // saturates toward 1
-  const readiness = Math.round(100 * (0.5 * accuracy + 0.5 * coverage));
+  const coverage = Math.min(known / 150, 1);               // caps at 150 known
+  const readiness = Math.round(100 * (0.6 * accuracy + 0.4 * coverage));
   const tier = readiness >= 80 ? 'ready' : readiness >= 50 ? 'confident' : readiness >= 25 ? 'building' : 'novice';
   return { readiness, tier };
 }

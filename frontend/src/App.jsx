@@ -77,6 +77,7 @@ function App() {
     switchLanguage,
     stats,
     closePaywall,
+    feedRefresher, dismissRefresher,
   } = useStore();
   const { t } = useTranslation();
 
@@ -213,7 +214,7 @@ function App() {
   if (screen === 'subscriptions') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SubscriptionPlans onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'admin') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AdminPanel onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'saved') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SavedQuestions onBack={() => setScreen('main')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
-  if (screen === 'progress') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProgressScreen onBack={() => setScreen('main')} onReview={() => setScreen('review')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
+  if (screen === 'progress') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProgressScreen onBack={() => setScreen('main')} onReview={() => setScreen('review')} onUpgrade={() => setScreen('subscriptions')} onSavedClick={() => setScreen('saved')} /></Suspense>;
   if (screen === 'review') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ReviewMode onBack={() => setScreen('progress')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
 
   const renderMode = () => {
@@ -243,6 +244,12 @@ function App() {
 
         return (
           <div className="card-stack">
+            {feedRefresher && !isLoadingQuestions && (
+              <div className="refresher-banner">
+                <span>🎉 {t('refresher.banner', 'You\'ve covered all new questions — these are refreshers to lock it in.')}</span>
+                <button onClick={dismissRefresher} type="button" aria-label="dismiss">✕</button>
+              </div>
+            )}
             {questions.slice(currentIndex, currentIndex + 3).map((q, index) => (
               <div
                 key={q.id}
@@ -283,7 +290,6 @@ function App() {
         onAdminClick={() => setScreen('admin')}
         onProgressClick={() => setScreen('progress')}
         onHelpClick={handleHelp}
-        onSavedClick={() => setScreen('saved')}
       />
       <div className="card-container">
         <Suspense fallback={<SkeletonCard />}>

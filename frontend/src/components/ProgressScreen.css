@@ -245,6 +245,23 @@
   background: linear-gradient(135deg, #fcc419, #f08c00);
 }
 
+.saved-cta {
+  cursor: pointer;
+}
+.saved-cta .cta-icon {
+  background: rgba(255, 212, 59, 0.16);
+  color: #ffd43b;
+}
+.saved-badge {
+  background: rgba(255, 212, 59, 0.2);
+  color: #ffd43b;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
 .upgrade-cta {
   display: flex;
   align-items: center;

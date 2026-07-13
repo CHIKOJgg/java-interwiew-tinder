@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   TrendingUp, Settings, Layout, GraduationCap, Bug,
-  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, Languages, Lock, HelpCircle
+  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, Lock, HelpCircle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore, { readinessFromStats } from '../store/useStore';
@@ -60,9 +60,8 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
     }
   }, [stats.streak, stats.streakIncreased]);
 
-  const toggleAppLanguage = () => {
-    const nextLang = i18n.language === 'ru' ? 'en' : 'ru';
-    i18n.changeLanguage(nextLang);
+  const toggleAppLanguage = (lng) => {
+    if (lng !== i18n.language) i18n.changeLanguage(lng);
   };
 
   return (
@@ -78,9 +77,18 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
               </select>
             </div>
             <div className="header-actions">
-              <button className="action-btn" onClick={toggleAppLanguage} type="button">
-                <Languages size={20} />
-              </button>
+              <div className="app-lang-toggle" role="group" aria-label="Interface language">
+                <button
+                  className={`app-lang-btn ${i18n.language === 'ru' ? 'active' : ''}`}
+                  onClick={() => toggleAppLanguage('ru')}
+                  type="button"
+                >RU</button>
+                <button
+                  className={`app-lang-btn ${i18n.language === 'en' ? 'active' : ''}`}
+                  onClick={() => toggleAppLanguage('en')}
+                  type="button"
+                >EN</button>
+              </div>
               <button className={`action-btn ${isPremium ? 'premium' : ''}`} onClick={onSubscriptionClick} type="button">
                 <Star size={20} fill={isPremium ? '#fff' : 'none'} />
               </button>

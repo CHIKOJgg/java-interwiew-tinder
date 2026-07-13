@@ -28,6 +28,7 @@ import MissedPanel from './components/MissedPanel';
 import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import i18n from './i18n/config';
 import './App.css';
 
 function getTelegramInitData() {
@@ -42,7 +43,7 @@ function getTelegramInitData() {
       if (!tg) {
         if (attempts >= maxAttempts) {
           clearInterval(interval);
-          reject(new Error('Telegram WebApp не загрузился. Откройте через Telegram.'));
+          reject(new Error(i18n.t('app.tg_not_loaded')));
         }
         return;
       }
@@ -61,7 +62,7 @@ function getTelegramInitData() {
 
       if (attempts >= maxAttempts) {
         clearInterval(interval);
-        reject(new Error('initData пустой — приложение должно открываться через Telegram'));
+        reject(new Error(i18n.t('app.initdata_empty')));
       }
     }, 100);
   });

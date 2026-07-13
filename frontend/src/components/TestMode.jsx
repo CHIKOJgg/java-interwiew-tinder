@@ -73,7 +73,9 @@ const TestMode = () => {
     if (!id) return;
     requestedRef.current.delete(id);
     // Reset the error sentinel so the effect re-triggers generation
-    set(s => ({ questions: s.questions.map(q => q.id === id ? { ...q, options: null } : q) }));
+    useStore.setState(s => ({
+      questions: s.questions.map(q => q.id === id ? { ...q, options: null } : q),
+    }));
     fetchGeneration('test', id, 0).catch(() => { });
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RotateCcw, Check, X, Loader2, AlertCircle, Lightbulb, Star } from 'lucide-react';
 import useStore from '../store/useStore';
@@ -25,9 +25,22 @@ const difficultyColors = {
 };
 
 const ReviewMode = ({ onBack, onUpgrade }) => {
-  const isPremium = useStore(s => s.canAccessMode('review'));
+  const { t } = useTranslation();
+  const {
+    reviewQuestions, currentReviewIndex, isLoadingReview, reviewDone,
+    loadReviewQuestions, reviewSwipe, canAccessMode, loadExplanation,
+  } = useStore();
 
-  if (!isPremium) {
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (canAccessMode('review') && reviewQuestions.length === 0 && !reviewDone && !isLoadingReview) {
+      loadReviewQuestions();
+    }
+  }, []); // eslint-disable-line
+
+  if (!canAccessMode('review')) {
     return (
       <div className="review-mode">
         <div className="review-header">
@@ -45,21 +58,6 @@ const ReviewMode = ({ onBack, onUpgrade }) => {
       </div>
     );
   }
-
-  const { t } = useTranslation();
-  const {
-    reviewQuestions, currentReviewIndex, isLoadingReview, reviewDone,
-    loadReviewQuestions, reviewSwipe, canAccessMode, loadExplanation,
-  } = useStore();
-
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (canAccessMode('review') && reviewQuestions.length === 0 && !reviewDone && !isLoadingReview) {
-      loadReviewQuestions();
-    }
-  }, []); // eslint-disable-line
 
   const current = reviewQuestions[currentReviewIndex];
   const total = reviewQuestions.length;

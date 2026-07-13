@@ -100,6 +100,9 @@ const QuestionCard = forwardRef(
               <button
                 className="flip-hint"
                 onTouchEnd={(e) => {
+                  // Prevent the synthesized click so the card doesn't flip twice
+                  // on touch devices (touchEnd + click would cancel out).
+                  e.preventDefault();
                   e.stopPropagation();
                   flip();
                 }}

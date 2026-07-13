@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   TrendingUp, Settings, Layout, GraduationCap, Bug,
-  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, Languages
+  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, Languages, Lock
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
@@ -21,7 +21,7 @@ const BOTTOM_VISIBLE = 4;
 
 const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick }) => {
   const { t, i18n } = useTranslation();
-  const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user } = useStore();
+  const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
@@ -109,24 +109,36 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
           <button className="drawer-close" onClick={() => setDrawerOpen(false)} type="button"><X size={18} /></button>
         </div>
         <div className="drawer-modes">
-          {MODES.map(({ id, icon: Icon, titleKey }) => (
-            <button key={id} className={`drawer-mode-btn ${learningMode === id ? 'active' : ''}`}
-              onClick={() => { setLearningMode(id); setDrawerOpen(false); }} type="button">
-              <div className="drawer-mode-icon"><Icon size={22} /></div>
-              <span className="drawer-mode-label">{t(titleKey)}</span>
-              {learningMode === id && <div className="drawer-active-dot" />}
-            </button>
-          ))}
+          {MODES.map(({ id, icon: Icon, titleKey }) => {
+            const locked = !canAccessMode(id);
+            return (
+              <button key={id} className={`drawer-mode-btn ${learningMode === id ? 'active' : ''} ${locked ? 'locked' : ''}`}
+                onClick={() => {
+                  if (locked) { requestPaywall(id); setDrawerOpen(false); }
+                  else { setLearningMode(id); setDrawerOpen(false); }
+                }} type="button">
+                <div className="drawer-mode-icon"><Icon size={22} />{locked && <Lock size={11} className="drawer-lock" />}</div>
+                <span className="drawer-mode-label">{t(titleKey)}</span>
+                {locked && <span className="pro-tag">PRO</span>}
+                {learningMode === id && !locked && <div className="drawer-active-dot" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <nav className="bottom-nav">
-        {MODES.slice(0, BOTTOM_VISIBLE).map(({ id, icon: Icon, shortKey }) => (
-          <button key={id} className={`bottom-nav-item ${learningMode === id ? 'active' : ''}`}
-            onClick={() => setLearningMode(id)} type="button">
-            <Icon size={22} /><span>{t(shortKey)}</span>
-          </button>
-        ))}
+        {MODES.slice(0, BOTTOM_VISIBLE).map(({ id, icon: Icon, shortKey }) => {
+          const locked = !canAccessMode(id);
+          return (
+            <button key={id} className={`bottom-nav-item ${learningMode === id ? 'active' : ''} ${locked ? 'locked' : ''}`}
+              onClick={() => locked ? requestPaywall(id) : setLearningMode(id)} type="button">
+              <div className="nav-icon-wrap"><Icon size={22} />{locked && <Lock size={11} className="nav-lock" />}</div>
+              <span>{t(shortKey)}</span>
+              {locked && <span className="pro-tag small">PRO</span>}
+            </button>
+          );
+        })}
         <button className={`bottom-nav-item ${extraActive ? 'active' : ''}`}
           onClick={() => setDrawerOpen(p => !p)} type="button">
           <ChevronUp size={22} style={{ transform: drawerOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }} />

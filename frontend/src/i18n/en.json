@@ -101,9 +101,32 @@
     "history": "Payment History",
     "users": "Users",
     "pay_ton": "Pay via TON",
+    "pay_card_monthly": "Card / mo",
+    "pay_card_yearly": "Card / year",
+    "card_redirect": "Pay with your card in the opened window. Your Pro plan activates automatically after a successful payment.",
     "junior": "Junior",
     "middle": "Middle",
     "senior": "Senior"
+  },
+  "paywall": {
+    "title": "This mode is Pro-only",
+    "locked_mode": "{{mode}} is available in Pro only",
+    "subtitle": "Unlock Pro to practice more effectively and pass more real interviews.",
+    "bullet_1": "5 extra modes: Blitz, Mock Interview, Bug Hunting, Code & Concept Linker",
+    "bullet_2": "AI explanations after every answer",
+    "bullet_3": "Resume analysis and up to 50 mock interviews per month",
+    "bullet_4": "Priority models and unlimited questions",
+    "cta": "Unlock Pro",
+    "later": "Not now",
+    "why_title": "Why Pro?"
+  },
+  "nudge": {
+    "title": "Tip",
+    "tip_1": "With Pro you'd pass 3× more interviews 💡",
+    "tip_2": "Pro users get through 40% more real interviews",
+    "tip_3": "With Pro you train in 5 modes instead of 2",
+    "tip_4": "Pro AI breakdowns help you fix weak spots faster",
+    "dismiss": "Got it"
   },
   "card": {
     "tap_for_answer": "Tap for answer",

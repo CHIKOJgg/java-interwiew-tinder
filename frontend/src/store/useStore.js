@@ -24,6 +24,12 @@ const useStore = create((set, get) => ({
   feedSeed: '',
   learningMode: 'swipe',
 
+  // ─── Paywall ───────────────────────────────────────────────────────
+  // Populated from the server's `user.available_modes` on login.
+  paywall: { open: false, mode: null },
+  // Set of dismissed subtle nudges so we don't nag the same user repeatedly.
+  dismissedNudges: [],
+
   stats: { known: 0, unknown: 0, totalSeen: 0, totalQuestions: 0, streak: 0, longestStreak: 0 },
   // Selected categories and per-category progress (§3)
   selectedCategories: [],
@@ -54,7 +60,15 @@ const useStore = create((set, get) => ({
       apiClient.setLanguage(lang);
       
       saveToSession('token', token);
-      set({ user, token, isAuthenticated: true, isLoading: false, language: lang });
+      set({
+        user,
+        token,
+        isAuthenticated: true,
+        isLoading: false,
+        language: lang,
+        availableModes: user.available_modes || ['swipe', 'test'],
+        availableLanguages: user.available_languages || ['Java', 'Python', 'TypeScript'],
+      });
       
       await get().loadQuestions();
       get().loadStats();
@@ -143,6 +157,15 @@ const useStore = create((set, get) => ({
       }
       saveToLocal(`questions_${mode}`, newQs);
     } catch (error) {
+      if (error?.feature === 'mode') {
+        // Server rejected this mode (shouldn't happen — UI guards first, but
+        // this is the safety net). Bounce the user back to a free mode.
+        if (get().learningMode !== 'swipe') {
+          get().requestPaywall(get().learningMode);
+          set({ learningMode: 'swipe', currentIndex: 0, questions: [], isLoadingQuestions: false, _loadingLock: false });
+          return;
+        }
+      }
       if (!append) {
         const cached = loadFromLocal(`questions_${get().learningMode}`);
         if (cached?.length > 0) {
@@ -300,7 +323,33 @@ const useStore = create((set, get) => ({
   }),
 
   // ─── Mode switching ────────────────────────────────────────────────
+  // True when the current user is allowed to use the given learning mode.
+  canAccessMode: (mode) => {
+    const { user } = get();
+    if (!user) return true; // not loaded yet — don't block the default flow
+    if (user.plan === 'admin' || user.plan === 'pro') return true;
+    const modes = get().availableModes || user.available_modes || ['swipe', 'test'];
+    return modes.includes(mode);
+  },
+
+  isPro: () => {
+    const { user } = get();
+    return !!user && (user.plan === 'pro' || user.plan === 'admin');
+  },
+
+  // Open the paywall for a locked feature instead of switching to it.
+  requestPaywall: (mode) => set({ paywall: { open: true, mode } }),
+  closePaywall: () => set({ paywall: { open: false, mode: null } }),
+
+  // Persistent (per-session) dismissal of a subtle nudge.
+  dismissNudge: (id) => set(s => ({ dismissedNudges: [...new Set([...s.dismissedNudges, id])] })),
+
   setLearningMode: (mode) => {
+    // Block locked modes for free users and surface the upgrade prompt.
+    if (!get().canAccessMode(mode)) {
+      get().requestPaywall(mode);
+      return;
+    }
     const prevMode = get().learningMode;
     set({ learningMode: mode, currentIndex: 0, isBlitzActive: false, blitzTimeLeft: 60, blitzScore: 0, blitzIdle: true, interviewHistory: [] });
     if (mode !== prevMode) {
@@ -373,8 +422,11 @@ const useStore = create((set, get) => ({
               ? {
                 ...q,
                 [dataKey]: response.data,
-                // For test mode, also populate options array
-                options: type === 'test' ? (Array.isArray(response.data) ? response.data : q.options) : q.options,
+                // For test mode the AI returns { options: [...] }, so pull the
+                // array out. Some cached payloads may already be a bare array.
+                options: type === 'test'
+                  ? (Array.isArray(response.data) ? response.data : (response.data?.options || q.options))
+                  : q.options,
               }
               : q
           ),
@@ -404,7 +456,11 @@ const useStore = create((set, get) => ({
         await new Promise(r => setTimeout(r, 1500));
         return get().loadExplanation(questionId, _attempt + 1);
       }
-      set({ currentExplanation: response.explanation, isLoadingExplanation: false });
+      set({
+        currentExplanation: response.explanation ||
+          '⚠️ Объяснение всё ещё генерируется. Попробуйте открыть его ещё раз через несколько секунд.',
+        isLoadingExplanation: false,
+      });
     } catch (err) {
       // Surface the real server error so the user (and you) can see what failed
       const detail = err?.message || 'Неизвестная ошибка';
@@ -413,6 +469,23 @@ const useStore = create((set, get) => ({
         currentExplanation: `⚠️ Не удалось загрузить объяснение.\n\n**Причина:** ${detail}\n\nПроверьте OPENROUTER_API_KEY и OPENROUTER_MODEL в .env на сервере.`,
       });
     }
+  },
+
+  // Record a batch of correctly matched questions (Concept Linker). Each
+  // correct term→definition match counts as "known" so the mode isn't silent
+  // in the stats.
+  recordLinkerMatches: async (questionIds) => {
+    if (!questionIds?.length) return;
+    set(s => ({
+      stats: {
+        ...s.stats,
+        known: s.stats.known + questionIds.length,
+        totalSeen: s.stats.totalSeen + questionIds.length,
+      },
+    }));
+    await Promise.all(
+      questionIds.map(id => apiClient.recordSwipe(id, 'known').catch(() => { })),
+    );
   },
 
   advanceQuestion: () => {

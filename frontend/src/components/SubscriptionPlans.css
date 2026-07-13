@@ -476,6 +476,26 @@
 }
 .ton-btn-mini:hover:not(:disabled) { background: rgba(0, 152, 234, 0.15); }
 
+.card-btn {
+  width: 100%; padding: 10px; border-radius: 10px;
+  border: 1px solid rgba(51, 154, 240, 0.25);
+  color: #fff; font-size: 13px; font-weight: 600;
+  cursor: pointer; margin-top: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: background .2s, opacity .15s;
+}
+.card-btn.primary {
+  background: linear-gradient(135deg, #339af0, #1c7ed6);
+}
+.card-btn.primary:hover:not(:disabled) { background: linear-gradient(135deg, #228be6, #1971c2); }
+.card-btn.yearly {
+  background: rgba(51, 154, 240, 0.1);
+  color: #339af0; font-size: 12px; margin-top: 6px;
+}
+.card-btn.yearly:hover:not(:disabled) { background: rgba(51, 154, 240, 0.16); }
+.card-btn:active:not(:disabled) { opacity: 0.85; }
+.card-btn:disabled { opacity: 0.6; cursor: default; }
+
 @media (max-width: 480px) {
   .plans-grid {
     grid-template-columns: 1fr;

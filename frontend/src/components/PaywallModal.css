@@ -1,0 +1,170 @@
+.paywall-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 26, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+  animation: pw-fade 0.22s ease;
+}
+
+@keyframes pw-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.paywall-card {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: linear-gradient(180deg, #1c2030 0%, #161a26 100%);
+  border: 1px solid rgba(255, 212, 59, 0.25);
+  border-radius: 22px;
+  padding: 26px 22px 22px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  animation: pw-pop 0.26s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes pw-pop {
+  from { transform: translateY(16px) scale(0.96); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.paywall-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  color: #c5cad6;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.paywall-close:hover { background: rgba(255, 255, 255, 0.12); }
+
+.paywall-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.paywall-lock-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ffd43b, #f59f00);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a1d29;
+  box-shadow: 0 8px 24px rgba(245, 159, 0, 0.4);
+}
+
+.paywall-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e9ecf3;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.paywall-title {
+  text-align: center;
+  margin: 0 0 6px;
+  font-size: 21px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.paywall-subtitle {
+  text-align: center;
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: #c5cad6;
+  line-height: 1.4;
+}
+.paywall-subtitle.muted { color: #8b93a7; font-size: 13px; margin-bottom: 16px; }
+
+.paywall-why {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.paywall-why-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffd43b;
+  margin-bottom: 10px;
+}
+.paywall-bullets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.paywall-bullets li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13.5px;
+  color: #e3e6ee;
+  line-height: 1.35;
+}
+.paywall-check {
+  color: #51cf66;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.paywall-cta {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1d29;
+  background: linear-gradient(135deg, #ffe066, #f59f00);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 10px 24px rgba(245, 159, 0, 0.35);
+}
+.paywall-cta:active { transform: scale(0.98); }
+
+.paywall-later {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #8b93a7;
+  margin-top: 12px;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 6px;
+}
+.paywall-later:hover { color: #c5cad6; }

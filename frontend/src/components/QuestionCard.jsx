@@ -179,6 +179,14 @@ const QuestionCard = forwardRef(
                 >
                   {question.difficulty}
                 </span>
+                {isRepeat && (
+                  <span
+                    className="repeat-badge"
+                    title={t('card.repeat_title', 'Spaced repetition: you saw this before — great for long-term memory')}
+                  >
+                    ↻ {t('card.repeat', 'Repeat')}
+                  </span>
+                )}
               </div>
 
               <div className="answer-content">
@@ -209,6 +217,17 @@ const QuestionCard = forwardRef(
                   <Sparkles size={15} /> {t('card.explain_ai', 'Explain with AI')}
                 </button>
               )}
+
+              <button
+                className={`bookmark-btn back ${isSaved ? 'saved' : ''}`}
+                onClick={handleSave}
+                type="button"
+                title={t('card.bookmark', 'Save to review later')}
+                disabled={saving}
+              >
+                {isSaved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+                {t('card.bookmark_short', 'Save')}
+              </button>
 
               {isRepeat && (
                 <p className="sr-note">

@@ -202,6 +202,9 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose, onUpgrade }
                     { used: aiLimitReached.used, limit: aiLimitReached.limit })}
                 </p>
                 <button className="ai-limit-upgrade small" onClick={onUpgrade} type="button">⭐ Pro</button>
+                <button className="action-button ghost" onClick={closeExplanation} type="button">
+                  {t('explanation.limit_close', 'Got it')}
+                </button>
               </div>
             ) : (
               <div className="ai-limit-upsell">

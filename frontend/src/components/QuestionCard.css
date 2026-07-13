@@ -188,6 +188,24 @@
 .bookmark-btn:active {
   transform: scale(0.9);
 }
+/* Back-face bookmark: inline button with a label (not floating) */
+.bookmark-btn.back {
+  position: static;
+  width: auto;
+  height: auto;
+  border-radius: 12px;
+  padding: 10px 14px;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  margin-top: 12px;
+}
+.bookmark-btn.back.saved {
+  background: rgba(255, 212, 59, 0.85);
+  color: #1a1a1a;
+}
 
 /* ── "Repeat" spaced-repetition badge ─────────────────────────────── */
 .repeat-badge {

@@ -122,11 +122,11 @@ const BlitzMode = () => {
       <div className="blitz-header">
         <div className="blitz-timer">
           <Timer size={20} />
-          <span className={blitzTimeLeft < 10 ? 'low-time' : ''}>{blitzTimeLeft}с</span>
+          <span className={blitzTimeLeft < 10 ? 'low-time' : ''}>{t('blitz.seconds', { count: blitzTimeLeft })}</span>
         </div>
         <div className="blitz-current-score">
           <Zap size={20} />
-          <span>Счет: {blitzScore}</span>
+          <span>{t('blitz.score', { count: blitzScore })}</span>
         </div>
       </div>
 
@@ -134,13 +134,13 @@ const BlitzMode = () => {
         {!blitzData ? (
           <div className="blitz-loading">
             <Zap className="spinner" size={48} />
-            <p style={{ marginTop: 8 }}>Загрузка...</p>
+            <p style={{ marginTop: 8 }}>{t('blitz.loading')}</p>
           </div>
         ) : (
           <>
             <div className="blitz-topic">{currentQuestion?.category}</div>
             <h2 className="blitz-statement">
-              {blitzData?.statement || 'Загрузка...'}
+              {blitzData?.statement || t('blitz.statement_loading')}
             </h2>
 
             <div className="blitz-actions">
@@ -150,7 +150,7 @@ const BlitzMode = () => {
                 disabled={feedback}
               >
                 <X size={24} />
-                <span>Ложь</span>
+                <span>{t('blitz.false_label')}</span>
               </button>
               <button
                 className="blitz-btn true-btn"
@@ -158,7 +158,7 @@ const BlitzMode = () => {
                 disabled={feedback}
               >
                 <Check size={24} />
-                <span>Правда</span>
+                <span>{t('blitz.true_label')}</span>
               </button>
             </div>
           </>

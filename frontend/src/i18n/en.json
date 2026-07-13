@@ -174,7 +174,18 @@
     "step_tap": "Tap the card",
     "step_tap_desc": "Flip it to reveal the short answer",
     "start": "Start training",
-    "skip": "Skip"
+    "skip": "Skip",
+    "next": "Next",
+    "back": "Back",
+    "hero_sub": "Practice real interview questions by swiping — just 5 minutes a day to land your next dev job.",
+    "swipe_title": "Swipe to learn",
+    "swipe_desc": "Swipe right if you know it, left if you don't. We instantly remember what you've mastered.",
+    "ai_title": "✨ AI explains every mistake",
+    "ai_desc": "Stuck on a question? Get an instant breakdown with theory, examples and key points.",
+    "modes_title": "6 training modes",
+    "modes_desc": "Blitz, Mock Interview, Bug Hunting, Code, Concept Linker & more — train every skill.",
+    "progress_title": "Watch yourself grow",
+    "progress_desc": "Track accuracy, streak and readiness. Come back daily to stay sharp and beat others."
   },
   "missed": {
     "title": "Not knowing is fine 🙌",
@@ -230,5 +241,88 @@
   },
   "refresher": {
     "banner": "You've covered all new questions — these are refreshers to lock it in."
+  },
+  "app": {
+    "tg_not_loaded": "Telegram WebApp failed to load. Open the app via Telegram.",
+    "initdata_empty": "initData is empty — the app must be opened via Telegram"
+  },
+  "swipe": {
+    "dont_know": "Don't know",
+    "know": "Know"
+  },
+  "blitz": {
+    "title": "Blitz Mode",
+    "description": "Answer as many questions as possible in 60 seconds. True or False only!",
+    "start": "Go!",
+    "time_up": "Time's up!",
+    "result": "Your score:",
+    "retry": "Try again",
+    "score": "Score: {{count}}",
+    "loading": "Loading...",
+    "statement_loading": "Loading...",
+    "seconds": "{{count}}s",
+    "false_label": "False",
+    "true_label": "True"
+  },
+  "resume": {
+    "back": "Back",
+    "subtitle": "Paste your resume text to personalize your training",
+    "label": "Resume text",
+    "placeholder": "Paste your resume here (experience, skills, projects)...",
+    "analyzing": "Analyzing resume... (~15–30s)",
+    "analyze": "Analyze",
+    "error_parse": "Could not parse the resume. Try again or simplify the text.",
+    "error_rate": "Request limit exceeded. Wait a minute and try again.",
+    "error_generic": "Analysis error. Check your connection and try again.",
+    "level": "Level",
+    "skills": "Key skills",
+    "strengths": "Strengths",
+    "improvement": "Areas to improve",
+    "questions": "Recommended questions",
+    "reset": "Analyze another resume"
+  },
+  "interview": {
+    "evaluation": "Answer evaluation",
+    "recommendation": "Recommendation:",
+    "next": "Next question",
+    "analyzing": "Interviewer is analyzing your answer...",
+    "placeholder_answer": "Your technical answer...",
+    "placeholder_wait": "Press 'Next question'"
+  },
+  "subscription": {
+    "error_stars": "Stars error: {{message}}",
+    "error_ton": "TON error: {{message}}",
+    "error_check": "Check error: {{message}}",
+    "error_ukassa": "U-Kassa error: {{message}}",
+    "error_cancel": "Cancel error: {{message}}"
+  },
+  "admin": {
+    "back": "Back",
+    "title": "System Admin",
+    "loading": "Loading analytics...",
+    "retry": "Retry",
+    "revenue": "Monthly Revenue",
+    "active_subs": "Active Subs",
+    "ai_usage": "AI usage (Month)",
+    "user_activity": "User Activity",
+    "dau": "DAU (24h)",
+    "wau": "WAU (7d)",
+    "mau": "MAU (30d)",
+    "reports": "Reported Questions",
+    "no_reports": "No pending reports.",
+    "flags": "flags",
+    "hidden": "Hidden",
+    "edit": "Edit",
+    "save_approve": "Save & Approve",
+    "cancel": "Cancel",
+    "approve": "Approve",
+    "hide": "Hide",
+    "top_failed": "Top Failed Questions",
+    "fails": "fails",
+    "job_queue": "AI Job Queue",
+    "pending": "Pending",
+    "completed": "Completed",
+    "failed": "Failed",
+    "more": "more"
   }
 }

@@ -303,7 +303,7 @@ const SubscriptionPlans = ({ onBack }) => {
     }
     catch (e) {
       setPurchasing(null);
-      showToast(`Ошибка Stars: ${e.message}`, 'error');
+      showToast(t('subscription.error_stars', { message: e.message }), 'error');
     }
   };
 
@@ -317,7 +317,7 @@ const SubscriptionPlans = ({ onBack }) => {
       setPurchasing(null);
     } catch (e) {
       setPurchasing(null);
-      showToast(`Ошибка TON: ${e.message}`, 'error');
+      showToast(t('subscription.error_ton', { message: e.message }), 'error');
     }
   };
 
@@ -337,7 +337,7 @@ const SubscriptionPlans = ({ onBack }) => {
         showToast(t('subscription.ton_not_found', 'Payment not found yet. Wait 30-60s after sending.'), 'info');
       }
     } catch (e) {
-      showToast(`Ошибка проверки: ${e.message}`, 'error');
+      showToast(t('subscription.error_check', { message: e.message }), 'error');
     } finally {
       setTonPolling(false);
     }
@@ -364,7 +364,7 @@ const SubscriptionPlans = ({ onBack }) => {
       }
     } catch (e) {
       setPurchasing(null);
-      showToast(`Ошибка U-Kassa: ${e.message}`, 'error');
+      showToast(t('subscription.error_ukassa', { message: e.message }), 'error');
     }
   };
 
@@ -378,7 +378,7 @@ const SubscriptionPlans = ({ onBack }) => {
         await login(window.Telegram.WebApp.initData).catch(() => { });
       }
     } catch (e) {
-      alert(`Ошибка отмены: ${e.message}`);
+      alert(t('subscription.error_cancel', { message: e.message }));
     }
   };
 

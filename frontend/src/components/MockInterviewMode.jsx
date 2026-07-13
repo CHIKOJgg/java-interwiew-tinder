@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useStore from '../store/useStore';
+import { useTranslation } from 'react-i18next';
 import { User, MessageSquare, Send, Loader2, Star, ChevronRight } from 'lucide-react';
 import './MockInterviewMode.css';
 
 const MockInterviewMode = () => {
+  const { t } = useTranslation();
   const {
     interviewHistory,
     isEvaluatingInterview,
@@ -55,16 +57,16 @@ const MockInterviewMode = () => {
                       <Star size={14} fill="currentColor" />
                       <span>{msg.evaluation.score}/10</span>
                     </div>
-                    <span className="evaluation-label">Оценка ответа</span>
+                    <span className="evaluation-label">{t('interview.evaluation')}</span>
                   </div>
                   <div className="evaluation-feedback">{msg.evaluation.feedback}</div>
                   <div className="correct-version">
-                    <strong>Рекомендация:</strong>
+                    <strong>{t('interview.recommendation')}</strong>
                     <p>{msg.evaluation.correctVersion}</p>
                   </div>
                   {index === interviewHistory.length - 1 && (
                     <button className="next-question-btn" onClick={nextInterviewQuestion}>
-                      <span>Следующий вопрос</span>
+                      <span>{t('interview.next')}</span>
                       <ChevronRight size={18} />
                     </button>
                   )}
@@ -81,7 +83,7 @@ const MockInterviewMode = () => {
             </div>
             <div className="message-bubble loading">
               <Loader2 className="spinner" size={18} />
-              <span>Интервьюер анализирует ваш ответ...</span>
+              <span>{t('interview.analyzing')}</span>
             </div>
           </div>
         )}
@@ -91,7 +93,7 @@ const MockInterviewMode = () => {
 
       <form className="interview-input-area" onSubmit={handleSubmit}>
         <textarea
-          placeholder={canAnswer ? "Ваш технический ответ..." : "Нажмите 'Следующий вопрос'"}
+          placeholder={canAnswer ? t('interview.placeholder_answer') : t('interview.placeholder_wait')}
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           disabled={!canAnswer || isEvaluatingInterview}

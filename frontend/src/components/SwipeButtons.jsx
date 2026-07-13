@@ -1,8 +1,10 @@
 import React from 'react';
 import { X, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import './SwipeButtons.css';
 
 const SwipeButtons = ({ onSwipeLeft, onSwipeRight, disabled = false }) => {
+  const { t } = useTranslation();
   return (
     <div className="swipe-buttons">
       <button
@@ -12,7 +14,7 @@ const SwipeButtons = ({ onSwipeLeft, onSwipeRight, disabled = false }) => {
         type="button"
       >
         <X size={30} />
-        <span>Не знаю</span>
+        <span>{t('swipe.dont_know')}</span>
       </button>
 
       <button
@@ -22,7 +24,7 @@ const SwipeButtons = ({ onSwipeLeft, onSwipeRight, disabled = false }) => {
         type="button"
       >
         <Check size={30} />
-        <span>Знаю</span>
+        <span>{t('swipe.know')}</span>
       </button>
     </div>
   );

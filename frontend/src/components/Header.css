@@ -64,6 +64,37 @@
   flex-shrink: 0;
 }
 
+.app-lang-toggle {
+  display: flex;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
+  touch-action: manipulation;
+}
+
+.app-lang-btn {
+  border: none;
+  background: transparent;
+  color: var(--tg-theme-text-color, #2d3436);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0 10px;
+  height: 40px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.app-lang-btn.active {
+  background: #5c7cfa;
+  color: #fff;
+}
+
+.app-lang-btn:active {
+  opacity: 0.8;
+}
+
 .action-btn {
   background: var(--tg-theme-secondary-bg-color, #f1f3f5);
   border: 1.5px solid rgba(0, 0, 0, 0.08);

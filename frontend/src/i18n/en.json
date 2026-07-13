@@ -24,7 +24,11 @@
     "subscription": "Subscription",
     "admin": "Admin",
     "more": "More",
-    "open_progress": "Open progress"
+    "open_progress": "Open progress",
+    "daily": "Today: {{done}}/{{goal}} 🎯",
+    "daily_done": "Daily goal done! 🎉",
+    "daily_pro": "Weekly analytics in Pro",
+    "readiness": "Readiness"
   },
   "modes": {
     "swipe": "Swipe",
@@ -48,7 +52,11 @@
     "theory": "Theory",
     "usage": "Where it's used",
     "example": "Code Example",
-    "points": "Key Points"
+    "points": "Key Points",
+    "limit_title": "Daily AI limit reached 🔒",
+    "limit_desc": "You've used {{used}} of {{limit}} free breakdowns today. A fair cap keeps the app free for everyone.",
+    "limit_upgrade": "Unlock Pro — unlimited",
+    "limit_close": "Got it"
   },
   "auth": {
     "connecting": "Connecting to Telegram...",
@@ -133,7 +141,28 @@
     "tap_for_answer": "Tap for answer",
     "short_answer": "Short answer:",
     "dont_know": "Don't know",
-    "know": "Know"
+    "know": "Know",
+    "explain_ai": "✨ Explain with AI"
+  },
+  "onboarding": {
+    "title": "Ready for the interview?",
+    "subtitle": "A Tinder-style trainer. Level up Java, Python or TypeScript in 5 minutes a day.",
+    "step_know": "Swipe right",
+    "step_know_desc": "“Know it” — topic done, your counter grows",
+    "step_dont": "Swipe left",
+    "step_dont_desc": "“Don't know” — we show the answer & an AI breakdown",
+    "step_tap": "Tap the card",
+    "step_tap_desc": "Flip it to reveal the short answer",
+    "start": "Start training",
+    "skip": "Skip"
+  },
+  "missed": {
+    "title": "Not knowing is fine 🙌",
+    "desc": "Here's the short answer. Want a full AI breakdown with examples?",
+    "short_answer": "Short answer",
+    "explain": "✨ Explain with AI",
+    "next": "Got it, next →",
+    "pro_hint": "Deep AI breakdowns are included in Pro"
   },
   "language": {
     "title": "Choose Tech Stack",
@@ -163,6 +192,11 @@
     "unknown": "Weak",
     "coverage": "Deck coverage",
     "topics": "Your topics",
-    "go_pro": "Unlock all modes, mistakes review & deep analytics with Pro"
+    "go_pro": "Unlock all modes, mistakes review & deep analytics with Pro",
+    "readiness_tier_novice": "Novice",
+    "readiness_tier_building": "Building",
+    "readiness_tier_confident": "Confident",
+    "readiness_tier_ready": "Almost ready",
+    "readiness_sub": "You've mastered {{known}} of {{total}} {{language}} questions."
   }
 }

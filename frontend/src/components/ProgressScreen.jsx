@@ -22,6 +22,8 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade }) => {
   const accuracy = answered > 0 ? Math.round((stats.known / answered) * 100) : 0;
   const coverage = stats.totalQuestions > 0 ? Math.round((stats.totalSeen / stats.totalQuestions) * 100) : 0;
   const isRu = i18n.language === 'ru';
+  const readiness = stats.totalQuestions > 0 ? Math.round((stats.known / stats.totalQuestions) * 100) : 0;
+  const readinessTier = readiness >= 80 ? 'ready' : readiness >= 50 ? 'confident' : readiness >= 20 ? 'building' : 'novice';
 
   const bars = [
     { label: t('progress.known', 'Known'), value: stats.known, color: '#51cf66' },
@@ -37,6 +39,21 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade }) => {
       </div>
 
       <div className="progress-scroll">
+        {/* Hero: interview readiness */}
+        <div className="readiness-hero">
+          <div className="readiness-ring" style={{ '--p': readiness }}>
+            <span className="readiness-pct">{readiness}%</span>
+          </div>
+          <div className="readiness-meta">
+            <div className="readiness-title">{t('header.readiness', 'Readiness')}</div>
+            <div className={`readiness-tier-badge tier-${readinessTier}`}>{t(`readiness.tier_${readinessTier}`)}</div>
+            <p className="readiness-sub">
+              {t('progress.readiness_sub', 'You\'ve mastered {{known}} of {{total}} {{language}} questions.',
+                { known: stats.known, total: stats.totalQuestions, language })}
+            </p>
+          </div>
+        </div>
+
         {/* Hero: percentile + accuracy */}
         <div className="progress-hero">
           <div className="hero-stat">

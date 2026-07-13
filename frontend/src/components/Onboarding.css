@@ -1,0 +1,131 @@
+.onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(160deg, #1a1d29 0%, #252a3a 100%);
+  animation: onb-fade 0.25s ease;
+}
+
+@keyframes onb-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.onboarding-inner {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.onboarding-hero {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.onboarding-emoji {
+  font-size: 52px;
+  line-height: 1;
+}
+
+.onboarding h1 {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0;
+  color: #fff;
+}
+
+.onboarding-sub {
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: 0.7;
+  margin: 0;
+  max-width: 320px;
+}
+
+.onboarding-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.onb-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+
+.onb-step-icon {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.onb-step-icon.know { background: linear-gradient(135deg, #51cf66, #2f9e44); }
+.onb-step-icon.dont { background: linear-gradient(135deg, #ff6b6b, #e03131); }
+.onb-step-icon.tap { background: linear-gradient(135deg, #4dabf7, #1971c2); }
+
+.onb-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.onb-step-text strong {
+  font-size: 15px;
+  color: #fff;
+}
+
+.onb-step-text span {
+  font-size: 12.5px;
+  opacity: 0.65;
+  line-height: 1.4;
+}
+
+.onboarding-start {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #5c7cfa, #3b5bdb);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(59, 91, 219, 0.4);
+}
+
+.onboarding-start:active { transform: scale(0.98); }
+
+.onboarding-skip {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.onboarding-skip:active { color: rgba(255, 255, 255, 0.8); }

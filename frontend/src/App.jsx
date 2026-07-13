@@ -22,6 +22,8 @@ import ConceptLinker from './components/ConceptLinker';
 import CodeCompletionMode from './components/CodeCompletionMode';
 import PaywallModal from './components/PaywallModal';
 import ProNudge from './components/ProNudge';
+import Onboarding, { ONBOARD_KEY } from './components/Onboarding';
+import MissedPanel from './components/MissedPanel';
 import useStore from './store/useStore';
 import { CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -112,7 +114,8 @@ function App() {
 
         if (cancelled) return;
         setInitState('ready');
-        setScreen('language');
+        // First-time users see a quick explainer before choosing a language.
+        setScreen(localStorage.getItem(ONBOARD_KEY) ? 'language' : 'onboarding');
         loadQuestions().catch(console.error);
       } catch (err) {
         if (cancelled) return;
@@ -184,6 +187,7 @@ function App() {
     );
   }
 
+  if (screen === 'onboarding') return <Onboarding onStart={() => setScreen('language')} />;
   if (screen === 'language') return <LanguageSelection onSelect={() => setScreen('category')} />;
   if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('language')} />;
   if (screen === 'resume') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ResumeAnalyzer onBack={() => setScreen('main')} /></Suspense>;
@@ -279,6 +283,7 @@ function App() {
         explanation={currentExplanation}
         isLoading={isLoadingExplanation}
         onClose={closeExplanation}
+        onUpgrade={() => setScreen('subscriptions')}
       />
       {showShare && (
         <ShareCard 
@@ -293,6 +298,7 @@ function App() {
         />
       )}
       <PaywallModal onUpgrade={handleUpgrade} />
+      <MissedPanel />
     </div>
   );
 }

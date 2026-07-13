@@ -335,6 +335,17 @@ const migrations = [
       CREATE INDEX IF NOT EXISTS idx_pending_ton_pending
         ON pending_ton_invoices(fulfilled, expires_at);
     `
+  },
+
+  // ── 020: Daily AI explanation limit (free tier) ───────────────────
+  // Tracks how many AI explanations a free user has generated today so we
+  // can enforce a hard (but honest) daily cap and nudge them toward Pro.
+  {
+    id: '020_daily_ai_explain_limit',
+    sql: `
+      ALTER TABLE user_rate_limits ADD COLUMN IF NOT EXISTS ai_explanations_today INT DEFAULT 0;
+      ALTER TABLE user_rate_limits ADD COLUMN IF NOT EXISTS ai_explain_date DATE;
+    `
   }
 ];
 

@@ -213,6 +213,28 @@
   color: #8ce99a;
 }
 
+.explain-ai-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7048e8, #5c7cfa);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(112, 72, 232, 0.35);
+}
+
+.explain-ai-btn:active {
+  transform: scale(0.98);
+}
+
 /* ── Card appear animation ────────────────────────────────────────── */
 @keyframes cardAppear {
   from {

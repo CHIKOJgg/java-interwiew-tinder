@@ -5,8 +5,9 @@ import React, {
   useImperativeHandle,
 } from 'react';
 import TinderCard from 'react-tinder-card';
-import { RotateCcw, Flag } from 'lucide-react';
+import { RotateCcw, Flag, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import useStore from '../store/useStore';
 import './QuestionCard.css';
 
 const categoryColors = {
@@ -31,9 +32,10 @@ const difficultyColors = {
 
 const QuestionCard = forwardRef(
   ({ question, onSwipe, canSwipe = true }, ref) => {
-    const { t } = useTranslation();
-    const [isFlipped, setIsFlipped] = useState(false);
-    const tinderRef = useRef(null);
+  const { t } = useTranslation();
+  const { learningMode, loadExplanation } = useStore();
+  const [isFlipped, setIsFlipped] = useState(false);
+  const tinderRef = useRef(null);
 
     useImperativeHandle(ref, () => ({
       swipe: (direction) => {
@@ -165,6 +167,19 @@ const QuestionCard = forwardRef(
                   {t('card.know', 'Know')} →
                 </span>
               </div>
+
+              {learningMode === 'swipe' && (
+                <button
+                  className="explain-ai-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    loadExplanation(question.id);
+                  }}
+                  type="button"
+                >
+                  <Sparkles size={15} /> {t('card.explain_ai', 'Explain with AI')}
+                </button>
+              )}
             </div>
           </div>
         </div>

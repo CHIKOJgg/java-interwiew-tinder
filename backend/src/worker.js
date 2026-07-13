@@ -216,21 +216,54 @@ async function verifyBackupIntegrity() {
   }
 }
 
+// Build a deep link back into the Mini App. Returns '' when no bot username is
+// configured so reminders never include a broken link.
+function appLink() {
+  const username = process.env.BOT_USERNAME;
+  return username ? `\n👇 https://t.me/${username}/app` : '';
+}
+
 async function notifyStreakReminders() {
   try {
-    // Find users who were active yesterday but NOT today
-    const { rows } = await pool.query(`
-      SELECT telegram_id, current_streak 
-      FROM users 
+    // 1) At-risk: active yesterday, not today, still have a live streak.
+    //    These users can still save the streak today — urgency message.
+    const atRisk = await pool.query(`
+      SELECT telegram_id, first_name, current_streak
+      FROM users
       WHERE last_activity_date = (CURRENT_DATE - INTERVAL '1 day')::date
         AND current_streak > 0
     `);
 
-    logger.info({ count: rows.length }, '🔥 Processing streak reminder notifications');
+    logger.info({ count: atRisk.rows.length }, '🔥 Processing at-risk streak reminders');
 
-    for (const user of rows) {
-      const msg = `🔥 Your ${user.current_streak}-day streak ends today — swipe 3 questions to keep it alive!`;
-      await sendTelegramMessage(user.telegram_id, msg).catch(() => { });
+    for (const u of atRisk.rows) {
+      const name = u.first_name ? `${u.first_name}, ` : '';
+      const msg =
+        `🔥 ${name}ваша серия ${u.current_streak} дней заканчивается сегодня!\n\n` +
+        `Ответьте на 3 вопроса, чтобы не сбросить прогресс. Всего 2 минуты.${appLink()}`;
+      await sendTelegramMessage(u.telegram_id, msg).catch(() => { });
+    }
+
+    // 2) Lapsed win-back: a one-time gentle nudge 2 days after a lapse and a
+    //    second nudge 6 days after. We pin to exact dates so a user who never
+    //    returns isn't spammed every day.
+    const lapsed = await pool.query(`
+      SELECT telegram_id, first_name, current_streak
+      FROM users
+      WHERE last_activity_date IN (
+        (CURRENT_DATE - INTERVAL '2 days')::date,
+        (CURRENT_DATE - INTERVAL '6 days')::date
+      )
+    `);
+
+    logger.info({ count: lapsed.rows.length }, '👋 Processing lapsed-user win-back reminders');
+
+    for (const u of lapsed.rows) {
+      const name = u.first_name ? `${u.first_name}, ` : '';
+      const msg =
+        `👋 ${name}мы соскучились! Ваши темы ждут — вернитесь и потренируйтесь 5 минут.\n` +
+        `Начните новую серию прямо сейчас.${appLink()}`;
+      await sendTelegramMessage(u.telegram_id, msg).catch(() => { });
     }
   } catch (err) {
     logger.error({ err }, 'Error in notifyStreakReminders job');

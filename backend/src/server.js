@@ -667,6 +667,39 @@ function localDateStr(d = new Date()) {
   return `${y}-${m}-${day}`;
 }
 
+// Hard but honest daily cap on AI explanations for free users. Pro/premium/
+// admin get unlimited. The counter resets automatically at local midnight via
+// the per-row `ai_explain_date` comparison (no cron needed).
+const FREE_DAILY_AI_EXPLAIN_LIMIT = parseInt(process.env.FREE_DAILY_AI_EXPLAIN_LIMIT || '5', 10);
+
+async function checkDailyAiExplain(userId) {
+  const today = localDateStr();
+  // Upsert the row and reset the counter if the stored date is stale.
+  await pool.query(
+    `INSERT INTO user_rate_limits (user_id, ai_explanations_today, ai_explain_date)
+     VALUES ($1, 0, $2)
+     ON CONFLICT (user_id) DO UPDATE
+       SET ai_explanations_today = CASE
+             WHEN user_rate_limits.ai_explain_date = $2 THEN user_rate_limits.ai_explanations_today
+             ELSE 0 END,
+           ai_explain_date = $2`,
+    [userId, today]
+  );
+  const { rows } = await pool.query(
+    'SELECT ai_explanations_today FROM user_rate_limits WHERE user_id = $1',
+    [userId]
+  );
+  const used = rows[0]?.ai_explanations_today || 0;
+  if (used >= FREE_DAILY_AI_EXPLAIN_LIMIT) {
+    return { allowed: false, used, limit: FREE_DAILY_AI_EXPLAIN_LIMIT };
+  }
+  await pool.query(
+    'UPDATE user_rate_limits SET ai_explanations_today = ai_explanations_today + 1 WHERE user_id = $1',
+    [userId]
+  );
+  return { allowed: true, used: used + 1, limit: FREE_DAILY_AI_EXPLAIN_LIMIT };
+}
+
 async function updateStreak(userId) {
   try {
     const { rows } = await pool.query(
@@ -943,6 +976,30 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
     // The request still resolves with the explanation once the worker is
     // done (most questions are pre-warmed at login, so usually instant).
     const language = question.language || 'Java';
+
+    // Free-tier daily cap on AI explanations — the honest nudge toward Pro.
+    // Cached explanations above don't count (they cost no AI call).
+    if (!question.cached_explanation) {
+      const { rows: planRows } = await pool.query(
+        'SELECT subscription_plan FROM users WHERE telegram_id = $1', [userId]
+      );
+      const plan = planRows[0]?.subscription_plan || 'free';
+      const isFree = plan === 'free' && !ADMIN_IDS.has(String(userId));
+      if (isFree) {
+        const lr = await checkDailyAiExplain(userId);
+        if (!lr.allowed) {
+          logger.info({ userId, questionId, used: lr.used, limit: lr.limit }, '⛔ Free daily AI explanation limit reached');
+          return res.status(403).json({
+            error: 'daily_ai_limit',
+            code: 'DAILY_AI_LIMIT',
+            used: lr.used,
+            limit: lr.limit,
+            message: 'Daily AI explanation limit reached. Upgrade to Pro for unlimited deep breakdowns.',
+          });
+        }
+      }
+    }
+
     logger.info({ questionId, language }, '🤖 Generating explanation (queued)');
 
     await enqueueJob('explanation', {

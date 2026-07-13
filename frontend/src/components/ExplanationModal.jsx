@@ -164,9 +164,9 @@ function PlainExplanation({ text, codeLanguage }) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────
-const ExplanationModal = ({ isOpen, explanation, isLoading, onClose }) => {
+const ExplanationModal = ({ isOpen, explanation, isLoading, onClose, onUpgrade }) => {
   const { t } = useTranslation();
-  const { language } = useStore();
+  const { language, aiLimitReached, closeExplanation } = useStore();
 
   const { isJson, data } = useMemo(() => {
     if (!explanation || typeof explanation !== 'string') return { isJson: false, data: null };
@@ -194,6 +194,21 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose }) => {
         <div className="modal-body">
           {isLoading ? (
             <SkeletonExplanation />
+          ) : aiLimitReached ? (
+            <div className="ai-limit-upsell">
+              <div className="ai-limit-lock">🔒</div>
+              <h3>{t('explanation.limit_title', 'Daily AI limit reached')}</h3>
+              <p>
+                {t('explanation.limit_desc', 'You used {{used}} of {{limit}} free breakdowns today.',
+                  { used: aiLimitReached.used, limit: aiLimitReached.limit })}
+              </p>
+              <button className="ai-limit-upgrade" onClick={onUpgrade} type="button">
+                {t('explanation.limit_upgrade', 'Unlock Pro — unlimited')}
+              </button>
+              <button className="action-button ghost" onClick={closeExplanation} type="button">
+                {t('explanation.limit_close', 'Got it')}
+              </button>
+            </div>
           ) : isJson ? (
             <StructuredExplanation data={data} language={codeLanguage} />
           ) : (
@@ -201,7 +216,7 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose }) => {
           )}
         </div>
 
-        {!isLoading && (
+        {!isLoading && !aiLimitReached && (
           <div className="modal-footer">
             <button className="action-button" onClick={onClose}>{t('common.next', 'Next')} →</button>
           </div>

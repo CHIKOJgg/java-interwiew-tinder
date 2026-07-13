@@ -8,6 +8,23 @@ function loadFromLocal(key) { try { return JSON.parse(localStorage.getItem(`${CA
 function saveToSession(key, data) { try { sessionStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { /* ignore */ } }
 function loadFromSession(key) { try { return JSON.parse(sessionStorage.getItem(`${CACHE_KEY}_${key}`)); } catch { return null; } }
 
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+function loadDaily() {
+  try {
+    const raw = localStorage.getItem(`${CACHE_KEY}_daily`);
+    if (!raw) return { date: todayKey(), count: 0 };
+    const parsed = JSON.parse(raw);
+    if (parsed.date !== todayKey()) return { date: todayKey(), count: 0 };
+    return parsed;
+  } catch { return { date: todayKey(), count: 0 }; }
+}
+function saveDaily(count) {
+  try { localStorage.setItem(`${CACHE_KEY}_daily`, JSON.stringify({ date: todayKey(), count })); } catch { /* ignore */ }
+}
+
 const useStore = create((set, get) => ({
   user: null,
   token: loadFromSession('token'),
@@ -35,6 +52,13 @@ const useStore = create((set, get) => ({
   selectedCategories: [],
   categoryStats: { known: 0, total: 0 },
 
+  // ─── Daily goal ────────────────────────────────────────────────────
+  // A reason to come back every day. Counts questions answered today
+  // (resets at local midnight) and compares against a small daily goal.
+  dailyGoal: 20,
+  todaySeen: 0,
+  dailyDone: false,
+
   blitzScore: 0,
   blitzTimeLeft: 60,
   isBlitzActive: false,
@@ -49,6 +73,17 @@ const useStore = create((set, get) => ({
   showExplanation: false,
   currentExplanation: null,
   isLoadingExplanation: false,
+  // Set when a free user hits the daily AI-explanation cap — the modal shows
+  // a Pro upsell instead of an explanation.
+  aiLimitReached: null,
+
+  // ─── Missed ("don't know") sheet ──────────────────────────────────
+  // Populated when the user swipes left in swipe mode so we can show the
+  // short answer + a one-tap AI explanation instead of silently advancing.
+  missed: null,
+  showMissed: false,
+  openMissed: (question) => set({ missed: question, showMissed: true }),
+  closeMissed: () => set({ showMissed: false, missed: null }),
 
   // ─── Auth ──────────────────────────────────────────────────────────
   login: async (initData, referralId) => {
@@ -70,9 +105,10 @@ const useStore = create((set, get) => ({
         availableLanguages: user.available_languages || ['Java', 'Python', 'TypeScript'],
       });
       
-      await get().loadQuestions();
-      get().loadStats();
-      return user;
+       await get().loadQuestions();
+       get().loadStats();
+       get().initDaily();
+       return user;
     } catch (error) {
       set({ isLoading: false, _loadingLock: false });
       throw error;
@@ -177,6 +213,18 @@ const useStore = create((set, get) => ({
     }
   },
 
+  // ─── Daily goal ─────────────────────────────────────────────────────
+  initDaily: () => {
+    const { count } = loadDaily();
+    set({ todaySeen: count, dailyDone: count >= get().dailyGoal });
+  },
+  // Count one (or n) answered questions toward today's goal.
+  bumpDaily: (n = 1) => {
+    const next = get().todaySeen + n;
+    saveDaily(next);
+    set({ todaySeen: next, dailyDone: next >= get().dailyGoal });
+  },
+
   loadStats: async () => {
     try {
       const { selectedCategories, language } = get();
@@ -201,6 +249,7 @@ const useStore = create((set, get) => ({
   // ─── Swipe ─────────────────────────────────────────────────────────
   swipeCard: async (questionId, direction) => {
     const status = direction === 'right' ? 'known' : 'unknown';
+    const q = get().questions[get().currentIndex];
     set(s => ({
       stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 },
       currentIndex: s.currentIndex + 1,
@@ -222,8 +271,13 @@ const useStore = create((set, get) => ({
       console.error('Swipe recording failed:', err);
     }
 
-    // Bug 29 fix: Don't auto-open explanation on swipe left to avoid interrupting the flow
-    // if (direction === 'left') get().loadExplanation(questionId);
+    // Swipe left ("don't know") in swipe mode now opens the learning sheet
+    // with the short answer + a one-tap AI explanation — instead of silently
+    // advancing and leaving the user with nothing.
+    if (direction === 'left' && get().learningMode === 'swipe' && q) {
+      get().openMissed(q);
+    }
+    get().bumpDaily();
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
   },
 
@@ -240,6 +294,7 @@ const useStore = create((set, get) => ({
     const response = await apiClient.submitTestAnswer(questionId, answer);
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
+    get().bumpDaily();
     if (!response.isCorrect) get().loadExplanation(questionId);
     // Do NOT auto-advance — TestMode.handleNext() calls advanceQuestion() after
     // showing the green feedback, so the user actually sees it.
@@ -251,6 +306,7 @@ const useStore = create((set, get) => ({
     const response = await apiClient.submitBugHuntAnswer(questionId, answer);
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
+    get().bumpDaily();
     if (!response.isCorrect) get().loadExplanation(questionId);
     // Do NOT auto-advance — BugHuntingMode shows feedback + "Следующая задача" button
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
@@ -261,6 +317,7 @@ const useStore = create((set, get) => ({
     // Increment score locally immediately — don't wait for server round-trip.
     // The server validates against AI data when available, otherwise trusts clientIsCorrect.
     if (clientIsCorrect) set(s => ({ blitzScore: s.blitzScore + 1 }));
+    get().bumpDaily();
     // Fire-and-forget to server for stats recording (don't await for UX)
     apiClient.submitBlitzAnswer(questionId, answer, clientIsCorrect).catch(() => { });
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
@@ -305,6 +362,7 @@ const useStore = create((set, get) => ({
     const response = await apiClient.submitCodeCompletionAnswer(questionId, answer);
     const status = response.isCorrect ? 'known' : 'unknown';
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
+    get().bumpDaily();
     if (!response.isCorrect) get().loadExplanation(questionId);
     else set(s => ({ currentIndex: s.currentIndex + 1 }));
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
@@ -462,6 +520,15 @@ const useStore = create((set, get) => ({
         isLoadingExplanation: false,
       });
     } catch (err) {
+      // Free users who hit the daily AI cap get a Pro upsell instead of an error.
+      if (err?.code === 'DAILY_AI_LIMIT') {
+        set({
+          isLoadingExplanation: false,
+          currentExplanation: null,
+          aiLimitReached: { used: err.used ?? null, limit: err.limit ?? null },
+        });
+        return;
+      }
       // Surface the real server error so the user (and you) can see what failed
       const detail = err?.message || 'Неизвестная ошибка';
       set({
@@ -483,6 +550,7 @@ const useStore = create((set, get) => ({
         totalSeen: s.stats.totalSeen + questionIds.length,
       },
     }));
+    get().bumpDaily(questionIds.length);
     await Promise.all(
       questionIds.map(id => apiClient.recordSwipe(id, 'known').catch(() => { })),
     );
@@ -494,7 +562,7 @@ const useStore = create((set, get) => ({
   },
 
   closeExplanation: () => {
-    set({ showExplanation: false, currentExplanation: null });
+    set({ showExplanation: false, currentExplanation: null, aiLimitReached: null });
   },
 
   // ─── Review (mistakes) mode ────────────────────────────────────────
@@ -520,6 +588,7 @@ const useStore = create((set, get) => ({
     const status = direction === 'right' ? 'known' : 'unknown';
     try {
       await apiClient.recordSwipe(questionId, status);
+      get().bumpDaily();
     } catch (err) {
       console.error('Review swipe failed:', err);
     }

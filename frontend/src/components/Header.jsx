@@ -21,17 +21,21 @@ const BOTTOM_VISIBLE = 4;
 
 const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick }) => {
   const { t, i18n } = useTranslation();
-  const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall } = useStore();
+  const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
   const hasCat = selectedCategories?.length > 0 && (categoryStats?.total || 0) > 0;
   const catProgress = hasCat ? (categoryStats.known / categoryStats.total) * 100 : 0;
   const topicLabel = selectedCategories?.length === 1 ? selectedCategories[0] : `${selectedCategories?.length} ${t('common.selected')}`;
+  const dailyProgress = dailyGoal > 0 ? Math.min((todaySeen / dailyGoal) * 100, 100) : 0;
+  const readiness = stats.totalQuestions > 0 ? Math.round((stats.known / stats.totalQuestions) * 100) : 0;
+  const readinessTier = readiness >= 80 ? 'ready' : readiness >= 50 ? 'confident' : readiness >= 20 ? 'building' : 'novice';
 
   const handleLang = useCallback((e) => onLanguageChange?.(e.target.value), [onLanguageChange]);
   const isPremium = user?.plan && user.plan !== 'free';
   const extraActive = MODES.slice(BOTTOM_VISIBLE).some(m => m.id === learningMode);
+  const showDailyPro = dailyDone && !isPremium;
 
   const [showStreakAnim, setShowStreakAnim] = useState(false);
   useEffect(() => {
@@ -77,7 +81,8 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
           <div className="stats-container" onClick={onProgressClick} title={t('header.open_progress', 'Open progress')} style={{ cursor: 'pointer' }}>
             <div className="stats-row">
               <span className="stats-text">
-                {t('header.studied')}: <strong>{stats.known}</strong>/{stats.totalQuestions}
+                {t('header.readiness')}: <strong>{readiness}%</strong>{' '}
+                <span className={`readiness-tier tier-${readinessTier}`}>{t(`readiness.tier_${readinessTier}`)}</span>
                 {isPremium && <span className="plan-badge"> · {user.plan === 'admin' ? '👑' : '⭐'} {user.plan}</span>}
                 {stats.streak > 0 && (
                   <span className="streak-badge" title={`Longest: ${stats.longestStreak} days`}>
@@ -96,6 +101,26 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
             {hasCat && (
               <div className="progress-bar topic-bar"><div className="progress-fill topic-fill" style={{ width: `${catProgress}%` }} /></div>
             )}
+            <div className="daily-goal">
+              <span className={`daily-goal-text ${dailyDone ? 'done' : ''}`}>
+                {dailyDone
+                  ? t('header.daily_done')
+                  : t('header.daily', { done: todaySeen, goal: dailyGoal })}
+              </span>
+              {showDailyPro && (
+                <button
+                  className="daily-pro-cta"
+                  onClick={onSubscriptionClick}
+                  type="button"
+                  title={t('header.daily_pro', 'See weekly analytics in Pro')}
+                >
+                  ⭐ Pro
+                </button>
+              )}
+              <div className="progress-bar daily-bar">
+                <div className={`progress-fill daily-fill ${dailyDone ? 'done' : ''}`} style={{ width: `${dailyProgress}%` }} />
+              </div>
+            </div>
           </div>
         </div>
       </header>

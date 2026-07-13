@@ -23,7 +23,8 @@
     "resume": "Resume",
     "subscription": "Subscription",
     "admin": "Admin",
-    "more": "More"
+    "more": "More",
+    "open_progress": "Open progress"
   },
   "modes": {
     "swipe": "Swipe",
@@ -112,7 +113,7 @@
     "title": "This mode is Pro-only",
     "locked_mode": "{{mode}} is available in Pro only",
     "subtitle": "Unlock Pro to practice more effectively and pass more real interviews.",
-    "bullet_1": "5 extra modes: Blitz, Mock Interview, Bug Hunting, Code & Concept Linker",
+    "bullet_1": "6 modes: Blitz, Mock Interview, Bug Hunting, Code, Concept Linker & Mistakes Review",
     "bullet_2": "AI explanations after every answer",
     "bullet_3": "Resume analysis and up to 50 mock interviews per month",
     "bullet_4": "Priority models and unlimited questions",
@@ -137,5 +138,31 @@
   "language": {
     "title": "Choose Tech Stack",
     "subtitle": "Select the language you want to practice"
+  },
+  "review": {
+    "title": "Mistakes Review",
+    "all_done_title": "All clear!",
+    "all_done_desc": "You have no weak spots right now. Keep practising to stay sharp.",
+    "back_to_progress": "Back to progress",
+    "explanation": "Explanation",
+    "load_explanation": "Load full explanation",
+    "still_weak": "Still weak",
+    "got_it": "Got it now",
+    "start": "Review",
+    "cta_desc": "Rehearse the questions you keep getting wrong until they stick.",
+    "locked_desc": "Repeat your weak spots until they stick. This is a Pro feature."
+  },
+  "progress": {
+    "title": "Your progress",
+    "percentile": "know more than others",
+    "accuracy": "accuracy",
+    "streak": "day streak",
+    "brag": "You know more than {{p}}% of learners. Share your result!",
+    "overview": "Overview",
+    "known": "Known",
+    "unknown": "Weak",
+    "coverage": "Deck coverage",
+    "topics": "Your topics",
+    "go_pro": "Unlock all modes, mistakes review & deep analytics with Pro"
   }
 }

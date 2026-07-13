@@ -19,7 +19,7 @@ const MODES = [
 ];
 const BOTTOM_VISIBLE = 4;
 
-const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick }) => {
+const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick }) => {
   const { t, i18n } = useTranslation();
   const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -74,7 +74,7 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
             </div>
           </div>
 
-          <div className="stats-container">
+          <div className="stats-container" onClick={onProgressClick} title={t('header.open_progress', 'Open progress')} style={{ cursor: 'pointer' }}>
             <div className="stats-row">
               <span className="stats-text">
                 {t('header.studied')}: <strong>{stats.known}</strong>/{stats.totalQuestions}

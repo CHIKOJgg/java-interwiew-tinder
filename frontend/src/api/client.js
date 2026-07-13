@@ -292,6 +292,13 @@ class ApiClient {
     });
   }
 
+  // Weak / mistakes review deck (Pro). `mode=review` is required so the
+  // server-side entitlement gate recognises the request.
+  async getWeakQuestions(limit = 50) {
+    const params = new URLSearchParams({ mode: 'review', language: this.language, limit: String(limit) });
+    return this.request(`/questions/weak?${params.toString()}`);
+  }
+
   // --- Admin ---
   async getAdminReports() {
     return this.request('/admin/reports');

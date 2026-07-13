@@ -4,6 +4,8 @@ const MockInterviewMode = lazy(() => import('./components/MockInterviewMode'));
 const ResumeAnalyzer = lazy(() => import('./components/ResumeAnalyzer'));
 const SubscriptionPlans = lazy(() => import('./components/SubscriptionPlans'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
+const ReviewMode = lazy(() => import('./components/ReviewMode'));
+const ProgressScreen = lazy(() => import('./components/ProgressScreen'));
 import CategorySelection from './components/CategorySelection';
 import LanguageSelection from './components/LanguageSelection';
 import ReportSheet from './components/ReportSheet';
@@ -187,6 +189,8 @@ function App() {
   if (screen === 'resume') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ResumeAnalyzer onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'subscriptions') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SubscriptionPlans onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'admin') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AdminPanel onBack={() => setScreen('main')} /></Suspense>;
+  if (screen === 'progress') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProgressScreen onBack={() => setScreen('main')} onReview={() => setScreen('review')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
+  if (screen === 'review') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ReviewMode onBack={() => setScreen('progress')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
 
   const renderMode = () => {
     switch (learningMode) {
@@ -253,6 +257,7 @@ function App() {
         onSubscriptionClick={() => setScreen('subscriptions')}
         onLanguageChange={handleLanguageChange}
         onAdminClick={() => setScreen('admin')}
+        onProgressClick={() => setScreen('progress')}
       />
       <div className="card-container">
         <Suspense fallback={<SkeletonCard />}>

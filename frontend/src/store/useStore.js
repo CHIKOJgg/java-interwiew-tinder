@@ -497,6 +497,43 @@ const useStore = create((set, get) => ({
     set({ showExplanation: false, currentExplanation: null });
   },
 
+  // ─── Review (mistakes) mode ────────────────────────────────────────
+  reviewQuestions: [],
+  currentReviewIndex: 0,
+  isLoadingReview: false,
+  reviewDone: false,
+
+  loadReviewQuestions: async () => {
+    set({ isLoadingReview: true, reviewDone: false, currentReviewIndex: 0, reviewQuestions: [] });
+    try {
+      const { questions } = await apiClient.getWeakQuestions(50);
+      set({ reviewQuestions: questions, isLoadingReview: false, reviewDone: questions.length === 0 });
+    } catch (err) {
+      console.error('Failed to load review questions:', err);
+      set({ isLoadingReview: false, reviewDone: true });
+    }
+  },
+
+  // direction 'right' => user now knows it (status: known),
+  // 'left' => still weak (status: unknown, snoozed for later).
+  reviewSwipe: async (questionId, direction) => {
+    const status = direction === 'right' ? 'known' : 'unknown';
+    try {
+      await apiClient.recordSwipe(questionId, status);
+    } catch (err) {
+      console.error('Review swipe failed:', err);
+    }
+    const nextIndex = get().currentReviewIndex + 1;
+    if (nextIndex >= get().reviewQuestions.length) {
+      set({ currentReviewIndex: nextIndex, reviewDone: true });
+      get().loadStats();
+    } else {
+      set({ currentReviewIndex: nextIndex });
+    }
+  },
+
+  resetReview: () => set({ reviewQuestions: [], currentReviewIndex: 0, reviewDone: false }),
+
   getCurrentQuestion: () => get().questions[get().currentIndex],
   hasMoreQuestions: () => get().currentIndex < get().questions.length || get().hasMore,
 }));

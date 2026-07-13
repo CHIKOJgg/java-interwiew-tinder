@@ -1,0 +1,204 @@
+.review-mode {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 12px 16px 24px;
+  box-sizing: border-box;
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.review-header h2 {
+  font-size: 18px;
+  margin: 0;
+  flex: 1;
+}
+
+.review-back {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.review-counter {
+  font-size: 13px;
+  opacity: 0.7;
+  font-weight: 600;
+}
+
+.review-loading, .review-done {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  padding: 24px;
+}
+
+.review-done p {
+  opacity: 0.7;
+  font-size: 14px;
+  max-width: 280px;
+}
+
+.review-done-btn {
+  margin-top: 12px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  background: #5c7cfa;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.review-card {
+  flex: 1;
+  perspective: 1200px;
+  cursor: pointer;
+  min-height: 0;
+}
+
+.review-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.45s;
+  transform-style: preserve-3d;
+}
+
+.review-card.flipped .review-card-inner {
+  transform: rotateY(180deg);
+}
+
+.review-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.review-back {
+  transform: rotateY(180deg);
+}
+
+.review-question {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.review-question h2 {
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+.review-answer p {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+
+.review-explanation {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(92, 124, 250, 0.12);
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.review-explanation p {
+  margin: 4px 0 0;
+  opacity: 0.92;
+}
+
+.review-explain-btn {
+  margin-top: 12px;
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.answer-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.swipe-instructions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.review-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.review-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.review-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.review-weak {
+  background: linear-gradient(135deg, #fa5252, #e03131);
+}
+
+.review-known {
+  background: linear-gradient(135deg, #51cf66, #2f9e44);
+}

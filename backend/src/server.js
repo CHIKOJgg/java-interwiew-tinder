@@ -311,7 +311,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Resolve plan entitlements (available modes/languages) so the client can
     // render correct locks and the paywall without re-deriving plan rules.
-    const ALL_MODES = ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion'];
+    const ALL_MODES = ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'review'];
     const ALL_LANGS = ['Java', 'Python', 'TypeScript'];
     let availableModes = ['swipe', 'test'];
     let availableLanguages = ALL_LANGS;
@@ -526,6 +526,44 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     });
   } catch (error) {
     logger.error({ err: error }, 'Error in /questions/feed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Weak / Mistakes review deck (Pro) ────────────────────────────────
+// Returns the user's "unknown" questions so they can actively rehearse the
+// topics they keep getting wrong. Gated to Pro via the 'review' entitlement.
+app.get('/api/questions/weak', requireEntitlement('mode', 'review'), async (req, res) => {
+  try {
+    const userId = req.userId;
+    const language = req.query.language || 'Java';
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+
+    const result = await pool.query(
+      `SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
+              q.cached_explanation, q.language
+       FROM user_progress up
+       JOIN questions q ON q.id = up.question_id
+       WHERE up.user_id = $1 AND up.status = 'unknown'
+         AND q.language = $2 AND q.is_active = TRUE
+       ORDER BY up.updated_at DESC
+       LIMIT $3`,
+      [userId, language, limit]
+    );
+
+    const questions = result.rows.map(r => ({
+      id: r.id,
+      category: r.category,
+      difficulty: r.difficulty,
+      question: r.question_text,
+      shortAnswer: r.short_answer,
+      explanation: r.cached_explanation || null,
+      language: r.language || 'Java',
+    }));
+
+    res.json({ questions, meta: { count: questions.length, language } });
+  } catch (error) {
+    logger.error({ err: error }, 'Error in /questions/weak');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

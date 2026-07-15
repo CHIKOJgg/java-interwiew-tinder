@@ -537,8 +537,8 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       let fp = 3;
       if (selectedCategories.length > 0) { fWhere.push(`q.category = ANY($${fp})`); fParams.push(selectedCategories); fp++; }
       if (difficulties && difficulties.length) { fWhere.push(`q.difficulty = ANY($${fp})`); fParams.push(difficulties); fp++; }
-      const fSeed = `$${fp++}`, fLimit = `$${fp++}`;
-      fParams.push(seed, limit - questions.length);
+      const fSeed = `$${fp++}`, fOffset = `$${fp++}`, fLimit = `$${fp++}`;
+      fParams.push(seed, cursor, limit - questions.length);
       const fillerQuery = `
         SELECT ${selectCols}
         FROM questions q
@@ -546,6 +546,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
         LEFT JOIN question_mastery qm ON q.id = qm.question_id AND qm.user_id = $1
         WHERE ${fWhere.join(' AND ')}
         ORDER BY md5(q.id::text || ${fSeed}) ASC
+        OFFSET ${fOffset}
         LIMIT ${fLimit}`;
       const filler = await pool.query(fillerQuery, fParams);
       const seen = new Set(questions.map(q => q.id));
@@ -1040,6 +1041,11 @@ app.get('/api/questions/saved', async (req, res) => {
 });
 
 // ─── Explanation ──────────────────────────────────────────────────────
+// Throttle explanation job enqueues so rapid client polling (the frontend
+// retries on `pending`) doesn't spawn a storm of duplicate worker jobs for
+// the same question. One enqueue per question per ~20s window is enough.
+const explanationEnqueueLock = new Map();
+
 app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) => {
   try {
     const { questionId } = req.body;
@@ -1098,13 +1104,22 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
 
     logger.info({ questionId, language }, '🤖 Generating explanation (queued)');
 
-    await enqueueJob('explanation', {
-      questionText: question.question_text,
-      shortAnswer: question.short_answer,
-      userId: userId || null,
-      questionId,
-      language,
-    }).catch(err => logger.error({ err, questionId }, 'Failed to enqueue explanation job'));
+    // De-dupe: only enqueue a fresh generation job if we haven't already
+    // enqueued one for this question in the last ~20s (rapid polling would
+    // otherwise create a storm of duplicate jobs for the same question).
+    const enqueueKey = `${language}:${questionId}`;
+    const now = Date.now();
+    const lastEnqueue = explanationEnqueueLock.get(enqueueKey) || 0;
+    if (now - lastEnqueue > 20000) {
+      explanationEnqueueLock.set(enqueueKey, now);
+      await enqueueJob('explanation', {
+        questionText: question.question_text,
+        shortAnswer: question.short_answer,
+        userId: userId || null,
+        questionId,
+        language,
+      }).catch(err => logger.error({ err, questionId }, 'Failed to enqueue explanation job'));
+    }
 
     const explanation = await waitForExplanation(question.question_text, questionId, language);
     if (explanation) {
@@ -1189,7 +1204,23 @@ app.get('/api/subscription/status', async (req, res) => {
        ORDER BY us.created_at DESC LIMIT 1`,
       [userId]
     );
-    if (rows.length === 0) return res.json({ plan: 'free', plan_name: 'Free', status: 'active' });
+    if (rows.length === 0) {
+      // Fallback to the durable flag on users so a missing/deleted plan row
+      // never makes a real Pro subscriber look like Free.
+      const { rows: u } = await pool.query(
+        'SELECT subscription_plan FROM users WHERE telegram_id = $1',
+        [userId]
+      );
+      const plan = u[0]?.subscription_plan || 'free';
+      if (plan === 'free') return res.json({ plan: 'free', plan_name: 'Free', status: 'active' });
+      return res.json({
+        plan_id: plan,
+        plan,
+        plan_name: plan,
+        status: 'active',
+        users_subscription_plan: plan,
+      });
+    }
     res.json(rows[0]);
   } catch { res.json({ plan: 'free', status: 'active' }); }
 });
@@ -1232,9 +1263,12 @@ app.post('/api/billing/stars/create-invoice', async (req, res) => {
 function verifyWebhookSecret(req) {
   const expected = process.env.TELEGRAM_WEBHOOK_SECRET;
   if (!expected) {
-    // No secret configured: warn in production so operators enable it.
+    // No secret configured: allow only outside production (local dev). In
+    // production this fails CLOSED — an unauthenticated webhook would let
+    // anyone forge successful_payment updates and grant themselves Pro.
     if (process.env.NODE_ENV === 'production') {
-      logger.warn('TELEGRAM_WEBHOOK_SECRET is not set — bot webhook is unauthenticated');
+      logger.error('TELEGRAM_WEBHOOK_SECRET is not set — rejecting unauthenticated bot webhook in production');
+      return false;
     }
     return true;
   }

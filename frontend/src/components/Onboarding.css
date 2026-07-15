@@ -18,43 +18,114 @@
 .onboarding-inner {
   width: 100%;
   max-width: 420px;
+  max-height: 100%;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 18px;
+  padding: 4px;
 }
 
-.onboarding-stage {
-  position: relative;
-  min-height: 340px;
+.onb-head {
+  text-align: center;
+}
+
+.onb-head h1 {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.onboarding-sub {
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: 0.7;
+  margin: 8px 0 0;
+  color: #fff;
+}
+
+/* ─── Checklist ─────────────────────────────────────────── */
+.onb-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onb-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: default;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.onb-check.active {
+  background: rgba(92, 124, 250, 0.15);
+  border-color: rgba(92, 124, 250, 0.5);
+  color: #fff;
+}
+
+.onb-check.done {
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.onb-check-mark {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.onb-slide {
-  width: 100%;
+.onb-check.active .onb-check-mark {
+  background: #5c7cfa;
+  color: #fff;
+}
+
+.onb-check.done .onb-check-mark {
+  background: #51cf66;
+  color: #fff;
+}
+
+/* ─── Current step detail ──────────────────────────────── */
+.onb-stage {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   text-align: center;
+  padding: 8px 0 4px;
   animation: onb-slide-in 0.3s ease;
 }
 
 @keyframes onb-slide-in {
-  from { opacity: 0; transform: translateX(18px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.onboarding-emoji {
-  font-size: 56px;
-  line-height: 1;
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .onb-hero-emoji {
-  width: 96px;
-  height: 96px;
-  border-radius: 28px;
+  width: 84px;
+  height: 84px;
+  border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -63,37 +134,33 @@
   box-shadow: 0 10px 30px rgba(59, 91, 219, 0.4);
 }
 
-.onb-hero-emoji.ai { background: linear-gradient(135deg, #cc5de8, #9c36b5); box-shadow: 0 10px 30px rgba(156, 54, 181, 0.4); }
-.onb-hero-emoji.modes { background: linear-gradient(135deg, #20c997, #0ca678); box-shadow: 0 10px 30px rgba(12, 166, 120, 0.4); }
-.onb-hero-emoji.progress { background: linear-gradient(135deg, #ff922b, #e8590c); box-shadow: 0 10px 30px rgba(232, 89, 12, 0.4); }
+.onb-hero-emoji.setup { background: linear-gradient(135deg, #868e96, #495057); box-shadow: 0 10px 30px rgba(73, 80, 87, 0.4); }
+.onb-hero-emoji.know  { background: linear-gradient(135deg, #51cf66, #2f9e44); box-shadow: 0 10px 30px rgba(47, 158, 68, 0.4); }
+.onb-hero-emoji.dont  { background: linear-gradient(135deg, #ff6b6b, #e03131); box-shadow: 0 10px 30px rgba(224, 49, 49, 0.4); }
+.onb-hero-emoji.tap   { background: linear-gradient(135deg, #ffd43b, #f08c00); box-shadow: 0 10px 30px rgba(240, 140, 0, 0.4); }
+.onb-hero-emoji.pro   { background: linear-gradient(135deg, #cc5de8, #9c36b5); box-shadow: 0 10px 30px rgba(156, 54, 181, 0.4); }
 
-.onboarding h1, .onboarding h2 {
-  font-size: 23px;
+.onb-stage h2 {
+  font-size: 20px;
   font-weight: 800;
   margin: 0;
   color: #fff;
   line-height: 1.25;
 }
 
-.onboarding-sub {
-  font-size: 14px;
-  line-height: 1.55;
-  opacity: 0.7;
-  margin: 0;
-  max-width: 320px;
-}
+.onb-stage .onboarding-sub { max-width: 320px; }
 
 .onb-swipe-demo {
   display: flex;
   gap: 12px;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .onb-swipe-chip {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 11px 18px;
   border-radius: 14px;
   font-size: 15px;
   font-weight: 700;
@@ -103,53 +170,50 @@
 .onb-swipe-chip.know { background: linear-gradient(135deg, #51cf66, #2f9e44); }
 .onb-swipe-chip.dont { background: linear-gradient(135deg, #ff6b6b, #e03131); }
 
-.onb-mode-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  width: 100%;
-  margin-top: 6px;
-}
-
-.onb-mode-chip {
-  display: flex;
-  flex-direction: column;
+.onb-pro-pill {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 12px 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  font-size: 12px;
+  margin-top: 4px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
   color: #fff;
-  opacity: 0.9;
+  background: linear-gradient(135deg, #cc5de8, #9c36b5);
 }
 
-.onb-mode-emoji {
-  font-size: 24px;
-  line-height: 1;
-}
-
-.onb-dots {
+/* ─── Progress ─────────────────────────────────────────── */
+.onb-progress {
   display: flex;
-  justify-content: center;
-  gap: 7px;
+  align-items: center;
+  gap: 12px;
 }
 
-.onb-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  transition: width 0.25s, background 0.25s;
+.onb-progress-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
 }
 
-.onb-dot.active {
-  width: 22px;
-  border-radius: 4px;
-  background: #5c7cfa;
+.onb-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #5c7cfa, #3b5bdb);
+  transition: width 0.3s ease;
 }
 
+.onb-progress-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ─── Nav ──────────────────────────────────────────────── */
 .onb-nav {
   display: flex;
   align-items: center;

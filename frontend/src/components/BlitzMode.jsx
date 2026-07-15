@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Timer, Zap, Check, X, Trophy, Play } from 'lucide-react';
@@ -36,6 +36,7 @@ const BlitzMode = () => {
 
   const [feedback, setFeedback] = useState(null); // 'correct' | 'incorrect'
   const [localBlitzData, setLocalBlitzData] = useState(null);
+  const answeredRef = useRef(false); // guards against double-tap auto-advance
 
   useEffect(() => {
     if (!isBlitzActive) return;
@@ -62,7 +63,8 @@ const BlitzMode = () => {
   }, [isBlitzActive, currentIndex, currentQuestion?.id]); // eslint-disable-line
 
   const handleAnswer = async (answer) => {
-    if (!isBlitzActive || feedback) return;
+    if (!isBlitzActive || feedback || answeredRef.current) return;
+    answeredRef.current = true;
     const q = questions[currentIndex];
     if (!q) return;
 
@@ -77,6 +79,7 @@ const BlitzMode = () => {
     submitBlitzAnswer(q.id, answer, correct);
 
     setTimeout(() => {
+      answeredRef.current = false;
       setFeedback(null);
       setLocalBlitzData(null);
       advanceQuestion();

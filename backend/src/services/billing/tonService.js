@@ -65,7 +65,17 @@ export async function getUserPendingInvoice(userId) {
 
 // ─── Query TON Center for recent inbound transactions ───────────────────
 async function fetchRecentTransactions(address) {
-  const params = new URLSearchParams({ address, limit: '30', to_lt: '0' });
+  // TON Center v2 getTransactions requires the `lt` (logical time) of the
+  // account's latest transaction. Fetch it first, then page backwards from it.
+  const infoParams = new URLSearchParams({ address });
+  if (API_KEY) infoParams.set('api_key', API_KEY);
+  const infoRes = await fetch(`${TONCENTER}/getAddressInformation?${infoParams}`);
+  if (!infoRes.ok) throw new Error(`TON Center getAddressInformation HTTP ${infoRes.status}`);
+  const infoJson = await infoRes.json();
+  if (!infoJson.ok) throw new Error(`TON Center getAddressInformation error: ${infoJson.error}`);
+  const lt = infoJson.result?.last_transaction_lt ?? '0';
+
+  const params = new URLSearchParams({ address, limit: '30', lt, to_lt: '0' });
   if (API_KEY) params.set('api_key', API_KEY);
 
   const res = await fetch(`${TONCENTER}/getTransactions?${params}`);

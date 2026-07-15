@@ -146,8 +146,8 @@
   background: rgba(0, 0, 0, 0.2);
   color: #fff;
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -156,6 +156,12 @@
   transition: all 0.2s;
   backdrop-filter: blur(5px);
   z-index: 10;
+  opacity: 0.5;
+}
+
+.report-flag:hover,
+.report-flag:active {
+  opacity: 1;
 }
 
 .report-flag:active {
@@ -170,8 +176,8 @@
   background: rgba(0, 0, 0, 0.2);
   color: #fff;
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -180,6 +186,12 @@
   transition: all 0.2s;
   backdrop-filter: blur(5px);
   z-index: 10;
+  opacity: 0.5;
+}
+
+.bookmark-btn:hover,
+.bookmark-btn:active {
+  opacity: 1;
 }
 .bookmark-btn.saved {
   background: rgba(255, 212, 59, 0.85);

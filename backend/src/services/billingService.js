@@ -93,7 +93,17 @@ export const billingService = {
          ORDER BY us.created_at DESC LIMIT 1`,
         [userId]
       );
-      if (rows.length === 0) return { plan: 'free', status: 'active' };
+      if (rows.length === 0) {
+        // Fallback to the durable flag on users so a missing/deleted plan row
+        // (e.g. seed-data drift) never makes a real Pro look like Free and
+        // blocks the post-purchase unlock poll.
+        const { rows: u } = await pool.query(
+          'SELECT subscription_plan FROM users WHERE telegram_id = $1',
+          [userId]
+        );
+        const plan = u[0]?.subscription_plan || 'free';
+        return { plan, plan_name: plan === 'free' ? 'Free' : plan, status: 'active' };
+      }
       const r = rows[0];
       return {
         plan:         r.plan_id,

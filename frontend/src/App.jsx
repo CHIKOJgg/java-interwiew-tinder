@@ -29,6 +29,8 @@ import MissedPanel from './components/MissedPanel';
 import useStore from './store/useStore';
 import { useTranslation } from 'react-i18next';
 import i18n from './i18n/config';
+import logger from './utils/logger';
+import DebugOverlay from './components/DebugOverlay';
 import './App.css';
 
 function getTelegramInitData() {
@@ -87,11 +89,83 @@ function App() {
   const [authError, setAuthError] = useState(null);
   const [showShare, setShowShare] = useState(false);
   const [reportingQuestionId, setReportingQuestionId] = useState(null);
+  // On-screen debug overlay (no DevTools inside Telegram WebApp).
+  const [debugOpen, setDebugOpen] = useState(false);
   // When the user re-opens the onboarding from the help button, "done" should
   // return them to the app (not back to language selection).
   const onboardingReopen = useRef(false);
 
   const cardRefs = useRef([]);
+
+  // Expose Sentry to the logger so errors/warnings can be reported from
+  // anywhere (logger mirrors to console + Sentry). Set in main.jsx.
+  useEffect(() => {
+    try {
+      const Sentry = window.__JIT_SENTRY__;
+      if (Sentry) {
+        Sentry.getCurrentScope && Sentry.getCurrentScope().setTag && Sentry.getCurrentScope().setTag('debug_overlay', 'available');
+      }
+    } catch { /* noop */ }
+  }, []);
+
+  // Toggle the on-screen debug overlay. In Telegram WebApp there is no F12, so
+  // we open it via a long-press (Telegram fires `contextmenu` on long-press) or
+  // 5 quick taps anywhere on the app shell (ignoring interactive controls).
+  useEffect(() => {
+    let pressTimer = null;
+    const taps = [];
+
+    const shouldIgnore = (el) => {
+      if (!el) return false;
+      return !!el.closest('button, a, input, textarea, .debug-overlay, [data-no-debug-toggle]');
+    };
+
+    const open = () => {
+      setDebugOpen((o) => {
+        logger.info(`DebugOverlay: ${o ? 'closed' : 'opened'}`);
+        return !o;
+      });
+    };
+
+    const onContextMenu = (e) => {
+      if (shouldIgnore(e.target)) return;
+      e.preventDefault();
+      open();
+    };
+
+    const onPointerDown = (e) => {
+      if (shouldIgnore(e.target)) return;
+      pressTimer = setTimeout(() => {
+        pressTimer = null;
+        open();
+      }, 600);
+    };
+
+    const onPointerUp = (e) => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      if (shouldIgnore(e.target)) return;
+      const now = Date.now();
+      taps.push(now);
+      while (taps.length && now - taps[0] > 1200) taps.shift();
+      if (taps.length >= 5) {
+        taps.length = 0;
+        open();
+      }
+    };
+
+    window.addEventListener('contextmenu', onContextMenu);
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointerup', onPointerUp);
+    return () => {
+      if (pressTimer) clearTimeout(pressTimer);
+      window.removeEventListener('contextmenu', onContextMenu);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
+  }, []);
 
   useEffect(() => {
     const handleReport = (e) => setReportingQuestionId(e.detail);
@@ -326,6 +400,7 @@ function App() {
       )}
       <PaywallModal onUpgrade={handleUpgrade} />
       <MissedPanel />
+      <DebugOverlay visible={debugOpen} onClose={() => setDebugOpen(false)} />
     </div>
   );
 }

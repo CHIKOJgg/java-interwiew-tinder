@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  TrendingUp, Settings, Layout, GraduationCap, Bug,
-  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, Lock, HelpCircle
+  TrendingUp, Settings, GraduationCap, Bug,
+  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, HelpCircle,
+  MoreVertical, Globe, Languages, Lock,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore, { readinessFromStats } from '../store/useStore';
@@ -9,7 +10,7 @@ import './Header.css';
 
 const LANG_LABELS = { Java: '☕ Java', Python: '🐍 Python', TypeScript: '🔷 TS' };
 const MODES = [
-  { id: 'swipe', icon: Layout, titleKey: 'modes.swipe', shortKey: 'modes.swipe' },
+  { id: 'swipe', icon: GraduationCap, titleKey: 'modes.swipe', shortKey: 'modes.swipe' },
   { id: 'test', icon: GraduationCap, titleKey: 'modes.test', shortKey: 'modes.test' },
   { id: 'bug-hunting', icon: Bug, titleKey: 'modes.bug_hunting', shortKey: 'modes.bug_hunting' },
   { id: 'blitz', icon: Zap, titleKey: 'modes.blitz', shortKey: 'modes.blitz' },
@@ -21,48 +22,50 @@ const BOTTOM_VISIBLE = 4;
 
 const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick, onHelpClick }) => {
   const { t, i18n } = useTranslation();
-  const { stats, categoryStats, selectedCategories, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone, selectedDifficulties } = useStore();
+  const { stats, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
-  const hasCat = selectedCategories?.length > 0 && (categoryStats?.total || 0) > 0;
-  const catProgress = hasCat ? (categoryStats.known / categoryStats.total) * 100 : 0;
-  const topicLabel = selectedCategories?.length === 1 ? selectedCategories[0] : `${selectedCategories?.length} ${t('common.selected')}`;
-  const dailyProgress = dailyGoal > 0 ? Math.min((todaySeen / dailyGoal) * 100, 100) : 0;
-  const { readiness, tier: readinessTier } = readinessFromStats(stats);
-
-  const handleLang = useCallback((e) => onLanguageChange?.(e.target.value), [onLanguageChange]);
+  const { readiness } = readinessFromStats(stats);
   const isPremium = user?.plan && user.plan !== 'free';
-  const extraActive = MODES.slice(BOTTOM_VISIBLE).some(m => m.id === learningMode);
 
-  // Daily Pro CTA: show at most once per calendar day (not every session) to
-  // cut upsell fatigue. The first time the daily goal is hit today we mark the
-  // day in localStorage so later sessions stay quiet.
-  const [dailyProVisible, setDailyProVisible] = useState(false);
-  useEffect(() => {
-    if (!(dailyDone && !isPremium)) return;
-    try {
-      const key = `jit_daily_pro_${new Date().toISOString().slice(0, 10)}`;
-      if (!localStorage.getItem(key)) {
-        localStorage.setItem(key, '1');
-        setDailyProVisible(true);
-      }
-    } catch { /* ignore */ }
-  }, [dailyDone, isPremium]);
-  const showDailyPro = dailyProVisible;
-
-  const [showStreakAnim, setShowStreakAnim] = useState(false);
-  useEffect(() => {
-    if (stats.streakIncreased) {
-      setShowStreakAnim(true);
-      const t = setTimeout(() => setShowStreakAnim(false), 2000);
-      return () => clearTimeout(t);
-    }
-  }, [stats.streak, stats.streakIncreased]);
+  const handleLang = useCallback((lng) => {
+    if (lng !== language) onLanguageChange?.(lng);
+    setMenuOpen(false);
+  }, [language, onLanguageChange]);
 
   const toggleAppLanguage = (lng) => {
     if (lng !== i18n.language) i18n.changeLanguage(lng);
   };
+
+  const closeMenu = () => setMenuOpen(false);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDocClick = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
+
+  const extraActive = MODES.slice(BOTTOM_VISIBLE).some(m => m.id === learningMode);
+
+  const menuItem = (label, Icon, onClick, opts = {}) => (
+    <button
+      type="button"
+      className={`menu-item ${opts.highlight ? 'highlight' : ''}`}
+      onClick={() => { setMenuOpen(false); onClick(); }}
+    >
+      <Icon size={18} />
+      <span>{label}</span>
+      {opts.tag && <span className="menu-item-tag">{opts.tag}</span>}
+    </button>
+  );
 
   return (
     <>
@@ -70,86 +73,64 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
         <div className="header-content">
           <div className="header-top">
             <div className="header-title">
-              <TrendingUp size={20} className="header-logo" />
-              <h1>Interview Tinder</h1>
-              <select className="lang-select" value={language} onChange={handleLang}>
-                {Object.entries(LANG_LABELS).map(([id, lbl]) => <option key={id} value={id}>{lbl}</option>)}
-              </select>
+              <TrendingUp size={18} className="header-logo" />
             </div>
             <div className="header-actions">
-              <div className="app-lang-toggle" role="group" aria-label="Interface language">
+              <div className="more-wrap" ref={menuRef}>
                 <button
-                  className={`app-lang-btn ${i18n.language === 'ru' ? 'active' : ''}`}
-                  onClick={() => toggleAppLanguage('ru')}
+                  className={`action-btn ${menuOpen ? 'active' : ''}`}
+                  onClick={() => setMenuOpen(o => !o)}
                   type="button"
-                >RU</button>
-                <button
-                  className={`app-lang-btn ${i18n.language === 'en' ? 'active' : ''}`}
-                  onClick={() => toggleAppLanguage('en')}
-                  type="button"
-                >EN</button>
+                  aria-label={t('header.more')}
+                >
+                  <MoreVertical size={20} />
+                </button>
+                {menuOpen && (
+                  <div className="more-menu">
+                    <div className="menu-section">
+                      <div className="menu-section-title"><Globe size={14} /> {t('header.study_lang')}</div>
+                      <div className="menu-row">
+                        {Object.entries(LANG_LABELS).map(([id, lbl]) => (
+                          <button
+                            key={id}
+                            type="button"
+                            className={`menu-chip ${language === id ? 'active' : ''}`}
+                            onClick={() => handleLang(id)}
+                          >{lbl}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="menu-section">
+                      <div className="menu-section-title"><Languages size={14} /> {t('header.interface_lang')}</div>
+                      <div className="menu-row">
+                        <button type="button" className={`menu-chip ${i18n.language === 'ru' ? 'active' : ''}`} onClick={() => toggleAppLanguage('ru')}>RU</button>
+                        <button type="button" className={`menu-chip ${i18n.language === 'en' ? 'active' : ''}`} onClick={() => toggleAppLanguage('en')}>EN</button>
+                      </div>
+                    </div>
+                    <div className="menu-list">
+                      {menuItem(t('header.subscription'), Star, onSubscriptionClick, { highlight: !isPremium, tag: isPremium ? 'PRO' : null })}
+                      {menuItem(t('header.resume'), FileText, onResumeClick)}
+                      {menuItem(t('header.help'), HelpCircle, onHelpClick)}
+                      {menuItem(t('header.settings'), Settings, onSettingsClick)}
+                      {user?.plan === 'admin' && menuItem(t('header.admin'), ShieldCheck, onAdminClick)}
+                    </div>
+                  </div>
+                )}
               </div>
-              <button className={`action-btn ${isPremium ? 'premium' : ''}`} onClick={onSubscriptionClick} type="button">
-                <Star size={20} fill={isPremium ? '#fff' : 'none'} />
-              </button>
-              <button className="action-btn" onClick={onResumeClick} type="button"><FileText size={20} /></button>
-              <button className="action-btn" onClick={onHelpClick} type="button" title={t('header.help', 'How it works')}>
-                <HelpCircle size={20} />
-              </button>
-              <button className="action-btn" onClick={onSettingsClick} type="button"><Settings size={20} /></button>
-              {user?.plan === 'admin' && (
-                <button className="action-btn admin-btn" onClick={onAdminClick} type="button"><ShieldCheck size={20} /></button>
-              )}
             </div>
           </div>
 
+          {/* Calm, minimal stats: one slim progress line + a tiny info row */}
           <div className="stats-container" onClick={onProgressClick} title={t('header.open_progress', 'Open progress')} style={{ cursor: 'pointer' }}>
-            <div className="stats-row">
-              <span className="stats-text">
-                {t('header.readiness')}: <strong>{readiness}%</strong>{' '}
-                <span className={`readiness-tier tier-${readinessTier}`}>{t(`readiness.tier_${readinessTier}`)}</span>
-                {isPremium && <span className="plan-badge"> · {user.plan === 'admin' ? '👑' : '⭐'} {user.plan}</span>}
-                {stats.streak > 0 && (
-                  <span className="streak-badge" title={`Longest: ${stats.longestStreak} days`}>
-                    🔥 {stats.streak}
-                    {showStreakAnim && <span className="streak-anim">+1</span>}
-                  </span>
-                )}
-              </span>
-                {hasCat && (
-                  <span className="topic-counter" title={selectedCategories?.join(', ')}>
-                    {topicLabel}: <strong>{categoryStats.known}</strong>/{categoryStats.total}
-                  </span>
-                )}
-                {selectedDifficulties?.length > 0 && (
-                  <span className="diff-chip" title={t('header.diff_filter', 'Difficulty filter')}>
-                    {selectedDifficulties.map(d => t(`difficulty.${d}`, d)).join('+')}
-                  </span>
-                )}
-            </div>
-            <div className="progress-bar"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
-            {hasCat && (
-              <div className="progress-bar topic-bar"><div className="progress-fill topic-fill" style={{ width: `${catProgress}%` }} /></div>
-            )}
-            <div className="daily-goal">
-              <span className={`daily-goal-text ${dailyDone ? 'done' : ''}`}>
-                {dailyDone
-                  ? t('header.daily_done')
-                  : t('header.daily', { done: todaySeen, goal: dailyGoal })}
-              </span>
-              {showDailyPro && (
-                <button
-                  className="daily-pro-cta"
-                  onClick={onSubscriptionClick}
-                  type="button"
-                  title={t('header.daily_pro', 'See weekly analytics in Pro')}
-                >
-                  ⭐ Pro
-                </button>
+            <div className="progress-bar slim"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
+            <div className="stats-mini">
+              <span className="readiness-mini"><strong>{readiness}%</strong></span>
+              {stats.streak > 0 && (
+                <span className="streak-mini" title={`Longest: ${stats.longestStreak} days`}>🔥 {stats.streak}</span>
               )}
-              <div className="progress-bar daily-bar">
-                <div className={`progress-fill daily-fill ${dailyDone ? 'done' : ''}`} style={{ width: `${dailyProgress}%` }} />
-              </div>
+              <span className={`daily-mini ${dailyDone ? 'done' : ''}`}>
+                {dailyDone ? t('header.daily_done') : t('header.daily', { done: todaySeen, goal: dailyGoal })}
+              </span>
             </div>
           </div>
         </div>
@@ -187,7 +168,8 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
           const locked = !canAccessMode(id);
           return (
             <button key={id} className={`bottom-nav-item ${learningMode === id ? 'active' : ''} ${locked ? 'locked' : ''}`}
-              onClick={() => locked ? requestPaywall(id) : setLearningMode(id)} type="button">
+              onClick={() => locked ? requestPaywall(id) : setLearningMode(id)} type="button"
+              title={t(shortKey)}>
               <div className="nav-icon-wrap"><Icon size={22} />{locked && <Lock size={11} className="nav-lock" />}</div>
               <span>{t(shortKey)}</span>
               {locked && <span className="pro-tag small">PRO</span>}
@@ -195,7 +177,8 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
           );
         })}
         <button className={`bottom-nav-item ${extraActive ? 'active' : ''}`}
-          onClick={() => setDrawerOpen(p => !p)} type="button">
+          onClick={() => setDrawerOpen(p => !p)} type="button"
+          title={t('header.more')}>
           <ChevronUp size={22} style={{ transform: drawerOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }} />
           <span>{t('header.more')}</span>
         </button>

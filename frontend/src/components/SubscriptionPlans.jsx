@@ -286,10 +286,14 @@ const SubscriptionPlans = ({ onBack }) => {
       if (checks >= MAX_CHECKS) {
         clearInterval(interval);
         setPolling(false);
+        showToast(
+          t('subscription.poll_timeout', 'We couldn’t confirm your payment yet. Reopen this screen or contact support if you were charged.'),
+          'info'
+        );
       }
     }, 3000);
     return () => clearInterval(interval);
-  }, [polling, login]);
+  }, [polling, login, t]);
 
   // Stars: primary payment — sends invoice to Telegram chat, then polls
   const handleSubscribeStars = async (planId, interval = 'monthly') => {
@@ -527,8 +531,8 @@ const SubscriptionPlans = ({ onBack }) => {
                   {isCurrent ? (
                     <button className="subscribe-btn current" disabled>✓ {t('subscription.current')}</button>
                   ) : plan.id === 'free' ? (
-                    <button className="subscribe-btn" disabled={isBuying}
-                      onClick={() => handleSubscribeStars(plan.id)}>
+                    <button className="subscribe-btn"
+                      onClick={() => showToast(t('subscription.already_higher', 'You are already on a higher plan.'), 'info')}>
                       {t('subscription.select_free', 'Select Free')}
                     </button>
                   ) : (

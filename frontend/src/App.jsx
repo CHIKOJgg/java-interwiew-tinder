@@ -21,12 +21,12 @@ import BugHuntingMode from './components/BugHuntingMode';
 import BlitzMode from './components/BlitzMode';
 import ConceptLinker from './components/ConceptLinker';
 import CodeCompletionMode from './components/CodeCompletionMode';
+import DeckComplete from './components/DeckComplete';
 import PaywallModal from './components/PaywallModal';
 import ProNudge from './components/ProNudge';
 import Onboarding, { ONBOARD_KEY } from './components/Onboarding';
 import MissedPanel from './components/MissedPanel';
 import useStore from './store/useStore';
-import { CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import i18n from './i18n/config';
 import './App.css';
@@ -226,20 +226,10 @@ function App() {
 
         if (!hasMoreQuestions()) {
           return (
-            <div className="completion-screen">
-              <CheckCircle size={64} color="#51cf66" />
-              <h2>{t('completion.title')}</h2>
-              <p>{t('completion.desc')}</p>
-              <button onClick={() => setScreen('language')}>
-                {t('completion.choose_other')}
-              </button>
-              <button 
-                onClick={() => setShowShare(true)}
-                style={{ marginTop: 10, background: 'rgba(51, 154, 240, 0.1)', color: '#339af0' }}
-              >
-                {t('completion.share')}
-              </button>
-            </div>
+            <DeckComplete
+              onChooseOther={() => setScreen('language')}
+              onShare={() => setShowShare(true)}
+            />
           );
         }
 
@@ -271,12 +261,20 @@ function App() {
             ))}
           </div>
         );
-      case 'test': return <TestMode />;
-      case 'bug-hunting': return <BugHuntingMode />;
+      case 'test':
+        if (!hasMoreQuestions()) return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
+        return <TestMode />;
+      case 'bug-hunting':
+        if (!hasMoreQuestions()) return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
+        return <BugHuntingMode />;
       case 'blitz': return <BlitzMode />;
       case 'mock-interview': return <Suspense fallback={<SkeletonCard />}><MockInterviewMode /></Suspense>;
-      case 'concept-linker': return <ConceptLinker />;
-      case 'code-completion': return <CodeCompletionMode />;
+      case 'concept-linker':
+        if (!hasMoreQuestions()) return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
+        return <ConceptLinker />;
+      case 'code-completion':
+        if (!hasMoreQuestions()) return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
+        return <CodeCompletionMode />;
       default: return <TestMode />;
     }
   };

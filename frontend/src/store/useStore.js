@@ -414,8 +414,10 @@ const useStore = create((set, get) => ({
     set(s => ({ stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 } }));
     if (response.streak) get().applyStreak(response.streak);
     get().bumpDaily();
+    // Do NOT auto-advance here — the component's "Next" handler calls
+    // advanceQuestion() exactly once, mirroring TestMode/BugHunting. Advancing
+    // here too would skip a question (and show the wrong card during feedback).
     if (!response.isCorrect) get().loadExplanation(questionId);
-    else set(s => ({ currentIndex: s.currentIndex + 1 }));
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
     return response;
   },

@@ -63,14 +63,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(81, 207, 102, 0.14);
-  border: 1px solid rgba(81, 207, 102, 0.35);
-  color: #b2f2bb;
-  font-size: 12.5px;
+  background: rgba(81, 207, 102, 0.08);
+  border: 1px solid rgba(81, 207, 102, 0.22);
+  color: var(--tg-theme-hint-color, #868e96);
+  font-size: 12px;
   line-height: 1.4;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .refresher-banner span { flex: 1; }
 .refresher-banner button {

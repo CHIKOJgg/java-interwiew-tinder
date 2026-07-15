@@ -16,6 +16,10 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
 });
 
+// Expose Sentry to the in-app logger so it can report errors/warnings from
+// anywhere (the Telegram WebApp has no browser DevTools / F12).
+window.__JIT_SENTRY__ = Sentry;
+
 const ErrorScreen = ({ error }) => (
   <div style={{
     height: '100vh', display: 'flex', flexDirection: 'column',

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import apiClient from '../api/client';
+import logger from '../utils/logger';
 
 const CACHE_KEY = 'interview_tinder_cache';
 function saveToLocal(key, data) { try { localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { /* ignore */ } }
@@ -100,12 +101,13 @@ const useStore = create((set, get) => ({
   // ─── Auth ──────────────────────────────────────────────────────────
   login: async (initData, referralId) => {
     try {
+      logger.info('Store: login start', referralId ? `referral=${referralId}` : '');
       set({ isLoading: true });
       const response = await apiClient.login(initData, referralId);
       const { user, token } = response;
       const lang = user.language || 'Java';
       apiClient.setLanguage(lang);
-      
+
       saveToSession('token', token);
       set({
         user,
@@ -116,7 +118,8 @@ const useStore = create((set, get) => ({
         availableModes: user.available_modes || ['swipe', 'test'],
         availableLanguages: user.available_languages || ['Java', 'Python', 'TypeScript'],
       });
-      
+      logger.info('Store: login ok', `plan=${user.plan || 'free'}`, `modes=${(user.available_modes || []).join(',')}`);
+
        await get().loadQuestions();
        get().loadStats();
        get().initDaily();
@@ -124,6 +127,7 @@ const useStore = create((set, get) => ({
        return user;
     } catch (error) {
       set({ isLoading: false, _loadingLock: false });
+      logger.error('Store: login failed', error.message);
       throw error;
     }
   },
@@ -221,32 +225,34 @@ const useStore = create((set, get) => ({
       feedCursor = 0;
       feedSeed = Math.random().toString(36).slice(2);
     }
+    logger.debug(`Store: loadQuestions start (append=${append}, mode=${mode}, cursor=${feedCursor})`);
     set({ _loadingLock: true, isLoadingQuestions: !append });
     try {
       const response = await apiClient.getQuestionsFeed(5, mode, { cursor: feedCursor, seed: feedSeed, difficulties: get().selectedDifficulties });
       const newQs = response.questions || [];
       const hasMore = response.meta?.hasMore ?? (newQs.length === 5);
        if (append) {
-         set(s => ({
-           questions: [...s.questions, ...newQs],
-           feedCursor: s.feedCursor + newQs.length,
-           hasMore,
-           feedRefresher: response.meta?.refresher ?? false,
-           isLoadingQuestions: false,
-           _loadingLock: false,
-         }));
-       } else {
-         set({
-           questions: newQs,
-           currentIndex: 0,
-           feedCursor: newQs.length,
-           hasMore,
-           feedRefresher: response.meta?.refresher ?? false,
-           isLoadingQuestions: false,
-           _loadingLock: false,
-         });
-       }
-      saveToLocal(`questions_${mode}`, newQs);
+          set(s => ({
+            questions: [...s.questions, ...newQs],
+            feedCursor: s.feedCursor + newQs.length,
+            hasMore,
+            feedRefresher: response.meta?.refresher ?? false,
+            isLoadingQuestions: false,
+            _loadingLock: false,
+          }));
+        } else {
+          set({
+            questions: newQs,
+            currentIndex: 0,
+            feedCursor: newQs.length,
+            hasMore,
+            feedRefresher: response.meta?.refresher ?? false,
+            isLoadingQuestions: false,
+            _loadingLock: false,
+          });
+        }
+       logger.info(`Store: loadQuestions ok (append=${append})`, `count=${newQs.length}`, `hasMore=${hasMore}`, `refresher=${response.meta?.refresher ?? false}`);
+       saveToLocal(`questions_${mode}`, newQs);
     } catch (error) {
       if (error?.feature === 'mode') {
         // Server rejected this mode (shouldn't happen — UI guards first, but
@@ -260,10 +266,12 @@ const useStore = create((set, get) => ({
       if (!append) {
         const cached = loadFromLocal(`questions_${get().learningMode}`);
         if (cached?.length > 0) {
+          logger.warn('Store: feed failed, using local cache', `count=${cached.length}`);
           set({ questions: cached, currentIndex: 0, feedCursor: cached.length, hasMore: false, isLoadingQuestions: false, _loadingLock: false });
           return;
         }
       }
+      logger.error('Store: loadQuestions failed', error.message);
       set({ isLoadingQuestions: false, _loadingLock: false });
     }
   },
@@ -305,18 +313,19 @@ const useStore = create((set, get) => ({
   swipeCard: async (questionId, direction) => {
     const status = direction === 'right' ? 'known' : 'unknown';
     const q = get().questions[get().currentIndex];
+    logger.debug(`Store: swipe ${direction} (${status}) q=${questionId}`);
     set(s => ({
       stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 },
       currentIndex: s.currentIndex + 1,
     }));
-    
+
     try {
       const response = await apiClient.recordSwipe(questionId, status);
       if (response.streak) {
         get().applyStreak(response.streak);
       }
     } catch (err) {
-      console.error('Swipe recording failed:', err);
+      logger.error('Store: swipe recording failed', err.message);
     }
 
     // Swipe left ("don't know") in swipe mode now opens the learning sheet
@@ -692,6 +701,18 @@ export function readinessFromStats(stats) {
   const readiness = Math.round(100 * (0.6 * accuracy + 0.4 * coverage));
   const tier = readiness >= 80 ? 'ready' : readiness >= 50 ? 'confident' : readiness >= 25 ? 'building' : 'novice';
   return { readiness, tier };
+}
+
+// Global safety net: capture uncaught errors / unhandled promise rejections
+// into the in-app logger so nothing is invisible inside Telegram WebApp.
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (e) => {
+    logger.error('window.onerror:', e.message, e.filename ? `${e.filename}:${e.lineno}` : '');
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e.reason;
+    logger.error('unhandledrejection:', r instanceof Error ? r.message : String(r));
+  });
 }
 
 export default useStore;

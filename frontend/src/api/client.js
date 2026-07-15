@@ -1,4 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+import logger from '../utils/logger';
 
 class ApiClient {
   constructor() {
@@ -98,21 +99,24 @@ class ApiClient {
   // Override request() error to include server `detail` field
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    const method = (options.method || 'GET').toUpperCase();
     const authHeaders = await this.getAuthHeaders();
-    
+    logger.api(`${method} ${endpoint}`);
+
     try {
       const response = await fetch(url, {
         ...options,
-        headers: { 
-          'Content-Type': 'application/json', 
+        headers: {
+          'Content-Type': 'application/json',
           ...authHeaders,
-          ...options.headers 
+          ...options.headers
         },
       });
 
       if (response.status === 401 && endpoint !== '/auth/login') {
         const { default: useStore } = await import('../store/useStore');
         useStore.getState().logout();
+        logger.warn(`API 401 Session expired [${endpoint}]`);
         throw new Error('Session expired. Please log in again.');
       }
 
@@ -122,11 +126,17 @@ class ApiClient {
         thrown.status = response.status;
         thrown.feature = err.feature || null;
         thrown.code = err.code || null;
+        logger.error(`API ${response.status} ${method} ${endpoint}:`, err.detail || err.error || response.statusText, thrown.feature ? `feature=${thrown.feature}` : '');
         throw thrown;
       }
+      logger.api(`${response.status} ${method} ${endpoint}`);
       return response.json();
     } catch (error) {
-      console.error(`API Error [${endpoint}]:`, error.message);
+      if (error.status) {
+        // already logged above for HTTP errors
+      } else {
+        logger.error(`API Error [${endpoint}]:`, error.message);
+      }
       throw error;
     }
   }

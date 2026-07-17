@@ -349,12 +349,20 @@ const { questions, currentIndex, submitCodeCompletionAnswer, isLoadingQuestions,
 
 ### BUG-09 [P0] [Security] JWT secret is a placeholder string
 
+> ⚠️ **STATUS: STALE / PARTIALLY RESOLVED.** The originally reported placeholder
+> (`your_super_secret_jwt_key_change_this_in_production`) is no longer present in
+> `backend/.env` (it now holds an empty value that must be supplied via env/CI).
+> The real risk remains: **the production JWT secret was committed in plaintext**
+> in `backend/.env` and `set-secrets-*.ps1`. Rotate it immediately (see BUG-SEC-1)
+> and never store it in the working tree. Treat this as a live secret-rotation task,
+> not a placeholder bug.
+
 | Field | Value |
 |-------|-------|
-| **File** | `backend/.env:22` |
+| **File** | `backend/.env` (JWT_SECRET) |
 | **Type** | Security — Weak Authentication |
 
-**Description**: The JWT secret in production is set to `your_super_secret_jwt_key_change_this_in_production`. This is the literal placeholder string. Anyone who knows (or guesses) this can forge valid JWT tokens for any user, including admins.
+**Description**: A weak/committed JWT secret lets anyone forge valid JWT tokens for any user, including admins.
 
 ```dotenv
 JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
@@ -810,16 +818,23 @@ validateParsed(mode, parsed);
 
 ### BUG-23 [P2] [Data] Schema drift — `schema.sql` only has 3 of 14+ tables
 
+> ⚠️ **STATUS: INACCURATE / CLOSED.** `database/schema.sql` actually defines
+> **14 tables** (`users`, `questions`, `user_progress`, `question_mastery`,
+> `user_preferences`, `subscription_plans`, `user_subscriptions`,
+> `user_rate_limits`, `ai_cache`, `ai_jobs`, `referrals`, `question_reports`,
+> `analytics_events`, `pending_ton_invoices`), not 3. The real, valid concern is
+> **schema drift between `schema.sql` and `database-migration.sql`** (e.g.
+> `ENUM progress_status` vs `VARCHAR(20)`, different `available_modes` defaults),
+> not a missing-table count. Track that under the schema-drift task instead.
+
 | Field | Value |
 |-------|-------|
-| **File** | `database/schema.sql` |
+| **File** | `database/schema.sql` vs `database-migration.sql` |
 | **Type** | Documentation — Schema Mismatch |
 
-**Description**: The canonical `schema.sql` file defines only 3 tables (`users`, `questions`, `user_progress`), but the actual production database has 14+ tables. This makes it impossible to bootstrap a new environment from scratch using `schema.sql`. The `init-db.js` script also creates a different schema than `schema.sql`.
-
-**Missing tables**:
-- `user_preferences`, `user_subscriptions`, `subscription_plans`, `user_rate_limits`
-- `question_mastery`, `question_reports`, `referrals`, `ai_cache`, `analytics_events`
+**Description**: `schema.sql` is comprehensive, but it can drift from the
+authoritative migration (`database-migration.sql`) which is what `fly deploy`
+actually runs. Keep the two in sync; prefer the migration as the source of truth.
 - `ai_jobs`, `pending_ton_invoices`
 
 **Impact**: Cold-starting a new environment requires running multiple migration scripts in the correct order, which is error-prone and undocumented.

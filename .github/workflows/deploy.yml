@@ -57,7 +57,7 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Run Migrations (Production)
-        run: flyctl ssh console --app java-interwiew-tinder -C "node src/scripts/migrate.js"
+        run: flyctl ssh console --app java-interwiew-tinder-1 -C "node src/scripts/migrate.js"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 

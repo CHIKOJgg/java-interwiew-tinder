@@ -20,9 +20,10 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 
-  /* Let react-tinder-card handle all touch gestures (swipe).
-     "none" stops the browser from hijacking the gesture as a scroll. */
-  touch-action: none;
+  /* Allow vertical scrolling of long answers (e.g. .answer-content pan-y).
+     "pan-y" lets the browser handle vertical panning while react-tinder-card
+     still captures horizontal swipe gestures via JS events. */
+  touch-action: pan-y;
 }
 
 /* ── 3-D flip container ───────────────────────────────────────────── */
@@ -55,8 +56,8 @@
   -webkit-backface-visibility: hidden;
 
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 1),
-    0 1px 4px rgba(0, 0, 0, 1);
+    0 4px 24px rgba(0, 0, 0, 0.12),
+    0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
 /* ── Front face ───────────────────────────────────────────────────── */

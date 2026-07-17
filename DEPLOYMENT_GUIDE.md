@@ -236,7 +236,7 @@ flyctl secrets set `
   OPENROUTER_QUALITY_MODEL="openrouter/free" `
   OPENROUTER_MODEL="openrouter/free" `
   ADMIN_TELEGRAM_IDS="5915824444" `
-  AI_TIMEOUT_MS="3000" `
+  AI_TIMEOUT_MS="30000" `
   ALLOWED_ORIGINS="https://java-tinder-stg.vercel.app,https://web.telegram.org" `
   REDIS_URL="" `
   SENTRY_DSN="" `
@@ -268,7 +268,7 @@ flyctl secrets set `
   OPENROUTER_QUALITY_MODEL="openrouter/free" `
   OPENROUTER_MODEL="openrouter/free" `
   ADMIN_TELEGRAM_IDS="5915824444" `
-  AI_TIMEOUT_MS="3000" `
+  AI_TIMEOUT_MS="30000" `
   ALLOWED_ORIGINS="https://java-tinder.vercel.app,https://web.telegram.org" `
   REDIS_URL="" `
   SENTRY_DSN="" `
@@ -656,7 +656,7 @@ flyctl ssh console --app java-interwiew-tinder-staging -C "node -e \"import('./s
 | `OPENROUTER_QUALITY_MODEL`  | `openrouter/free`                           | `openrouter/free`                            |
 | `OPENROUTER_MODEL`          | `openrouter/free`                           | `openrouter/free`                            |
 | `ADMIN_TELEGRAM_IDS`        | `5915824444`                                | `5915824444`                                 |
-| `AI_TIMEOUT_MS`             | `3000`                                      | `3000`                                       |
+| `AI_TIMEOUT_MS`             | `30000`                                     | `30000`                                       |
 | `ALLOWED_ORIGINS`           | `https://java-tinder-stg.vercel.app,...`    | `https://java-tinder.vercel.app,...`         |
 | `PORT`                      | `3000`                                      | `3000`                                       |
 | `NODE_ENV`                  | `staging`                                   | `production`                                 |

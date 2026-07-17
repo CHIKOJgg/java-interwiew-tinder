@@ -88,4 +88,25 @@ describe('Rate Limiter Middleware', () => {
     expect(res.status).not.toHaveBeenCalled();
     expect(pool.query).toHaveBeenCalledTimes(2);
   });
+
+  it('incrementCounter must reject non-allowlisted fields (SQL injection guard)', async () => {
+    const { incrementCounter } = await import('../src/middleware/rateLimiter.js');
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Reset mocks but keep pool.query as a spy
+    pool.query.mockReset();
+    await incrementCounter('user123', 'requests_today; DROP TABLE users;--');
+    // DB query must NOT be called with a malicious field
+    expect(pool.query).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('incrementCounter allows allowlisted fields', async () => {
+    const { incrementCounter } = await import('../src/middleware/rateLimiter.js');
+    pool.query.mockReset();
+    pool.query.mockResolvedValueOnce({ rows: [] });
+    await incrementCounter('user123', 'requests_today');
+    expect(pool.query).toHaveBeenCalledTimes(1);
+    const sql = pool.query.mock.calls[0][0];
+    expect(sql).toContain('requests_today');
+  });
 });

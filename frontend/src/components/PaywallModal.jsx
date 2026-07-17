@@ -1,6 +1,7 @@
 import React from 'react';
 import useStore from '../store/useStore';
 import { useTranslation } from 'react-i18next';
+import { useModalA11y } from '../utils/useModalA11y';
 import { Lock, Star, Zap, X, Check, Mic, Bug, Braces, Link2 } from 'lucide-react';
 import './PaywallModal.css';
 
@@ -17,6 +18,7 @@ const BULLETS = ['bullet_1', 'bullet_2', 'bullet_3', 'bullet_4'];
 const PaywallModal = ({ onUpgrade }) => {
   const { t } = useTranslation();
   const { paywall, closePaywall } = useStore();
+  const dialogRef = useModalA11y(closePaywall);
 
   if (!paywall?.open) return null;
 
@@ -26,7 +28,15 @@ const PaywallModal = ({ onUpgrade }) => {
 
   return (
     <div className="paywall-overlay" onClick={closePaywall}>
-      <div className="paywall-card" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="paywall-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('paywall.title', 'This mode is Pro-only')}
+        tabIndex={-1}
+        ref={dialogRef}
+        onClick={(e) => e.stopPropagation()}
+      >
         <button className="paywall-close" onClick={closePaywall} type="button" aria-label="close">
           <X size={18} />
         </button>

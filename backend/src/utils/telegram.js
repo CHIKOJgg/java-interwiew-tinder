@@ -74,41 +74,21 @@ export const validateTelegramWebAppData = (initData, botToken) => {
 
 /**
  * Mock validation for development (when BOT_TOKEN is not set)
+ *
+ * SECURITY: always returns a FIXED dev user. We never trust a telegram_id
+ * supplied in the request body — doing so would let anyone impersonate any
+ * user in development and, if misconfigured, in production.
  */
-export const mockValidation = (initData) => {
+export const mockValidation = () => {
   if (process.env.NODE_ENV === 'production' && !process.env.BOT_TOKEN) {
     throw new Error(
       'Production guard: BOT_TOKEN is missing. Mock validation is blocked in production.',
     );
   }
-  try {
-    const urlParams = new URLSearchParams(initData);
-    const userParam = urlParams.get('user');
-
-    if (!userParam) {
-      // Return mock user for development
-      return {
-        telegram_id: 123456789,
-        username: 'dev_user',
-        first_name: 'Dev',
-        last_name: 'User',
-      };
-    }
-
-    const user = JSON.parse(userParam);
-    return {
-      telegram_id: user.id,
-      username: user.username || null,
-      first_name: user.first_name || null,
-      last_name: user.last_name || null,
-    };
-  } catch {
-    // Return mock user on any error in dev mode
-    return {
-      telegram_id: 123456789,
-      username: 'dev_user',
-      first_name: 'Dev',
-      last_name: 'User',
-    };
-  }
+  return {
+    telegram_id: 123456789,
+    username: 'dev_user',
+    first_name: 'Dev',
+    last_name: 'User',
+  };
 };

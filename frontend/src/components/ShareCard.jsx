@@ -3,11 +3,13 @@ import { Share2, Trophy, Flame, Target, Users, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../api/client';
 import useStore from '../store/useStore';
+import { useModalA11y } from '../utils/useModalA11y';
 import './ShareCard.css';
 
 const ShareCard = ({ stats, onBack }) => {
   const { t } = useTranslation();
   const { user, language } = useStore();
+  const dialogRef = useModalA11y(onBack);
   const [percentile, setPercentile] = useState(null);
 
   useEffect(() => {
@@ -48,7 +50,14 @@ const ShareCard = ({ stats, onBack }) => {
 
   return (
     <div className="share-card-overlay">
-      <div className="share-card">
+      <div
+        className="share-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('share.title', 'Session Complete!')}
+        tabIndex={-1}
+        ref={dialogRef}
+      >
         <button className="close-btn" onClick={onBack}><X size={20} /></button>
         
         <div className="share-card-header">

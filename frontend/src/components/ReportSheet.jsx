@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
+import { useModalA11y } from '../utils/useModalA11y';
 import { Flag, X, CheckCircle } from 'lucide-react';
 import './ReportSheet.css';
-
 
 
 export default function ReportSheet({ questionId, onClose }) {
   const { t } = useTranslation();
   const { reportQuestion } = useStore();
+  const dialogRef = useModalA11y(onClose);
   
   const REASONS = [
     t('report.reason_wrong', 'Wrong answer'),
@@ -39,7 +40,14 @@ export default function ReportSheet({ questionId, onClose }) {
   return (
     <>
       <div className="report-overlay" onClick={onClose} />
-      <div className="report-sheet">
+      <div
+        className="report-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('report.title', 'Report Question')}
+        tabIndex={-1}
+        ref={dialogRef}
+      >
         <div className="report-header">
           <Flag size={20} color="#fa5252" />
           <h3>{t('report.title', 'Report Question')}</h3>

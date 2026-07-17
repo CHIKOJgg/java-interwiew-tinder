@@ -7,6 +7,7 @@ import { highlight } from '../utils/highlight';
 import '../utils/highlight.css';
 import './ExplanationModal.css';
 import useStore from '../store/useStore';
+import { useModalA11y } from '../utils/useModalA11y';
 
 // ─── Structured JSON renderer ────────────────────────────────────────
 // Renders the fixed schema returned by aiService.generateExplanation:
@@ -167,6 +168,7 @@ function PlainExplanation({ text, codeLanguage }) {
 const ExplanationModal = ({ isOpen, explanation, isLoading, onClose, onUpgrade }) => {
   const { t } = useTranslation();
   const { language, aiLimitReached, closeExplanation } = useStore();
+  const dialogRef = useModalA11y(onClose);
 
   const { isJson, data } = useMemo(() => {
     if (!explanation || typeof explanation !== 'string') return { isJson: false, data: null };
@@ -185,7 +187,15 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose, onUpgrade }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <div
+        className="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('explanation.title', 'Explanation')}
+        tabIndex={-1}
+        ref={dialogRef}
+        onClick={e => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h2>🎓 {t('explanation.title', 'Explanation')}</h2>
           <button className="close-button" onClick={onClose}><X size={22} /></button>

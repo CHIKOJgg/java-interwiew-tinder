@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sparkles, X, ArrowRight } from 'lucide-react';
 import useStore from '../store/useStore';
+import { useModalA11y } from '../utils/useModalA11y';
 import './MissedPanel.css';
 
 // Shown after the user swipes left ("Don't know") in swipe mode. This turns
@@ -11,6 +12,7 @@ import './MissedPanel.css';
 const MissedPanel = () => {
   const { t } = useTranslation();
   const { missed, showMissed, closeMissed, loadExplanation, isPro } = useStore();
+  const dialogRef = useModalA11y(closeMissed);
 
   if (!showMissed || !missed) return null;
 
@@ -22,7 +24,15 @@ const MissedPanel = () => {
 
   return (
     <div className="missed-overlay" onClick={closeMissed}>
-      <div className="missed-sheet" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="missed-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('missed.title', 'Not knowing is fine')}
+        tabIndex={-1}
+        ref={dialogRef}
+        onClick={(e) => e.stopPropagation()}
+      >
         <button className="missed-close" onClick={closeMissed} type="button" aria-label="close">
           <X size={18} />
         </button>

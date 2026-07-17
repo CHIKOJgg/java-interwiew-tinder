@@ -12,6 +12,7 @@ import { enqueueJob } from './services/queueService.js';
 import { getAvailableLanguages } from './services/languageRegistry.js';
 import { requestLogger, validateBody, sanitizeBody } from './middleware/logging.js';
 import { rateLimit, requireEntitlement } from './middleware/rateLimiter.js';
+import { errorHandler } from './middleware/errorHandler.js';
 import { billingService } from './services/billingService.js';
 import { sendStarsInvoice, answerPreCheckout, sendTelegramMessage, activateStarsSubscription } from './services/billing/starsService.js';
 import { createTonInvoice, getUserPendingInvoice, pollPendingInvoices } from './services/billing/tonService.js';
@@ -221,7 +222,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
     if (!userData) {
       if (!isDev) return res.status(401).json({ error: 'Invalid initData' });
-      userData = mockValidation(initData);
+      userData = mockValidation();
     }
     if (!userData) return res.status(401).json({ error: 'Invalid initData' });
 
@@ -249,14 +250,15 @@ app.post('/api/auth/login', async (req, res) => {
            VALUES ($1, 'admin', 'active', NULL, 'admin_grant', 'system')
            ON CONFLICT DO NOTHING`,
           [user.telegram_id]
-        ).catch(async () => {
+        ).catch(async (grantErr) => {
+          logger.error({ err: grantErr, userId: user.telegram_id }, 'Admin grant (admin plan) failed, trying pro');
           // Try 'pro' plan if 'admin' plan doesn't exist
           await pool.query(
             `INSERT INTO user_subscriptions (user_id, plan_id, status, expires_at, payment_id, payment_provider)
              VALUES ($1, 'pro', 'active', NULL, 'admin_grant', 'system')
              ON CONFLICT DO NOTHING`,
             [user.telegram_id]
-          ).catch(() => { });
+          ).catch(err => logger.error({ err, userId: user.telegram_id }, 'Admin grant (pro fallback) failed'));
         });
         await pool.query(
           `UPDATE users SET subscription_plan = 'pro' WHERE telegram_id = $1`,
@@ -647,6 +649,17 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
 //           → ai_cache (slower, direct lookup)
 //           → null (not yet generated)
 async function resolveAIData(questionId, columnName, cacheMode) {
+  // Whitelist AI data columns — callers pass constants today, but this
+  // prevents any future refactor from opening a SQL injection path.
+  const ALLOWED_AI_COLUMNS = new Set([
+    'bug_hunting_data',
+    'blitz_data',
+    'code_completion_data',
+  ]);
+  if (!ALLOWED_AI_COLUMNS.has(columnName)) {
+    logger.error({ columnName, questionId }, 'resolveAIData called with non-allowlisted column');
+    return { data: null, question: null };
+  }
   const qRes = await pool.query(
     `SELECT question_text, language, ${columnName} FROM questions WHERE id=$1`,
     [questionId]
@@ -674,7 +687,14 @@ async function resolveAIData(questionId, columnName, cacheMode) {
 // Wait (server-side) for the background worker to produce an explanation,
 // polling the DB/Redis cache. Keeps the synchronous contract with clients
 // while the heavy AI work runs in a separate worker process.
-async function waitForExplanation(questionText, questionId, language = 'Java', maxMs = 30000) {
+//
+// SECURITY/PERF: this blocks the HTTP request (and a pg pool slot) for up to
+// `maxMs`. To avoid exhausting the connection pool under load, server-side
+// polling is DISABLED by default — the client already polls for the result
+// (it retries on `pending`). Enable only for tightly-coupled deployments via
+// EXPLANATION_SYNC_POLL=true, and keep maxMs modest.
+async function waitForExplanation(questionText, questionId, language = 'Java', maxMs = 10000) {
+  if (process.env.EXPLANATION_SYNC_POLL !== 'true') return null;
   const deadline = Date.now() + maxMs;
   while (Date.now() < deadline) {
     try {
@@ -1811,6 +1831,12 @@ async function shutdown(signal) {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+
+// ─── Global error handler ───────────────────────────────────────────────
+// Centralizes error responses and guarantees every failure is logged (Sentry
+// via the logger transport) instead of being swallowed by an empty catch.
+// MUST be registered after all routes and before the 404 handler.
+app.use(errorHandler(isDev));
 
 // 404 handler — must be registered after all routes.
 app.use((req, res) => {

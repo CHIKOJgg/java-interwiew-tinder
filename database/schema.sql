@@ -44,13 +44,14 @@ CREATE TABLE IF NOT EXISTS questions (
 );
 
 -- ─── 3. User Progress & Mastery ─────────────────────────────────────
-CREATE TYPE progress_status AS ENUM ('known', 'unknown');
-
+-- NOTE: kept as VARCHAR to match the authoritative migration
+-- (backend/database-migration.sql), which uses VARCHAR(20) for `status`.
+-- Avoid ENUM here to prevent schema drift between bootstrap and prod.
 CREATE TABLE IF NOT EXISTS user_progress (
     id          SERIAL PRIMARY KEY,
     user_id     BIGINT NOT NULL REFERENCES users(telegram_id) ON DELETE CASCADE,
     question_id INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
-    status      progress_status NOT NULL,
+    status      VARCHAR(20) NOT NULL,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, question_id)
 );

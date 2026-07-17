@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Bug, Check, X, Loader2, AlertTriangle } from 'lucide-react';
 import { highlight } from '../utils/highlight';
+import DOMPurify from 'dompurify';
 import '../utils/highlight.css';
 import './BugHuntingMode.css';
 
@@ -56,7 +57,11 @@ const BugHuntingMode = () => {
   };
 
   if (isLoadingQuestions) return <LoadingCard text={t('common.loading_questions', 'Loading questions...')} />;
-  if (!hasMoreQuestions()) return null;
+  // NOTE: exhaustion (DeckComplete) is handled by App.renderMode() before this
+  // component mounts, so an in-component !hasMoreQuestions() check is redundant
+  // and would only risk a blank screen on a state race. Fall back to a loading
+  // card if no current question is available yet.
+  if (!currentQuestion) return <LoadingCard text={t('common.loading_questions', 'Loading questions...')} />;
 
   if (hasError) return (
     <div className="bug-mode-loading">
@@ -83,7 +88,7 @@ const BugHuntingMode = () => {
         {/* §5 — highlighted code block */}
         <div
           className="hl-code-block bug-code"
-          dangerouslySetInnerHTML={{ __html: highlightedCode }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlightedCode) }}
         />
 
         <div className="options-list">

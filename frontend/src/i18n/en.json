@@ -256,6 +256,40 @@
     "dont_know": "Don't know",
     "know": "Know"
   },
+  "test": {
+    "loading_questions": "Loading questions...",
+    "no_questions": "No questions available for the test",
+    "generating_options": "Answer options are still being generated",
+    "submit": "Answer",
+    "correct": "Correct!",
+    "incorrect": "Incorrect",
+    "next_question": "Next question →"
+  },
+  "bug": {
+    "find_bug": "Find the bug in this code:",
+    "preparing_code": "Preparing code snippet...",
+    "check": "Check",
+    "correct": "Correct! You found the bug.",
+    "incorrect": "Incorrect. Correct:",
+    "next_task": "Next task →"
+  },
+  "code_completion": {
+    "instruction": "Complete the code fragment:",
+    "preparing": "Preparing code fragment...",
+    "submit": "Finish",
+    "correct": "Perfect!",
+    "incorrect": "Incorrect. Correct:",
+    "next": "Next fragment →"
+  },
+  "linker": {
+    "preparing": "Preparing puzzle...",
+    "terms": "Terms",
+    "definitions": "Definitions",
+    "next_set": "Next set",
+    "complete_title": "All links established!",
+    "complete_desc": "You've mastered these concepts.",
+    "found_count": "{{count}} linked"
+  },
   "blitz": {
     "title": "Blitz Mode",
     "description": "Answer as many questions as possible in 60 seconds. True or False only!",

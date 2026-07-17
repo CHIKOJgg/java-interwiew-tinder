@@ -246,7 +246,7 @@ function App() {
   };
 
   const handleButtonSwipe = (direction) => {
-    cardRefs.current[currentIndex]?.swipe?.(direction);
+    cardRefs.current[0]?.swipe?.(direction);
   };
 
   if (initState === 'waiting_telegram') {
@@ -323,7 +323,7 @@ function App() {
               >
                 {index === 0 ? (
                   <QuestionCard
-                    ref={el => (cardRefs.current[currentIndex] = el)}
+                    ref={el => (cardRefs.current[0] = el)}
                     question={q}
                     onSwipe={handleSwipe}
                     canSwipe={true}

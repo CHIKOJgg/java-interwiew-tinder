@@ -79,7 +79,20 @@ async function getUserLimits(userId) {
   }
 }
 
-async function incrementCounter(userId, field) {
+export async function incrementCounter(userId, field) {
+  // Whitelist column names — even though `field` originates from a closed
+  // switch above, this guards against future refactors introducing an
+  // injection path via an untrusted caller.
+  const ALLOWED_FIELDS = new Set([
+    'requests_today',
+    'ai_generations_this_month',
+    'resume_analyses_this_month',
+    'interview_evals_this_month',
+  ]);
+  if (!ALLOWED_FIELDS.has(field)) {
+    logger.error({ field, userId }, 'Refused incrementCounter with non-allowlisted field');
+    return;
+  }
   const redisKey = `counter:${userId}:${field}`;
   
   // 1. Try Redis INCR first for immediate consistency across instances

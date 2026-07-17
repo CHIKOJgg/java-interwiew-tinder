@@ -230,7 +230,10 @@ const useStore = create((set, get) => ({
     try {
       const response = await apiClient.getQuestionsFeed(5, mode, { cursor: feedCursor, seed: feedSeed, difficulties: get().selectedDifficulties });
       const newQs = response.questions || [];
-      const hasMore = response.meta?.hasMore ?? (newQs.length === 5);
+      // An empty page means the feed is exhausted — never treat an empty
+      // page as "has more", otherwise loadQuestions(true) loops forever
+      // appending zero questions (infinite deck / stuck UI).
+      const hasMore = newQs.length > 0 && (response.meta?.hasMore ?? (newQs.length === 5));
        if (append) {
           set(s => ({
             questions: [...s.questions, ...newQs],
@@ -622,7 +625,7 @@ const useStore = create((set, get) => ({
 
   advanceQuestion: () => {
     set(s => ({ currentIndex: s.currentIndex + 1 }));
-    if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+    if (get().questions.length - get().currentIndex <= 2 && get().hasMore) get().loadQuestions(true);
   },
 
   closeExplanation: () => {
@@ -683,7 +686,11 @@ const useStore = create((set, get) => ({
 
   resetReview: () => set({ reviewQuestions: [], currentReviewIndex: 0, reviewDone: false }),
 
-  getCurrentQuestion: () => get().questions[get().currentIndex],
+  getCurrentQuestion: () => {
+    const { questions, currentIndex } = get();
+    if (currentIndex < 0 || currentIndex >= questions.length) return undefined;
+    return questions[currentIndex];
+  },
   hasMoreQuestions: () => get().currentIndex < get().questions.length || get().hasMore,
 }));
 

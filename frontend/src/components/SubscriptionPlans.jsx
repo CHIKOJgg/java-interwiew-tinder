@@ -9,8 +9,12 @@ import './SubscriptionPlans.css';
 const PLAN_ICONS = { free: Zap, pro: Star, admin: Shield };
 const PLAN_COLORS = { free: '#adb5bd', pro: '#ffd43b', admin: '#748ffc' };
 
-// ─── Admin Panel ──────────────────────────────────────────────────────
-const AdminPanel = () => {
+// ─── Subscription Grant Panel ─────────────────────────────────────────
+// NOTE: this is intentionally distinct from components/AdminPanel.jsx (the
+// full admin/moderation console). This one only grants subscriptions and is
+// embedded inside the Subscription screen for admins. Renamed to avoid a
+// naming collision with the standalone AdminPanel component.
+const SubscriptionGrantPanel = () => {
   const { t } = useTranslation();
   const { user } = useStore();
   const [users, setUsers] = useState([]);
@@ -629,7 +633,7 @@ const SubscriptionPlans = ({ onBack }) => {
       </div>
 
       {/* Admin panel — only visible to admin users */}
-      {isAdmin && <AdminPanel />}
+      {isAdmin && <SubscriptionGrantPanel />}
     </div>
   );
 };

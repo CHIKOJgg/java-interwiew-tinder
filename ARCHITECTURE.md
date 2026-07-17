@@ -1,7 +1,7 @@
 # 🏗️ Архитектура проекта
 
 ## Обзор системы
-baababab
+
 ```
 ┌─────────────────┐
 │  Telegram Bot   │
@@ -405,9 +405,9 @@ Frontend (Vercel):
 - CDN
 - Automatic HTTPS
 
-Backend (Railway):
-- Managed Node.js
-- Environment variables
+Backend (Fly.io):
+- Managed Node.js (backend + worker apps)
+- Environment variables (secrets via `flyctl secrets` / CI)
 - Logs & metrics
 
 Database (Supabase):

@@ -11,7 +11,8 @@ const MockInterviewMode = () => {
     isEvaluatingInterview,
     submitInterviewAnswer,
     nextInterviewQuestion,
-    isLoadingQuestions
+    isLoadingQuestions,
+    startInterview
   } = useStore();
 
   const [answer, setAnswer] = useState('');
@@ -24,6 +25,14 @@ const MockInterviewMode = () => {
   useEffect(() => {
     scrollToBottom();
   }, [interviewHistory, isEvaluatingInterview]);
+
+  // If the interview hasn't been initialized (e.g. startInterview() raced with
+  // a slow question load), kick it off so the user never sees a blank chat.
+  useEffect(() => {
+    if (interviewHistory.length === 0 && !isLoadingQuestions) {
+      startInterview();
+    }
+  }, [interviewHistory.length, isLoadingQuestions, startInterview]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

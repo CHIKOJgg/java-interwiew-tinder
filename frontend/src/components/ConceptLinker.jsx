@@ -98,7 +98,15 @@ const ConceptLinker = () => {
     );
   }
 
-  if (!hasMoreQuestions()) return null;
+  // NOTE: exhaustion (DeckComplete) is handled by App.renderMode() before this
+  // component mounts, so a !hasMoreQuestions() check here would only risk a
+  // blank screen on a state race. Fall back to the loading state instead.
+  if (questions.length === 0) return (
+    <div className="linker-loading">
+      <Loader2 className="spinner" size={48} />
+      <p>{t('linker.preparing', 'Preparing puzzle...')}</p>
+    </div>
+  );
 
   return (
     <div className="concept-linker-mode">

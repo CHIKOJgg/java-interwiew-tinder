@@ -4,8 +4,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # NOTE: do not publish 6379 to the host — Redis is only reachable inside
+    # the compose network (backend/worker connect via redis://redis:6379).
     volumes:
       - redis_data:/data
     healthcheck:
@@ -25,7 +25,7 @@ services:
       redis:
         condition: service_healthy
     env_file:
-      - .env
+      - .env.docker
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -47,7 +47,7 @@ services:
       redis:
         condition: service_healthy
     env_file:
-      - .env
+      - .env.docker
     environment:
       - NODE_ENV=production
       - REDIS_URL=redis://redis:6379

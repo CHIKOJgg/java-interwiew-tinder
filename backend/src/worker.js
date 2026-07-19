@@ -295,6 +295,7 @@ const scheduleSubscriptionJobs = () => {
 
 // ─── Worker loop ──────────────────────────────────────────────────────
 let activeJobs = 0;
+export { processJob, BACKFILL, notifyExpiring, processExpired, verifyBackupIntegrity, appLink, notifyStreakReminders, scheduleSubscriptionJobs, runWorker, shutdown };
 
 const runWorker = async () => {
   await initQueueTable();
@@ -365,4 +366,8 @@ async function shutdown(signal) {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
-runWorker();
+// Only start the loop automatically outside of tests so the module can be
+// imported in unit tests without spinning up timers / cron schedules.
+if (process.env.NODE_ENV !== 'test') {
+  runWorker();
+}

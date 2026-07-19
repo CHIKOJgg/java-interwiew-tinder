@@ -55,7 +55,30 @@ async function bootstrap() {
   try {
     const { default: App } = await import('./App');
 
-    ReactDOM.createRoot(document.getElementById('root')).render(
+    // Google One Tap callback (referenced by data-callback in WebLogin.jsx).
+    if (!window.__jitGoogleCallback) {
+      window.__jitGoogleCallback = async (response) => {
+        try {
+          const apiClient = (await import('./api/client')).default;
+          const res = await apiClient.loginWithProvider({ provider: 'google', idToken: response.credential });
+          const { default: useStore } = await import('./store/useStore');
+          useStore.getState().loginWithToken(res.user, res.token);
+        } catch (err) {
+          console.error('Google callback failed', err);
+        }
+      };
+    }
+
+    // Register service worker for PWA install / offline support.
+  if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((err) =>
+        console.warn('SW registration failed:', err)
+      );
+    });
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(
       <React.StrictMode>
         <Sentry.ErrorBoundary fallback={({ error }) => <ErrorScreen error={error} />}>
           <App />

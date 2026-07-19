@@ -1,11 +1,16 @@
 
 
+import '../../config/env.js'; // ensure .env loaded before reading process.env
 import { randomBytes } from 'crypto';
 import pool from '../../config/database.js';
 import logger from '../../config/logger.js';
 
 // ─── Config ────────────────────────────────────────────────────────────
-const TON_WALLET = process.env.TON_WALLET_ADDRESS ?? '';
+// Lazy getter — read at call time so a missing/late dotenv load can never
+// capture an empty string into a top-level constant.
+function getTonWallet() {
+  return process.env.TON_WALLET_ADDRESS ?? '';
+}
 const TONCENTER = 'https://toncenter.com/api/v2';
 const API_KEY = process.env.TON_CENTER_API_KEY ?? '';     // optional, raises rate-limit
 const INVOICE_TTL = 15 * 60 * 1_000;                         // 15 minutes
@@ -28,7 +33,7 @@ function makeInvoiceId(userId) {
 
 // ─── Create a new pending invoice ──────────────────────────────────────
 export async function createTonInvoice(userId, planId, interval = 'monthly') {
-  if (!TON_WALLET) throw new Error('TON_WALLET_ADDRESS is not configured');
+  if (!getTonWallet()) throw new Error('TON_WALLET_ADDRESS is not configured');
 
   const amountTon = getPriceTon(planId, interval);
   const invoiceId = makeInvoiceId(userId);
@@ -49,7 +54,7 @@ export async function createTonInvoice(userId, planId, interval = 'monthly') {
   );
 
   logger.info({ userId, invoiceId, amountTon }, '💎 TON invoice created');
-  return { address: TON_WALLET, amountTon, comment: invoiceId, invoiceId, expiresAt };
+  return { address: getTonWallet(), amountTon, comment: invoiceId, invoiceId, expiresAt };
 }
 
 // ─── Check a specific user's pending invoice ────────────────────────────
@@ -177,7 +182,7 @@ export async function activateTonSubscription(userId, planId, interval, txHash, 
 
 // ─── Background poller — call this from server.js on startup ───────────
 export async function pollPendingInvoices() {
-  if (!TON_WALLET) return; // not configured, skip silently
+  if (!getTonWallet()) return; // not configured, skip silently
 
   let pending;
   try {
@@ -196,7 +201,7 @@ export async function pollPendingInvoices() {
 
   let transactions;
   try {
-    transactions = await fetchRecentTransactions(TON_WALLET);
+    transactions = await fetchRecentTransactions(getTonWallet());
   } catch (err) {
     logger.error({ err }, 'TON Center fetch error');
     return;

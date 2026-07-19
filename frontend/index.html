@@ -14,12 +14,21 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#5c7cfa" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+  <!-- Google One Tap (web login). Harmless if VITE_GOOGLE_CLIENT_ID unset. -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
   <!--
       Load Telegram WebApp script BEFORE your React bundle.
       Without this, window.Telegram is undefined when main.jsx runs,
       and the polling in getTelegramInitData has to wait for it to inject.
       Loading it here ensures window.Telegram.WebApp is available immediately.
-    -->
+     -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <title>Interview Tinder</title>

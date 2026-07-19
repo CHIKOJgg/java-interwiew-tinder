@@ -6,7 +6,7 @@ import cors from 'cors';
 import expressRateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import pool from './config/database.js';
-import { validateTelegramWebAppData, mockValidation } from './utils/telegram.js';
+import { resolveAuth, upsertUser, issueEmailCode, verifyEmailCode } from './utils/authProviders.js';
 import { evaluateInterviewAnswer, analyzeResume, checkCache } from './services/aiService.js';
 import { enqueueJob } from './services/queueService.js';
 import { getAvailableLanguages } from './services/languageRegistry.js';
@@ -14,7 +14,7 @@ import { requestLogger, validateBody, sanitizeBody } from './middleware/logging.
 import { rateLimit, requireEntitlement } from './middleware/rateLimiter.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { billingService } from './services/billingService.js';
-import { sendStarsInvoice, answerPreCheckout, sendTelegramMessage, activateStarsSubscription } from './services/billing/starsService.js';
+import { sendStarsInvoice, getStarsAmount, answerPreCheckout, sendTelegramMessage, activateStarsSubscription } from './services/billing/starsService.js';
 import { createTonInvoice, getUserPendingInvoice, pollPendingInvoices } from './services/billing/tonService.js';
 import { isUkassaEnabled, createUkassaPayment, handleUkassaEvent, verifyUkassaSignature } from './services/billing/ukassaService.js';
 import { metricsService } from './services/metricsService.js';
@@ -214,33 +214,20 @@ app.get('/api/categories', async (req, res) => {
 // ─── Auth ────────────────────────────────────────────────────────────
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { initData, referralId } = req.body;
-    let userData;
+    const { provider, initData, idToken, email, code, referralId } = req.body;
 
-    if (process.env.BOT_TOKEN && initData) {
-      userData = validateTelegramWebAppData(initData, process.env.BOT_TOKEN);
-    }
-    if (!userData) {
-      if (!isDev) return res.status(401).json({ error: 'Invalid initData' });
-      userData = mockValidation();
-    }
-    if (!userData) return res.status(401).json({ error: 'Invalid initData' });
-
-    const result = await pool.query(
-      `INSERT INTO users (telegram_id, username, first_name, last_name)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (telegram_id) DO UPDATE SET
-         username = EXCLUDED.username,
-         first_name = EXCLUDED.first_name,
-         last_name = EXCLUDED.last_name
-       RETURNING *, (xmax = 0) AS is_new_user`,
-      [userData.telegram_id, userData.username, userData.first_name, userData.last_name]
+    // Resolve identity from the chosen provider (telegram / google / email).
+    const userData = await resolveAuth(
+      { provider, initData, idToken, email, code },
+      isDev
     );
-    const user = result.rows[0];
-    const isNewUser = user.is_new_user;
-    if (referralId && isNewUser) {
-      await referralService.trackReferral(referralId, user.telegram_id);
+    if (!userData) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    const { user, token } = await upsertUser(userData, referralId, (payload) =>
+      jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' })
+    );
 
     // Auto-grant admin plan if user is in ADMIN_TELEGRAM_IDS
     if (ADMIN_IDS.has(String(user.telegram_id))) {
@@ -334,12 +321,6 @@ app.post('/api/auth/login', async (req, res) => {
       } catch { /* keep defaults */ }
     }
 
-    const token = jwt.sign(
-      { userId: user.telegram_id, plan },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
     res.json({
       success: true,
       token,
@@ -357,11 +338,12 @@ app.post('/api/auth/login', async (req, res) => {
         // NOTE: is_admin is for UI display purposes ONLY. 
         // Security checks MUST be performed server-side using requireAdmin middleware.
         is_admin: ADMIN_IDS.has(String(user.telegram_id)),
+        auth_provider: user.auth_provider || 'telegram',
       },
     });
 
     // Track login
-    metricsService.trackEvent(user.telegram_id, 'user_login', { plan });
+    metricsService.trackEvent(user.telegram_id, 'user_login', { plan, provider: user.auth_provider || 'telegram' });
   } catch (error) {
     logger.error({ err: error }, 'Error in /auth/login');
     res.status(500).json({ error: 'Internal server error' });
@@ -382,6 +364,34 @@ app.use('/api', (req, res, next) => {
     return next();
   }
   authMiddleware(req, res, next);
+});
+
+// ─── Email magic-link (web auth) ────────────────────────────────────
+app.post('/api/auth/email/send', async (req, res) => {
+  try {
+    const { email } = req.body;
+    await issueEmailCode(email);
+    res.json({ success: true, message: 'Code sent' });
+  } catch (err) {
+    logger.error({ err }, 'Email code issue failed');
+    res.status(400).json({ error: err.message || 'Failed to send code' });
+  }
+});
+
+app.post('/api/auth/email/verify', async (req, res) => {
+  try {
+    const { email, code, referralId } = req.body;
+    const userData = verifyEmailCode(email, code);
+    if (!userData) return res.status(401).json({ error: 'Invalid code' });
+
+    const { user, token } = await upsertUser(userData, referralId, (payload) =>
+      jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' })
+    );
+    res.json({ success: true, token, user: { telegram_id: user.telegram_id, email: user.email, plan: user.subscription_plan } });
+  } catch (err) {
+    logger.error({ err }, 'Email verify failed');
+    res.status(401).json({ error: err.message || 'Invalid code' });
+  }
 });
 
 // ─── Admin Routes (requireAdmin required) ─────────────────────────────
@@ -1132,6 +1142,9 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
     const lastEnqueue = explanationEnqueueLock.get(enqueueKey) || 0;
     if (now - lastEnqueue > 20000) {
       explanationEnqueueLock.set(enqueueKey, now);
+      // Auto-clear after the dedup window to prevent unbounded memory growth
+      // in long-running processes (the Map is never otherwise pruned).
+      setTimeout(() => explanationEnqueueLock.delete(enqueueKey), 25000);
       await enqueueJob('explanation', {
         questionText: question.question_text,
         shortAnswer: question.short_answer,
@@ -1247,11 +1260,13 @@ app.get('/api/subscription/status', async (req, res) => {
 
 app.post('/api/billing/stars/create-invoice', async (req, res) => {
   try {
-    const { planId } = req.body;
+    const { planId, interval } = req.body;
     const userId = req.userId;
 
-    // Telegram Stars: 1 month Pro = 250 Stars
-    const amount = planId === 'pro' ? 250 : 500;
+    // Amount is sourced from the DB (subscription_plans.stars_*) via
+    // getStarsAmount — the single source of truth, so the link always shows
+    // the same number the UI and sendStarsInvoice use (no more 250/500 vs 450).
+    const amount = await getStarsAmount(planId, interval || 'monthly');
 
     const response = await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/createInvoiceLink`, {
       method: 'POST',

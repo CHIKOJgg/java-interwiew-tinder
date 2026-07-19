@@ -377,6 +377,24 @@ const migrations = [
       );
       CREATE INDEX IF NOT EXISTS idx_saved_questions_user ON saved_questions(user_id, created_at DESC);
     `
+  },
+
+  // ── 023: Web auth providers (Google / Email magic-link) ───────────
+  // Telegram remains the primary provider. For web/PWA access we mint a
+  // synthetic telegram_id (e.g. g_<google_sub> / e_<sha1(email)>) so the rest
+  // of the codebase (which keys everything off telegram_id) keeps working.
+  // These columns store the real identity for debugging / dedupe.
+  {
+    id: '023_web_auth_providers',
+    sql: `
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(20) DEFAULT 'telegram';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS external_id  VARCHAR(255);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email        VARCHAR(255);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_external_id
+        ON users(auth_provider, external_id) WHERE external_id IS NOT NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email
+        ON users(email) WHERE email IS NOT NULL;
+    `
   }
 ];
 

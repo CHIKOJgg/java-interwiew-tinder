@@ -22,8 +22,18 @@ class ApiClient {
 
 
   // ─── Auth ──────────────────────────────────────────────────────────
+  // Telegram (Mini App) — backward compatible signature.
   async login(initData, referralId) {
-    const body = { initData };
+    return this.loginWithProvider({ provider: 'telegram', initData, referralId });
+  }
+
+  // Unified multi-provider login (telegram / google / email).
+  async loginWithProvider({ provider, initData, idToken, email, code, referralId }) {
+    const body = { provider };
+    if (initData) body.initData = initData;
+    if (idToken) body.idToken = idToken;
+    if (email) body.email = email;
+    if (code) body.code = code;
     if (referralId) body.referralId = referralId;
     const response = await this.request('/auth/login', {
       method: 'POST',
@@ -33,6 +43,24 @@ class ApiClient {
       this.setUserId(response.user.telegram_id);
       if (response.user.language) this.setLanguage(response.user.language);
     }
+    return response;
+  }
+
+  async sendEmailCode(email) {
+    return this.request('/auth/email/send', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async verifyEmailCode(email, code, referralId) {
+    const body = { email, code };
+    if (referralId) body.referralId = referralId;
+    const response = await this.request('/auth/email/verify', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    if (response.user) this.setUserId(response.user.telegram_id);
     return response;
   }
 

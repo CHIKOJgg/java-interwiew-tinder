@@ -24,7 +24,27 @@ const ShareCard = ({ stats, onBack }) => {
     fetchPercentile();
   }, [stats.known]);
 
-  const shareUrl = `${window.location.origin}/?ref=share&from=${user?.telegram_id}`;
+  const [copied, setCopied] = useState(false);
+
+  const shareUrl = window.Telegram?.WebApp
+    ? `https://t.me/JavaInterviewTinderBot?start=${user?.telegram_id}`
+    : `${window.location.origin}/?ref=${user?.telegram_id}`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+    }
+  };
+
+  const handleShareX = () => {
+    const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+    window.open(url, '_blank');
+  };
+
   const shareText = t('share.text', {
     language,
     streak: stats.streak,
@@ -35,8 +55,6 @@ const ShareCard = ({ stats, onBack }) => {
   const handleShareStory = () => {
     const tg = window.Telegram?.WebApp;
     if (tg?.shareToStory) {
-      // In a real production app, we'd generate a dynamic image URL for the story
-      // For now, we use the text-based story sharing if available
       tg.shareToStory(shareUrl, { text: shareText });
     } else {
       handleShareChat();
@@ -91,6 +109,12 @@ const ShareCard = ({ stats, onBack }) => {
           </button>
           <button className="share-btn secondary" onClick={handleShareChat}>
             {t('share.friends')}
+          </button>
+          <button className="share-btn secondary" onClick={handleShareX}>
+            Share on X
+          </button>
+          <button className="share-btn secondary" onClick={handleCopy}>
+            {copied ? '✓ Copied!' : 'Copy link'}
           </button>
         </div>
 

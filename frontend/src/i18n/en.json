@@ -374,5 +374,24 @@
     "completed": "Completed",
     "failed": "Failed",
     "more": "more"
+  },
+  "landing": {
+    "title": "Interview Tinder",
+    "tagline": "Prep for your Java (or Python / TypeScript) interview in 10 minutes a day.",
+    "cta": "Start free",
+    "sub": "No card required · works in Telegram and as a PWA",
+    "f_swipe": "Swipe to learn",
+    "f_swipe_d": "Right = know it, left = get an AI breakdown.",
+    "f_modes": "7 game modes",
+    "f_modes_d": "Test, Bug Hunting, Blitz, Code Completion, Concept Linker, Mock Interview.",
+    "f_streak": "Streak & spaced repetition",
+    "f_streak_d": "SM-2 algorithm resurfaces what you keep forgetting.",
+    "f_percentile": "Percentile vs others",
+    "f_percentile_d": "See how ready you are compared to other candidates.",
+    "how_title": "How it works",
+    "how_1": "Pick a language and topics you want to master.",
+    "how_2": "Swipe through real interview questions — it feels like a game.",
+    "how_3": "Get an instant AI explanation for everything you don't know.",
+    "how_4": "Keep a daily streak and watch your readiness percentile grow."
   }
 }

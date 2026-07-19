@@ -392,6 +392,25 @@
     "how_1": "Pick a language and topics you want to master.",
     "how_2": "Swipe through real interview questions — it feels like a game.",
     "how_3": "Get an instant AI explanation for everything you don't know.",
-    "how_4": "Keep a daily streak and watch your readiness percentile grow."
+    "how_4": "Keep a daily streak and watch your readiness percentile grow.",
+    "pricing_title": "Simple pricing",
+    "plan_free": "Free",
+    "plan_pro": "Pro",
+    "per_month": "/mo",
+    "most_popular": "Most popular",
+    "free_f1": "Swipe & Test modes",
+    "free_f2": "200 requests / day",
+    "free_f3": "3 AI explanations / day",
+    "pro_f1": "All 7 game modes",
+    "pro_f2": "Unlimited AI breakdowns",
+    "pro_f3": "Resume analysis & mock interview",
+    "pro_f4": "Readiness percentile & streak",
+    "choose": "Choose {{plan}}",
+    "pricing_note": "Also available for 450 Telegram Stars / month."
+  },
+  "pwa": {
+    "install_title": "Install Interview Tinder",
+    "install_sub": "Add to home screen for quick access — works offline.",
+    "install": "Install"
   }
 }

@@ -8,6 +8,7 @@ const ReviewMode = lazy(() => import('./components/ReviewMode'));
 const ProgressScreen = lazy(() => import('./components/ProgressScreen'));
 const SavedQuestions = lazy(() => import('./components/SavedQuestions'));
 import CategorySelection from './components/CategorySelection';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 import LanguageSelection from './components/LanguageSelection';
 import ReportSheet from './components/ReportSheet';
 import Header from './components/Header';
@@ -85,6 +86,12 @@ function App() {
     feedRefresher, dismissRefresher,
   } = useStore();
   const { t } = useTranslation();
+
+  // Show the PWA install prompt only on web (not inside Telegram WebView,
+  // where install is irrelevant) and only after the user has done a real
+  // session worth of swipes.
+  const isTelegram = !!window.Telegram?.WebApp?.initData;
+  const showPwa = !isTelegram && (stats?.totalSeen || 0) >= 10;
 
   const [initState, setInitState] = useState('waiting_telegram');
   const [screen, setScreen] = useState('language');
@@ -383,6 +390,7 @@ function App() {
 
   return (
     <div className={`app ${learningMode === 'swipe' ? 'swipe-mode' : ''}`}>
+      <PwaInstallPrompt show={showPwa} />
       <Header
         onSettingsClick={() => setScreen('language')}
         onResumeClick={() => setScreen('resume')}

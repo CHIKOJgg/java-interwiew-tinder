@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import '../config/env.js'; // ensure .env loaded before reading process.env
 import { validateTelegramWebAppData, mockValidation } from './telegram.js';
+import { sendEmail } from './mailer.js';
 import pool from '../config/database.js';
 import logger from '../config/logger.js';
 
@@ -74,10 +75,21 @@ export async function issueEmailCode(email) {
   const code = String(crypto.randomInt(100000, 999999));
   emailCodes.set(email.toLowerCase(), { code, expiresAt: Date.now() + 10 * 60 * 1000 });
   logger.info({ email }, '📧 Email magic-link code issued');
-  // TODO: send via email provider (SES/SendGrid). For now log in dev.
+
   if (process.env.NODE_ENV !== 'production') {
     console.log(`[magic-link] ${email} -> ${code}`);
   }
+
+  // Best-effort delivery. If SMTP isn't configured we already logged the code
+  // above; the verify step still works in dev. Never throw on send failure —
+  // that would block login for users who reached the code screen.
+  await sendEmail({
+    to: email,
+    subject: 'Your Interview Tinder login code',
+    text: `Your login code is ${code}. It expires in 10 minutes.`,
+    html: `<p>Your Interview Tinder login code is <b>${code}</b>.</p><p>It expires in 10 minutes.</p>`,
+  }).catch((err) => logger.error({ err, email }, 'Magic-link email delivery failed'));
+
   return true;
 }
 

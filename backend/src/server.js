@@ -784,7 +784,10 @@ app.post('/api/questions/swipe',
 
       // Track swipe
       metricsService.trackEvent(userId, 'question_swiped', { questionId, status });
-    } catch { res.status(500).json({ error: 'Internal server error' }); }
+    } catch (error) {
+      logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 );
 
@@ -863,7 +866,10 @@ app.post('/api/questions/test-answer',
       await recordProgress(userId, questionId, isCorrect);
       const streak = await updateStreak(userId);
       res.json({ success: true, isCorrect, correctAnswer, streak });
-    } catch { res.status(500).json({ error: 'Internal server error' }); }
+    } catch (error) {
+      logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 );
 
@@ -951,7 +957,10 @@ app.post('/api/questions/interview-evaluate', rateLimit('interview'), async (req
     } else {
       res.json(evaluation);
     }
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (error) {
+    logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // ─── Saved / bookmarked questions ──────────────────────────────────
@@ -978,7 +987,10 @@ app.post('/api/questions/save', validateBody({ questionId: { required: true } })
       [userId, questionId]
     );
     res.json({ success: true, saved: true });
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (error) {
+    logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.delete('/api/questions/save', validateBody({ questionId: { required: true } }), async (req, res) => {
@@ -987,7 +999,10 @@ app.delete('/api/questions/save', validateBody({ questionId: { required: true } 
     const userId = req.userId;
     await pool.query('DELETE FROM saved_questions WHERE user_id = $1 AND question_id = $2', [userId, questionId]);
     res.json({ success: true, saved: false });
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (error) {
+    logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.get('/api/questions/saved', async (req, res) => {
@@ -1003,7 +1018,10 @@ app.get('/api/questions/saved', async (req, res) => {
       [userId]
     );
     res.json({ questions: rows.map(mapSavedRow) });
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (error) {
+    logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // ─── Explanation ──────────────────────────────────────────────────────
@@ -1123,7 +1141,10 @@ app.post('/api/user/analyze-resume', rateLimit('resume'), async (req, res) => {
       [resumeText, parsedData, userId]
     ).catch((err) => logger.error({ err, userId }, 'Failed to persist parsed resume data'));
     res.json({ success: true, parsedData });
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (error) {
+    logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.get('/api/user/resume', async (req, res) => {
@@ -1131,7 +1152,10 @@ app.get('/api/user/resume', async (req, res) => {
     const result = await pool.query('SELECT resume_text, parsed_resume_data FROM users WHERE telegram_id = $1', [req.userId]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     res.json(result.rows[0]);
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (error) {
+    logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // ─── Subscription ─────────────────────────────────────────────────────
@@ -1434,7 +1458,10 @@ app.post('/api/billing/ukassa/invoice',
       res.json(result);
     } catch (error) {
       logger.error({ err: error }, 'U-Kassa invoice error');
-      res.status(500).json({ error: error.message || 'Failed to create card payment' });
+      res.status(500).json({
+        error: 'Failed to create card payment',
+        ...(process.env.NODE_ENV !== 'production' && { detail: error.message }),
+      });
     }
   }
 );
@@ -1532,7 +1559,10 @@ app.get('/api/admin/metrics', async (req, res) => {
   try {
     const metrics = await metricsService.getSystemOverview();
     res.json(metrics);
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (error) {
+    logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.post('/api/admin/clear-cache', requireAdmin, async (req, res) => {
@@ -1664,7 +1694,10 @@ app.get('/api/referrals/stats', async (req, res) => {
   try {
     const stats = await referralService.getStats(req.userId);
     res.json(stats);
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (error) {
+    logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // ─── Category-scoped stats (§3 topic counter) ────────────────────────
@@ -1741,14 +1774,20 @@ app.get('/api/questions/due-count', async (req, res) => {
   try {
     const count = await getDueCount(req.userId, req.query.language || 'Java');
     res.json({ count });
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (error) {
+    logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.post('/api/questions/mastery', validateBody({ questionId: { required: true }, quality: { required: true } }), async (req, res) => {
   try {
     const result = await updateMastery(req.userId, req.body.questionId, req.body.quality);
     res.json(result);
-  } catch { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (error) {
+    logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // ─── Server ───────────────────────────────────────────────────────────

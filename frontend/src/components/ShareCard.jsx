@@ -26,8 +26,9 @@ const ShareCard = ({ stats, onBack }) => {
 
   const [copied, setCopied] = useState(false);
 
+  const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'JavaInterviewTinderBot';
   const shareUrl = window.Telegram?.WebApp
-    ? `https://t.me/JavaInterviewTinderBot?start=${user?.telegram_id}`
+    ? `https://t.me/${botUsername}?start=${user?.telegram_id}`
     : `${window.location.origin}/?ref=${user?.telegram_id}`;
 
   const handleCopy = async () => {

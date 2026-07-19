@@ -280,7 +280,9 @@ function App() {
 
   if (initState === 'web_login') {
     const tg = window.Telegram?.WebApp;
-    const referralId = tg?.initDataUnsafe?.start_param || null;
+    // Referral: from Telegram start_param OR from ?ref= in the URL (web/PWA share links).
+    const urlRef = new URLSearchParams(window.location.search).get('ref');
+    const referralId = tg?.initDataUnsafe?.start_param || urlRef || null;
     return (
       <WebLogin
         referralId={referralId}

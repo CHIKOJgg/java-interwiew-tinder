@@ -163,7 +163,9 @@ export async function activateTonSubscription(userId, planId, interval, txHash, 
     logger.info({ userId, planId, txHash }, '✅ TON subscription activated');
 
     // Process referral conversion if applicable
-    import('../referralService.js').then(m => m.referralService.processConversion(userId)).catch(() => { });
+    import('../referralService.js')
+      .then(m => m.referralService.processConversion(userId))
+      .catch((err) => logger.error({ err, userId }, 'Failed to process TON referral conversion'));
 
     return { success: true };
   } catch (err) {

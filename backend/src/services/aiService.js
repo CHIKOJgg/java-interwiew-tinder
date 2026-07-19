@@ -264,7 +264,7 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
         pool.query(
           `DELETE FROM ai_cache WHERE cluster_id=$1 AND mode=$2 AND prompt_version=$3 AND language=$4`,
           [cid, mode, PROMPT_VERSION, language]
-        ).catch(() => { });
+        ).catch((err) => logger.error({ err, cid, mode }, 'Failed to delete invalid cache entry'));
       }
     } else {
       return cached;

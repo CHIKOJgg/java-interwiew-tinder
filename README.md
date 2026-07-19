@@ -385,7 +385,30 @@ NODE_ENV=development|production     # Environment
 
 ```env
 VITE_API_URL=http://localhost:3000/api  # Backend API URL
+VITE_GOOGLE_CLIENT_ID=                  # optional, enables Google One Tap on web
 ```
+
+### Деплой фронта (Web/PWA + лендинг)
+Лендинг и Mini App собираются вместе (`frontend/dist`). Хостить можно на
+Vercel/Netlify как статику; `/api` проксируется на бэкенд (см. `vercel.json`,
+`public/_redirects`).
+
+```bash
+cd frontend
+cp .env.example .env          # укажите VITE_API_URL
+..\deploy-frontend.ps1 -Target vercel    # или -Target netlify / -Target build
+```
+- `manifest.webmanifest` + `sw.js` уже в `public/` → PWA ставится на домашний экран.
+- OG/Twitter-теги в `index.html` дают превью ссылок в соцсетях.
+
+### Реферальная программа (виральность)
+Пользователь получает **7 дней PRO** за каждого друга, который подписался.
+Реферальная ссылка формируется двумя способами:
+- **Telegram:** `https://t.me/JavaInterviewTinderBot?start=<telegram_id>`
+- **Web/PWA:** `https://your-domain.com/?ref=<telegram_id>` (читается из URL при входе)
+
+После каждой сессии `ShareCard` предлагает поделиться (Telegram / X / Copy link)
+с этой ссылкой. Статистика — `api.getReferralStats()`.
 
 ## 🎨 Кастомизация
 

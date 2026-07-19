@@ -90,73 +90,6 @@ app.use(globalLimiter);
 // ─── Stripe Webhook (MUST be before express.json) ─────────────────────
 // NOTE: Stripe is not the active payment provider (Stars is).
 // This endpoint is a placeholder. If Stripe is enabled, import the SDK:
-//   import Stripe from 'stripe';
-//   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
-  // Guard: only process if Stripe is actually configured with a real key
-  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('placeholder')) {
-    return res.status(501).json({ error: 'Stripe payments are not configured on this server' });
-  }
-
-  let stripe;
-  try {
-    const Stripe = (await import('stripe')).default;
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  } catch (err) {
-    logger.error({ err }, 'Stripe SDK not installed');
-    return res.status(501).json({ error: 'Stripe SDK not available' });
-  }
-
-  const sig = req.headers['stripe-signature'];
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    logger.error({ err }, 'Stripe webhook signature verification failed');
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object;
-        const { userId, planId } = session.metadata;
-        if (userId && planId) {
-          await billingService.activateSubscription(
-            userId,
-            planId,
-            session.subscription,
-            session.customer
-          );
-        }
-        break;
-      }
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object;
-        const customerId = subscription.customer;
-        const { rows } = await pool.query('SELECT telegram_id FROM users WHERE stripe_customer_id = $1', [customerId]);
-        if (rows.length > 0) {
-          await billingService.cancelSubscription(rows[0].telegram_id);
-        }
-        break;
-      }
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object;
-        logger.warn({ customer: invoice.customer, invoiceId: invoice.id }, '💳 Payment failed');
-        break;
-      }
-      default:
-        logger.info({ eventType: event.type }, 'Unhandled Stripe event type');
-    }
-
-    res.json({ received: true });
-  } catch (err) {
-    logger.error({ err, eventType: event.type }, 'Webhook handler error');
-    res.status(500).json({ error: 'Webhook processing failed' });
-  }
-});
-
 // Capture the RAW body for the YooKassa webhook so we can verify its
 // HMAC-SHA256 signature. This MUST be registered before the global
 // express.json() below — otherwise the global parser sets req._body and
@@ -450,7 +383,8 @@ app.post('/api/preferences/language', validateBody({ language: { required: true 
          updated_at = NOW()`,
       [userId, language]
     );
-    await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => { });
+    await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId])
+      .catch((err) => logger.error({ err, userId }, 'Failed to sync language to users table'));
     res.json({ success: true });
   } catch (err) {
     logger.error({ err }, 'Error updating language preference');
@@ -714,7 +648,7 @@ async function waitForExplanation(questionText, questionId, language = 'Java', m
       const cached = await checkCache(questionText, 'explanation', null, language);
       if (cached) {
         pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cached, questionId])
-          .catch(() => {});
+          .catch((err) => logger.error({ err, questionId }, 'Failed to backfill cached explanation'));
         return cached;
       }
     } catch (err) {
@@ -843,7 +777,8 @@ app.post('/api/questions/swipe',
       const streakData = await updateStreak(userId);
 
       // Spaced Repetition: update mastery
-      await updateMastery(userId, questionId, status === 'known' ? 5 : 0).catch(() => { });
+      await updateMastery(userId, questionId, status === 'known' ? 5 : 0)
+        .catch((err) => logger.error({ err, userId, questionId }, 'Failed to update question mastery'));
 
       res.json({ success: true, streak: streakData });
 
@@ -901,7 +836,8 @@ app.post('/api/questions/:questionId/report', async (req, res) => {
 
       // Send to all admins
       for (const adminId of ADMIN_IDS) {
-        sendTelegramMessage(adminId, adminMsg).catch(() => { });
+        sendTelegramMessage(adminId, adminMsg)
+          .catch((err) => logger.error({ err, adminId }, 'Failed to notify admin of question reports'));
       }
     }
 
@@ -1185,7 +1121,7 @@ app.post('/api/user/analyze-resume', rateLimit('resume'), async (req, res) => {
     await pool.query(
       'UPDATE users SET resume_text = $1, parsed_resume_data = $2 WHERE telegram_id = $3',
       [resumeText, parsedData, userId]
-    ).catch(() => { });
+    ).catch((err) => logger.error({ err, userId }, 'Failed to persist parsed resume data'));
     res.json({ success: true, parsedData });
   } catch { res.status(500).json({ error: 'Internal server error' }); }
 });

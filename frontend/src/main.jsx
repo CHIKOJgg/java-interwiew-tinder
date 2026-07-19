@@ -60,7 +60,8 @@ async function bootstrap() {
       window.__jitGoogleCallback = async (response) => {
         try {
           const apiClient = (await import('./api/client')).default;
-          const res = await apiClient.loginWithProvider({ provider: 'google', idToken: response.credential });
+          const referralId = new URLSearchParams(window.location.search).get('ref') || null;
+          const res = await apiClient.loginWithProvider({ provider: 'google', idToken: response.credential, referralId });
           const { default: useStore } = await import('./store/useStore');
           useStore.getState().loginWithToken(res.user, res.token);
         } catch (err) {

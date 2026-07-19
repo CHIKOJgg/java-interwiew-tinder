@@ -32,6 +32,7 @@ import i18n from './i18n/config';
 import logger from './utils/logger';
 import DebugOverlay from './components/DebugOverlay';
 import WebLogin from './components/WebLogin';
+import Landing from './components/Landing';
 import './App.css';
 
 function getTelegramInitData() {
@@ -190,8 +191,9 @@ function App() {
           setInitState('auth');
           await login(initData, referralId);
         } else {
-          // Standalone web / PWA: show web login instead of failing.
-          setInitState('web_login');
+          // Standalone web / PWA: show the public landing page first, then
+          // the web login when the user clicks "Start free".
+          setInitState('landing');
           return;
         }
 
@@ -267,6 +269,12 @@ function App() {
         <SkeletonCard />
         <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>{t('auth.signing_in')}</p>
       </div>
+    );
+  }
+
+  if (initState === 'landing') {
+    return (
+      <Landing onStart={() => setInitState('web_login')} />
     );
   }
 

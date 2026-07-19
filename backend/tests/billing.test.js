@@ -40,6 +40,14 @@ vi.mock('../src/config/redis.js', () => ({
   isConnected: vi.fn().mockResolvedValue(true),
 }));
 
+vi.mock('../src/services/billing/starsService.js', () => ({
+  sendStarsInvoice: vi.fn(() => Promise.resolve(true)),
+  getStarsAmount: vi.fn(() => Promise.resolve(450)),
+  answerPreCheckout: vi.fn(() => Promise.resolve()),
+  sendTelegramMessage: vi.fn(() => Promise.resolve()),
+  activateStarsSubscription: vi.fn(() => Promise.resolve()),
+}));
+
 // 2. Set test env BEFORE importing app
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test_secret';

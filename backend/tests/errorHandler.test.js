@@ -55,4 +55,41 @@ describe('errorHandler', () => {
     handler(err, { path: '/x', method: 'GET' }, res, vi.fn());
     expect(res.statusCode).toBe(null);
   });
+
+  it('respects a custom err.statusCode (e.g. 404)', () => {
+    const handler = errorHandler(true);
+    const res = makeRes();
+    const err = new Error('not found');
+    err.statusCode = 404;
+    handler(err, { path: '/x', method: 'GET' }, res, vi.fn());
+    expect(res.statusCode).toBe(404);
+    expect(res.body.error).toBe('not found');
+  });
+
+  it('logs the error via logger.error', async () => {
+    const handler = errorHandler(true);
+    const res = makeRes();
+    const err = new Error('log me');
+    handler(err, { path: '/x', method: 'GET' }, res, vi.fn());
+    const logger = (await import('../src/config/logger.js')).default;
+    expect(logger.error).toHaveBeenCalled();
+  });
+
+  it('uses generic message when no error message in production', () => {
+    const handler = errorHandler(false);
+    const res = makeRes();
+    const err = {}; // no message
+    handler(err, { path: '/x', method: 'GET' }, res, vi.fn());
+    expect(res.statusCode).toBe(500);
+    expect(res.body.error).toBe('Internal server error');
+  });
+
+  it('uses the message when no error message in development', () => {
+    const handler = errorHandler(true);
+    const res = makeRes();
+    const err = {};
+    handler(err, { path: '/x', method: 'GET' }, res, vi.fn());
+    expect(res.statusCode).toBe(500);
+    expect(res.body.error).toBe('Internal server error');
+  });
 });

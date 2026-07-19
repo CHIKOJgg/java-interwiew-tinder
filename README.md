@@ -331,8 +331,42 @@ java-interview-tinder/
 > - ⚠️ Перед деплоем обязательно задайте сильный `JWT_SECRET` и `TELEGRAM_WEBHOOK_SECRET`,
 >   настройте бэкап БД и алерты (Sentry/Uptime).
 
+## 🌐 Web App и PWA (доступ вне Telegram)
+
+Приложение больше не привязано жёстко к Telegram Mini App. Тот же бэкенд и
+фронтенд работают как обычный сайт и Progressive Web App (устанавливается на
+домашний экран как нативное приложение).
+
+### Авторизация (multi-provider)
+Эндпоинт `POST /api/auth/login` принимает поле `provider`:
+- `telegram` (по умолчанию) — валидация `initData` как раньше.
+- `google` — Google ID token (`idToken`). Активируется `ENABLE_GOOGLE_AUTH=true` + `GOOGLE_CLIENT_ID`.
+- `email` — magic-link: `POST /api/auth/email/send` → `POST /api/auth/email/verify`. Активируется `ENABLE_EMAIL_AUTH=true`.
+
+Для web-пользователей создаётся синтетический `telegram_id` (`g_<hash>` / `e_<hash>`),
+поэтому весь остальной код (прогресс, платежи, подписки) работает без изменений.
+Колонки `auth_provider`, `external_id`, `email` добавлены миграцией `023_web_auth_providers`.
+
+### Запуск Web-версии
+```bash
+cd frontend
+npm install
+echo "VITE_API_URL=https://your-backend/api" > .env
+npm run build && npm run preview
+```
+- `manifest.webmanifest` + `sw.js` уже в `frontend/public/` — PWA ставится как приложение.
+- CORS: добавьте web-домен в `ALLOWED_ORIGINS` на бэкенде.
+
+### Переменные окружения (бэкенд)
+```
+ENABLE_GOOGLE_AUTH=true
+GOOGLE_CLIENT_ID=....apps.googleusercontent.com
+ENABLE_EMAIL_AUTH=true
+EMAIL_FROM=no-reply@your-domain.com
+```
 
 ## 🔧 Конфигурация
+
 
 ### Environment Variables
 

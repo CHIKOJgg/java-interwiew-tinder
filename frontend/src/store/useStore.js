@@ -132,6 +132,28 @@ const useStore = create((set, get) => ({
     }
   },
 
+  // Web providers (Google / email): the API already returned user+token.
+  loginWithToken: (user, token) => {
+    const lang = user.language || 'Java';
+    apiClient.setLanguage(lang);
+    apiClient.setUserId(user.telegram_id);
+    saveToSession('token', token);
+    set({
+      user,
+      token,
+      isAuthenticated: true,
+      isLoading: false,
+      language: lang,
+      availableModes: user.available_modes || ['swipe', 'test'],
+      availableLanguages: user.available_languages || ['Java', 'Python', 'TypeScript'],
+    });
+    get().loadQuestions().catch(console.error);
+    get().loadStats();
+    get().initDaily();
+    get().loadSaved();
+    return user;
+  },
+
   logout: () => {
     sessionStorage.removeItem(`${CACHE_KEY}_token`);
     // Only clear our own keys from localStorage to avoid nuking other app data

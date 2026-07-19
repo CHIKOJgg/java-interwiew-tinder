@@ -1,7 +1,31 @@
+import '../../config/env.js'; // ensure .env loaded before reading process.env
 import pool from '../../config/database.js';
 import { metricsService } from '../metricsService.js';
 
-const TG_API = `https://api.telegram.org/bot${process.env.BOT_TOKEN}`;
+// Lazy getter — BOT_TOKEN is read at call time, not at module import, so a
+// missing/late dotenv load can never capture `undefined` into a constant.
+function tgApi() {
+  const token = process.env.BOT_TOKEN;
+  if (!token) throw new Error('BOT_TOKEN is not configured');
+  return `https://api.telegram.org/bot${token}`;
+}
+
+// ─── Resolve Stars amount for a plan (single source of truth) ────────
+// Reads from the DB; falls back to env defaults. Exported so other code
+// (e.g. createInvoiceLink) can show the exact same number the UI shows.
+export async function getStarsAmount(planId, interval = 'monthly') {
+  const isYearly = interval === 'yearly';
+  try {
+    const { rows } = (await pool.query(
+      `SELECT ${isYearly ? 'stars_yearly' : 'stars_monthly'} AS amount FROM subscription_plans WHERE id = $1`,
+      [planId]
+    )) || {};
+    if (rows?.[0]?.amount) return rows[0].amount;
+  } catch { /* fall through to env defaults */ }
+  return isYearly
+    ? parseInt(process.env.STARS_PRO_YEARLY_AMOUNT  || '3000')
+    : parseInt(process.env.STARS_PRO_MONTHLY_AMOUNT || '450');
+}
 
 // ─── Send Stars invoice to user's Telegram chat ────────────────────
 export async function sendStarsInvoice(telegramUserId, planId, interval) {
@@ -9,24 +33,12 @@ export async function sendStarsInvoice(telegramUserId, planId, interval) {
 
   // Single source of truth: pull the Stars amount from the plan in the DB so
   // the invoice always matches what the UI shows. Fall back to env defaults.
-  let amount;
-  try {
-    const { rows } = await pool.query(
-      `SELECT ${isYearly ? 'stars_yearly' : 'stars_monthly'} AS amount FROM subscription_plans WHERE id = $1`,
-      [planId]
-    );
-    amount = rows[0]?.amount;
-  } catch { /* fall through to env defaults */ }
-  if (!amount) {
-    amount = isYearly
-      ? parseInt(process.env.STARS_PRO_YEARLY_AMOUNT  || '3000')
-      : parseInt(process.env.STARS_PRO_MONTHLY_AMOUNT || '450');
-  }
+  const amount = await getStarsAmount(planId, interval);
 
   const label    = isYearly ? 'Pro — 1 year' : 'Pro — 1 month';
   const payload  = JSON.stringify({ userId: telegramUserId.toString(), planId, interval });
 
-  const res = await fetch(`${TG_API}/sendInvoice`, {
+  const res = await fetch(`${tgApi()}/sendInvoice`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -50,7 +62,7 @@ export async function answerPreCheckout(preCheckoutQueryId, ok = true, errorMsg 
   const body = { pre_checkout_query_id: preCheckoutQueryId, ok };
   if (!ok && errorMsg) body.error_message = errorMsg;
 
-  await fetch(`${TG_API}/answerPreCheckoutQuery`, {
+  await fetch(`${tgApi()}/answerPreCheckoutQuery`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -59,7 +71,7 @@ export async function answerPreCheckout(preCheckoutQueryId, ok = true, errorMsg 
 
 // ─── Send a simple text message to a chat ─────────────────────────
 export async function sendTelegramMessage(chatId, text) {
-  await fetch(`${TG_API}/sendMessage`, {
+  await fetch(`${tgApi()}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: chatId, text }),

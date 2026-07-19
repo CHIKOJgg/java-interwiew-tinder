@@ -79,7 +79,17 @@
     "connecting": "Connecting to Telegram...",
     "signing_in": "Signing you in...",
     "startup_error": "Startup Failed",
-    "restart": "Restart"
+    "restart": "Restart",
+    "web_subtitle": "Sign in to practice interview questions",
+    "by_email": "Email",
+    "send_code": "Send code",
+    "email_placeholder": "you@example.com",
+    "code_sent": "We sent a 6-digit code to {{email}}",
+    "code_placeholder": "123456",
+    "verify": "Verify",
+    "use_another": "Use another email",
+    "google_disabled": "Google sign-in is not configured",
+    "continue_google": "Continue with Google"
   },
   "completion": {
     "title": "Great Job!",

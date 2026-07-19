@@ -16,7 +16,9 @@ const FREE_DEFAULTS = {
   resume_analysis_limit: 3,
   interview_eval_limit: 20,
   available_languages: ['Java', 'Python', 'TypeScript'],  // all languages unlocked on free
-  available_modes: ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion'],
+  // Only the two core modes are free. Advanced modes (bug-hunting, blitz,
+  // mock-interview, concept-linker, code-completion, review) require Pro.
+  available_modes: ['swipe', 'test'],
   model_priority: 'standard',
 };
 
@@ -190,7 +192,17 @@ export function rateLimit(limitType = 'requests') {
         currentCount = limits[counterField];
       }
 
-      const max = limits[counterField.replace('_today', '_per_day').replace('_this_month', '_limit')] || FREE_DEFAULTS[counterField.replace('_today', '_per_day').replace('_this_month', '_limit')];
+      // Counter field → corresponding max-capacity column. The DB column
+      // names are not a simple suffix swap, so map explicitly to avoid
+      // resolving `max` to `undefined` (which would disable the limiter).
+      const MAX_FIELD = {
+        requests_today: 'requests_per_day',
+        ai_generations_this_month: 'ai_generations_per_month',
+        resume_analyses_this_month: 'resume_analysis_limit',
+        interview_evals_this_month: 'interview_eval_limit',
+      };
+      const maxKey = MAX_FIELD[counterField];
+      const max = (maxKey && limits[maxKey]) || (maxKey && FREE_DEFAULTS[maxKey]) || FREE_DEFAULTS.requests_per_day;
       exceeded = currentCount >= max;
     }
 
@@ -275,3 +287,7 @@ export async function trackEvent(eventData) {
     ]);
   } catch { /* analytics never breaks the request */ }
 }
+
+
+
+

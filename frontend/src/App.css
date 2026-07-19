@@ -315,3 +315,56 @@
     padding-right: 16px;
   }
 }
+
+/* ── Web / PWA login ──────────────────────────────────────────────── */
+.web-login {
+  max-width: 380px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+}
+.web-login h1 { font-size: 24px; margin: 0; }
+.web-login-sub { opacity: 0.6; margin: 0; font-size: 14px; }
+.web-login form { display: flex; flex-direction: column; gap: 12px; }
+.web-login input {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+  font-size: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.web-login button {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: none;
+  background: #5c7cfa;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.web-login button:disabled { opacity: 0.6; cursor: default; }
+.web-login button.link {
+  background: none;
+  color: #5c7cfa;
+  font-weight: 500;
+}
+.web-login-tabs { display: flex; gap: 8px; justify-content: center; }
+.web-login-tabs button {
+  background: #f1f3f5;
+  color: #495057;
+  padding: 8px 16px;
+}
+.web-login-tabs button.active { background: #5c7cfa; color: #fff; }
+.web-login-error {
+  background: #fff0f0;
+  color: #c92a2a;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.web-login-hint { font-size: 12px; opacity: 0.6; }

@@ -77,9 +77,19 @@
   },
   "auth": {
     "connecting": "Подключение к Telegram...",
-    "signing_in": "Вход в систему...",
-    "startup_error": "Ошибка запуска",
-    "restart": "Перезапустить"
+    "signing_in": "Входим...",
+    "startup_error": "Сбой запуска",
+    "restart": "Перезапустить",
+    "web_subtitle": "Войдите, чтобы тренироваться к собеседованиям",
+    "by_email": "Email",
+    "send_code": "Отправить код",
+    "email_placeholder": "you@example.com",
+    "code_sent": "Мы отправили 6-значный код на {{email}}",
+    "code_placeholder": "123456",
+    "verify": "Подтвердить",
+    "use_another": "Другой email",
+    "google_disabled": "Вход через Google не настроен",
+    "continue_google": "Продолжить через Google"
   },
   "completion": {
     "title": "Отличная работа!",

@@ -1,18 +1,19 @@
 import crypto from 'crypto';
-import dotenv from 'dotenv';
+import '../config/env.js'; // ensure .env loaded before reading process.env
 import pool from '../config/database.js';
 import redis from '../config/redis.js';
 import logger from '../config/logger.js';
 import { getLanguage } from './languageRegistry.js';
 
-dotenv.config();
-
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL = process.env.OPENROUTER_MODEL || 'openrouter/free';
 const PROMPT_VERSION = 'v2'; // bump version so old bad-response cache entries are ignored
+
+// Lazy getters — read at call time so a missing/late dotenv load can never
+// capture `undefined` into a top-level constant.
+function getOpenRouterKey() { return process.env.OPENROUTER_API_KEY; }
+function getModel() { return process.env.OPENROUTER_MODEL || 'openrouter/free'; }
 const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS || '45000');
 
-if (!OPENROUTER_API_KEY) {
+if (!getOpenRouterKey()) {
   logger.error('⚠️  OPENROUTER_API_KEY is not set — all AI calls will fail');
 }
 
@@ -175,7 +176,7 @@ async function writeCache(clusterId, mode, language, content, isJson) {
        VALUES ($1,$2,$3,$4,$5,$6)
        ON CONFLICT (cluster_id, mode, model, prompt_version, language) DO UPDATE
          SET response=EXCLUDED.response, created_at=CURRENT_TIMESTAMP`,
-      [clusterId, mode, MODEL, PROMPT_VERSION, language, content]
+      [clusterId, mode, getModel(), PROMPT_VERSION, language, content]
     );
 
     // 2. Write to Redis (fast, 30 days TTL)
@@ -197,7 +198,7 @@ const pendingRequests = new Map();
 
 // ─── OpenRouter HTTP call ─────────────────────────────────────────────
 async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature) {
-  if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY is not configured');
+  if (!getOpenRouterKey()) throw new Error('OPENROUTER_API_KEY is not configured');
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
@@ -208,13 +209,13 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature) 
       method: 'POST',
       signal: controller.signal,
       headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Authorization': `Bearer ${getOpenRouterKey()}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.APP_URL || 'https://interview-tinder.app',
         'X-Title': 'Interview Tinder',
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: getModel(),
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -236,7 +237,7 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature) 
   const content = data.choices?.[0]?.message?.content;
   if (!content?.trim()) throw new Error('Empty response from OpenRouter');
 
-  const usedModel = data.model || MODEL;
+  const usedModel = data.model || getModel();
   logger.info({ model: usedModel, chars: content.length }, '✅ OpenRouter response received');
   return content.trim();
 }

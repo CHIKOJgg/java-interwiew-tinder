@@ -31,6 +31,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from './i18n/config';
 import logger from './utils/logger';
 import DebugOverlay from './components/DebugOverlay';
+import WebLogin from './components/WebLogin';
 import './App.css';
 
 function getTelegramInitData() {
@@ -75,7 +76,7 @@ function App() {
     questions, currentIndex,
     showExplanation, currentExplanation, isLoadingExplanation,
     isLoadingQuestions,
-    login, swipeCard, closeExplanation, hasMoreQuestions, loadQuestions,
+    login, loginWithToken, swipeCard, closeExplanation, hasMoreQuestions, loadQuestions,
     learningMode,
     switchLanguage,
     stats,
@@ -178,19 +179,21 @@ function App() {
 
     const startApp = async () => {
       try {
-        setInitState('waiting_telegram');
-        const initData = await getTelegramInitData();
-        if (!initData) throw new Error('No initData');
-
-        // Extract referralId from start_param if present
-        const tg = window.Telegram?.WebApp;
-        let referralId = null;
-        if (tg?.initDataUnsafe?.start_param) {
-          referralId = tg.initDataUnsafe.start_param;
+        // Prefer Telegram Mini App if available.
+        const initData = await getTelegramInitData().catch(() => null);
+        if (initData) {
+          const tg = window.Telegram?.WebApp;
+          let referralId = null;
+          if (tg?.initDataUnsafe?.start_param) {
+            referralId = tg.initDataUnsafe.start_param;
+          }
+          setInitState('auth');
+          await login(initData, referralId);
+        } else {
+          // Standalone web / PWA: show web login instead of failing.
+          setInitState('web_login');
+          return;
         }
-
-        setInitState('auth');
-        await login(initData, referralId);
 
         if (cancelled) return;
         setInitState('ready');
@@ -267,6 +270,21 @@ function App() {
     );
   }
 
+  if (initState === 'web_login') {
+    const tg = window.Telegram?.WebApp;
+    const referralId = tg?.initDataUnsafe?.start_param || null;
+    return (
+      <WebLogin
+        referralId={referralId}
+        onAuthenticated={(user, token) => {
+          loginWithToken(user, token);
+          if (localStorage.getItem(ONBOARD_KEY)) setScreen('language');
+          else setScreen('onboarding');
+          setInitState('ready');
+        }}
+      />
+    );
+  }
   if (initState === 'error') {
     return (
       <div className="app-loading">

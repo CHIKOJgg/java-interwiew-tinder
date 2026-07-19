@@ -2,7 +2,13 @@
 
 Скопируй и вставь. Ссылки-заглушки заменяй на свои:
 - Web/PWA: `https://your-domain.com`
-- Telegram bot: `https://t.me/JavaInterviewTinderBot`
+- Telegram bot: `https://t.me/JavaInterviewTinderBot`  ← должен совпадать с
+  `VITE_TELEGRAM_BOT_USERNAME` во frontend/.env (иначе реферальные ссылки мертвые)
+
+> ⚠️ Перед публикацией убедись, что:
+> 1. Секреты из git-истории вычищены и **переротированы** (Supabase / Bot Token / OpenRouter).
+> 2. Прод задеплоен, домен прописан в `ALLOWED_ORIGINS`, OG-теги и sitemap указывают на реальный URL.
+> 3. Рефералка и ShareCard генерят ссылки с правильным bot-username.
 
 ---
 

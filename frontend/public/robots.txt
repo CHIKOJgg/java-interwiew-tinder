@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://java-interwiew-tinder.fly.dev/sitemap.xml

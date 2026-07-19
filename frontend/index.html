@@ -24,11 +24,11 @@
   <meta property="og:title" content="Interview Tinder — prep for your interview in 10 min/day" />
   <meta property="og:description" content="Swipe through real interview questions, get instant AI explanations, track your readiness percentile. Java, Python, TypeScript." />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="/icon-512.png" />
+  <meta property="og:image" content="/og-image.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Interview Tinder — prep for your interview in 10 min/day" />
   <meta name="twitter:description" content="Swipe through real interview questions, get instant AI explanations, track your readiness percentile." />
-  <meta name="twitter:image" content="/icon-512.png" />
+  <meta name="twitter:image" content="/og-image.png" />
 
   <!-- Google One Tap (web login). Harmless if VITE_GOOGLE_CLIENT_ID unset. -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -42,7 +42,24 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <title>Interview Tinder</title>
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+
+  <!-- Google Analytics 4 (no-op until VITE_GA_MEASUREMENT_ID is set at build) -->
+  <script>
+    (function () {
+      var id = '%VITE_GA_MEASUREMENT_ID%';
+      if (!id || id.indexOf('%') === 0) return;
+      var s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + id;
+      document.head.appendChild(s);
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){ dataLayer.push(arguments); }
+      window.gtag = gtag;
+      gtag('js', new Date());
+      gtag('config', id);
+    })();
+  </script>
 </head>
 
 <body>

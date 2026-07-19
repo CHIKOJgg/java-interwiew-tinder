@@ -110,7 +110,7 @@ const processJob = async (job) => {
            updated_at=CURRENT_TIMESTAMP
        WHERE id=$1`,
       [id, err.message]
-    ).catch(() => { });
+    ).catch((dbErr) => logger.error({ err: dbErr, jobId: id }, 'Failed to mark job as failed'));
   }
 };
 
@@ -177,7 +177,7 @@ async function processExpired() {
 
         await sendTelegramMessage(sub.user_id,
           `ℹ️ Your Pro subscription has expired. You've been moved to the Free plan.`
-        ).catch(() => { });
+        ).catch((err) => logger.error({ err, userId: sub.user_id }, 'Failed to send subscription-expiry notification'));
 
       } catch (err) {
         await client.query('ROLLBACK').catch(() => { });
@@ -241,7 +241,8 @@ async function notifyStreakReminders() {
       const msg =
         `🔥 ${name}ваша серия ${u.current_streak} дней заканчивается сегодня!\n\n` +
         `Ответьте на 3 вопроса, чтобы не сбросить прогресс. Всего 2 минуты.${appLink()}`;
-      await sendTelegramMessage(u.telegram_id, msg).catch(() => { });
+      await sendTelegramMessage(u.telegram_id, msg)
+        .catch((err) => logger.error({ err, userId: u.telegram_id }, 'Failed to send streak-reminder notification'));
     }
 
     // 2) Lapsed win-back: a one-time gentle nudge 2 days after a lapse and a
@@ -263,7 +264,8 @@ async function notifyStreakReminders() {
       const msg =
         `👋 ${name}мы соскучились! Ваши темы ждут — вернитесь и потренируйтесь 5 минут.\n` +
         `Начните новую серию прямо сейчас.${appLink()}`;
-      await sendTelegramMessage(u.telegram_id, msg).catch(() => { });
+      await sendTelegramMessage(u.telegram_id, msg)
+        .catch((err) => logger.error({ err, userId: u.telegram_id }, 'Failed to send win-back notification'));
     }
   } catch (err) {
     logger.error({ err }, 'Error in notifyStreakReminders job');

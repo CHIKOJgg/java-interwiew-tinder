@@ -116,7 +116,7 @@ export async function activateUkassaSubscription(userId, planId, interval, payme
 
     import('../referralService.js')
       .then(m => m.referralService.processConversion(userId))
-      .catch(() => { });
+      .catch((err) => logger.error({ err, userId }, 'Failed to process U-Kassa referral conversion'));
 
     metricsService.trackEvent(userId, 'subscription_started', { planId, interval, provider: 'ukassa' });
     return { success: true };

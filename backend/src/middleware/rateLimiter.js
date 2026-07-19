@@ -35,7 +35,7 @@ async function getUserLimits(userId) {
     } catch (err) {
       logger.warn({ err }, 'Redis read error in getUserLimits:');
     }
-    }
+  }
 
   try {
     const { rows } = await pool.query(`
@@ -60,7 +60,7 @@ async function getUserLimits(userId) {
     `, [userId]);
 
     if (rows.length === 0) return { ...FREE_DEFAULTS, _fetchedAt: Date.now() };
-
+    
     const limits = { ...rows[0], _fetchedAt: Date.now() };
     if (typeof limits.available_languages === 'string') {
       limits.available_languages = limits.available_languages.replace(/[{}"]/g, '').split(',');
@@ -68,10 +68,11 @@ async function getUserLimits(userId) {
     if (typeof limits.available_modes === 'string') {
       limits.available_modes = limits.available_modes.replace(/[{}"]/g, '').split(',');
     }
-
+    
     // 2. Save to Redis with 60s TTL
     if (redis) {
-      redis.setex(cacheKey, 60, JSON.stringify(limits)).catch(err => logger.warn({ err }, 'Redis cache write failed:'));
+      Promise.resolve(redis.setex(cacheKey, 60, JSON.stringify(limits)))
+        .catch(err => logger.warn({ err }, 'Redis cache write failed:'));
     }
     
     return limits;
@@ -201,7 +202,7 @@ export function rateLimit(limitType = 'requests') {
         resume_analyses_this_month: 'resume_analysis_limit',
         interview_evals_this_month: 'interview_eval_limit',
       };
-      const maxKey = MAX_FIELD[counterField];
+    const maxKey = MAX_FIELD[counterField];
       const max = (maxKey && limits[maxKey]) || (maxKey && FREE_DEFAULTS[maxKey]) || FREE_DEFAULTS.requests_per_day;
       exceeded = currentCount >= max;
     }

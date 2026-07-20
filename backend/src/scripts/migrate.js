@@ -469,6 +469,21 @@ const migrations = [
       CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
       CREATE INDEX IF NOT EXISTS idx_waitlist_created ON waitlist(created_at);
     `
+  },
+
+  // ── 027: RB data-localization support + capture B2B fields ──
+  // - likely_rb / region let us identify and later segregate (or block) PII of
+  //   Republic of Belarus residents, who must be stored on RB-located servers.
+  // - telegram / interest were sent by the B2B form but never persisted; add them.
+  {
+    id: '027_waitlist_rb_gate',
+    sql: `
+      ALTER TABLE waitlist ADD COLUMN IF NOT EXISTS region VARCHAR(8);
+      ALTER TABLE waitlist ADD COLUMN IF NOT EXISTS likely_rb BOOLEAN DEFAULT FALSE;
+      ALTER TABLE waitlist ADD COLUMN IF NOT EXISTS telegram TEXT;
+      ALTER TABLE waitlist ADD COLUMN IF NOT EXISTS interest VARCHAR(30);
+      CREATE INDEX IF NOT EXISTS idx_waitlist_likely_rb ON waitlist(likely_rb);
+    `
   }
 ];
 

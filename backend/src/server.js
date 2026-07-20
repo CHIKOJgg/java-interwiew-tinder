@@ -393,38 +393,62 @@ function hashClientIp(req) {
 app.post('/api/waitlist',
   validateBody({ email: { required: true, type: 'string', maxLength: 254 } }),
   async (req, res) => {
-    try {
-      const { email, lang, source, consent } = req.body;
-      if (!isValidEmailAddress(email)) {
-        return res.status(400).json({ error: 'Invalid email address' });
-      }
-      // Explicit, informed consent is mandatory under Belarus data law.
-      if (consent !== true) {
-        return res.status(400).json({ error: 'Consent is required to subscribe.' });
-      }
-      const cleanEmail = email.trim().toLowerCase();
-      const ipHash = hashClientIp(req);
-      await pool.query(
-        `INSERT INTO waitlist (email, lang, source, consent_granted, consent_at, consent_text, ip_hash, user_agent)
-         VALUES ($1, $2, $3, TRUE, CURRENT_TIMESTAMP, $4, $5, $6)
-         ON CONFLICT (email) DO UPDATE SET
-           consent_granted = TRUE,
-           consent_at = CURRENT_TIMESTAMP,
-           unsubscribed_at = NULL,
-           consent_text = $4,
-           ip_hash = COALESCE($5, waitlist.ip_hash),
-           source = COALESCE($3, waitlist.source)`,
-        [
-          cleanEmail,
-          String(lang || 'ru').slice(0, 10),
-          String(source || 'landing').slice(0, 50),
-          WAITLIST_CONSENT_TEXT,
-          ipHash,
-          String(req.headers['user-agent'] || '').slice(0, 500),
-        ]
-      );
-      res.json({ success: true, message: 'Subscribed.' });
-      metricsService.trackEvent(null, 'waitlist_subscribe', { lang, source });
+  try {
+    const { email, lang, source, consent, region, timezone, telegram, interest } = req.body;
+    if (!isValidEmailAddress(email)) {
+      return res.status(400).json({ error: 'Invalid email address' });
+    }
+    // Explicit, informed consent is mandatory under Belarus data law.
+    if (consent !== true) {
+      return res.status(400).json({ error: 'Consent is required to subscribe.' });
+    }
+
+    // ── Belarus data-localization gate ────────────────────────────────────
+    // Under Закон РБ «Об информации…», personal data of RB citizens must be
+    // stored on servers located in the Republic of Belarus. Our DB is currently
+    // hosted outside RB (Supabase/EU), so we MUST NOT persist PII of RB residents
+    // cross-border. The gate is opt-out via ALLOW_RB_PII once an RB-hosted
+    // datastore is provisioned (or if the operator consciously accepts the risk).
+    const likelyRb =
+      region === 'BY' || region === 'RB' || timezone === 'Europe/Minsk';
+    const RB_PII_GATE = !process.env.ALLOW_RB_PII;
+    if (likelyRb && RB_PII_GATE) {
+      return res.status(451).json({
+        error: 'not_localized',
+        message:
+          'Сбор персональных данных граждан РБ временно приостановлен: хранение данных должно быть локализовано в РБ. Напишите нам в Telegram-бот, чтобы получать обновления.',
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const ipHash = hashClientIp(req);
+    await pool.query(
+      `INSERT INTO waitlist (email, lang, source, consent_granted, consent_at, consent_text, ip_hash, user_agent, region, likely_rb, telegram, interest)
+       VALUES ($1, $2, $3, TRUE, CURRENT_TIMESTAMP, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (email) DO UPDATE SET
+         consent_granted = TRUE,
+         consent_at = CURRENT_TIMESTAMP,
+         unsubscribed_at = NULL,
+         consent_text = $4,
+         ip_hash = COALESCE($5, waitlist.ip_hash),
+         source = COALESCE($3, waitlist.source),
+         region = COALESCE($7, waitlist.region),
+         likely_rb = COALESCE($8, waitlist.likely_rb)`,
+      [
+        cleanEmail,
+        String(lang || 'ru').slice(0, 10),
+        String(source || 'landing').slice(0, 50),
+        WAITLIST_CONSENT_TEXT,
+        ipHash,
+        String(req.headers['user-agent'] || '').slice(0, 500),
+        String(region || timezone || '').slice(0, 8),
+        likelyRb,
+        telegram ? String(telegram).slice(0, 1000) : null,
+        interest ? String(interest).slice(0, 30) : null,
+      ]
+    );
+    res.json({ success: true, message: 'Subscribed.' });
+    metricsService.trackEvent(null, 'waitlist_subscribe', { lang, source, likelyRb });
     } catch (err) {
       logger.error({ err }, 'Waitlist subscribe error');
       res.status(500).json({ error: 'Internal server error' });
@@ -498,7 +522,7 @@ app.use('/api/admin', requireAdmin);
 app.get('/api/admin/waitlist', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, email, lang, source, consent_at, created_at
+      `SELECT id, email, lang, source, region, likely_rb, telegram, interest, consent_at, created_at
        FROM waitlist
        WHERE unsubscribed_at IS NULL AND consent_granted = TRUE
        ORDER BY created_at DESC

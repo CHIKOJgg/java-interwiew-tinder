@@ -224,6 +224,10 @@
       .compare td:first-child::before{ display:none; }
       .compare td::before{ content:attr(data-label); color:var(--muted); font-size:12.5px; font-weight:600; }
     }
+
+    .rbnotice{ display:none; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:12.5px; border-radius:12px; padding:10px 14px; margin-top:14px; text-align:left; line-height:1.5; }
+    .rbnotice.show{ display:block; }
+    .rbnotice a{ color:#9a3412; font-weight:700; }
   </style>
 </head>
 <body>
@@ -506,6 +510,7 @@
             <input type="checkbox" id="b2bConsent" />
             <span>Я согласен на обработку данных согласно <a href="/privacy.html" target="_blank" rel="noopener" style="color:#a5b4fc">Политике конфиденциальности</a>.</span>
           </label>
+          <div class="rbnotice" id="b2bRbNotice">⚠️ Похоже, вы в РБ. По закону РБ данные должны храниться на серверах в Беларуси — это пока не настроено, поэтому B2B-заявки из РБ здесь не сохраняются. <a href="https://t.me/JavaInterviewTinderBot" target="_blank" rel="noopener" style="color:#9a3412">Свяжитесь с нами в Telegram</a>.</div>
           <button class="btn green b2b-submit" id="b2bSubmit" type="submit">Запросить доступ →</button>
           <div class="b2b-msg" id="b2bMsgOut"></div>
         </form>
@@ -542,6 +547,7 @@
           <input type="checkbox" id="leadConsent" />
           <span>Я согласен на обработку почты согласно <a href="/privacy.html" target="_blank" rel="noopener">Политике конфиденциальности</a>.</span>
         </label>
+        <div class="rbnotice" id="leadRbNotice">⚠️ Похоже, вы в РБ. По закону РБ ваши данные должны храниться на серверах в Беларуси — это пока не настроено, поэтому мы не можем собрать ваш email. <a href="https://t.me/JavaInterviewTinderBot" target="_blank" rel="noopener">Напишите нам в Telegram</a>, чтобы получать обновления.</div>
         <div class="lead-msg" id="leadMsg"></div>
       </div>
     </div>
@@ -593,6 +599,20 @@
     var LANGS = ['Java','Python','TypeScript'];
 
     function emailOk(v){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v); }
+
+    // Detect likely Belarus residency (timezone Europe/Minsk) for the data-localization gate.
+    function detectRegion(){
+      try {
+        var tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        return { region: (tz === 'Europe/Minsk') ? 'BY' : '', timezone: tz };
+      } catch(e){ return { region:'', timezone:'' }; }
+    }
+    var RB = detectRegion();
+    if (RB.region === 'BY') {
+      ['leadRbNotice','b2bRbNotice'].forEach(function(id){
+        var el = document.getElementById(id); if (el) el.classList.add('show');
+      });
+    }
 
     // ---- Live question widget (real data from /api/demo/questions) ----
     (function(){
@@ -691,8 +711,9 @@
         btn.disabled=true; btn.textContent='…';
         fetch(WAITLIST_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
           email:email, lang:'ru', source:params.get('utm_source')||'landing', consent:true,
-          interest: interest?interest.value:'passive'
-        })}).then(function(r){return r.json();}).then(function(){
+          interest: interest?interest.value:'passive', region:RB.region, timezone:RB.timezone
+        })}).then(function(r){ return r.json().then(function(j){ j.__status=r.status; return j; }); }).then(function(j){
+          if(j.__status===451){ msg.className='lead-msg err'; msg.textContent=j.message; return; }
           msg.className='lead-msg ok'; msg.textContent='Готово! PDF и рассылка уже в пути.'; emailEl.value=''; consent.checked=false;
         }).catch(function(){ msg.className='lead-msg err'; msg.textContent='Ошибка сети. Попробуй позже.'; })
           .finally(function(){ btn.disabled=false; btn.textContent='Получить PDF + рассылку'; });
@@ -716,8 +737,10 @@
         btn.disabled=true; btn.textContent='…';
         var packed=(tg?tg+' ':'')+'| '+product+(name?(' | '+name):'')+(message?(' | '+message):'');
         fetch(WAITLIST_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-          email: email||undefined, lang:'ru', source:product, consent:true, telegram:packed, interest:'arbitrage'
-        })}).then(function(r){return r.json();}).then(function(){
+          email: email||undefined, lang:'ru', source:product, consent:true, telegram:packed, interest:'arbitrage',
+          region:RB.region, timezone:RB.timezone
+        })}).then(function(r){ return r.json().then(function(j){ j.__status=r.status; return j; }); }).then(function(j){
+          if(j.__status===451){ out.className='b2b-msg err'; out.textContent=j.message; return; }
           out.className='b2b-msg ok'; out.textContent='Спасибо! Свяжемся в течение 1 рабочего дня.'; form.reset();
         }).catch(function(){ out.className='b2b-msg err'; out.textContent='Ошибка сети. Напиши нам в Telegram.'; })
           .finally(function(){ btn.disabled=false; btn.textContent='Запросить доступ →'; });

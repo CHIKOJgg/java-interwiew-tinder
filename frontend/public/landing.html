@@ -224,6 +224,10 @@
       .compare td:first-child::before{ display:none; }
       .compare td::before{ content:attr(data-label); color:var(--muted); font-size:12.5px; font-weight:600; }
     }
+
+    .rbnotice{ display:none; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:12.5px; border-radius:12px; padding:10px 14px; margin-top:14px; text-align:left; line-height:1.5; }
+    .rbnotice.show{ display:block; }
+    .rbnotice a{ color:#9a3412; font-weight:700; }
   </style>
 </head>
 <body>
@@ -506,6 +510,7 @@
             <input type="checkbox" id="b2bConsent" />
             <span>I agree to the processing of my data per the <a href="/privacy.html" target="_blank" rel="noopener" style="color:#a5b4fc">Privacy Policy</a>.</span>
           </label>
+          <div class="rbnotice" id="b2bRbNotice">⚠️ You appear to be in Belarus. Under RB law your data must be stored on RB-located servers, which isn't set up yet — so B2B requests from RB can't be saved here. <a href="https://t.me/JavaInterviewTinderBot" target="_blank" rel="noopener" style="color:#9a3412">Contact us on Telegram</a> instead.</div>
           <button class="btn green b2b-submit" id="b2bSubmit" type="submit">Request access →</button>
           <div class="b2b-msg" id="b2bMsgOut"></div>
         </form>
@@ -542,6 +547,7 @@
           <input type="checkbox" id="leadConsent" />
           <span>I agree to the processing of my email per the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
         </label>
+        <div class="rbnotice" id="leadRbNotice">⚠️ You appear to be in Belarus. Under RB law, your data must be stored on RB-located servers, which isn't set up yet — so we can't collect your email right now. <a href="https://t.me/JavaInterviewTinderBot" target="_blank" rel="noopener">Message us on Telegram</a> to get updates instead.</div>
         <div class="lead-msg" id="leadMsg"></div>
       </div>
     </div>
@@ -593,6 +599,20 @@
     var LANGS = ['Java','Python','TypeScript'];
 
     function emailOk(v){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v); }
+
+    // Detect likely Belarus residency (timezone Europe/Minsk) for the data-localization gate.
+    function detectRegion(){
+      try {
+        var tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        return { region: (tz === 'Europe/Minsk') ? 'BY' : '', timezone: tz };
+      } catch(e){ return { region:'', timezone:'' }; }
+    }
+    var RB = detectRegion();
+    if (RB.region === 'BY') {
+      ['leadRbNotice','b2bRbNotice'].forEach(function(id){
+        var el = document.getElementById(id); if (el) el.classList.add('show');
+      });
+    }
 
     // ---- Live question widget (real data from /api/demo/questions) ----
     (function(){
@@ -691,8 +711,9 @@
         btn.disabled=true; btn.textContent='…';
         fetch(WAITLIST_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
           email:email, lang:'en', source:params.get('utm_source')||'landing', consent:true,
-          interest: interest?interest.value:'passive'
-        })}).then(function(r){return r.json();}).then(function(){
+          interest: interest?interest.value:'passive', region:RB.region, timezone:RB.timezone
+        })}).then(function(r){ return r.json().then(function(j){ j.__status=r.status; return j; }); }).then(function(j){
+          if(j.__status===451){ msg.className='lead-msg err'; msg.textContent=j.message; return; }
           msg.className='lead-msg ok'; msg.textContent="You're in! The PDF + digest are on their way."; emailEl.value=''; consent.checked=false;
         }).catch(function(){ msg.className='lead-msg err'; msg.textContent='Network error. Try again later.'; })
           .finally(function(){ btn.disabled=false; btn.textContent='Get the PDF + digest'; });
@@ -716,8 +737,10 @@
         btn.disabled=true; btn.textContent='…';
         var packed=(tg?tg+' ':'')+'| '+product+(name?(' | '+name):'')+(message?(' | '+message):'');
         fetch(WAITLIST_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-          email: email||undefined, lang:'en', source:product, consent:true, telegram:packed, interest:'arbitrage'
-        })}).then(function(r){return r.json();}).then(function(){
+          email: email||undefined, lang:'en', source:product, consent:true, telegram:packed, interest:'arbitrage',
+          region:RB.region, timezone:RB.timezone
+        })}).then(function(r){ return r.json().then(function(j){ j.__status=r.status; return j; }); }).then(function(j){
+          if(j.__status===451){ out.className='b2b-msg err'; out.textContent=j.message; return; }
           out.className='b2b-msg ok'; out.textContent='Thanks! We’ll reach out within 1 business day.'; form.reset();
         }).catch(function(){ out.className='b2b-msg err'; out.textContent='Network error. Ping us on Telegram instead.'; })
           .finally(function(){ btn.disabled=false; btn.textContent='Request access →'; });

@@ -64,6 +64,17 @@ class ApiClient {
     return response;
   }
 
+  // ─── Public demo (zero-login) ──────────────────────────────────────
+  async getDemoQuestions(limit = 10, language = 'Java') {
+    const params = new URLSearchParams({ limit: String(limit), language });
+    return this.request(`/demo/questions?${params.toString()}`);
+  }
+
+  async getDemoPercentile(score, language = 'Java') {
+    const params = new URLSearchParams({ score: String(score), language });
+    return this.request(`/demo/percentile?${params.toString()}`);
+  }
+
   // ─── Questions ─────────────────────────────────────────────────────
   async getQuestionsFeed(limit = 5, mode = 'swipe', { cursor = 0, seed, difficulties } = {}) {
     const params = new URLSearchParams({ limit: String(limit), mode, language: this.language });
@@ -79,6 +90,15 @@ class ApiClient {
     return this.request('/questions/swipe', {
       method: 'POST',
       body: JSON.stringify({ questionId, status }),
+    });
+  }
+
+  // Flush zero-login demo answers (stored in localStorage) into the user's
+  // real progress after they sign up — see POST /api/questions/import-progress.
+  async importProgress(items) {
+    return this.request('/questions/import-progress', {
+      method: 'POST',
+      body: JSON.stringify({ items }),
     });
   }
 

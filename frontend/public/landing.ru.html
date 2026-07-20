@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#5c7cfa" />
+  <title>Interview Tinder — пройди собеседование Java, Python и TypeScript за 10 минут в день</title>
+  <meta name="description" content="Хватит терять офферы из-за одного забытого вопроса. Тренируйся на РЕАЛЬНЫХ вопросах с собеседований, получай мгновенные AI-разборы каждого пробела и видь свой реальный уровень готовности. Бесплатно — Java, Python, TypeScript." />
+  <meta name="keywords" content="подготовка к собеседованию java, вопросы собеседования java с ответами, как подготовиться к собеседованию программиста, python собеседование подготовка, typescript interview вопросы, mock собеседование с разбором, telegram mini app собеседование" />
+  <link rel="canonical" href="https://java-interview-tinder.fly.dev/landing.ru.html" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Interview Tinder" />
+  <meta property="og:title" content="Interview Tinder — пройди собеседование за 10 минут в день" />
+  <meta property="og:description" content="Реальные вопросы с собеседований, мгновенные AI-разборы пробелов и уровень готовности. Java, Python, TypeScript. Бесплатно." />
+  <meta property="og:url" content="https://java-interview-tinder.fly.dev/landing.ru.html" />
+  <meta property="og:locale" content="ru_RU" />
+  <meta property="og:image" content="/og-image.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Interview Tinder — пройди собеседование за 10 минут в день" />
+  <meta name="twitter:description" content="Реальные вопросы с собеседований, мгновенные AI-разборы и уровень готовности. Бесплатно." />
+  <meta name="twitter:image" content="/og-image.png" />
+
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="apple-touch-icon" href="/icon.svg" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+
+  <link rel="alternate" hreflang="ru" href="/landing.ru.html" />
+  <link rel="alternate" hreflang="en" href="/landing.html" />
+  <link rel="alternate" hreflang="x-default" href="/landing.html" />
+
+  <style>
+    :root { --brand:#5c7cfa; --brand2:#8b5cf6; --bg:#f5f7fc; --card:#fff; --text:#0f172a; --muted:#5b6478; --dark:#0b1020; --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --line:#e7e9f3; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html { scroll-behavior:smooth; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; }
+    a { color:var(--brand); text-decoration:none; }
+    .wrap { max-width:1040px; margin:0 auto; padding:0 18px; }
+    h2 { font-size:clamp(22px,4vw,30px); text-align:center; margin-bottom:8px; letter-spacing:-.02em; }
+    .sub { text-align:center; color:var(--muted); margin-bottom:30px; max-width:680px; margin-left:auto; margin-right:auto; }
+    section { padding:52px 0; }
+
+    header { background:rgba(11,16,32,.92); backdrop-filter:blur(10px); color:#fff; padding:12px 0; position:sticky; top:0; z-index:50; border-bottom:1px solid rgba(255,255,255,.06); }
+    header .wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .logo { font-weight:800; font-size:18px; letter-spacing:-.01em; display:flex; align-items:center; gap:8px; }
+    .logo .dot { width:26px; height:26px; border-radius:8px; background:linear-gradient(135deg,var(--brand),var(--brand2)); display:grid; place-items:center; font-size:14px; }
+    .nav-links { display:flex; gap:20px; align-items:center; }
+    .nav-links a { color:#cbd5e1; font-size:14px; font-weight:600; }
+    .nav-links a:hover { color:#fff; }
+    @media (max-width:820px){ .nav-links .hide-m { display:none; } }
+
+    .btn { display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#fff; padding:13px 24px; border-radius:12px; font-weight:700; font-size:15px; border:none; cursor:pointer; transition:transform .08s ease, box-shadow .2s ease; box-shadow:0 6px 18px rgba(92,124,250,.32); }
+    .btn:hover { box-shadow:0 10px 26px rgba(92,124,250,.45); }
+    .btn:active { transform:scale(.97); }
+    .btn.green { background:var(--green); box-shadow:0 6px 18px rgba(34,197,94,.32); }
+    .btn.ghost { background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.25); box-shadow:none; }
+    .btn.ghost.dark { color:var(--brand); border-color:var(--brand); background:#fff; }
+    .btn.sm { padding:9px 16px; font-size:13.5px; }
+
+    .hero { background:radial-gradient(1200px 500px at 50% -10%, rgba(92,124,250,.22), transparent 60%), linear-gradient(180deg,#0b1020 0%, #141b33 100%); color:#fff; text-align:center; padding:56px 0 42px; }
+    .pill { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); color:#e2e8f0; font-size:13px; font-weight:600; padding:7px 15px; border-radius:999px; margin-bottom:20px; }
+    .pill b { color:#a5b4fc; }
+    .hero h1 { font-size:clamp(28px,5.4vw,46px); line-height:1.08; letter-spacing:-.03em; margin-bottom:16px; }
+    .hero h1 .hl { background:linear-gradient(90deg,#818cf8,#22c55e); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero p.lead { color:#c3cee0; font-size:clamp(16px,2.4vw,19px); max-width:700px; margin:0 auto 26px; }
+    .actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+    .trust-row { display:flex; gap:22px; justify-content:center; flex-wrap:wrap; margin-top:26px; color:#94a3b8; font-size:13px; }
+    .trust-row b { color:#e2e8f0; }
+
+    /* Live question widget */
+    .live { background:var(--card); color:var(--text); border-radius:20px; padding:22px; box-shadow:0 20px 50px rgba(2,6,23,.3); max-width:680px; margin:34px auto 0; text-align:left; }
+    .live-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+    .live-title { font-weight:800; font-size:16px; display:flex; align-items:center; gap:9px; }
+    .dot { width:9px; height:9px; border-radius:50%; background:var(--green); box-shadow:0 0 0 0 rgba(34,197,94,.6); animation:pulse 1.8s infinite; }
+    @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)} 70%{box-shadow:0 0 0 8px rgba(34,197,94,0)} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0)} }
+    .live-sub { color:var(--muted); font-size:12.5px; }
+    .qcard { border:1px solid var(--line); border-radius:14px; padding:16px 18px; background:linear-gradient(160deg,#eef1fe,#f7f8fc); }
+    .qcard .tag { display:inline-block; background:rgba(92,124,250,.14); color:var(--brand); font-size:12px; font-weight:700; padding:4px 11px; border-radius:999px; }
+    .qcard .q { margin-top:12px; font-size:17px; font-weight:700; line-height:1.4; }
+    .qcard .a { margin-top:12px; font-size:14.5px; color:var(--muted); display:none; border-top:1px dashed var(--line); padding-top:12px; }
+    .qcard .a.show { display:block; }
+    .live-foot { display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
+    .skeleton { height:120px; border-radius:14px; background:linear-gradient(90deg,#eef2f7,#f7fafc,#eef2f7); background-size:200% 100%; animation:sk 1.2s infinite; }
+    @keyframes sk { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* Readiness estimator */
+    .calc { background:linear-gradient(135deg,#0b1020,#4c3aa8); color:#fff; border-radius:22px; padding:30px 26px; }
+    .calc h2 { color:#fff; } .calc .sub { color:#c3cee0; }
+    .calc-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:center; margin-top:8px; }
+    @media (max-width:720px){ .calc-grid { grid-template-columns:1fr; } }
+    .calc-controls label { display:block; font-size:13px; color:#c3cee0; margin:14px 0 6px; font-weight:600; }
+    .calc-controls input[type=range] { width:100%; accent-color:var(--green); }
+    .calc-cap { font-size:26px; font-weight:800; color:#a5b4fc; }
+    .seg { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
+    .seg button { flex:1; min-width:90px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#e2e8f0; border-radius:10px; padding:9px; font-weight:700; font-size:13px; cursor:pointer; }
+    .seg button.active { background:var(--green); color:#06210f; border-color:var(--green); }
+    .calc-out { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:22px; text-align:center; }
+    .calc-out .big { font-size:clamp(30px,7vw,46px); font-weight:800; color:var(--green); letter-spacing:-.02em; line-height:1.05; }
+    .calc-out .big-lbl { font-size:13px; color:#c3cee0; margin-top:4px; }
+    .calc-out .row2 { display:flex; justify-content:space-around; margin-top:18px; gap:10px; }
+    .calc-out .row2 .n { font-size:20px; font-weight:800; color:#a5b4fc; }
+    .calc-out .row2 .l { font-size:11.5px; color:#94a3b8; }
+    .calc-note { font-size:11.5px; color:#94a3b8; margin-top:14px; text-align:center; }
+
+    .proof { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:6px; }
+    @media (max-width:720px){ .proof { grid-template-columns:repeat(2,1fr); } }
+    .proof .stat { background:var(--card); border-radius:16px; padding:18px 14px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.06); border:1px solid var(--line); }
+    .proof .stat .num { font-size:26px; font-weight:800; color:var(--brand); letter-spacing:-.02em; }
+    .proof .stat .lbl { font-size:12.5px; color:var(--muted); margin-top:2px; }
+
+    .features { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; }
+    .feature { background:var(--card); border-radius:16px; padding:22px; box-shadow:0 1px 3px rgba(0,0,0,.06); border:1px solid var(--line); }
+    .feature .ic { font-size:24px; margin-bottom:8px; display:block; }
+    .feature h3 { font-size:16.5px; margin-bottom:6px; }
+    .feature p { font-size:14px; color:var(--muted); }
+
+    .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
+    .step { background:var(--card); border-radius:16px; padding:24px 20px; box-shadow:0 1px 3px rgba(0,0,0,.06); text-align:center; border:1px solid var(--line); }
+    .step .n { width:42px; height:42px; line-height:42px; border-radius:50%; background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#fff; font-weight:800; margin:0 auto 12px; font-size:18px; }
+    .step h3 { font-size:16px; margin-bottom:6px; }
+    .step p { font-size:13.5px; color:var(--muted); }
+
+    .billing-toggle { display:flex; width:max-content; background:#e8edf5; border-radius:999px; padding:4px; margin:0 auto 30px; gap:4px; }
+    .billing-toggle button { border:0; background:transparent; padding:10px 20px; border-radius:999px; font-weight:700; font-size:14px; color:var(--muted); cursor:pointer; }
+    .billing-toggle button.active { background:var(--brand); color:#fff; box-shadow:0 4px 12px rgba(92,124,250,.3); }
+    .billing-toggle .save { font-size:11px; font-weight:800; color:var(--green); margin-left:6px; }
+    .pricing { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; align-items:stretch; }
+    .plan { background:var(--card); border-radius:18px; padding:26px 22px; box-shadow:0 1px 3px rgba(0,0,0,.06); display:flex; flex-direction:column; border:1px solid var(--line); position:relative; }
+    .plan.featured { border:2px solid var(--brand); box-shadow:0 16px 40px rgba(92,124,250,.2); transform:translateY(-4px); }
+    .plan .badge { position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:var(--brand); color:#fff; font-size:11px; font-weight:800; padding:4px 12px; border-radius:999px; letter-spacing:.03em; }
+    .plan .name { font-weight:800; font-size:19px; }
+    .plan .price { font-size:32px; font-weight:800; margin:12px 0 2px; letter-spacing:-.02em; }
+    .plan .price small { font-size:14px; font-weight:500; color:var(--muted); }
+    .plan .price-note { font-size:12px; color:var(--muted); min-height:16px; }
+    .plan ul { list-style:none; margin:16px 0 20px; flex:1; }
+    .plan li { font-size:13.5px; padding:6px 0; border-bottom:1px solid #f1f5f9; }
+    .plan li::before { content:"✓"; color:var(--green); font-weight:800; margin-right:8px; }
+    .plan .btn { justify-content:center; }
+    .plan.featured .btn { width:100%; }
+
+    .compare-wrap { overflow-x:auto; }
+    .compare { width:100%; border-collapse:collapse; background:var(--card); border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); min-width:520px; }
+    .compare th, .compare td { padding:13px 16px; text-align:left; font-size:14px; border-bottom:1px solid #f1f5f9; }
+    .compare th { background:var(--dark); color:#fff; font-weight:700; }
+    .compare th.hl { background:var(--brand); }
+    .compare td.yes { color:var(--green); font-weight:800; text-align:center; }
+    .compare td.no { color:var(--muted); text-align:center; }
+    .compare td.part { color:var(--amber); text-align:center; font-weight:600; }
+
+    .b2b { background:var(--card); }
+    .b2b-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-bottom:28px; }
+    .b2b-card { border:1px solid var(--line); border-radius:16px; padding:24px; background:linear-gradient(180deg,#fbfdff,#fff); }
+    .b2b-card .ic { font-size:26px; }
+    .b2b-card h3 { font-size:17px; margin:10px 0 6px; }
+    .b2b-card p { font-size:14px; color:var(--muted); margin-bottom:12px; }
+    .b2b-card .from { font-size:13px; font-weight:800; color:var(--brand); }
+    .b2b-form { background:linear-gradient(135deg,#0b1020,#4c3aa8); border-radius:20px; padding:30px 26px; color:#fff; }
+    .b2b-form h3 { font-size:20px; text-align:center; margin-bottom:6px; }
+    .b2b-form p.s { text-align:center; color:#c3cee0; font-size:14px; margin-bottom:20px; }
+    .b2b-fields { display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:640px; margin:0 auto; }
+    @media (max-width:600px){ .b2b-fields { grid-template-columns:1fr; } }
+    .b2b-fields input, .b2b-fields select, .b2b-fields textarea { width:100%; padding:13px 15px; border-radius:12px; border:0; font-size:15px; font-family:inherit; }
+    .b2b-fields .full { grid-column:1 / -1; }
+    .b2b-fields textarea { min-height:80px; resize:vertical; }
+    .consent { display:flex; gap:10px; align-items:flex-start; font-size:12.5px; color:#c3cee0; max-width:640px; margin:14px auto 0; text-align:left; }
+    .consent input { margin-top:3px; flex:none; }
+    .b2b-submit { display:block; margin:16px auto 0; }
+    .b2b-msg { text-align:center; margin-top:12px; font-size:14px; min-height:18px; }
+    .b2b-msg.ok { color:#86efac; } .b2b-msg.err { color:#fca5a5; }
+
+    .ref { background:linear-gradient(135deg,#0b1020,#14532d); color:#fff; border-radius:22px; padding:34px 26px; text-align:center; }
+    .ref h2 { color:#fff; } .ref .sub { color:#bbf7d0; }
+    .ref .btn { background:var(--green); }
+
+    .lead { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:30px 26px; text-align:center; }
+    .lead-form { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+    .lead-form input[type=email] { flex:1; min-width:220px; max-width:340px; padding:13px 16px; border-radius:12px; border:1px solid var(--line); font-size:15px; }
+    .lead-seg { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+    .lead-seg label { font-size:13px; background:#eef2f7; padding:7px 14px; border-radius:999px; cursor:pointer; user-select:none; }
+    .lead-seg input { display:none; }
+    .lead-seg label:has(input:checked) { background:var(--green); color:#06210f; font-weight:700; }
+    .lead-msg { margin-top:12px; font-size:14px; min-height:18px; }
+    .lead-msg.ok { color:var(--green); } .lead-msg.err { color:var(--red); }
+    .lead-consent { display:flex; gap:8px; align-items:flex-start; justify-content:center; font-size:12.5px; color:var(--muted); max-width:520px; margin:12px auto 0; text-align:left; }
+    .lead-consent input { margin-top:3px; flex:none; }
+
+    .faq { max-width:720px; margin:0 auto; }
+    .qa { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:0; margin-bottom:10px; overflow:hidden; }
+    .qa summary { font-size:15px; font-weight:700; padding:16px 18px; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; }
+    .qa summary::-webkit-details-marker { display:none; }
+    .qa summary::after { content:"+"; color:var(--brand); font-weight:800; font-size:20px; }
+    .qa[open] summary::after { content:"−"; }
+    .qa p { font-size:14px; color:var(--muted); padding:0 18px 16px; }
+
+    .pwa-hint { display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; margin-top:18px; font-size:13.5px; color:var(--muted); }
+    .pwa-hint code { background:var(--dark); color:#fff; padding:3px 9px; border-radius:8px; font-size:12.5px; }
+
+    .final { background:radial-gradient(900px 400px at 50% 0%, rgba(92,124,250,.22), transparent), linear-gradient(180deg,#0b1020,#141b33); color:#fff; text-align:center; border-radius:24px; padding:48px 26px; }
+    .final h2 { color:#fff; font-size:clamp(24px,4.5vw,34px); }
+    .final p { color:#c3cee0; max-width:520px; margin:8px auto 24px; }
+
+    .disclaimer { font-size:12.5px; color:var(--muted); text-align:center; max-width:760px; margin:0 auto; }
+    footer { text-align:center; color:var(--muted); font-size:13px; padding:34px 0; border-top:1px solid var(--line); }
+    .langs { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+    .langs a { font-size:13px; background:var(--card); border:1px solid var(--line); padding:5px 11px; border-radius:8px; color:var(--muted); }
+    .foot-links { margin-top:10px; }
+    .foot-links a { color:var(--muted); margin:0 8px; }
+
+    .sticky-cta{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(11,16,32,.14);padding:10px 14px;gap:10px;display:none}
+    .sticky-cta .btn{flex:1;justify-content:center;padding:13px 8px;font-size:15px}
+    @media(max-width:820px){ .sticky-cta{display:flex} body{padding-bottom:78px} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="logo"><span class="dot">💡</span> Interview Tinder</div>
+      <nav class="nav-links">
+        <a class="hide-m" href="#problem">Проблема</a>
+        <a class="hide-m" href="#how">Как это работает</a>
+        <a class="hide-m" href="#pricing">Цены</a>
+        <a class="hide-m" href="#b2b">B2B</a>
+        <a class="btn sm" href="/?utm_source=landing&utm_medium=header">Начать бесплатно</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="wrap">
+      <span class="pill">🔥 Реальные вопросы с собеседований · <b id="langCount">3</b> языка · без воды</span>
+      <h1>Иди на собеседование зная, что <span class="hl">пройдёшь</span><br>— а не надеясь на удачу</h1>
+      <p class="lead">Ты и так умеешь кодить. Проблема — в собеседовании: хаотичная подготовка, нет обратной связи и ноль понимания, готов ли ты на самом деле. Interview Tinder тренирует тебя на точных вопросах, которые задают компании, мгновенно объясняет каждый пробел с помощью ИИ и показывает реальный уровень готовности. <b>10 минут в день — бесплатно.</b></p>
+      <div class="actions">
+        <a class="btn green" href="/?utm_source=landing&utm_medium=hero" id="ctaHero">🚀 Попробовать реальный вопрос</a>
+        <a class="btn ghost" href="https://t.me/JavaInterviewTinderBot" target="_blank" rel="noopener">Открыть в Telegram</a>
+      </div>
+      <div class="trust-row">
+        <span>✓ <b>Без карты</b></span>
+        <span>✓ <b>7 дней</b> PRO</span>
+        <span>✓ <b>PWA</b> + Telegram Mini App</span>
+        <span>✓ <b>Реальные</b> вопросы, не выдуманные</span>
+      </div>
+
+      <!-- Live question widget -->
+      <div class="live" id="liveWidget">
+        <div class="live-head">
+          <div class="live-title"><span class="dot"></span> Реальный вопрос, вживую из базы</div>
+          <div class="live-sub" id="liveUpdated">загрузка…</div>
+        </div>
+        <div id="liveBody"><div class="skeleton"></div></div>
+        <div class="live-foot">
+          <button class="btn ghost dark" id="revealBtn" type="button">Показать ответ</button>
+          <a class="btn green" href="/?utm_source=landing&utm_medium=widget">Потренироваться бесплатно →</a>
+        </div>
+      </div>
+      <p style="color:#94a3b8;font-size:12.5px;margin-top:12px">↑ Это не демо. Вопрос подгружается вживую из нашей базы собеседований.</p>
+    </div>
+  </div>
+
+  <!-- PROOF STATS -->
+  <section style="padding-top:34px;">
+    <div class="wrap">
+      <div class="proof">
+        <div class="stat"><div class="num">1000+</div><div class="lbl">реальных вопросов</div></div>
+        <div class="stat"><div class="num">7</div><div class="lbl">режимов тренировки</div></div>
+        <div class="stat"><div class="num">3</div><div class="lbl">языка</div></div>
+        <div class="stat"><div class="num">&lt;10с</div><div class="lbl">до первого ответа</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- THE PROBLEM -->
+  <section id="problem">
+    <div class="wrap">
+      <h2>Почему сильные разработчики проваливают собеседования</h2>
+      <p class="sub">Дело редко в знаниях. Дело в том, КАК ты готовишься.</p>
+      <div class="features">
+        <div class="feature"><span class="ic">📚</span><h3>Ты учишь не то</h3><p>Бесконечный LeetCode и случайные списки из блогов. А потом спрашивают про garbage collection или <code>volatile</code> — и ты замираешь. Готовиться надо под реальное интервью.</p></div>
+        <div class="feature"><span class="ic">🤐</span><h3>Нет обратной связи</h3><p>Прочитать ответ — не значит понять. Без простого объяснения пробела ты повторишь ту же ошибку — и это видно интервьюеру.</p></div>
+        <div class="feature"><span class="ic">⏳</span><h3>Не знаешь, когда остановиться</h3><p>Зубрить бесконечно — не план. Нужно УВЕРЕННО знать, что ты готов записаться на собеседование.</p></div>
+      </div>
+      <p style="text-align:center;margin-top:26px"><a class="btn" href="#features">Как Interview Tinder решает всё это →</a></p>
+    </div>
+  </section>
+
+  <!-- READINESS ESTIMATOR -->
+  <section id="calc">
+    <div class="wrap">
+      <div class="calc">
+        <h2>Сколько готовиться до реальной готовности?</h2>
+        <p class="sub">Выбери уровень и темп. Мы построим план — а ты просто свайпаешь по нему. Без гаданий и бесконечного зубрёжа.</p>
+        <div class="calc-grid">
+          <div class="calc-controls">
+            <label>Целевой уровень</label>
+            <div class="seg" id="calcSeg">
+              <button data-level="junior" class="active">Junior</button>
+              <button data-level="middle">Middle</button>
+              <button data-level="senior">Senior</button>
+            </div>
+            <label>Время в день: <span class="calc-cap" id="calcTimeLabel">30 мин</span></label>
+            <input type="range" id="calcTime" min="10" max="120" step="5" value="30" />
+          </div>
+          <div class="calc-out">
+            <div class="big" id="calcDays">—</div>
+            <div class="big-lbl">дней до готовности</div>
+            <div class="row2">
+              <div><div class="n" id="calcQs">—</div><div class="l">вопросов пройти</div></div>
+              <div><div class="n" id="calcHrs">—</div><div class="l">всего часов</div></div>
+              <div><div class="n" id="calcWk">—</div><div class="l">недель</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="calc-note">Считаем ~15 вопросов в час осознанной практики. Интервальные повторения добавляют циклы закрепления.</div>
+        <div style="text-align:center; margin-top:18px;">
+          <a class="btn green" href="/?utm_source=landing&utm_medium=calc">Собрать мой план бесплатно →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES (benefit-led) -->
+  <section id="features" style="background:var(--card)">
+    <div class="wrap">
+      <h2>Самый быстрый путь от «я это забыл» к «я всё могу»</h2>
+      <p class="sub">Каждая фича создана, чтобы ответ ЗАПОМНИЛСЯ — и чтобы ты доказал, что готов.</p>
+      <div class="features">
+        <div class="feature"><span class="ic">💞</span><h3>Знай точно, что спросят</h3><p>Не выдумка, а реальные вопросы с собеседований по Java, Python и TypeScript — по темам и уровню.</p></div>
+        <div class="feature"><span class="ic">🤖</span><h3>Никогда не замирай</h3><p>Свайп влево на то, чего не знаешь — и мгновенный AI-разбор на человеческом языке, который поймёшь.</p></div>
+        <div class="feature"><span class="ic">🔁</span><h3>Помни в день собеседования</h3><p>Интервальные повторения возвращают слабые темы ровно до того, как ты их забудешь.</p></div>
+        <div class="feature"><span class="ic">🎤</span><h3>Отрепетируй всерьёз</h3><p>Таймовое Mock-собеседование с оценкой ИИ (PRO). Убери панику перед реальным интервью.</p></div>
+        <div class="feature"><span class="ic">🐞</span><h3>Тренируй все углы</h3><p>7 режимов: Swipe, Test, Bug Hunting, Blitz, Code Completion, Concept Linker, Mock. Одно приложение, без слепых зон.</p></div>
+        <div class="feature"><span class="ic">📊</span><h3>Видь реальную готовность</h3><p>Балл против других кандидатов по языку и теме. Знай, когда идти — не гадай.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHO THIS IS FOR -->
+  <section id="who">
+    <div class="wrap">
+      <h2>Сделано под собеседование, которое у тебя реально</h2>
+      <p class="sub">Разная цель, одна проблема: прийти уверенным. Мы подстраиваемся под твой уровень.</p>
+      <div class="features">
+        <div class="feature"><span class="ic">🌱</span><h3>Junior / первая работа</h3><p>Пройди без диплома о CS. Учи то, что реально спрашивают — и докажи, что ты свой.</p></div>
+        <div class="feature"><span class="ic">🔀</span><h3>Middle / смена работы</h3><p>Ты знаешь работу — теперь докажи это быстро. Закрой пробелы за 10 минут в день параллельно с текущей.</p></div>
+        <div class="feature"><span class="ic">🚀</span><h3>Senior / освежить знания</h3><p>Освежи фундамент — GC, многопоточность, системный дизайн — что не трогал годами.</p></div>
+        <div class="feature"><span class="ic">🎓</span><h3>Курсы / смена профессии</h3><p>Преврати тонкое резюме в реальную уверенность с системными повторениями и измеримым баллом.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <div class="wrap">
+      <h2>От паники к «давайте» за минуты</h2>
+      <p class="sub">Видишь реальный вопрос → тренируешься с помощью ИИ → знаешь, что готов. Без трения и форм до дела.</p>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><h3>Видишь</h3><p>Сразу открывается реальный вопрос с собеседования — без стены «сначала зарегайся».</p></div>
+        <div class="step"><div class="n">2</div><h3>Пробуешь</h3><p>Свайпай колоду, получай мгновенный AI-разбор, смотри, как растёт балл готовности. Один клик — и прогресс сохранён.</p></div>
+        <div class="step"><div class="n">3</div><h3>Знаешь</h3><p>Достиг цели по готовности — или открой Mock-собеседование в PRO, когда захочешь отрепетировать всерьёз.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" style="background:var(--card)">
+    <div class="wrap">
+      <h2>Простые цены</h2>
+      <p class="sub">Дешевле чашки кофе в неделю, чтобы не терять офферы, которые заслужил. Бесплатное ядро навсегда · PRO снимает лимиты и даёт Mock · 7 дней триал, отмена в любой момент.</p>
+      <div style="text-align:center">
+        <div class="billing-toggle" role="group" aria-label="Период оплаты">
+          <button type="button" class="active" data-period="monthly" onclick="setBilling('monthly', this)">В месяц</button>
+          <button type="button" data-period="annual" onclick="setBilling('annual', this)">В год <span class="save">−20%</span></button>
+        </div>
+      </div>
+      <div class="pricing">
+        <div class="plan">
+          <div class="name">Free</div>
+          <div class="price" data-monthly="0" data-annual="0">$0</div>
+          <div class="price-note">навсегда</div>
+          <ul>
+            <li>Режимы Swipe &amp; Test</li>
+            <li>Дневная квота на ИИ</li>
+            <li>Прогресс и стрики</li>
+            <li>Java · Python · TypeScript</li>
+          </ul>
+          <a class="btn ghost dark" href="/?utm_source=landing&utm_medium=pricing_free">Начать бесплатно</a>
+        </div>
+        <div class="plan featured">
+          <div class="badge">ПОПУЛЯРНО</div>
+          <div class="name">PRO</div>
+          <div class="price" data-monthly="9.99" data-annual="96">$9.99<small>/мес</small></div>
+          <div class="price-note" id="proNote">оплата помесячно</div>
+          <ul>
+            <li>Безлимитные AI-разборы</li>
+            <li>Mock-собеседование + разбор</li>
+            <li>Анализ резюме</li>
+            <li>Все 7 режимов и категории</li>
+            <li>Приоритетная генерация</li>
+          </ul>
+          <a class="btn" href="https://t.me/JavaInterviewTinderBot?start=pro&utm_source=landing&utm_medium=pricing_pro">7 дней PRO бесплатно</a>
+        </div>
+      </div>
+      <div class="pwa-hint">
+        <span>📲 Установи как PWA: нажми <code>Установить приложение</code> в браузере или открой в Telegram.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARISON -->
+  <section>
+    <div class="wrap">
+      <h2>Почему свайпать, а не читать список?</h2>
+      <p class="sub">Статичный список вопросов не заставляет тебя запомнить. Повторение и обратная связь — да.</p>
+      <div class="compare-wrap">
+        <table class="compare">
+          <thead><tr><th>Возможность</th><th class="hl">Interview Tinder</th><th>Список вопросов</th><th>LeetCode</th></tr></thead>
+          <tbody>
+            <tr><td>Реальные вопросы с собеседований (не только алгоритмы)</td><td class="yes">✓</td><td class="no">✕</td><td class="part">частично</td></tr>
+            <tr><td>Мгновенный AI-разбор твоего пробела</td><td class="yes">✓</td><td class="no">✕</td><td class="no">✕</td></tr>
+            <tr><td>Интервальные повторения</td><td class="yes">✓</td><td class="no">✕</td><td class="no">✕</td></tr>
+            <tr><td>Балл готовности — знаешь, когда стоп</td><td class="yes">✓</td><td class="no">✕</td><td class="part">частично</td></tr>
+            <tr><td>Mock-собеседование с оценкой ИИ</td><td class="yes">✓</td><td class="no">✕</td><td class="no">✕</td></tr>
+            <tr><td>Бесплатно на старте</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section style="background:var(--card)">
+    <div class="wrap">
+      <h2>Частые вопросы</h2>
+      <div class="faq">
+        <details class="qa"><summary>Это правда бесплатно?</summary><p>Да. Режимы Swipe и Test бесплатны, включая дневную квоту на AI-разборы. PRO снимает лимиты и открывает Mock-собеседование.</p></details>
+        <details class="qa"><summary>Нужна ли регистрация?</summary><p>Чтобы попробовать — нет. Колода реальных вопросов открывается сразу. Чтобы сохранить прогресс, достаточно одного клика через Telegram или email.</p></details>
+        <details class="qa"><summary>Сколько готовиться к собеседованию Java?</summary><p>Зависит от уровня: примерно 150 вопросов для junior, 320 для middle и 520 для senior из расчёта ~15 вопросов в час. Большинство чувствуют уверенность за 2–3 недели по 20 минут в день.</p></details>
+        <details class="qa"><summary>Это лучше LeetCode для собеседований?</summary><p>Разные задачи. LeetCode — про алгоритмы; Interview Tinder — про языковые вопросы и системный дизайн, которые реально спрашивают, с мгновенными разборами и баллом готовности, чтобы знать, когда остановиться.</p></details>
+        <details class="qa"><summary>Какие языки поддерживаются?</summary><p>Java, Python и TypeScript — у каждого своя независимая база вопросов.</p></details>
+        <details class="qa"><summary>Как работает AI-разбор?</summary><p>Свайпни вопрос влево («не знаю») — и получишь объяснение на человеческом языке от LLM. Ответы кэшируются, так что ждать не придётся.</p></details>
+        <details class="qa"><summary>Работает ли на телефоне?</summary><p>Да — как Telegram Mini App и как устанавливаемая PWA на iOS и Android.</p></details>
+        <details class="qa"><summary>Это гарантирует мне работу?</summary><p>Ни один продукт не может. Но регулярная практика с обратной связью — самый надёжный способ поднять свой показатель прохождения собеседований.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- B2B -->
+  <section id="b2b" class="b2b">
+    <div class="wrap">
+      <h2>Для курсов, школ и HR — B2B</h2>
+      <p class="sub">Тот же тренажёр, упакованный для команд. Преврати подготовку кандидатов в понятную метрику.</p>
+      <div class="b2b-cards">
+        <div class="b2b-card">
+          <span class="ic">👥</span>
+          <h3>Командные подписки</h3>
+          <p>5–20 мест по одному счёту, дашборд готовности и скидка, растущая с числом людей.</p>
+          <div class="from">от $5 / место / мес</div>
+        </div>
+        <div class="b2b-card">
+          <span class="ic">🏷️</span>
+          <h3>White-label Mini App</h3>
+          <p>Твой бренд, наш движок. Полностью брендированный Telegram Mini App + PWA для сообщества, с рев-share.</p>
+          <div class="from">сетап + доля выручки</div>
+        </div>
+        <div class="b2b-card">
+          <span class="ic">🎯</span>
+          <h3>Базы под конкретного работодателя</h3>
+          <p>Готовим кандидатов под точный loop целевой компании (по запросу).</p>
+          <div class="from">индивидуально</div>
+        </div>
+      </div>
+
+      <div class="b2b-form">
+        <h3>Запросить B2B-доступ</h3>
+        <p class="s">Расскажи, что строишь. Ответим в течение 1 рабочего дня.</p>
+        <form id="b2bForm" onsubmit="return false;">
+          <div class="b2b-fields">
+            <input type="text" id="b2bName" placeholder="Имя / организация" autocomplete="organization" />
+            <select id="b2bProduct">
+              <option value="b2b-team">Командная подписка</option>
+              <option value="b2b-whitelabel">White-label Mini App</option>
+              <option value="b2b-bank">База под работодателя</option>
+              <option value="b2b-other">Другое / не уверен</option>
+            </select>
+            <input type="email" id="b2bEmail" placeholder="Рабочая почта" autocomplete="email" />
+            <input type="text" id="b2bTg" placeholder="Telegram @ник (необязательно)" />
+            <textarea class="full" id="b2bMsg" placeholder="Что строишь? Ожидаемое число человек?"></textarea>
+          </div>
+          <label class="consent">
+            <input type="checkbox" id="b2bConsent" />
+            <span>Я согласен на обработку данных согласно <a href="/privacy.html" target="_blank" rel="noopener" style="color:#a5b4fc">Политике конфиденциальности</a>.</span>
+          </label>
+          <button class="btn green b2b-submit" id="b2bSubmit" type="submit">Запросить доступ →</button>
+          <div class="b2b-msg" id="b2bMsgOut"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- REFERRAL -->
+  <section>
+    <div class="wrap">
+      <div class="ref">
+        <h2>Пригласи друзей — оба получат PRO</h2>
+        <p class="sub">Поделись ссылкой — друг получает 7 дней PRO бесплатно, и ты тоже. Каждый пользователь становится каналом роста.</p>
+        <a class="btn" href="https://t.me/JavaInterviewTinderBot" target="_blank" rel="noopener">Получить реферальную ссылку</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEAD MAGNET -->
+  <section>
+    <div class="wrap">
+      <div class="lead">
+        <h2>📩 5 вопросов, решающих большинство офферов по Java</h2>
+        <p class="sub" style="margin-bottom:0">Получи бесплатный PDF + нашу еженедельную рассылку: вопросы, которые реально задают, с AI-разборами. Без спама — только то, что даёт оффер.</p>
+        <form class="lead-form" id="leadForm" onsubmit="return false;">
+          <input type="email" id="leadEmail" placeholder="Твоя почта" autocomplete="email" />
+          <button class="btn" id="leadSubmit" type="submit">Получить PDF + рассылку</button>
+        </form>
+        <div class="lead-seg">
+          <label><input type="radio" name="interest" value="passive" checked /><span>💡 Освежить</span></label>
+          <label><input type="radio" name="interest" value="arbitrage" /><span>🎯 Целюсь в компанию</span></label>
+        </div>
+        <label class="lead-consent">
+          <input type="checkbox" id="leadConsent" />
+          <span>Я согласен на обработку почты согласно <a href="/privacy.html" target="_blank" rel="noopener">Политике конфиденциальности</a>.</span>
+        </label>
+        <div class="lead-msg" id="leadMsg"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section>
+    <div class="wrap">
+      <div class="final">
+        <h2>Твоё следующее собеседование ближе, чем кажется.</h2>
+        <p>Будь тем кандидатом, который реально готов. Свайпни свои первые настоящие вопросы прямо сейчас — бесплатно, без карты, без установки.</p>
+        <div class="actions">
+          <a class="btn green" href="/?utm_source=landing&utm_medium=final">🚀 Начать бесплатно</a>
+          <a class="btn ghost" href="https://t.me/JavaInterviewTinderBot" target="_blank" rel="noopener">Открыть в Telegram</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <p class="disclaimer">Тренировочный инструмент, не гарантирует работу. Результат зависит от регулярности и конкретного собеседования. Всегда проверяй ответы по первоисточникам.</p>
+    </div>
+  </section>
+
+  <div class="sticky-cta">
+    <a class="btn green" href="https://t.me/JavaInterviewTinderBot" target="_blank" rel="noopener">🚀 Telegram</a>
+    <a class="btn ghost dark" href="/?utm_source=landing&utm_medium=sticky" style="background:#fff">📲 Приложение</a>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      Interview Tinder • <a href="https://t.me/JavaInterviewTinderBot">Telegram</a>
+      <div class="langs">
+        <a href="/landing.html">EN</a>
+        <a href="/landing.ru.html">RU</a>
+      </div>
+      <div class="foot-links">
+        <a href="/privacy.html">Приватность</a> · <a href="#b2b">B2B</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    var API_URL = window.location.origin; // same-origin in prod (Vercel proxies /api to backend)
+    var DEMO_URL = API_URL + '/api/demo/questions';
+    var WAITLIST_URL = API_URL + '/api/waitlist';
+    var REFRESH_MS = 20000;
+    var LANGS = ['Java','Python','TypeScript'];
+
+    function emailOk(v){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v); }
+
+    // ---- Live question widget (real data from /api/demo/questions) ----
+    (function(){
+      var body=document.getElementById('liveBody');
+      var updated=document.getElementById('liveUpdated');
+      var revealBtn=document.getElementById('revealBtn');
+      var current=null, langIdx=0;
+
+      function renderCard(q){
+        current=q;
+        body.innerHTML=
+          '<div class="qcard">'+
+            '<span class="tag">'+ (q.language||'Java') +' · '+(q.category||'') +'</span>'+
+            '<div class="q">'+ escapeHtml(q.question) +'</div>'+
+            '<div class="a" id="ans">'+ escapeHtml(q.shortAnswer||'Свайпни влево в приложении, чтобы увидеть полный AI-разбор.') +'</div>'+
+          '</div>';
+      }
+      revealBtn.addEventListener('click', function(){
+        var ans=document.getElementById('ans');
+        if(ans) ans.classList.toggle('show');
+      });
+
+      function load(){
+        var lang=LANGS[langIdx % LANGS.length]; langIdx++;
+        fetch(DEMO_URL+'?language='+encodeURIComponent(lang)+'&limit=1&seed='+Math.random().toString(36).slice(2))
+          .then(function(r){return r.json();})
+          .then(function(d){
+            var qs=(d&&d.questions)||[];
+            if(qs.length){ renderCard(qs[0]); updated.textContent='из базы '+lang; }
+            else { fallback(); }
+          })
+          .catch(function(){ fallback(); });
+      }
+      function fallback(){
+        renderCard({ language:'Java', category:'Core',
+          question:'В чём разница между == и equals()?',
+          shortAnswer:'== сравнивает ссылки; equals() сравнивает содержимое объекта.' });
+        updated.textContent='пример вопроса';
+      }
+      function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+      load(); setInterval(load, REFRESH_MS);
+    })();
+
+    // ---- Readiness estimator ----
+    (function(){
+      var NEED={ junior:150, middle:320, senior:520 };
+      var level='junior';
+      var time=30;
+      function recalc(){
+        var need=NEED[level];
+        var hours=need/15;
+        var days=Math.max(1, Math.round(hours/(time/60)));
+        var weeks=(days/7);
+        document.getElementById('calcDays').textContent=days+(days===1?' день':' дней');
+        document.getElementById('calcQs').textContent=need;
+        document.getElementById('calcHrs').textContent=Math.round(hours)+'ч';
+        document.getElementById('calcWk').textContent=weeks.toFixed(1);
+        document.getElementById('calcTimeLabel').textContent=time+' мин';
+      }
+      document.getElementById('calcTime').addEventListener('input', function(e){ time=parseInt(e.target.value,10); recalc(); });
+      document.querySelectorAll('#calcSeg button').forEach(function(b){
+        b.addEventListener('click', function(){
+          document.querySelectorAll('#calcSeg button').forEach(function(x){x.classList.remove('active');});
+          b.classList.add('active'); level=b.getAttribute('data-level'); recalc();
+        });
+      });
+      recalc();
+    })();
+
+    // ---- Billing toggle ----
+    function setBilling(period, btn){
+      document.querySelectorAll('.billing-toggle button').forEach(function(b){ b.classList.toggle('active', b===btn); });
+      document.querySelectorAll('.pricing .price').forEach(function(el){
+        var val=period==='annual'?el.getAttribute('data-annual'):el.getAttribute('data-monthly');
+        if(val==null)return; var n=parseFloat(val);
+        if(n===0){ el.innerHTML='$0'; }
+        else if(period==='annual'){ el.innerHTML='$'+n+'<small>/год</small>'; }
+        else { el.innerHTML='$'+n+'<small>/мес</small>'; }
+      });
+      document.getElementById('proNote').textContent= period==='annual'?'оплата за год · экономия 20%':'оплата помесячно';
+    }
+
+    // ---- Lead magnet -> /api/waitlist ----
+    (function(){
+      var form=document.getElementById('leadForm'), emailEl=document.getElementById('leadEmail'),
+          msg=document.getElementById('leadMsg'), btn=document.getElementById('leadSubmit'),
+          consent=document.getElementById('leadConsent');
+      if(!form)return;
+      var params=new URLSearchParams(window.location.search);
+      form.addEventListener('submit', function(){
+        var email=(emailEl.value||'').trim();
+        if(!consent.checked){ msg.className='lead-msg err'; msg.textContent='Пожалуйста, согласись с политикой.'; return; }
+        if(!emailOk(email)){ msg.className='lead-msg err'; msg.textContent='Введи корректную почту.'; return; }
+        var interest=document.querySelector('input[name="interest"]:checked');
+        btn.disabled=true; btn.textContent='…';
+        fetch(WAITLIST_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          email:email, lang:'ru', source:params.get('utm_source')||'landing', consent:true,
+          interest: interest?interest.value:'passive'
+        })}).then(function(r){return r.json();}).then(function(){
+          msg.className='lead-msg ok'; msg.textContent='Готово! PDF и рассылка уже в пути.'; emailEl.value=''; consent.checked=false;
+        }).catch(function(){ msg.className='lead-msg err'; msg.textContent='Ошибка сети. Попробуй позже.'; })
+          .finally(function(){ btn.disabled=false; btn.textContent='Получить PDF + рассылку'; });
+      });
+    })();
+
+    // ---- B2B request -> /api/waitlist (source tag) ----
+    (function(){
+      var form=document.getElementById('b2bForm'); if(!form)return;
+      var out=document.getElementById('b2bMsgOut'), btn=document.getElementById('b2bSubmit'),
+          consent=document.getElementById('b2bConsent');
+      form.addEventListener('submit', function(){
+        var email=(document.getElementById('b2bEmail').value||'').trim();
+        var tg=(document.getElementById('b2bTg').value||'').trim();
+        var name=(document.getElementById('b2bName').value||'').trim();
+        var product=document.getElementById('b2bProduct').value;
+        var message=(document.getElementById('b2bMsg').value||'').trim();
+        if(!consent.checked){ out.className='b2b-msg err'; out.textContent='Пожалуйста, согласись с политикой.'; return; }
+        if(!email && !tg){ out.className='b2b-msg err'; out.textContent='Оставь почту или Telegram, чтобы мы могли ответить.'; return; }
+        if(email && !emailOk(email)){ out.className='b2b-msg err'; out.textContent='Введи корректную почту.'; return; }
+        btn.disabled=true; btn.textContent='…';
+        var packed=(tg?tg+' ':'')+'| '+product+(name?(' | '+name):'')+(message?(' | '+message):'');
+        fetch(WAITLIST_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          email: email||undefined, lang:'ru', source:product, consent:true, telegram:packed, interest:'arbitrage'
+        })}).then(function(r){return r.json();}).then(function(){
+          out.className='b2b-msg ok'; out.textContent='Спасибо! Свяжемся в течение 1 рабочего дня.'; form.reset();
+        }).catch(function(){ out.className='b2b-msg err'; out.textContent='Ошибка сети. Напиши нам в Telegram.'; })
+          .finally(function(){ btn.disabled=false; btn.textContent='Запросить доступ →'; });
+      });
+    })();
+  </script>
+
+  <script type="application/ld+json">
+  { "@context":"https://schema.org","@type":"SoftwareApplication",
+    "name":"Interview Tinder","applicationCategory":"EducationalApplication","operatingSystem":"Web, Telegram, iOS, Android",
+    "url":"https://java-interview-tinder.fly.dev/landing.ru.html",
+    "description":"Свайп-тренажёр для собеседований по Java, Python и TypeScript. Реальные вопросы с собеседований, мгновенные AI-разборы пробелов и балл готовности, который показывает, когда ты готов.",
+    "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"} }
+  </script>
+  <script type="application/ld+json">
+  { "@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Это правда бесплатно?","acceptedAnswer":{"@type":"Answer","text":"Да. Режимы Swipe и Test бесплатны, включая дневную квоту на AI-разборы. PRO снимает лимиты."}},
+    {"@type":"Question","name":"Нужна ли регистрация?","acceptedAnswer":{"@type":"Answer","text":"Чтобы попробовать — нет. Колода реальных вопросов открывается сразу. Чтобы сохранить прогресс, достаточно одного клика через Telegram или email."}},
+    {"@type":"Question","name":"Сколько готовиться к собеседованию Java?","acceptedAnswer":{"@type":"Answer","text":"Примерно 150 вопросов для junior, 320 для middle и 520 для senior из расчёта ~15 вопросов в час. Большинство чувствуют уверенность за 2–3 недели по 20 минут в день."}},
+    {"@type":"Question","name":"Это лучше LeetCode для собеседований?","acceptedAnswer":{"@type":"Answer","text":"LeetCode — про алгоритмы; Interview Tinder — про языковые вопросы и системный дизайн, которые реально спрашивают, с мгновенными разборами и баллом готовности."}},
+    {"@type":"Question","name":"Какие языки поддерживаются?","acceptedAnswer":{"@type":"Answer","text":"Java, Python и TypeScript — у каждого своя независимая база вопросов."}},
+    {"@type":"Question","name":"Работает ли на телефоне?","acceptedAnswer":{"@type":"Answer","text":"Да, как Telegram Mini App и как устанавливаемая PWA на iOS и Android."}}
+  ] }
+  </script>
+</body>
+</html>

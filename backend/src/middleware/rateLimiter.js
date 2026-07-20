@@ -2,25 +2,13 @@ import pool from '../config/database.js';
 import redis from '../config/redis.js';
 import logger from '../config/logger.js';
 import ADMIN_IDS from '../config/admin.js';
+import { FREE_DEFAULTS } from '../config/plans.js';
 
 function isAdmin(userId) {
   return ADMIN_IDS.has(String(userId));
 }
 
-// ─── Default free plan limits ─────────────────────────────────────────
-// These are the fallback values used when the subscription_plans table
-// is unavailable or the user has no plan row.
-const FREE_DEFAULTS = {
-  requests_per_day: 200,
-  ai_generations_per_month: 500,
-  resume_analysis_limit: 3,
-  interview_eval_limit: 20,
-  available_languages: ['Java', 'Python', 'TypeScript'],  // all languages unlocked on free
-  // Only the two core modes are free. Advanced modes (bug-hunting, blitz,
-  // mock-interview, concept-linker, code-completion, review) require Pro.
-  available_modes: ['swipe', 'test'],
-  model_priority: 'standard',
-};
+// FREE_DEFAULTS is imported from config/plans.js (single source of truth).
 
 async function getUserLimits(userId) {
   if (isAdmin(userId)) return null; 

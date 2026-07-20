@@ -14,6 +14,7 @@
     "migrate-ton": "node src/scripts/migrate-ton.js",
     "migrate-ukassa": "node src/scripts/migrate-ukassa.js",
     "worker": "node src/worker.js",
+    "generate-seo": "node src/scripts/generate-seo.js",
     "test": "vitest run tests/",
     "test:coverage": "vitest run tests/ --coverage",
     "lint": "eslint .",

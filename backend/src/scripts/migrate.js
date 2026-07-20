@@ -108,9 +108,8 @@ const migrations = [
 
        INSERT INTO subscription_plans (id, name, price_monthly, requests_per_day, ai_generations_per_month, available_languages, available_modes, resume_analysis_limit, interview_eval_limit, model_priority, stars_monthly, stars_yearly)
        VALUES 
-         ('free', 'Free', 0, 50, 100, '{Java}', '{swipe,test}', 0, 0, 'fast', 0, 0),
-         ('pro', 'Pro', 9.99, 300, 1000, '{Java,Python}', '{swipe,test,bug-hunting,blitz,code-completion,mock-interview}', 5, 20, 'quality', 450, 3000),
-         ('premium', 'Premium', 19.99, 1000, 5000, '{Java,Python,TypeScript}', '{swipe,test,bug-hunting,blitz,code-completion,mock-interview}', 50, 100, 'quality', 900, 5400)
+         ('free', 'Free', 0, 40, 45, '{Java,Python,TypeScript}', '{swipe,test}', 1, 3, 'standard', 0, 0),
+         ('pro', 'Pro', 9.99, 1000, 1000, '{Java,Python,TypeScript}', '{swipe,test,bug-hunting,blitz,code-completion,mock-interview,concept-linker}', 10, 50, 'quality', 450, 3000)
       ON CONFLICT (id) DO NOTHING;
     `
   },
@@ -394,6 +393,81 @@ const migrations = [
         ON users(auth_provider, external_id) WHERE external_id IS NOT NULL;
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email
         ON users(email) WHERE email IS NOT NULL;
+    `
+  },
+
+  // ── 024: Reconcile plans to the canonical 2-plan model ─────────────
+  // Kills the pricing/limit drift on existing DBs. Free becomes a tight
+  // funnel (protects AI-token cost); Pro is unified to $9.99 / 450 Stars.
+  // Legacy 'premium' is retired — but only if nobody still holds it, so we
+  // never orphan an active paying subscription.
+  {
+    id: '024_reconcile_plans',
+    sql: `
+      UPDATE subscription_plans SET
+        name = 'Free', price_monthly = 0,
+        requests_per_day = 40, ai_generations_per_month = 45,
+        available_languages = '{Java,Python,TypeScript}',
+        available_modes = '{swipe,test}',
+        resume_analysis_limit = 1, interview_eval_limit = 3,
+        model_priority = 'standard', stars_monthly = 0, stars_yearly = 0
+      WHERE id = 'free';
+
+      UPDATE subscription_plans SET
+        name = 'Pro', price_monthly = 9.99,
+        requests_per_day = 1000, ai_generations_per_month = 1000,
+        available_languages = '{Java,Python,TypeScript}',
+        available_modes = '{swipe,test,bug-hunting,blitz,code-completion,mock-interview,concept-linker}',
+        resume_analysis_limit = 10, interview_eval_limit = 50,
+        model_priority = 'quality', stars_monthly = 450, stars_yearly = 3000
+      WHERE id = 'pro';
+
+      DELETE FROM subscription_plans
+      WHERE id = 'premium'
+        AND NOT EXISTS (
+          SELECT 1 FROM user_subscriptions
+          WHERE plan_id = 'premium' AND status = 'active'
+        );
+    `
+  },
+
+  // ── 025: Two-sided referral (signup reward) ───────────────────────
+  // Track whether the instant, both-sides Pro reward has been granted for a
+  // referral, so signup rewards stay idempotent (separate from the existing
+  // `reward_granted`, which covers the on-payment referrer bonus).
+  {
+    id: '025_referral_signup_reward',
+    sql: `
+      ALTER TABLE referrals ADD COLUMN IF NOT EXISTS signup_reward_granted BOOLEAN DEFAULT FALSE;
+    `
+  },
+
+  // ── 026: Waitlist / lead capture (Belarus data-protection compliant) ──
+  // Stores explicit marketing-consent leads. PII is minimized: only the email
+  // is kept in clear text; the visitor IP is hashed (never stored raw), and
+  // unsubscribe performs *erasure* (pseudonymizes the email + nulls PII) to
+  // honor the subject's right to withdraw consent under the Law of the
+  // Republic of Belarus "On Information, Informatization and Protection of
+  // Information" (Закон РБ «Об информации, информатизации и защите информации»).
+  {
+    id: '026_waitlist',
+    sql: `
+      CREATE TABLE IF NOT EXISTS waitlist (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        lang VARCHAR(10) DEFAULT 'ru',
+        source VARCHAR(50),
+        consent_granted BOOLEAN NOT NULL DEFAULT TRUE,
+        consent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        consent_text TEXT,
+        ip_hash VARCHAR(64),
+        user_agent TEXT,
+        unsubscribed_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (email)
+      );
+      CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
+      CREATE INDEX IF NOT EXISTS idx_waitlist_created ON waitlist(created_at);
     `
   }
 ];

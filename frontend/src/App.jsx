@@ -34,6 +34,7 @@ import logger from './utils/logger';
 import DebugOverlay from './components/DebugOverlay';
 import WebLogin from './components/WebLogin';
 import Landing from './components/Landing';
+import DemoMode from './components/DemoMode';
 import './App.css';
 
 function getTelegramInitData() {
@@ -281,7 +282,20 @@ function App() {
 
   if (initState === 'landing') {
     return (
-      <Landing onStart={() => setInitState('web_login')} />
+      <Landing onStart={() => setInitState('demo')} />
+    );
+  }
+
+  if (initState === 'demo') {
+    const tg = window.Telegram?.WebApp;
+    const urlRef = new URLSearchParams(window.location.search).get('ref');
+    const referralId = tg?.initDataUnsafe?.start_param || urlRef || null;
+    return (
+      <DemoMode
+        referralId={referralId}
+        onSignup={() => setInitState('web_login')}
+        onExit={() => setInitState('landing')}
+      />
     );
   }
 

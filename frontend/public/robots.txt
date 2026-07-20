@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://java-interwiew-tinder.fly.dev/sitemap.xml
+Sitemap: https://java-interview-tinder.fly.dev/sitemap.xml

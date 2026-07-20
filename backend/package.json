@@ -10,6 +10,7 @@
     "init-db": "node src/scripts/init-db.js",
     "seed-db": "node src/scripts/seed-db.js",
     "migrate": "node src/scripts/migrate.js",
+    "setup-rb-db": "node src/scripts/migrate.js",
     "migrate-stars": "node src/scripts/migrate-stars.js",
     "migrate-ton": "node src/scripts/migrate-ton.js",
     "migrate-ukassa": "node src/scripts/migrate-ukassa.js",

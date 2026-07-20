@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import expressRateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import pool from './config/database.js';
+import pool, { rbPool } from './config/database.js';
 import { resolveAuth, upsertUser, issueEmailCode, verifyEmailCode } from './utils/authProviders.js';
 import { evaluateInterviewAnswer, analyzeResume, checkCache } from './services/aiService.js';
 import { enqueueJob } from './services/queueService.js';
@@ -403,16 +403,17 @@ app.post('/api/waitlist',
       return res.status(400).json({ error: 'Consent is required to subscribe.' });
     }
 
-    // ── Belarus data-localization gate ────────────────────────────────────
+    // ── Belarus data-localization routing ─────────────────────────────────
     // Under Закон РБ «Об информации…», personal data of RB citizens must be
-    // stored on servers located in the Republic of Belarus. Our DB is currently
-    // hosted outside RB (Supabase/EU), so we MUST NOT persist PII of RB residents
-    // cross-border. The gate is opt-out via ALLOW_RB_PII once an RB-hosted
-    // datastore is provisioned (or if the operator consciously accepts the risk).
+    // stored on servers located in the Republic of Belarus. We route RB-resident
+    // PII to the RB-localized datastore (rbPool) when RB_DATABASE_URL is set.
+    // Only if NO RB store is configured AND ALLOW_RB_PII is unset do we refuse
+    // the cross-border write (HTTP 451) — so the gate never triggers once RB
+    // hosting is provisioned.
     const likelyRb =
       region === 'BY' || region === 'RB' || timezone === 'Europe/Minsk';
-    const RB_PII_GATE = !process.env.ALLOW_RB_PII;
-    if (likelyRb && RB_PII_GATE) {
+    const store = (likelyRb && rbPool) ? rbPool : pool;
+    if (likelyRb && !rbPool && !process.env.ALLOW_RB_PII) {
       return res.status(451).json({
         error: 'not_localized',
         message:
@@ -422,7 +423,7 @@ app.post('/api/waitlist',
 
     const cleanEmail = email.trim().toLowerCase();
     const ipHash = hashClientIp(req);
-    await pool.query(
+    await store.query(
       `INSERT INTO waitlist (email, lang, source, consent_granted, consent_at, consent_text, ip_hash, user_agent, region, likely_rb, telegram, interest)
        VALUES ($1, $2, $3, TRUE, CURRENT_TIMESTAMP, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (email) DO UPDATE SET
@@ -467,19 +468,26 @@ app.post('/api/waitlist/unsubscribe',
         return res.status(400).json({ error: 'Invalid email address' });
       }
       const cleanEmail = email.trim().toLowerCase();
-      const result = await pool.query(
-        `UPDATE waitlist
-         SET unsubscribed_at = CURRENT_TIMESTAMP,
-             consent_granted = FALSE,
-             email = 'anon_' || id::text || '@erased.local',
-             ip_hash = NULL,
-             user_agent = NULL,
-             consent_text = NULL
-         WHERE email = $1 AND unsubscribed_at IS NULL
-         RETURNING id`,
-        [cleanEmail]
-      );
-      res.json({ success: true, erased: (result.rowCount || 0) > 0 });
+      // Erase from both stores so the subject can't be contacted regardless of
+      // which datastore their record landed in.
+      const stores = rbPool ? [pool, rbPool] : [pool];
+      let erased = 0;
+      for (const s of stores) {
+        const result = await s.query(
+          `UPDATE waitlist
+           SET unsubscribed_at = CURRENT_TIMESTAMP,
+               consent_granted = FALSE,
+               email = 'anon_' || id::text || '@erased.local',
+               ip_hash = NULL,
+               user_agent = NULL,
+               consent_text = NULL
+           WHERE email = $1 AND unsubscribed_at IS NULL
+           RETURNING id`,
+          [cleanEmail]
+        );
+        erased += result.rowCount || 0;
+      }
+      res.json({ success: true, erased: erased > 0 });
     } catch (err) {
       logger.error({ err }, 'Waitlist unsubscribe error');
       res.status(500).json({ error: 'Internal server error' });
@@ -521,13 +529,21 @@ app.use('/api/admin', requireAdmin);
 // List active (consented, not unsubscribed) waitlist leads for export/mailing.
 app.get('/api/admin/waitlist', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT id, email, lang, source, region, likely_rb, telegram, interest, consent_at, created_at
-       FROM waitlist
-       WHERE unsubscribed_at IS NULL AND consent_granted = TRUE
-       ORDER BY created_at DESC
-       LIMIT 5000`
-    );
+    const stores = rbPool ? [pool, rbPool] : [pool];
+    let rows = [];
+    for (const s of stores) {
+      const { rows: r } = await s.query(
+        `SELECT id, email, lang, source, region, likely_rb, telegram, interest, consent_at, created_at
+         FROM waitlist
+         WHERE unsubscribed_at IS NULL AND consent_granted = TRUE
+         ORDER BY created_at DESC
+         LIMIT 5000`
+      );
+      rows = rows.concat(r);
+    }
+    // De-dupe by email (a lead could theoretically exist in both during migration).
+    const seen = new Set();
+    rows = rows.filter((l) => (seen.has(l.email) ? false : seen.add(l.email)));
     res.json({ count: rows.length, leads: rows });
   } catch (err) {
     logger.error({ err }, 'Admin waitlist list error');

@@ -1,4 +1,4 @@
-import pool from '../config/database.js';
+import pool, { rbPool } from '../config/database.js';
 
 /**
  * Production migration script
@@ -487,8 +487,8 @@ const migrations = [
   }
 ];
 
-async function runMigrations() {
-  const client = await pool.connect();
+async function runMigrations(dbPool) {
+  const client = await dbPool.connect();
   
   try {
     console.log('🔧 Starting migrations...\n');
@@ -542,11 +542,17 @@ async function runMigrations() {
     console.log('\n🎉 All migrations complete.');
   } finally {
     client.release();
-    await pool.end();
+    await dbPool.end();
   }
 }
 
-runMigrations().catch(err => {
-  console.error('Migration failed:', err);
-  process.exit(1);
-});
+runMigrations(pool)
+  .then(() => (rbPool ? runMigrations(rbPool) : null))
+  .then(() => {
+    if (rbPool) console.log('🇧🇾 RB-localized datastore migrated.');
+    console.log('✅ Done.');
+  })
+  .catch(err => {
+    console.error('Migration failed:', err);
+    process.exit(1);
+  });

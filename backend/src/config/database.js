@@ -43,4 +43,37 @@ pool.on('error', (err) => {
   logger.error({ err }, '❌ Unexpected database error');
 });
 
+// ─── Optional RB-localized datastore ───────────────────────────────────────
+// Under Закон РБ «Об информации…», personal data of RB citizens must be stored
+// on servers located in the Republic of Belarus. When RB_DATABASE_URL is set,
+// RB-resident waitlist PII is written here instead of the main (EU) database,
+// making the capture compliant without gating anyone out.
+function buildRbPool() {
+  const rbUrl = process.env.RB_DATABASE_URL;
+  if (!rbUrl) return null;
+  let clean = rbUrl;
+  try {
+    const url = new URL(clean);
+    if (url.searchParams.has('sslmode')) {
+      url.searchParams.delete('sslmode');
+      clean = url.toString();
+    }
+  } catch {
+    clean = clean.replace(/[?&]sslmode=[^&]+/g, '');
+  }
+  const p = new Pool({
+    connectionString: clean,
+    ssl: process.env.NODE_ENV !== 'development' ? { rejectUnauthorized: false } : false,
+    max: 5,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 5000,
+  });
+  p.on('connect', () => logger.info('✅ RB-localized database connected'));
+  p.on('error', (err) => logger.error({ err }, '❌ RB-localized database error'));
+  return p;
+}
+
+const rbPool = buildRbPool();
+
 export default pool;
+export { rbPool };

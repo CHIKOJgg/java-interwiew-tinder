@@ -211,6 +211,19 @@
     .sticky-cta{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(11,16,32,.14);padding:10px 14px;gap:10px;display:none}
     .sticky-cta .btn{flex:1;justify-content:center;padding:13px 8px;font-size:15px}
     @media(max-width:820px){ .sticky-cta{display:flex} body{padding-bottom:78px} }
+
+    /* Comparison table -> stacked cards on phones (no horizontal scroll) */
+    @media (max-width:600px){
+      .compare-wrap{ overflow:visible; }
+      .compare{ min-width:0; display:block; border-radius:14px; }
+      .compare thead{ display:none; }
+      .compare tbody, .compare tr, .compare td{ display:block; width:100%; }
+      .compare tr{ margin-bottom:14px; border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+      .compare td{ border-bottom:1px solid #f1f5f9; text-align:left; display:flex; justify-content:space-between; align-items:center; padding:10px 14px; }
+      .compare td:first-child{ background:var(--dark); color:#fff; font-weight:700; }
+      .compare td:first-child::before{ display:none; }
+      .compare td::before{ content:attr(data-label); color:var(--muted); font-size:12.5px; font-weight:600; }
+    }
   </style>
 </head>
 <body>
@@ -418,12 +431,12 @@
         <table class="compare">
           <thead><tr><th>Возможность</th><th class="hl">Interview Tinder</th><th>Список вопросов</th><th>LeetCode</th></tr></thead>
           <tbody>
-            <tr><td>Реальные вопросы с собеседований (не только алгоритмы)</td><td class="yes">✓</td><td class="no">✕</td><td class="part">частично</td></tr>
-            <tr><td>Мгновенный AI-разбор твоего пробела</td><td class="yes">✓</td><td class="no">✕</td><td class="no">✕</td></tr>
-            <tr><td>Интервальные повторения</td><td class="yes">✓</td><td class="no">✕</td><td class="no">✕</td></tr>
-            <tr><td>Балл готовности — знаешь, когда стоп</td><td class="yes">✓</td><td class="no">✕</td><td class="part">частично</td></tr>
-            <tr><td>Mock-собеседование с оценкой ИИ</td><td class="yes">✓</td><td class="no">✕</td><td class="no">✕</td></tr>
-            <tr><td>Бесплатно на старте</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Реальные вопросы с собеседований (не только алгоритмы)</td><td class="yes" data-label="Interview Tinder">✓</td><td class="no" data-label="Список вопросов">✕</td><td class="part" data-label="LeetCode">частично</td></tr>
+            <tr><td>Мгновенный AI-разбор твоего пробела</td><td class="yes" data-label="Interview Tinder">✓</td><td class="no" data-label="Список вопросов">✕</td><td class="no" data-label="LeetCode">✕</td></tr>
+            <tr><td>Интервальные повторения</td><td class="yes" data-label="Interview Tinder">✓</td><td class="no" data-label="Список вопросов">✕</td><td class="no" data-label="LeetCode">✕</td></tr>
+            <tr><td>Балл готовности — знаешь, когда стоп</td><td class="yes" data-label="Interview Tinder">✓</td><td class="no" data-label="Список вопросов">✕</td><td class="part" data-label="LeetCode">частично</td></tr>
+            <tr><td>Mock-собеседование с оценкой ИИ</td><td class="yes" data-label="Interview Tinder">✓</td><td class="no" data-label="Список вопросов">✕</td><td class="no" data-label="LeetCode">✕</td></tr>
+            <tr><td>Бесплатно на старте</td><td class="yes" data-label="Interview Tinder">✓</td><td class="yes" data-label="Список вопросов">✓</td><td class="yes" data-label="LeetCode">✓</td></tr>
           </tbody>
         </table>
       </div>

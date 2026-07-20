@@ -425,6 +425,18 @@
   margin-top: 4px;
 }
 
+.referral-note {
+  grid-column: 1 / -1;
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  color: #2f9e44;
+  background: #ebfbee;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
 /* ── Difficulty filter ─────────────────────────────────────────────── */
 .difficulty-filter {
   display: flex;

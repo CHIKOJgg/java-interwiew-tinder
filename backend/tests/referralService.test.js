@@ -41,22 +41,51 @@ describe('referralService', () => {
   });
 
   describe('trackReferral', () => {
-    it('returns early without query when referrer === referred', async () => {
+    let client;
+
+    beforeEach(() => {
+      client = { query: vi.fn().mockResolvedValue({ rows: [] }), release: vi.fn() };
+      pool.connect.mockResolvedValue(client);
+    });
+
+    it('returns early without connecting when referrer === referred', async () => {
       await referralService.trackReferral(1, 1);
-      expect(pool.query).not.toHaveBeenCalled();
+      expect(pool.connect).not.toHaveBeenCalled();
     });
 
-    it('inserts referral for different ids', async () => {
-      pool.query.mockResolvedValueOnce({ rows: [] });
+    it('grants a two-sided reward and notifies both sides on first insert', async () => {
+      client.query.mockResolvedValueOnce({ rows: [] });            // BEGIN
+      client.query.mockResolvedValueOnce({ rows: [{ id: 9 }] });   // INSERT ... RETURNING id
+      client.query.mockResolvedValue({ rows: [] });                // grants + UPDATE + COMMIT
+      pool.query.mockResolvedValueOnce({ rows: [{ telegram_id: 1, first_name: 'Al' }, { telegram_id: 2, first_name: 'Bo' }] });
+      sendTelegramMessage.mockResolvedValue({ ok: true });
+
       await referralService.trackReferral(1, 2);
-      expect(pool.query).toHaveBeenCalledTimes(1);
+
+      expect(client.query).toHaveBeenCalledWith('BEGIN');
+      expect(client.query).toHaveBeenCalledWith('COMMIT');
       expect(logger.info).toHaveBeenCalled();
+      expect(sendTelegramMessage).toHaveBeenCalledTimes(2);
     });
 
-    it('logs error on failure', async () => {
-      pool.query.mockRejectedValueOnce(new Error('db down'));
+    it('does not double-reward when the user was already referred', async () => {
+      client.query.mockResolvedValueOnce({ rows: [] }); // BEGIN
+      client.query.mockResolvedValueOnce({ rows: [] }); // INSERT DO NOTHING -> no rows
+      client.query.mockResolvedValueOnce({ rows: [] }); // COMMIT
+
       await referralService.trackReferral(1, 2);
+
+      expect(client.query).toHaveBeenCalledWith('COMMIT');
+      expect(sendTelegramMessage).not.toHaveBeenCalled();
+    });
+
+    it('rolls back and logs error on failure', async () => {
+      client.query.mockResolvedValueOnce({ rows: [] });        // BEGIN
+      client.query.mockRejectedValueOnce(new Error('db down')); // INSERT fails
+      await referralService.trackReferral(1, 2);
+      expect(client.query).toHaveBeenCalledWith('ROLLBACK');
       expect(logger.error).toHaveBeenCalled();
+      expect(client.release).toHaveBeenCalled();
     });
   });
 
@@ -133,7 +162,8 @@ describe('referralService', () => {
     it('returns total/converted/rewardDays on success', async () => {
       pool.query.mockResolvedValueOnce({ rows: [{ total_referrals: '3', converted_referrals: '2' }] });
       const result = await referralService.getStats(1);
-      expect(result).toEqual({ total: 3, converted: 2, rewardDays: 14 });
+      // Two-sided: 7 days per signup (3) + 7 days per conversion (2) = 35.
+      expect(result).toEqual({ total: 3, converted: 2, rewardDays: 35 });
     });
 
     it('returns zeros on failure', async () => {

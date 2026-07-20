@@ -188,6 +188,40 @@ function mockUserLimits() {
   redis.get.mockResolvedValueOnce(null);
 }
 
+// ─── Guest progress import (zero-login demo → sign-up migration) ───────────
+describe('POST /api/questions/import-progress', () => {
+  it('requires auth', async () => {
+    const res = await request(app).post('/api/questions/import-progress').send({ items: [{ questionId: 1, status: 'known' }] });
+    expect(res.status).toBe(401);
+  });
+
+  it('imports valid items and drops invalid ones', async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 1 });
+    const res = await request(app)
+      .post('/api/questions/import-progress')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ items: [
+        { questionId: 1, status: 'known' },
+        { questionId: 2, status: 'unknown' },
+        { questionId: 'bad', status: 'known' },
+        { questionId: 3, status: 'weird' },
+      ] });
+    expect(res.status).toBe(200);
+    expect(res.body.imported).toBe(1);
+    const call = pool.query.mock.calls.find((c) => c[0].includes('INSERT INTO user_progress'));
+    expect(call[1]).toEqual([USER_ID, [1, 2], ['known', 'unknown']]);
+  });
+
+  it('returns imported 0 when no valid items', async () => {
+    const res = await request(app)
+      .post('/api/questions/import-progress')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ items: [] });
+    expect(res.status).toBe(200);
+    expect(res.body.imported).toBe(0);
+  });
+});
+
 // ─── HEALTH ───────────────────────────────────────────────────────────────
 describe('GET /health', () => {
   it('returns 200 ok when db + redis are healthy', async () => {

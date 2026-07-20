@@ -118,12 +118,20 @@ const useStore = create((set, get) => ({
         availableModes: user.available_modes || ['swipe', 'test'],
         availableLanguages: user.available_languages || ['Java', 'Python', 'TypeScript'],
       });
-      logger.info('Store: login ok', `plan=${user.plan || 'free'}`, `modes=${(user.available_modes || []).join(',')}`);
+       logger.info('Store: login ok', `plan=${user.plan || 'free'}`, `modes=${(user.available_modes || []).join(',')}`);
 
        await get().loadQuestions();
        get().loadStats();
        get().initDaily();
        get().loadSaved();
+
+       // Migrate zero-login demo answers (if any) into the new account.
+       import('../utils/guestProgress').then(({ takeGuestProgress }) => {
+         const items = takeGuestProgress(lang);
+         if (items.length) {
+           apiClient.importProgress(items).catch(() => { /* non-fatal */ });
+         }
+       });
        return user;
     } catch (error) {
       set({ isLoading: false, _loadingLock: false });
@@ -151,6 +159,17 @@ const useStore = create((set, get) => ({
     get().loadStats();
     get().initDaily();
     get().loadSaved();
+
+    // Migrate zero-login demo answers into the new account so the funnel
+    // doesn't discard the visitor's work. Fire-and-forget: never blocks login.
+    import('../utils/guestProgress').then(({ takeGuestProgress }) => {
+      const items = takeGuestProgress(lang);
+      if (items.length) {
+        import('../api/client').then(({ default: client }) =>
+          client.importProgress(items).catch(() => { /* non-fatal */ })
+        );
+      }
+    });
     return user;
   },
 

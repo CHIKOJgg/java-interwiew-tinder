@@ -185,7 +185,7 @@ const CategorySelection = ({ onComplete, onBack }) => {
             <h3>{t('referral.title')}</h3>
           </div>
           <p className="referral-text">{t('referral.desc')}</p>
-          
+
           <div className="referral-link-box" onClick={() => {
             const bot = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'JavaInterviewTinderBot';
             const link = `https://t.me/${bot}?start=${user?.telegram_id}`;
@@ -211,6 +211,7 @@ const CategorySelection = ({ onComplete, onBack }) => {
               <span className="ref-val">{refStats.rewardDays}</span>
               <span className="ref-lab">{t('referral.pro_days')}</span>
             </div>
+            <p className="referral-note">{t('referral.note', 'Both you and your friend get PRO — no purchase needed to start.')}</p>
           </div>
         </div>
       </div>

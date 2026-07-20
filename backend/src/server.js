@@ -25,6 +25,7 @@ import { authMiddleware, requireAdmin } from './middleware/auth.js';
 import ADMIN_IDS from './config/admin.js';
 import redis, { isConnected as isRedisConnected } from './config/redis.js';
 import logger from './config/logger.js';
+import { PLANS_LIST } from './config/plans.js';
 
 dotenv.config();
 
@@ -63,6 +64,12 @@ const isDev = process.env.NODE_ENV === 'development';
 const ALLOWED_ORIGINS = new Set(
   (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
 );
+
+// Snapshot of the consent terms shown at signup. Stored alongside each lead so
+// we can later prove *what* the subject agreed to (Belarus data-protection:
+// the fact and content of consent must be demonstrable). Bump the version when
+// the privacy policy changes.
+const WAITLIST_CONSENT_TEXT = 'Согласие на обработку email для рассылок по Закону РБ «Об информации…» (Политика: /privacy.html, v1, 2026).';
 
 
 app.use(cors({
@@ -291,6 +298,8 @@ app.use('/api', (req, res, next) => {
   if (
     req.path === '/auth/login' ||
     req.path === '/languages' ||
+    req.path.startsWith('/demo/') ||
+    req.path.startsWith('/waitlist') ||
     req.path.startsWith('/bot/webhook') ||
     req.path.startsWith('/billing/ukassa/webhook')
   ) {
@@ -298,6 +307,161 @@ app.use('/api', (req, res, next) => {
   }
   authMiddleware(req, res, next);
 });
+
+// ─── Public demo (zero-login) ─────────────────────────────────────────
+// Top of the funnel: let a visitor try 10 real questions before signing up.
+// No auth, no progress tracking, no rate-limit tied to a user — just a taste
+// of the product so the "Start free" click leads straight into the game.
+app.get('/api/demo/questions', async (req, res) => {
+  try {
+    const language = String(req.query.language || 'Java');
+    const limit = Math.min(parseInt(req.query.limit) || 10, 15);
+    // Random-but-cheap sampling; a per-request seed keeps repeat visits fresh.
+    const seed = String(req.query.seed || Math.random().toString(36).slice(2));
+    const { rows } = await pool.query(
+      `SELECT id, category, difficulty, question_text, short_answer, language
+       FROM questions
+       WHERE is_active = TRUE AND language = $1
+         AND question_text IS NOT NULL AND short_answer IS NOT NULL
+       ORDER BY md5(id::text || $2) ASC
+       LIMIT $3`,
+      [language, seed, limit]
+    );
+    const questions = rows.map((r) => ({
+      id: r.id,
+      category: r.category,
+      difficulty: r.difficulty,
+      question: r.question_text,
+      shortAnswer: r.short_answer,
+      language: r.language || 'Java',
+    }));
+    res.json({ questions, meta: { language, total: questions.length } });
+  } catch (err) {
+    logger.error({ err }, 'Error in /demo/questions');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Public percentile for the demo result screen (no auth). Mirrors
+// /api/stats/percentile but callable before sign-up.
+app.get('/api/demo/percentile', async (req, res) => {
+  try {
+    const { language = 'Java', score } = req.query;
+    const currentScore = parseInt(score) || 0;
+    const statsResult = await pool.query(
+      `WITH user_scores AS (
+         SELECT up.user_id, COUNT(*) as score
+         FROM user_progress up
+         JOIN questions q ON q.id = up.question_id
+         WHERE q.language = $1 AND up.status = 'known'
+           AND up.updated_at > NOW() - INTERVAL '30 days'
+         GROUP BY up.user_id
+       )
+       SELECT COUNT(*) FILTER (WHERE score <= $2) as below_count,
+              COUNT(*) as total_count
+       FROM user_scores`,
+      [language, currentScore]
+    );
+    const { below_count, total_count } = statsResult.rows[0];
+    const percentile = total_count > 0
+      ? Math.round((parseInt(below_count || 0) / parseInt(total_count || 1)) * 100)
+      : 99;
+    res.json({ percentile });
+  } catch (err) {
+    logger.error({ err }, 'Demo percentile error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Waitlist / lead capture (public, Belarus-compliant) ────────────────
+// Email-only lead capture with explicit, informed consent. No auth. IP is
+// hashed (not stored raw) to minimize PII. Unsubscribe performs erasure.
+function isValidEmailAddress(value) {
+  return typeof value === 'string' &&
+    value.length <= 254 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+function hashClientIp(req) {
+  const raw = (req.headers['x-forwarded-for']?.split(',')[0]?.trim())
+    || req.socket?.remoteAddress
+    || '';
+  if (!raw) return null;
+  // Salt with JWT_SECRET so the hash can't be reversed even if the DB leaks.
+  return crypto.createHash('sha256').update(raw + (process.env.JWT_SECRET || '')).digest('hex');
+}
+
+app.post('/api/waitlist',
+  validateBody({ email: { required: true, type: 'string', maxLength: 254 } }),
+  async (req, res) => {
+    try {
+      const { email, lang, source, consent } = req.body;
+      if (!isValidEmailAddress(email)) {
+        return res.status(400).json({ error: 'Invalid email address' });
+      }
+      // Explicit, informed consent is mandatory under Belarus data law.
+      if (consent !== true) {
+        return res.status(400).json({ error: 'Consent is required to subscribe.' });
+      }
+      const cleanEmail = email.trim().toLowerCase();
+      const ipHash = hashClientIp(req);
+      await pool.query(
+        `INSERT INTO waitlist (email, lang, source, consent_granted, consent_at, consent_text, ip_hash, user_agent)
+         VALUES ($1, $2, $3, TRUE, CURRENT_TIMESTAMP, $4, $5, $6)
+         ON CONFLICT (email) DO UPDATE SET
+           consent_granted = TRUE,
+           consent_at = CURRENT_TIMESTAMP,
+           unsubscribed_at = NULL,
+           consent_text = $4,
+           ip_hash = COALESCE($5, waitlist.ip_hash),
+           source = COALESCE($3, waitlist.source)`,
+        [
+          cleanEmail,
+          String(lang || 'ru').slice(0, 10),
+          String(source || 'landing').slice(0, 50),
+          WAITLIST_CONSENT_TEXT,
+          ipHash,
+          String(req.headers['user-agent'] || '').slice(0, 500),
+        ]
+      );
+      res.json({ success: true, message: 'Subscribed.' });
+      metricsService.trackEvent(null, 'waitlist_subscribe', { lang, source });
+    } catch (err) {
+      logger.error({ err }, 'Waitlist subscribe error');
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
+
+// Withdraw consent / right to erasure. Pseudonymizes the email and nulls PII so
+// the subject can no longer be contacted or identified from this record.
+app.post('/api/waitlist/unsubscribe',
+  validateBody({ email: { required: true, type: 'string', maxLength: 254 } }),
+  async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!isValidEmailAddress(email)) {
+        return res.status(400).json({ error: 'Invalid email address' });
+      }
+      const cleanEmail = email.trim().toLowerCase();
+      const result = await pool.query(
+        `UPDATE waitlist
+         SET unsubscribed_at = CURRENT_TIMESTAMP,
+             consent_granted = FALSE,
+             email = 'anon_' || id::text || '@erased.local',
+             ip_hash = NULL,
+             user_agent = NULL,
+             consent_text = NULL
+         WHERE email = $1 AND unsubscribed_at IS NULL
+         RETURNING id`,
+        [cleanEmail]
+      );
+      res.json({ success: true, erased: (result.rowCount || 0) > 0 });
+    } catch (err) {
+      logger.error({ err }, 'Waitlist unsubscribe error');
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
 
 // ─── Email magic-link (web auth) ────────────────────────────────────
 app.post('/api/auth/email/send', async (req, res) => {
@@ -329,6 +493,36 @@ app.post('/api/auth/email/verify', async (req, res) => {
 
 // ─── Admin Routes (requireAdmin required) ─────────────────────────────
 app.use('/api/admin', requireAdmin);
+
+// List active (consented, not unsubscribed) waitlist leads for export/mailing.
+app.get('/api/admin/waitlist', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, email, lang, source, consent_at, created_at
+       FROM waitlist
+       WHERE unsubscribed_at IS NULL AND consent_granted = TRUE
+       ORDER BY created_at DESC
+       LIMIT 5000`
+    );
+    res.json({ count: rows.length, leads: rows });
+  } catch (err) {
+    logger.error({ err }, 'Admin waitlist list error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Hard-delete a single lead (full purge on subject's request).
+app.delete('/api/admin/waitlist/:email', async (req, res) => {
+  try {
+    const email = String(req.params.email || '').trim().toLowerCase();
+    if (!isValidEmailAddress(email)) return res.status(400).json({ error: 'Invalid email' });
+    const result = await pool.query('DELETE FROM waitlist WHERE email = $1', [email]);
+    res.json({ success: true, deleted: result.rowCount || 0 });
+  } catch (err) {
+    logger.error({ err }, 'Admin waitlist delete error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // ─── Preferences ─────────────────────────────────────────────────────
 app.get('/api/preferences', async (req, res) => {
@@ -791,6 +985,47 @@ app.post('/api/questions/swipe',
   }
 );
 
+// ─── Import guest progress (post-signup migration) ──────────────────────
+// A visitor who played the zero-login demo has their known/unknown answers
+// stored in localStorage. On sign-up the client flushes them here so the demo
+// work isn't lost — turning "try it" straight into a seeded account.
+app.post('/api/questions/import-progress', async (req, res) => {
+  try {
+    const userId = req.userId;
+    const items = Array.isArray(req.body?.items) ? req.body.items.slice(0, 200) : [];
+
+    const ids = [];
+    const statuses = [];
+    for (const it of items) {
+      const qid = parseInt(it?.questionId, 10);
+      const st = it?.status;
+      if (Number.isInteger(qid) && (st === 'known' || st === 'unknown')) {
+        ids.push(qid);
+        statuses.push(st);
+      }
+    }
+
+    if (ids.length === 0) return res.json({ success: true, imported: 0 });
+
+    // JOIN questions so unknown/invalid ids are silently dropped (FK-safe).
+    // DO NOTHING on conflict: never clobber real progress the user already has.
+    const result = await pool.query(
+      `INSERT INTO user_progress (user_id, question_id, status, updated_at)
+       SELECT $1, g.qid, g.st, CURRENT_TIMESTAMP
+       FROM unnest($2::int[], $3::progress_status[]) AS g(qid, st)
+       JOIN questions q ON q.id = g.qid
+       ON CONFLICT (user_id, question_id) DO NOTHING`,
+      [userId, ids, statuses]
+    );
+
+    res.json({ success: true, imported: result.rowCount || 0 });
+    metricsService.trackEvent(userId, 'guest_progress_imported', { count: result.rowCount || 0 });
+  } catch (error) {
+    logger.error({ err: error, path: req.path }, 'Error importing guest progress');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ─── Undo Swipe ────────────────────────────────────────────────────────
 app.delete('/api/questions/swipe/:questionId', async (req, res) => {
   try {
@@ -1161,24 +1396,18 @@ app.get('/api/user/resume', async (req, res) => {
 // ─── Subscription ─────────────────────────────────────────────────────
 app.get('/api/subscription/plans', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM subscription_plans ORDER BY price_monthly ASC');
+    // Only surface the active 2-plan model (Free/Pro). Legacy 'premium' rows,
+    // if any still exist, are excluded from the storefront.
+    const { rows } = await pool.query(
+      "SELECT * FROM subscription_plans WHERE id IN ('free','pro') ORDER BY price_monthly ASC"
+    );
     if (rows.length === 0) {
-      // Return default plans if table is empty or missing
-      return res.json({
-        plans: [
-          { id: 'free', name: 'Free', price_monthly: 0, stars_monthly: 0, stars_yearly: 0, requests_per_day: 200, available_languages: ['Java', 'Python', 'TypeScript'], available_modes: ['swipe', 'test'] },
-          { id: 'pro', name: 'Pro', price_monthly: 9, stars_monthly: 450, stars_yearly: 3000, requests_per_day: 1000, available_languages: ['Java', 'Python', 'TypeScript'], available_modes: ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion'], resume_analysis_limit: 10, interview_eval_limit: 50 },
-        ],
-      });
+      // Return canonical default plans if table is empty or missing
+      return res.json({ plans: PLANS_LIST });
     }
     res.json({ plans: rows });
   } catch {
-    res.json({
-      plans: [
-        { id: 'free', name: 'Free', price_monthly: 0 },
-        { id: 'pro', name: 'Pro', price_monthly: 9 },
-      ],
-    });
+    res.json({ plans: PLANS_LIST });
   }
 });
 

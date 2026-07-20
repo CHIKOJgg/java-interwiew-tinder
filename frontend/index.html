@@ -21,13 +21,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
   <!-- Open Graph / social share preview -->
-  <meta property="og:title" content="Interview Tinder — prep for your interview in 10 min/day" />
-  <meta property="og:description" content="Swipe through real interview questions, get instant AI explanations, track your readiness percentile. Java, Python, TypeScript." />
+  <meta property="og:title" content="Don't fail your Java interview — practice 10 min/day" />
+  <meta property="og:description" content="Swipe through real interview questions, get an instant AI breakdown of everything you don't know, and track your readiness score. Java, Python & TypeScript. Free to start." />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="/og-image.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Interview Tinder — prep for your interview in 10 min/day" />
-  <meta name="twitter:description" content="Swipe through real interview questions, get instant AI explanations, track your readiness percentile." />
+  <meta name="twitter:title" content="Don't fail your Java interview — practice 10 min/day" />
+  <meta name="twitter:description" content="Swipe real interview questions, get instant AI breakdowns of what you don't know, track your readiness score. Free to start." />
   <meta name="twitter:image" content="/og-image.png" />
 
   <!-- Google One Tap (web login). Harmless if VITE_GOOGLE_CLIENT_ID unset. -->
@@ -41,14 +41,14 @@
      -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <title>Interview Tinder</title>
+  <title>Interview Tinder — practice for your Java interview, 10 min/day</title>
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 
   <!-- Google Analytics 4 (no-op until VITE_GA_MEASUREMENT_ID is set at build) -->
   <script>
     (function () {
-      var id = '%VITE_GA_MEASUREMENT_ID%';
-      if (!id || id.indexOf('%') === 0) return;
+      var id = window.__JIT_GA_ID__ || '%VITE_GA_MEASUREMENT_ID%';
+      if (!id || id.indexOf('%') === 0 || id.indexOf('G-') !== 0) return;
       var s = document.createElement('script');
       s.async = true;
       s.src = 'https://www.googletagmanager.com/gtag/js?id=' + id;

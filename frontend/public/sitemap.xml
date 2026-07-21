@@ -3,6 +3,7 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://java-interview-tinder.fly.dev/landing.html</loc>
+    <lastmod>2026-07-21</lastmod>
     <xhtml:link rel="alternate" hreflang="ru" href="https://java-interview-tinder.fly.dev/landing.ru.html" />
     <xhtml:link rel="alternate" hreflang="en" href="https://java-interview-tinder.fly.dev/landing.html" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://java-interview-tinder.fly.dev/landing.html" />
@@ -11,6 +12,7 @@
   </url>
   <url>
     <loc>https://java-interview-tinder.fly.dev/landing.ru.html</loc>
+    <lastmod>2026-07-21</lastmod>
     <xhtml:link rel="alternate" hreflang="ru" href="https://java-interview-tinder.fly.dev/landing.ru.html" />
     <xhtml:link rel="alternate" hreflang="en" href="https://java-interview-tinder.fly.dev/landing.html" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://java-interview-tinder.fly.dev/landing.html" />
@@ -19,11 +21,13 @@
   </url>
   <url>
     <loc>https://java-interview-tinder.fly.dev/java-interview-questions.html</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://java-interview-tinder.fly.dev/</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

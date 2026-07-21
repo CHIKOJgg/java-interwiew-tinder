@@ -51,7 +51,13 @@
   border-radius: 999px;
 }
 .landing-hero h1 { font-size: 38px; line-height: 1.15; margin: 0; letter-spacing: -0.5px; }
-.landing-tagline { font-size: 18px; opacity: 0.7; margin: 0; max-width: 480px; line-height: 1.5; }
+.landing-hl {
+  background: linear-gradient(90deg, #818cf8, #22c55e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.landing-tagline { font-size: 18px; opacity: 0.7; margin: 0; max-width: 520px; line-height: 1.5; }
 .landing-hero-cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 4px; }
 .landing-cta {
   padding: 14px 32px;
@@ -69,13 +75,16 @@
 }
 .landing-cta:hover { background: #4c6ef5; }
 .landing-cta:active { transform: translateY(1px); }
+.landing-cta--green { background: #22c55e; }
+.landing-cta--green:hover { background: #16a34a; }
 .landing-cta--ghost {
   background: transparent;
   color: #5c7cfa;
   border: 1.5px solid #5c7cfa;
 }
 .landing-cta--ghost:hover { background: #5c7cfa10; }
-.landing-sub { font-size: 13px; opacity: 0.55; margin: 0; }
+.landing-trust { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; font-size: 13px; opacity: 0.6; }
+.landing-trust b { opacity: 1; }
 
 /* ── Social proof strip ──────────────────────────────────────────── */
 .landing-stats {
@@ -95,11 +104,54 @@
 .landing-stat strong { font-size: 26px; font-weight: 800; color: #5c7cfa; }
 .landing-stat span { font-size: 12px; opacity: 0.65; line-height: 1.3; }
 
+/* ── The Real Cost ──────────────────────────────────────────────── */
+.landing-cost { text-align: center; }
+.landing-cost h2 { font-size: 28px; margin: 0 0 8px; }
+.landing-cost-sub { font-size: 15px; opacity: 0.65; margin: 0 auto 28px; max-width: 520px; line-height: 1.5; }
+.landing-cost-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; }
+.landing-cost-visual {
+  background: linear-gradient(135deg, #0b1020, #1a1040);
+  border-radius: 20px;
+  padding: 34px 24px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.landing-cost-big {
+  font-size: 56px;
+  font-weight: 800;
+  background: linear-gradient(90deg, #ef4444, #f59e0b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.1;
+}
+.landing-cost-big-lbl { font-size: 14px; color: #c3cee0; margin-top: 10px; line-height: 1.4; }
+.landing-cost-list { display: flex; flex-direction: column; gap: 0; }
+.landing-cost-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f3f5;
+  align-items: flex-start;
+}
+.landing-cost-item:last-child { border-bottom: none; }
+.landing-cost-icon { font-size: 22px; flex: none; margin-top: 2px; }
+.landing-cost-item b { display: block; font-size: 14px; margin-bottom: 2px; }
+.landing-cost-item p { margin: 0; font-size: 13px; opacity: 0.6; line-height: 1.5; }
+
 /* ── Features ────────────────────────────────────────────────────── */
+.landing-features-section { text-align: center; }
+.landing-features-section h2 { font-size: 26px; margin: 0 0 6px; }
+.landing-features-sub { font-size: 15px; opacity: 0.65; margin: 0 auto 28px; max-width: 460px; line-height: 1.5; }
 .landing-features {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+  text-align: left;
 }
 .landing-feature {
   background: #f8f9fa;
@@ -111,10 +163,38 @@
 .landing-feature p { margin: 0; font-size: 13px; opacity: 0.65; line-height: 1.5; }
 
 /* ── How it works ────────────────────────────────────────────────── */
-.landing-how { background: #f1f3f5; border-radius: 16px; padding: 28px; }
-.landing-how h2 { margin: 0 0 14px; font-size: 22px; }
-.landing-how ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; }
-.landing-how li { font-size: 14px; opacity: 0.8; line-height: 1.5; }
+.landing-how { text-align: center; }
+.landing-how h2 { font-size: 26px; margin: 0 0 24px; }
+.landing-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.landing-step {
+  background: #f1f3f5;
+  border-radius: 16px;
+  padding: 24px 18px;
+  text-align: center;
+}
+.landing-step-num {
+  width: 42px;
+  height: 42px;
+  line-height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5c7cfa, #8b5cf6);
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  margin: 0 auto 12px;
+}
+.landing-step h3 { margin: 0 0 6px; font-size: 16px; }
+.landing-step p { margin: 0; font-size: 13px; opacity: 0.65; line-height: 1.5; }
+
+/* ── The Math ──────────────────────────────────────────────────── */
+.landing-math { text-align: center; }
+.landing-math h2 { font-size: 26px; margin: 0 0 6px; }
+.landing-math-sub { font-size: 15px; opacity: 0.65; margin: 0 auto 28px; max-width: 460px; line-height: 1.5; }
+.landing-math-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.landing-math-item { padding: 20px 12px; text-align: center; }
+.landing-math-icon { font-size: 32px; margin-bottom: 8px; }
+.landing-math-num { font-size: 26px; font-weight: 800; color: #5c7cfa; }
+.landing-math-label { font-size: 12px; opacity: 0.6; margin-top: 4px; line-height: 1.3; }
 
 /* ── Get the app (funnels) ───────────────────────────────────────── */
 .landing-getapp { text-align: center; }
@@ -152,7 +232,8 @@
 
 /* ── Pricing block ─────────────────────────────────────────────── */
 .landing-pricing { text-align: center; }
-.landing-pricing h2 { font-size: 26px; margin: 0 0 24px; }
+.landing-pricing h2 { font-size: 26px; margin: 0 0 6px; }
+.landing-pricing-sub { font-size: 14px; opacity: 0.6; margin: 0 auto 24px; max-width: 460px; line-height: 1.5; }
 .landing-plans {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -230,8 +311,8 @@
 }
 .landing-final h2 { margin: 0; font-size: 26px; }
 .landing-final p { margin: 0; opacity: 0.85; font-size: 15px; }
-.landing-final .landing-cta { background: #fff; color: #5c7cfa; }
-.landing-final .landing-cta:hover { background: #f1f3f5; }
+.landing-final .landing-cta--green { background: #fff; color: #22c55e; }
+.landing-final .landing-cta--green:hover { background: #f1f3f5; }
 .landing-final .landing-cta--ghost { background: transparent; color: #fff; border-color: #fff; }
 .landing-final .landing-cta--ghost:hover { background: #ffffff22; }
 
@@ -246,5 +327,8 @@
   .landing-apps,
   .landing-plans { grid-template-columns: 1fr; }
   .landing-stats { grid-template-columns: 1fr; }
+  .landing-cost-grid { grid-template-columns: 1fr; }
+  .landing-steps { grid-template-columns: 1fr; }
+  .landing-math-grid { grid-template-columns: repeat(2, 1fr); }
   .landing-cta { width: 100%; justify-content: center; }
 }

@@ -256,6 +256,24 @@
     .rbnotice{ display:none; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:12.5px; border-radius:12px; padding:10px 14px; margin-top:14px; text-align:left; line-height:1.5; }
     .rbnotice.show{ display:block; }
     .rbnotice a{ color:#9a3412; font-weight:700; }
+
+    /* ── Exit-intent popup ── */
+    .exit-popup{display:none;position:fixed;inset:0;z-index:100;background:rgba(11,16,32,.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:18px}
+    .exit-popup.show{display:flex}
+    .exit-box{background:#fff;border-radius:22px;padding:36px 30px;max-width:440px;width:100%;text-align:center;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.3)}
+    .exit-box .exit-x{position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1}
+    .exit-box .exit-icon{font-size:40px;margin-bottom:12px}
+    .exit-box h3{font-size:22px;margin-bottom:8px;letter-spacing:-.02em}
+    .exit-box p{font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+    .exit-box .btn{width:100%;justify-content:center;margin-bottom:10px}
+    .exit-box .exit-skip{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;text-decoration:underline}
+
+    /* ── Social proof toast ── */
+    .social-toast{position:fixed;bottom:90px;left:18px;z-index:55;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:0 8px 24px rgba(0,0,0,.12);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text);transform:translateY(20px);opacity:0;transition:all .4s ease;pointer-events:none;max-width:300px}
+    .social-toast.show{transform:translateY(0);opacity:1;pointer-events:auto}
+    .social-toast .st-icon{font-size:20px;flex:none}
+    .social-toast .st-text b{color:var(--brand)}
+    @media(max-width:820px){ .social-toast{bottom:90px;left:12px;right:12px;max-width:none} }
   </style>
 </head>
 <body>
@@ -680,6 +698,24 @@
     <a class="btn ghost dark" href="/?utm_source=landing&utm_medium=sticky" style="background:#fff">📲 Приложение</a>
   </div>
 
+  <!-- Exit-intent popup -->
+  <div class="exit-popup" id="exitPopup">
+    <div class="exit-box">
+      <button class="exit-x" id="exitClose" aria-label="Закрыть">&times;</button>
+      <div class="exit-icon">🎯</div>
+      <h3>Подержи — попробуй 3 вопроса перед уходом</h3>
+      <p>Без регистрации. Без карты. Реальные вопросы с собеседований + AI-разборы. Проверь, прошёл бы ты.</p>
+      <a class="btn green" href="/?utm_source=landing&utm_medium=exit_popup" id="exitCta">Попробовать 3 вопроса бесплатно →</a>
+      <button class="exit-skip" id="exitSkip">Нет, спасибо</button>
+    </div>
+  </div>
+
+  <!-- Social proof toast -->
+  <div class="social-toast" id="socialToast">
+    <span class="st-icon">👋</span>
+    <span class="st-text"><b id="stName">Алексей</b> <span id="stAction">начал тренировку — удачи!</span></span>
+  </div>
+
   <footer>
     <div class="wrap">
       Interview Tinder • <a href="https://t.me/JavaInterviewTinderBot">Telegram</a>
@@ -839,8 +875,45 @@
           if(j.__status===451){ out.className='b2b-msg err'; out.textContent=j.message; return; }
           out.className='b2b-msg ok'; out.textContent='Спасибо! Ответим в течение 1 рабочего дня.'; form.reset();
         }).catch(function(){ out.className='b2b-msg err'; out.textContent='Ошибка сети. Напиши нам в Telegram.'; })
-          .finally(function(){ btn.disabled=false; btn.textContent='Запросить доступ \u2192'; });
+           .finally(function(){ btn.disabled=false; btn.textContent='Запросить доступ \u2192'; });
       });
+    })();
+
+    // ---- Exit-intent popup ----
+    (function(){
+      var popup=document.getElementById('exitPopup');
+      var close=document.getElementById('exitClose');
+      var skip=document.getElementById('exitSkip');
+      if(!popup)return;
+      var dismissed=localStorage.getItem('exit_popup_dismissed');
+      if(dismissed)return;
+      var shown=false;
+      document.addEventListener('mouseout',function(e){
+        if(shown)return;
+        if(e.clientY<4){shown=true; popup.classList.add('show');}
+      });
+      close.addEventListener('click',function(){popup.classList.remove('show');localStorage.setItem('exit_popup_dismissed','1');});
+      skip.addEventListener('click',function(){popup.classList.remove('show');localStorage.setItem('exit_popup_dismissed','1');});
+      popup.addEventListener('click',function(e){if(e.target===popup){popup.classList.remove('show');localStorage.setItem('exit_popup_dismissed','1');}});
+    })();
+
+    // ---- Social proof toast ----
+    (function(){
+      var toast=document.getElementById('socialToast');
+      var nameEl=document.getElementById('stName');
+      var actionEl=document.getElementById('stAction');
+      if(!toast)return;
+      var names=['\u0410\u043b\u0435\u043a\u0441\u0435\u0439','\u041c\u0430\u0440\u0438\u043d\u0430','\u0414\u043c\u0438\u0442\u0440\u0438\u0439','\u0421\u0430\u0440\u0430','\u0418\u0432\u0430\u043d','\u0410\u043d\u043d\u0430','\u041f\u0430\u0432\u0435\u043b','\u0415\u043b\u0435\u043d\u0430','\u041c\u0430\u043a\u0441','\u041e\u043b\u044c\u0433\u0430','\u0418\u0433\u043e\u0440\u044c','\u042e\u043b\u0438\u044f'];
+      var actions=['\u043d\u0430\u0447\u0430\u043b \u0442\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f \u2014 \u0443\u0434\u0430\u0447\u0438!','\u043f\u0440\u043e\u0448\u0451\u043b 10 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432 \ud83d\udd25','\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u0441\u044f \u043a \u0441\u043e\u0431\u0435\u0441\u0435\u0434\u043e\u0432\u0430\u043d\u0438\u044e \u043f\u043e Java','\u043e\u0442\u043a\u0440\u044b\u043b Mock-\u0440\u0435\u0436\u0438\u043c','\u0433\u043e\u0442\u043e\u0432 \u043a \u0441\u043e\u0431\u0435\u0441\u0435\u0434\u043e\u0432\u0430\u043d\u0438\u044e \u043d\u0430 80%'];
+      var shown=0;
+      function show(){
+        nameEl.textContent=names[Math.floor(Math.random()*names.length)];
+        actionEl.textContent=actions[Math.floor(Math.random()*actions.length)];
+        toast.classList.add('show');
+        setTimeout(function(){toast.classList.remove('show');},4000);
+      }
+      setTimeout(show,6000);
+      setInterval(function(){if(shown<5){show();shown++;}},22000);
     })();
   </script>
 
@@ -868,6 +941,15 @@
     {"@type":"Question","name":"Работает ли на телефоне?","acceptedAnswer":{"@type":"Answer","text":"Да — как Telegram Mini App и как устанавливаемая PWA на iOS и Android."}},
     {"@type":"Question","name":"Это гарантирует мне работу?","acceptedAnswer":{"@type":"Answer","text":"Ни один продукт не может. Но регулярная практика с обратной связью — самый надёжный способ поднять свой показатель прохождения собеседований."}}
   ]}
+  </script>
+  <script type="application/ld+json">
+  { "@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+    {"@type":"ListItem","position":1,"name":"\u0413\u043b\u0430\u0432\u043d\u0430\u044f","item":"https://java-interview-tinder.fly.dev/"},
+    {"@type":"ListItem","position":2,"name":"\u0422\u0440\u0435\u043d\u0430\u0436\u0451\u0440 \u0441\u043e\u0431\u0435\u0441\u0435\u0434\u043e\u0432\u0430\u043d\u0438\u0439","item":"https://java-interview-tinder.fly.dev/landing.ru.html"}
+  ]}
+  </script>
+  <script type="application/ld+json">
+  { "@context":"https://schema.org","@type":"WebSite","name":"Interview Tinder","url":"https://java-interview-tinder.fly.dev","potentialAction":{"@type":"SearchAction","target":"https://java-interview-tinder.fly.dev/q/?q={search_term_string}","query-input":"required name=search_term_string"} }
   </script>
   <script type="application/ld+json">
   { "@context":"https://schema.org","@type":"HowTo",

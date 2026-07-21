@@ -87,7 +87,7 @@ export default function Landing({ onStart }) {
       </nav>
 
       {/* ── Hero ────────────────────────────────────────────────── */}
-      <header className="landing-hero">
+      <header className="landing-hero" role="banner">
         <span className="landing-pill">🔥 {t('landing.pill', 'Real questions from real interviews · 3 languages · no fluff')}</span>
         <h1>{t('landing.title', 'You know how to code.')}&nbsp;<span className="landing-hl">{t('landing.title_hl', 'One forgotten question')}<br/>{t('landing.title_hl2', 'shouldn\'t cost you the offer.')}</span></h1>
         <p className="landing-tagline">
@@ -261,8 +261,8 @@ export default function Landing({ onStart }) {
       </section>
 
       {/* ── FAQ ─────────────────────────────────────────────────── */}
-      <section className="landing-faq">
-        <h2>{t('landing.faq_title', 'Questions developers ask before starting')}</h2>
+      <section className="landing-faq" aria-labelledby="faq-heading">
+        <h2 id="faq-heading">{t('landing.faq_title', 'Questions developers ask before starting')}</h2>
         <div className="landing-faq-list">
           {faqs.map((item, i) => (
             <details className="landing-faq-item" key={i}>

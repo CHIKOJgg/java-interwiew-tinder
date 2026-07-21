@@ -556,8 +556,13 @@ app.delete('/api/admin/waitlist/:email', async (req, res) => {
   try {
     const email = String(req.params.email || '').trim().toLowerCase();
     if (!isValidEmailAddress(email)) return res.status(400).json({ error: 'Invalid email' });
-    const result = await pool.query('DELETE FROM waitlist WHERE email = $1', [email]);
-    res.json({ success: true, deleted: result.rowCount || 0 });
+    const stores = rbPool ? [pool, rbPool] : [pool];
+    let deleted = 0;
+    for (const s of stores) {
+      const result = await s.query('DELETE FROM waitlist WHERE email = $1', [email]);
+      deleted += result.rowCount || 0;
+    }
+    res.json({ success: true, deleted });
   } catch (err) {
     logger.error({ err }, 'Admin waitlist delete error');
     res.status(500).json({ error: 'Internal server error' });

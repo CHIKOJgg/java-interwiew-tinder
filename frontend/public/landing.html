@@ -23,6 +23,9 @@
   <meta name="twitter:description" content="Practice the EXACT questions companies ask. AI explanations. Readiness score. Free to start." />
   <meta name="twitter:image" content="/og-image.png" />
 
+  <!-- Google Search Console verification. Replace with real code from Search Console. -->
+  <meta name="google-site-verification" content="REPLACE_WITH_GSC_VERIFICATION_CODE" />
+
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
   <link rel="apple-touch-icon" href="/icon.svg" />
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -291,6 +294,7 @@
         <a class="hide-m" href="#cost">Why you fail</a>
         <a class="hide-m" href="#how">How it works</a>
         <a class="hide-m" href="#pricing">Pricing</a>
+        <a class="hide-m" href="/blog/">Blog</a>
         <a class="hide-m" href="#b2b">B2B</a>
         <a class="btn sm" href="/?utm_source=landing&utm_medium=header">Start free</a>
       </nav>
@@ -972,6 +976,43 @@
     ],
     "tool":[{"@type":"HowToTool","name":"Interview Tinder","url":"https://java-interview-tinder.fly.dev"}]
   }
+  </script>
+
+  <!-- A/B Hero Test: randomize headline variant per visitor. Tracks via localStorage. -->
+  <script>
+    (function () {
+      try {
+        var heroH1 = document.querySelector('.hero h1');
+        if (!heroH1) return;
+        var variants = [
+          {
+            h1: 'You know how to code.<br><span class="hl">One forgotten question</span> shouldn\'t cost you the offer.',
+            label: 'A: cost-of-mistake'
+          },
+          {
+            h1: 'Land your <span class="hl">Java, Python, or TypeScript offer</span><br>in 10 minutes a day.',
+            label: 'B: outcome-3langs'
+          },
+          {
+            h1: 'Stop cramming LeetCode.<br>Start answering <span class="hl">what companies actually ask.</span>',
+            label: 'C: anti-leetcode'
+          }
+        ];
+        var stored = localStorage.getItem('jit_ab_hero');
+        var idx;
+        if (stored !== null && /^[012]$/.test(stored)) {
+          idx = parseInt(stored, 10);
+        } else {
+          idx = Math.floor(Math.random() * variants.length);
+          localStorage.setItem('jit_ab_hero', String(idx));
+        }
+        heroH1.innerHTML = variants[idx].h1;
+        heroH1.setAttribute('data-ab-variant', variants[idx].label);
+        if (window.gtag) {
+          gtag('event', 'ab_hero_view', { variant: variants[idx].label });
+        }
+      } catch (e) { /* localStorage may be disabled — fall through to default */ }
+    })();
   </script>
 </body>
 </html>

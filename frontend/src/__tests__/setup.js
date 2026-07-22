@@ -33,15 +33,14 @@ if (!window.matchMedia) {
 }
 
 // ResizeObserver stub
-if (!global.ResizeObserver) {
-  global.ResizeObserver = class {
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
   };
 }
 
-// scrollIntoView stub (used by debug overlay / modals)
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = vi.fn();
 }

@@ -1,0 +1,85 @@
+# Render Blueprint — Java Interview Tinder (free-tier friendly)
+#
+# One-click deploy:
+#   1. Push this file to a GitHub repo.
+#   2. In the Render Dashboard: New → Blueprint → pick the repo.
+#   3. Render will create:
+#        - jit-redis         (Render Key Value, free tier)
+#        - jit-backend       (Node 22 web service, free tier, runs BOTH the
+#                             API and the background worker via `npm run start:all`)
+#      and prompt you for the secret env vars (BOT_TOKEN, OPENROUTER_API_KEY,
+#      ADMIN_TELEGRAM_IDS, JWT_SECRET is auto-generated).
+#
+# After the first deploy succeeds:
+#   - Run the one-time DB migration from your laptop:
+#       DATABASE_URL='<Render Postgres URL>' npm --prefix backend run setup-db
+#     OR change the startCommand in the Render dashboard to:
+#       npm run setup-db && npm run start:all
+#     then trigger a manual deploy, then change it back.
+#
+# Free tier caveats (see render.com/docs/free):
+#   - Web service spins down after 15 min idle (~1 min cold start on next request)
+#   - Render Key Value is in-memory only on free (data lost on restart)
+#   - 750 free instance-hours / month per workspace
+
+services:
+  - type: keyvalue
+    name: jit-redis
+    plan: free
+    region: frankfurt
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
+    maxmemoryPolicy: allkeys-lru
+    persistenceMode: off
+
+  - type: web
+    name: jit-backend
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm run start:all
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    numInstances: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: jit-redis
+          property: connectionString
+      - key: DATABASE_URL
+        sync: false
+        description: 'postgres://user:pass@host:5432/db (Supabase or Render Postgres)'
+      - key: BOT_TOKEN
+        sync: false
+        description: 'Telegram bot token from @BotFather'
+      - key: JWT_SECRET
+        generateValue: true
+      - key: OPENROUTER_API_KEY
+        sync: false
+        description: 'sk-or-... (optional but recommended)'
+      - key: OPENROUTER_MODEL
+        value: google/gemini-2.0-flash-exp:free
+      - key: ALLOWED_ORIGINS
+        value: https://jit-frontend.vercel.app
+        description: 'Comma-separated list of allowed CORS origins (update with your real frontend URL)'
+      - key: FRONTEND_URL
+        value: https://jit-frontend.vercel.app
+        description: 'Frontend URL used for success/cancel redirects'
+      - key: ADMIN_TELEGRAM_IDS
+        sync: false
+        description: 'Your Telegram numeric ID (e.g. 123456789) for admin auto-grant'
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: SENTRY_DSN
+        value: ""
+      - key: LOGTAIL_TOKEN
+        value: ""

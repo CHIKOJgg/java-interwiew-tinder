@@ -58,7 +58,8 @@
     "code_completion": "Code",
     "track_mode": "Track",
     "playground": "Playground",
-    "challenge": "Challenge"
+    "challenge": "Challenge",
+    "system_design": "System Design"
   },
   "referral": {
     "title": "Invite Friends",
@@ -517,5 +518,28 @@
     "download": "Download Certificate",
     "share": "Share",
     "close": "Close"
+  },
+  "sd": {
+    "title": "System Design",
+    "subtitle": "Practice designing large-scale systems like at FAANG interviews",
+    "requirements": "Functional Requirements",
+    "constraints": "Constraints & Scale",
+    "expected_components": "Components to Consider",
+    "your_answer": "Your Answer",
+    "answer_placeholder": "Describe your architecture. Cover: components, data model, trade-offs, scaling...",
+    "evaluate": "Evaluate Answer",
+    "evaluating": "AI is evaluating your answer...",
+    "strengths": "Strengths",
+    "weaknesses": "Areas to Improve",
+    "missing_components": "Missing Components",
+    "suggested_architecture": "Suggested Architecture",
+    "follow_up": "Follow-up Question",
+    "done": "Done",
+    "start_practice": "Start practicing",
+    "try_another": "Try another topic",
+    "no_topics": "No topics available yet",
+    "no_feedback": "No specific feedback",
+    "limit_reached": "Daily limit: {{used}}/{{limit}}. Upgrade to Pro for unlimited evaluations.",
+    "score": "Score"
   }
 }

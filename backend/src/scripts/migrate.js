@@ -604,6 +604,68 @@ const migrations = [
       ON CONFLICT DO NOTHING;
       ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS selected_company VARCHAR(100);
     `
+  },
+
+  // ── 034: System Design module ──────────────────────────────────────
+  {
+    id: '034_system_design',
+    sql: `
+      CREATE TABLE IF NOT EXISTS system_design_topics (
+        id SERIAL PRIMARY KEY,
+        language VARCHAR(20) NOT NULL,
+        topic VARCHAR(100) NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        description TEXT,
+        difficulty VARCHAR(20) DEFAULT 'middle',
+        requirements TEXT[],
+        constraints TEXT[],
+        expected_components TEXT[],
+        evaluation_criteria JSONB,
+        estimated_readiness_hours DECIMAL,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS system_design_progress (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT REFERENCES users(telegram_id),
+        topic_id INT REFERENCES system_design_topics(id),
+        status VARCHAR(20) DEFAULT 'not_started',
+        score INT,
+        strengths TEXT[],
+        weaknesses TEXT[],
+        components_mentioned TEXT[],
+        architecture_json JSONB,
+        attempt_count INT DEFAULT 0,
+        last_attempt_at TIMESTAMP,
+        UNIQUE(user_id, topic_id)
+      );
+
+      ALTER TABLE user_rate_limits ADD COLUMN IF NOT EXISTS sd_evaluations_today INT DEFAULT 0;
+      ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS sd_evaluation_limit INT DEFAULT 0;
+      UPDATE subscription_plans SET sd_evaluation_limit = 1 WHERE id = 'free';
+      UPDATE subscription_plans SET sd_evaluation_limit = 100 WHERE id = 'pro';
+      UPDATE subscription_plans SET available_modes = ARRAY['swipe','test','system-design'] WHERE id = 'free';
+      UPDATE subscription_plans SET available_modes = ARRAY['swipe','test','bug-hunting','blitz','code-completion','mock-interview','concept-linker','system-design'] WHERE id = 'pro';
+
+      INSERT INTO system_design_topics (language, topic, title, description, difficulty, requirements, constraints, expected_components) VALUES
+        ('Java', 'design-tinyurl', 'Design TinyURL', 'Design a URL shortening service like TinyURL.', 'Junior', ARRAY['Generate short unique URLs', 'Redirect short URL to original', 'Track click analytics'], ARRAY['10M new URLs/month', '100M redirects/day', 'Low latency (<10ms redirect)'], ARRAY['Load Balancer', 'Web Server', 'Database', 'Cache']),
+        ('Java', 'design-chat', 'Design WhatsApp / Messenger', 'Design a real-time messaging system.', 'Middle', ARRAY['Send/receive messages in real-time', 'Support group chats', 'Message delivery status', 'Media sharing'], ARRAY['1B users', '100M messages/day', '<100ms delivery latency', 'Exactly-once delivery'], ARRAY['WebSocket Server', 'Message Queue', 'Database', 'Cache', 'CDN for media']),
+        ('Java', 'design-newsfeed', 'Design Facebook / Instagram Feed', 'Design a social media newsfeed.', 'Middle', ARRAY['Generate personalized feed', 'Support posts, photos, videos', 'Like/comment/share', 'Real-time updates'], ARRAY['500M DAU', 'Feed loads in <500ms', 'Support 100M posts/day'], ARRAY['Load Balancer', 'Feed Generator Service', 'Database (SQL + NoSQL)', 'Cache (Redis)', 'CDN', 'Message Queue']),
+        ('Java', 'design-uber', 'Design Uber / Rider App', 'Design a ride-hailing service.', 'Senior', ARRAY['Match riders with drivers', 'Real-time location tracking', 'ETA calculation', 'Surge pricing', 'Payment processing'], ARRAY['100M users', '10M rides/day', '<1s matching latency', '99.99% uptime'], ARRAY['Load Balancer', 'Location Service (Redis Geo)', 'Matching Engine', 'Database', 'Message Queue', 'Push Notifications']),
+        ('Java', 'design-netflix', 'Design Netflix / YouTube', 'Design a video streaming platform.', 'Senior', ARRAY['Upload and process videos', 'Stream video with adaptive bitrate', 'Recommendation system', 'Search'], ARRAY['200M subscribers', '1B hours watched/day', '<5s startup latency', 'Support 4K streaming'], ARRAY['CDN', 'Transcoding Pipeline', 'Video Storage (S3)', 'Metadata DB', 'Recommendation Engine', 'Search Service']),
+        ('Java', 'design-ecommerce', 'Design Amazon / E-commerce', 'Design a large-scale e-commerce platform.', 'Middle', ARRAY['Product catalog with search', 'Shopping cart', 'Order management', 'Payment processing', 'Inventory management'], ARRAY['200M products', '1M orders/day', '<200ms page load', 'Support flash sales (100K req/s)'], ARRAY['Load Balancer', 'Search Service', 'Database (sharded)', 'Cache', 'Order Service', 'Payment Service', 'Inventory Service']),
+        ('Java', 'design-rate-limiter', 'Design Rate Limiter', 'Design a distributed rate limiter.', 'Middle', ARRAY['Rate limit API requests per user/IP', 'Support multiple rate limit rules', 'Low latency decision making'], ARRAY['100K req/s', '<1ms overhead per request', 'Distributed across data centers'], ARRAY['Redis Cluster', 'Rate Limit Service', 'Cache']),
+        ('Java', 'design-web-crawler', 'Design Web Crawler', 'Design a web crawler for a search engine.', 'Middle', ARRAY['Crawl billions of web pages', 'Detect duplicate content', 'Respect robots.txt', 'Support recrawling'], ARRAY['10B pages', '200 pages/sec crawl rate', 'Storage >100PB'], ARRAY['URL Frontier', 'Downloader', 'Parser', 'Deduplication (Bloom Filter)', 'Storage (S3/HDFS)']),
+        ('Java', 'design-pastebin', 'Design Pastebin / Code Share', 'Design a pastebin service.', 'Junior', ARRAY['Store text/code snippets', 'Generate unique URLs', 'Optional expiration', 'Syntax highlighting'], ARRAY['10M pastes/month', 'Read-heavy (90/10 R/W)', 'Store pastes up to 10MB'], ARRAY['Load Balancer', 'Web Server', 'Database', 'Cache', 'Object Storage']),
+        ('Java', 'design-parking-lot', 'Design Parking Lot (OOD)', 'Design a parking lot system (OOP approach).', 'Junior', ARRAY['Multiple floors', 'Multiple vehicle types', 'Track available spots', 'Ticket/payment system'], ARRAY['Support 10 floors, 100 spots each', 'Handle cars, bikes, trucks', 'Real-time availability'], ARRAY['ParkingLot (Singleton)', 'Floor', 'Spot', 'Ticket', 'PaymentProcessor']),
+        ('Java', 'design-twitter-search', 'Design Twitter Search', 'Design a real-time search service like Twitter search.', 'Senior', ARRAY['Index tweets in real-time', 'Full-text search', 'Trending topics', 'Filter by date/user'], ARRAY['500M tweets/day', 'Search latency <100ms', 'Support 100K QPS'], ARRAY['Inverted Index (Elasticsearch)', 'Distributed Search Cluster', 'Disaster Recovery']),
+        ('Java', 'design-yelp', 'Design Yelp / Nearby Places', 'Design a location-based business review service.', 'Middle', ARRAY['Search nearby businesses', 'View reviews and ratings', 'Add reviews', 'Filter by category'], ARRAY['100M businesses', '10M daily queries', 'Location search latency <50ms'], ARRAY['Location Service (GeoHash)', 'Database', 'Review Service', 'Cache']),
+        ('Java', 'design-dropbox', 'Design Dropbox / Google Drive', 'Design a cloud file storage and sync service.', 'Senior', ARRAY['Upload/download files', 'File synchronization across devices', 'File versioning', 'Share files with permissions'], ARRAY['500M users', '100PB storage', 'Sync latency <30s', 'Deduplication for efficiency'], ARRAY['Load Balancer', 'Block Server', 'Metadata DB', 'Object Storage', 'Sync Service', 'Notification Service']),
+        ('Java', 'design-notification', 'Design Notification System', 'Design a scalable push notification system.', 'Middle', ARRAY['Send push notifications', 'Support iOS/Android/Web', 'Preference management', 'Rate limiting'], ARRAY['10M notifications/day', '<1s delivery latency', 'Support scheduled notifications'], ARRAY['Message Queue', 'Notification Worker Pool', 'Apple/Google/FCM Connector', 'User Preference DB']),
+        ('Java', 'design-key-value', 'Design Distributed Key-Value Store', 'Design a distributed key-value store like Redis or Cassandra.', 'Senior', ARRAY['Get/put key-value pairs', 'Support replication', 'Fault tolerance', 'Consistency levels'], ARRAY['1M QPS', 'Store 100TB data', '99.999% availability', 'Eventual consistency acceptable'], ARRAY['Partition Layer (Consistent Hashing)', 'Replication Manager', 'Storage Engine', 'Consistency Coordinator'])
+      ON CONFLICT DO NOTHING;
+    `
   }
 ];
 

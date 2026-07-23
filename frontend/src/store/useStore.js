@@ -523,6 +523,20 @@ const useStore = create((set, get) => ({
     }
     const prevMode = get().learningMode;
     set({ learningMode: mode, currentIndex: 0, isBlitzActive: false, blitzTimeLeft: 60, blitzScore: 0, blitzIdle: true, interviewHistory: [] });
+    if (mode === 'system-design') {
+      set({
+        learningMode: 'system-design',
+        sdScreen: 'list',
+        sdCurrentTopic: null,
+        sdEvaluation: null,
+        sdTopics: [],
+        sdProgress: null,
+        sdError: null,
+        sdLimitReached: null,
+      });
+      get().loadSDTopics();
+      return;
+    }
     if (mode !== prevMode) {
       get().loadQuestions().then(() => {
         if (mode === 'mock-interview') get().startInterview();
@@ -706,6 +720,76 @@ const useStore = create((set, get) => ({
   tracks: [],
   currentTrack: null,
   trackComplete: false,
+
+  // ─── System Design ──────────────────────────────────────────────
+  sdTopics: [],
+  sdCurrentTopic: null,
+  sdEvaluation: null,
+  sdIsEvaluating: false,
+  sdProgress: null,
+  sdScreen: 'list',
+  sdError: null,
+  sdLimitReached: null,
+
+  loadSDTopics: async (difficulty) => {
+    try {
+      const data = await apiClient.getSDTopics(get().language, difficulty);
+      set({ sdTopics: data.topics || [], sdError: null });
+    } catch (err) {
+      set({ sdError: err.message });
+    }
+  },
+
+  loadSDTopicDetail: async (topicId) => {
+    try {
+      const data = await apiClient.getSDTopicDetail(topicId);
+      set({ sdCurrentTopic: data, sdEvaluation: null, sdError: null, sdScreen: 'detail' });
+    } catch (err) {
+      set({ sdError: err.message });
+    }
+  },
+
+  submitSDEvaluation: async (topicId, answer) => {
+    set({ sdIsEvaluating: true, sdEvaluation: null, sdLimitReached: null });
+    try {
+      const data = await apiClient.evaluateSDAnswer(topicId, answer);
+      set({ sdEvaluation: data.evaluation, sdIsEvaluating: false, sdScreen: 'result' });
+      return data.evaluation;
+    } catch (err) {
+      set({ sdIsEvaluating: false });
+      if (err.code === 'SD_DAILY_LIMIT') {
+        set({ sdLimitReached: { used: err.used, limit: err.limit } });
+      } else {
+        set({ sdError: err.message });
+      }
+      throw err;
+    }
+  },
+
+  loadSDProgress: async () => {
+    try {
+      const data = await apiClient.getSDProgress();
+      set({ sdProgress: data, sdError: null });
+    } catch (err) {
+      set({ sdError: err.message });
+    }
+  },
+
+  setSDScreen: (screen) => set({ sdScreen: screen, sdEvaluation: null }),
+
+  setSDMode: () => {
+    set({
+      learningMode: 'system-design',
+      sdScreen: 'list',
+      sdCurrentTopic: null,
+      sdEvaluation: null,
+      sdTopics: [],
+      sdProgress: null,
+      sdError: null,
+      sdLimitReached: null,
+    });
+    get().loadSDTopics();
+  },
 
   // ─── Playground ──────────────────────────────────────────────────
   playgroundQuestion: null,

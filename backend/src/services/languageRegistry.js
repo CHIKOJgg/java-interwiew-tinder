@@ -129,6 +129,27 @@ Evaluate the answer. Return JSON in this exact format:
 Return only the JSON.`,
   },
 
+  system_design: {
+    system: () => `You are a senior system design interviewer at FAANG. Evaluate the candidate's answer. Respond with ONLY a valid JSON object — no markdown, no prose, no code fences.
+Required format: {
+  "score": 0-100,
+  "strengths": ["string"],
+  "weaknesses": ["string"],
+  "missingComponents": ["string"],
+  "suggestedArchitecture": "string",
+  "followUpQuestion": "string"
+}`,
+    user: (topic, answer) =>
+      `Topic: ${topic.title}
+Requirements: ${(topic.requirements || []).join(', ')}
+Constraints: ${(topic.constraints || []).join(', ')}
+Expected components: ${(topic.expected_components || []).join(', ')}
+
+Candidate's answer: ${answer}
+
+Evaluate this system design answer. Return only the JSON.`,
+  },
+
   resume: {
     system: () => jsonSystem({
       score: "number (0-100)",

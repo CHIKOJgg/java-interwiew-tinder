@@ -33,8 +33,9 @@ async function getUserLimits(userId) {
         COALESCE(sp.resume_analysis_limit,    ${FREE_DEFAULTS.resume_analysis_limit})  as resume_analysis_limit,
         COALESCE(sp.interview_eval_limit,     ${FREE_DEFAULTS.interview_eval_limit})   as interview_eval_limit,
         COALESCE(sp.available_languages,      ARRAY['Java','Python','TypeScript'])      as available_languages,
-        COALESCE(sp.available_modes,          ARRAY['swipe','test','bug-hunting','blitz','mock-interview','concept-linker','code-completion']) as available_modes,
+        COALESCE(sp.available_modes,          ARRAY['swipe','test','bug-hunting','blitz','mock-interview','concept-linker','code-completion','system-design']) as available_modes,
         COALESCE(sp.model_priority,           'standard')                              as model_priority,
+         COALESCE(sp.sd_evaluation_limit,     1)                                       as sd_evaluation_limit,
         COALESCE(rl.requests_today,           0) as requests_today,
         COALESCE(rl.ai_generations_this_month,0) as ai_generations_this_month,
         COALESCE(rl.resume_analyses_this_month,0) as resume_analyses_this_month,
@@ -80,6 +81,7 @@ export async function incrementCounter(userId, field) {
     'resume_analyses_this_month',
     'interview_evals_this_month',
     'code_executions_today',
+    'sd_evaluations_today',
   ]);
   if (!ALLOWED_FIELDS.has(field)) {
     logger.error({ field, userId }, 'Refused incrementCounter with non-allowlisted field');
@@ -171,6 +173,9 @@ export function rateLimit(limitType = 'requests') {
       case 'code_executions':
         counterField = 'code_executions_today';
         break;
+      case 'sd_evaluation':
+        counterField = 'sd_evaluations_today';
+        break;
     }
 
     if (counterField) {
@@ -194,6 +199,7 @@ export function rateLimit(limitType = 'requests') {
         resume_analyses_this_month: 'resume_analysis_limit',
         interview_evals_this_month: 'interview_eval_limit',
         code_executions_today: 'requests_per_day',
+        sd_evaluations_today: 'sd_evaluation_limit',
       };
     const maxKey = MAX_FIELD[counterField];
       const max = (maxKey && limits[maxKey]) || (maxKey && FREE_DEFAULTS[maxKey]) || FREE_DEFAULTS.requests_per_day;

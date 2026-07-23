@@ -470,6 +470,28 @@ class ApiClient {
   async getCertificates() {
     return this.request('/certificates');
   }
+
+  // ─── System Design ──────────────────────────────────────────────
+  async getSDTopics(language, difficulty) {
+    const params = new URLSearchParams({ language: language || this.language });
+    if (difficulty) params.set('difficulty', difficulty);
+    return this.request(`/system-design/topics?${params.toString()}`);
+  }
+
+  async getSDTopicDetail(topicId) {
+    return this.request(`/system-design/topics/${topicId}`);
+  }
+
+  async evaluateSDAnswer(topicId, answer) {
+    return this.request('/system-design/evaluate', {
+      method: 'POST',
+      body: JSON.stringify({ topicId, answer, language: this.language }),
+    });
+  }
+
+  async getSDProgress() {
+    return this.request('/system-design/progress');
+  }
 }
 
 export default new ApiClient();

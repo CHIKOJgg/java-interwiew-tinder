@@ -197,7 +197,7 @@ export const checkCache = (questionText, mode, _model, language = 'Java') =>
 const pendingRequests = new Map();
 
 // ─── OpenRouter HTTP call ─────────────────────────────────────────────
-async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature) {
+export async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature) {
   if (!getOpenRouterKey()) throw new Error('OPENROUTER_API_KEY is not configured');
 
   const controller = new AbortController();

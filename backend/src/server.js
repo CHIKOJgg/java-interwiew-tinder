@@ -24,6 +24,7 @@ import * as trackService from './services/trackService.js';
 import { executeCode } from './services/executionService.js';
 import { generateCertificate, getUserCertificates } from './services/certificateService.js';
 import * as challengeService from './services/challengeService.js';
+import { getTopics as getSDTopics, getTopicDetail, evaluateAnswer as evaluateSDAnswer, getUserProgress } from './services/systemDesignService.js';
 import jwt from 'jsonwebtoken';
 import { authMiddleware, requireAdmin } from './middleware/auth.js';
 import ADMIN_IDS from './config/admin.js';
@@ -257,7 +258,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Resolve plan entitlements (available modes/languages) so the client can
     // render correct locks and the paywall without re-deriving plan rules.
-    const ALL_MODES = ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'review'];
+    const ALL_MODES = ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'review', 'system-design'];
     const ALL_LANGS = ['Java', 'Python', 'TypeScript'];
     let availableModes = ['swipe', 'test'];
     let availableLanguages = ALL_LANGS;
@@ -2293,6 +2294,104 @@ app.get('/api/challenges/leaderboard', async (req, res) => {
     res.json({ leaderboard });
   } catch (err) {
     logger.error({ err }, 'Leaderboard error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── System Design Module ──────────────────────────────────────────
+const FREE_SD_DAILY_LIMIT = parseInt(process.env.FREE_SD_DAILY_LIMIT || '1', 10);
+
+async function checkDailySdLimit(userId) {
+  const today = localDateStr();
+  await pool.query(
+    `INSERT INTO user_rate_limits (user_id, sd_evaluations_today, daily_reset_at)
+     VALUES ($1, 0, CURRENT_TIMESTAMP)
+     ON CONFLICT (user_id) DO UPDATE
+       SET sd_evaluations_today = CASE
+             WHEN user_rate_limits.daily_reset_at::date = $2::date THEN user_rate_limits.sd_evaluations_today
+             ELSE 0 END,
+           daily_reset_at = CURRENT_TIMESTAMP`,
+    [userId, today]
+  );
+  const { rows } = await pool.query(
+    'SELECT sd_evaluations_today FROM user_rate_limits WHERE user_id = $1',
+    [userId]
+  );
+  const used = rows[0]?.sd_evaluations_today || 0;
+  if (used >= FREE_SD_DAILY_LIMIT) {
+    return { allowed: false, used, limit: FREE_SD_DAILY_LIMIT };
+  }
+  await pool.query(
+    'UPDATE user_rate_limits SET sd_evaluations_today = sd_evaluations_today + 1 WHERE user_id = $1',
+    [userId]
+  );
+  return { allowed: true, used: used + 1, limit: FREE_SD_DAILY_LIMIT };
+}
+
+app.get('/api/system-design/topics', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const difficulty = req.query.difficulty || null;
+    const topics = await getSDTopics(req.userId, language, difficulty);
+    res.json({ topics });
+  } catch (err) {
+    logger.error({ err }, 'Error in /system-design/topics');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/system-design/topics/:id', async (req, res) => {
+  try {
+    const topicId = parseInt(req.params.id);
+    const result = await getTopicDetail(topicId, req.userId);
+    if (!result) return res.status(404).json({ error: 'Topic not found' });
+    res.json(result);
+  } catch (err) {
+    logger.error({ err }, 'Error in /system-design/topics/:id');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/system-design/evaluate',
+  validateBody({ topicId: { required: true }, answer: { required: true } }),
+  async (req, res) => {
+    try {
+      const { topicId, answer } = req.body;
+      const userId = req.userId;
+
+      if (userId) {
+        const user = await pool.query('SELECT subscription_plan FROM users WHERE telegram_id = $1', [userId]);
+        const plan = user.rows[0]?.subscription_plan || 'free';
+        if (plan !== 'pro' && !ADMIN_IDS.has(String(userId))) {
+          const limitCheck = await checkDailySdLimit(userId);
+          if (!limitCheck.allowed) {
+            return res.status(429).json({
+              error: 'Daily system design evaluation limit reached',
+              code: 'SD_DAILY_LIMIT',
+              used: limitCheck.used,
+              limit: limitCheck.limit,
+              message: 'Free tier: 1 system design evaluation per day. Upgrade to Pro for unlimited.',
+            });
+          }
+        }
+      }
+
+      const evaluation = await evaluateSDAnswer(topicId, answer, userId);
+      res.json({ evaluation });
+      metricsService.trackEvent(userId, 'system_design_evaluation', { topicId });
+    } catch (err) {
+      logger.error({ err }, 'Error in /system-design/evaluate');
+      res.status(err.message.includes('not found') ? 404 : 500).json({ error: err.message });
+    }
+  }
+);
+
+app.get('/api/system-design/progress', async (req, res) => {
+  try {
+    const progress = await getUserProgress(req.userId);
+    res.json(progress);
+  } catch (err) {
+    logger.error({ err }, 'Error in /system-design/progress');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

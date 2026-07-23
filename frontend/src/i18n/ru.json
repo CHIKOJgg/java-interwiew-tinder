@@ -58,7 +58,8 @@
     "code_completion": "Код",
     "track_mode": "Трек",
     "playground": "Песочница",
-    "challenge": "Челлендж"
+    "challenge": "Челлендж",
+    "system_design": "System Design"
   },
   "referral": {
     "title": "Приглашайте друзей",
@@ -517,5 +518,28 @@
     "download": "Скачать сертификат",
     "share": "Поделиться",
     "close": "Закрыть"
+  },
+  "sd": {
+    "title": "System Design",
+    "subtitle": "Практикуйте проектирование крупных систем как на собеседованиях в FAANG",
+    "requirements": "Функциональные требования",
+    "constraints": "Ограничения и масштаб",
+    "expected_components": "Компоненты для рассмотрения",
+    "your_answer": "Ваш ответ",
+    "answer_placeholder": "Опишите архитектуру: компоненты, модель данных, компромиссы, масштабирование...",
+    "evaluate": "Оценить ответ",
+    "evaluating": "ИИ оценивает ваш ответ...",
+    "strengths": "Сильные стороны",
+    "weaknesses": "Что улучшить",
+    "missing_components": "Пропущенные компоненты",
+    "suggested_architecture": "Предлагаемая архитектура",
+    "follow_up": "Дополнительный вопрос",
+    "done": "Готово",
+    "start_practice": "Начать практику",
+    "try_another": "Попробовать другую тему",
+    "no_topics": "Пока нет доступных тем",
+    "no_feedback": "Нет конкретных замечаний",
+    "limit_reached": "Дневной лимит: {{used}}/{{limit}}. Перейдите на Pro для безлимитных оценок.",
+    "score": "Оценка"
   }
 }

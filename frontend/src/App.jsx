@@ -24,6 +24,7 @@ import BugHuntingMode from './components/BugHuntingMode';
 import BlitzMode from './components/BlitzMode';
 import ConceptLinker from './components/ConceptLinker';
 import CodeCompletionMode from './components/CodeCompletionMode';
+import SystemDesignMode from './components/SystemDesignMode';
 const TrackMode = lazy(() => import('./components/LearningModes/TrackMode'));
 const PlaygroundMode = lazy(() => import('./components/LearningModes/PlaygroundMode'));
 const CertificateModal = lazy(() => import('./components/CertificateModal'));
@@ -400,6 +401,7 @@ function App() {
         if (!hasMoreQuestions()) return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
         return <BugHuntingMode />;
       case 'blitz': return <BlitzMode />;
+      case 'system-design': return <SystemDesignMode />;
       case 'mock-interview': return <Suspense fallback={<SkeletonCard />}><MockInterviewMode /></Suspense>;
       case 'concept-linker':
         if (!hasMoreQuestions()) return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;

@@ -12,6 +12,7 @@ const LANG_LABELS = { Java: '☕ Java', Python: '🐍 Python', TypeScript: '🔷
 const MODES = [
   { id: 'swipe', icon: GraduationCap, titleKey: 'modes.swipe', shortKey: 'modes.swipe' },
   { id: 'test', icon: GraduationCap, titleKey: 'modes.test', shortKey: 'modes.test' },
+  { id: 'system-design', icon: TrendingUp, titleKey: 'modes.system_design', shortKey: 'modes.system_design' },
   { id: 'bug-hunting', icon: Bug, titleKey: 'modes.bug_hunting', shortKey: 'modes.bug_hunting' },
   { id: 'blitz', icon: Zap, titleKey: 'modes.blitz', shortKey: 'modes.blitz' },
   { id: 'mock-interview', icon: Mic, titleKey: 'modes.mock_interview', shortKey: 'modes.mock_interview' },

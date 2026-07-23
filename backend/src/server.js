@@ -20,6 +20,10 @@ import { isUkassaEnabled, createUkassaPayment, handleUkassaEvent, verifyUkassaSi
 import { metricsService } from './services/metricsService.js';
 import { referralService } from './services/referralService.js';
 import { updateMastery, getDueCount } from './services/questionService.js';
+import * as trackService from './services/trackService.js';
+import { executeCode } from './services/executionService.js';
+import { generateCertificate, getUserCertificates } from './services/certificateService.js';
+import * as challengeService from './services/challengeService.js';
 import jwt from 'jsonwebtoken';
 import { authMiddleware, requireAdmin } from './middleware/auth.js';
 import ADMIN_IDS from './config/admin.js';
@@ -148,6 +152,19 @@ app.get('/api/categories', async (req, res) => {
   } catch (error) {
     logger.error({ err: error }, 'Error fetching categories');
     res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+});
+
+// ─── Companies ──────────────────────────────────────────────────────
+app.get('/api/companies', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT name, icon FROM company_list ORDER BY sort_order'
+    );
+    res.json({ companies: rows });
+  } catch (error) {
+    logger.error({ err: error }, 'Error fetching companies');
+    res.status(500).json({ error: 'Failed to fetch companies' });
   }
 });
 
@@ -573,12 +590,13 @@ app.delete('/api/admin/waitlist/:email', async (req, res) => {
 app.get('/api/preferences', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT selected_categories, selected_language FROM user_preferences WHERE telegram_id = $1',
+      'SELECT selected_categories, selected_language, selected_company FROM user_preferences WHERE telegram_id = $1',
       [req.userId]
     );
     res.json({
       selectedCategories: rows[0]?.selected_categories || [],
       selectedLanguage: rows[0]?.selected_language || 'Java',
+      selectedCompany: rows[0]?.selected_company || null,
     });
   } catch {
     res.status(500).json({ error: 'Failed to fetch preferences' });
@@ -587,16 +605,17 @@ app.get('/api/preferences', async (req, res) => {
 
 app.post('/api/preferences', validateBody({ categories: { required: true } }), async (req, res) => {
   try {
-    const { categories, language } = req.body;
+    const { categories, language, company } = req.body;
     const userId = req.userId;
     await pool.query(
-      `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, updated_at)
-       VALUES ($1, $2, $3, NOW())
+      `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, selected_company, updated_at)
+       VALUES ($1, $2, $3, $4, NOW())
        ON CONFLICT (telegram_id) DO UPDATE SET
          selected_categories = $2,
          selected_language = $3,
+         selected_company = $4,
          updated_at = NOW()`,
-      [userId, categories, language || 'Java']
+      [userId, categories, language || 'Java', company || null]
     );
     if (language) {
       await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => { });
@@ -614,11 +633,12 @@ app.post('/api/preferences/language', validateBody({ language: { required: true 
     const userId = req.userId;
     // Clear categories so the new language shows all questions (not filtered by old lang's cats)
     await pool.query(
-      `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, updated_at)
-       VALUES ($1, ARRAY[]::TEXT[], $2, NOW())
+      `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, selected_company, updated_at)
+       VALUES ($1, ARRAY[]::TEXT[], $2, NULL, NOW())
        ON CONFLICT (telegram_id) DO UPDATE SET
          selected_categories = ARRAY[]::TEXT[],
          selected_language = $2,
+         selected_company = NULL,
          updated_at = NOW()`,
       [userId, language]
     );
@@ -671,6 +691,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     let p = 3;
     if (selectedCategories.length > 0) { where.push(`q.category = ANY($${p})`); params.push(selectedCategories); p++; }
     if (difficulties && difficulties.length) { where.push(`q.difficulty = ANY($${p})`); params.push(difficulties); p++; }
+    if (req.query.company) { where.push(`q.companies @> ARRAY[$${p}]`); params.push(req.query.company); p++; }
     const seedParam = `$${p++}`, limitParam = `$${p++}`, cursorParam = `$${p++}`;
     params.push(seed, limit, cursor);
 
@@ -722,6 +743,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       let fp = 3;
       if (selectedCategories.length > 0) { fWhere.push(`q.category = ANY($${fp})`); fParams.push(selectedCategories); fp++; }
       if (difficulties && difficulties.length) { fWhere.push(`q.difficulty = ANY($${fp})`); fParams.push(difficulties); fp++; }
+      if (req.query.company) { fWhere.push(`q.companies @> ARRAY[$${fp}]`); fParams.push(req.query.company); fp++; }
       const fSeed = `$${fp++}`, fOffset = `$${fp++}`, fLimit = `$${fp++}`;
       fParams.push(seed, cursor, limit - questions.length);
       const fillerQuery = `
@@ -824,6 +846,23 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// ─── Code Execution ──────────────────────────────────────────────
+app.post('/api/execute',
+  rateLimit('code_executions'),
+  validateBody({ code: { required: true }, language: { required: true } }),
+  async (req, res) => {
+    try {
+      const { code, language, stdin } = req.body;
+      const result = await executeCode({ code, language, stdin });
+      res.json(result);
+    } catch (err) {
+      logger.error({ err }, 'Code execution error');
+      const status = err.message.includes('not allowed') ? 400 : 500;
+      res.status(status).json({ error: err.message });
+    }
+  }
+);
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -2044,6 +2083,70 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+// ─── Stats History (time series) ─────────────────────────────────
+app.get('/api/stats/history', async (req, res) => {
+  try {
+    const period = req.query.period || '7d';
+    const days = period === '30d' ? 30 : period === 'all' ? 365 : 7;
+    const userId = req.userId;
+    const language = req.query.language || 'Java';
+
+    const { rows } = await pool.query(`
+      SELECT
+        DATE(up.updated_at) as day,
+        COUNT(*) FILTER (WHERE up.status = 'known') as known,
+        COUNT(*) FILTER (WHERE up.status = 'unknown') as unknown
+      FROM user_progress up
+      JOIN questions q ON q.id = up.question_id
+      WHERE up.user_id = $1 AND q.language = $2
+        AND up.updated_at >= CURRENT_DATE - $3::interval
+      GROUP BY DATE(up.updated_at)
+      ORDER BY day
+    `, [userId, language, `${days} days`]);
+
+    res.json({ history: rows });
+  } catch (err) {
+    logger.error({ err }, 'Stats history error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Stats Topics (accuracy per category) ────────────────────────
+app.get('/api/stats/topics', async (req, res) => {
+  try {
+    const userId = req.userId;
+    const language = req.query.language || 'Java';
+
+    const { rows } = await pool.query(`
+      SELECT
+        q.category,
+        COUNT(*) FILTER (WHERE up.status = 'known') as known,
+        COUNT(*) FILTER (WHERE up.status = 'unknown') as unknown,
+        COUNT(*) as total
+      FROM questions q
+      LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+      WHERE q.language = $2 AND q.is_active = TRUE
+      GROUP BY q.category
+      ORDER BY q.category
+    `, [userId, language]);
+
+    const topics = rows.map(r => ({
+      name: r.category,
+      known: parseInt(r.known),
+      unknown: parseInt(r.unknown),
+      total: parseInt(r.total),
+      accuracy: parseInt(r.total) > 0
+        ? Math.round((parseInt(r.known) / parseInt(r.total)) * 100)
+        : 0,
+    }));
+
+    res.json({ topics });
+  } catch (err) {
+    logger.error({ err }, 'Topics stats error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.get('/api/questions/due-count', async (req, res) => {
   try {
     const count = await getDueCount(req.userId, req.query.language || 'Java');
@@ -2060,6 +2163,136 @@ app.post('/api/questions/mastery', validateBody({ questionId: { required: true }
     res.json(result);
   } catch (error) {
     logger.error({ err: error, path: req.path }, 'Unhandled error in route');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Learning Tracks ─────────────────────────────────────────────
+app.get('/api/tracks', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const tracks = await trackService.getTracks(language);
+    const withProgress = await Promise.all(tracks.map(async (t) => {
+      const p = await pool.query(
+        'SELECT current_step, completed FROM user_track_progress WHERE user_id = $1 AND track_id = $2',
+        [req.userId, t.id]
+      );
+      const { rows: count } = await pool.query(
+        'SELECT COUNT(*) as total FROM track_steps WHERE track_id = $1', [t.id]
+      );
+      return {
+        ...t,
+        totalSteps: parseInt(count.rows[0].total),
+        currentStep: p.rows[0]?.current_step || 0,
+        completed: p.rows[0]?.completed || false,
+      };
+    }));
+    res.json({ tracks: withProgress });
+  } catch (err) {
+    logger.error({ err }, 'Tracks error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/tracks/:id', async (req, res) => {
+  try {
+    const track = await trackService.getTrackWithProgress(
+      parseInt(req.params.id), req.userId
+    );
+    if (!track) return res.status(404).json({ error: 'Track not found' });
+    res.json(track);
+  } catch (err) {
+    logger.error({ err }, 'Track detail error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/tracks/:id/next', async (req, res) => {
+  try {
+    const question = await trackService.getNextTrackQuestion(
+      parseInt(req.params.id), req.userId
+    );
+    if (!question) return res.json({ done: true, message: 'Track completed!' });
+    res.json({ question });
+  } catch (err) {
+    logger.error({ err }, 'Track next error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/tracks/:id/advance', async (req, res) => {
+  try {
+    const result = await trackService.advanceTrack(
+      parseInt(req.params.id), req.userId
+    );
+    res.json(result);
+  } catch (err) {
+    logger.error({ err }, 'Track advance error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Certificates ─────────────────────────────────────────────────
+app.post('/api/certificates/generate', async (req, res) => {
+  try {
+    const { trackId, title, score } = req.body;
+    const cert = await generateCertificate({
+      userId: req.userId,
+      trackId,
+      title: title || 'Course Completion',
+      score: score || 100,
+    });
+    res.json(cert);
+  } catch (err) {
+    logger.error({ err }, 'Certificate generation error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/certificates', async (req, res) => {
+  try {
+    const certs = await getUserCertificates(req.userId);
+    res.json({ certificates: certs });
+  } catch (err) {
+    logger.error({ err }, 'Certificates list error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Weekly Challenges ───────────────────────────────────────────
+app.get('/api/challenges/current', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const challenge = await challengeService.getCurrentChallenge(language);
+    if (!challenge) return res.json({ challenge: null });
+    const leaderboard = await challengeService.getLeaderboard(challenge.id);
+    res.json({ challenge, leaderboard });
+  } catch (err) {
+    logger.error({ err }, 'Challenge error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/challenges/submit', async (req, res) => {
+  try {
+    const { challengeId, score, questionsAnswered, accuracy } = req.body;
+    await challengeService.submitChallengeResult(challengeId, req.userId, score, questionsAnswered, accuracy);
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, 'Challenge submit error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/challenges/leaderboard', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const challenge = await challengeService.getCurrentChallenge(language);
+    if (!challenge) return res.json({ leaderboard: [] });
+    const leaderboard = await challengeService.getLeaderboard(challenge.id);
+    res.json({ leaderboard });
+  } catch (err) {
+    logger.error({ err }, 'Leaderboard error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

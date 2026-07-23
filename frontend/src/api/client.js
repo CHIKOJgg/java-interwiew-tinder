@@ -76,13 +76,14 @@ class ApiClient {
   }
 
   // ─── Questions ─────────────────────────────────────────────────────
-  async getQuestionsFeed(limit = 5, mode = 'swipe', { cursor = 0, seed, difficulties } = {}) {
+  async getQuestionsFeed(limit = 5, mode = 'swipe', { cursor = 0, seed, difficulties, company } = {}) {
     const params = new URLSearchParams({ limit: String(limit), mode, language: this.language });
     if (seed) params.set('seed', seed);
     params.set('cursor', String(cursor));
     if (Array.isArray(difficulties) && difficulties.length > 0) {
       difficulties.forEach(d => params.append('difficulties', d));
     }
+    if (company) params.set('company', company);
     return this.request(`/questions/feed?${params.toString()}`);
   }
 
@@ -216,14 +217,18 @@ class ApiClient {
     return this.request(`/categories?language=${this.language}`);
   }
 
+  async getCompanies() {
+    return this.request('/companies');
+  }
+
   async getPreferences() {
     return this.request('/preferences');
   }
 
-  async updatePreferences(categories, language) {
+  async updatePreferences(categories, language, company) {
     return this.request('/preferences', {
       method: 'POST',
-      body: JSON.stringify({ categories, language: language || this.language }),
+      body: JSON.stringify({ categories, language: language || this.language, company }),
     });
   }
 
@@ -397,6 +402,73 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify({ question_text, short_answer })
     });
+  }
+
+  // ─── Learning Tracks ─────────────────────────────────────────────
+  async getTracks(language) {
+    const params = new URLSearchParams({ language: language || this.language });
+    return this.request(`/tracks?${params.toString()}`);
+  }
+
+  async getTrack(trackId) {
+    return this.request(`/tracks/${trackId}`);
+  }
+
+  async getNextTrackQuestion(trackId) {
+    return this.request(`/tracks/${trackId}/next`);
+  }
+
+  async advanceTrack(trackId) {
+    return this.request(`/tracks/${trackId}/advance`, { method: 'POST' });
+  }
+
+  // ─── Code Execution ──────────────────────────────────────────────
+  async executeCode(code, language, stdin) {
+    return this.request('/execute', {
+      method: 'POST',
+      body: JSON.stringify({ code, language, stdin }),
+    });
+  }
+
+  // ─── Stats History ───────────────────────────────────────────────
+  async getStatsHistory(period = '7d') {
+    const params = new URLSearchParams({ period, language: this.language });
+    return this.request(`/stats/history?${params.toString()}`);
+  }
+
+  async getTopicStats() {
+    const params = new URLSearchParams({ language: this.language });
+    return this.request(`/stats/topics?${params.toString()}`);
+  }
+
+  // ─── Challenges ──────────────────────────────────────────────────
+  async getCurrentChallenge(language) {
+    const params = new URLSearchParams({ language: language || this.language });
+    return this.request(`/challenges/current?${params.toString()}`);
+  }
+
+  async submitChallengeResult(challengeId, score, questionsAnswered, accuracy) {
+    return this.request('/challenges/submit', {
+      method: 'POST',
+      body: JSON.stringify({ challengeId, score, questionsAnswered, accuracy }),
+    });
+  }
+
+  async getLeaderboard(language) {
+    const params = new URLSearchParams({ language: language || this.language });
+    return this.request(`/challenges/leaderboard?${params.toString()}`);
+  }
+
+  // ─── Certificates ────────────────────────────────────────────────
+  async generateCertificate(trackId, title, score) {
+    return this.request('/certificates/generate', {
+      method: 'POST',
+      body: JSON.stringify({ trackId, title, score }),
+    });
+  }
+
+  async getCertificates() {
+    return this.request('/certificates');
   }
 }
 

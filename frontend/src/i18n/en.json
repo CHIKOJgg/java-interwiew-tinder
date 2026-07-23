@@ -39,7 +39,9 @@
   "category": {
     "difficulty": "Difficulty",
     "select_at_least_one": "Please select at least one category",
-    "save_error": "Error saving categories"
+    "save_error": "Error saving categories",
+    "company_filter": "Filter by company",
+    "all_companies": "All companies"
   },
   "difficulty": {
     "Junior": "Junior",
@@ -53,7 +55,10 @@
     "blitz": "Blitz",
     "mock_interview": "Mock Interview",
     "concept_linker": "Concept Linker",
-    "code_completion": "Code"
+    "code_completion": "Code",
+    "track_mode": "Track",
+    "playground": "Playground",
+    "challenge": "Challenge"
   },
   "referral": {
     "title": "Invite Friends",
@@ -461,5 +466,56 @@
     "copied": "✓ Copied!",
     "replay": "Try 10 more",
     "share_text": "I scored {{score}}% readiness for my {{language}} interview on Interview Tinder 🃏 Try it free:"
+  },
+  "tracks": {
+    "title": "Learning Tracks",
+    "subtitle": "Structured paths to mastery",
+    "start": "Start",
+    "continue": "Continue",
+    "completed": "Completed",
+    "steps": "{{completed}}/{{total}} steps",
+    "step_of": "Step {{current}} of {{total}}"
+  },
+  "challenges": {
+    "weekly": "Weekly Challenge",
+    "days_left": "days left",
+    "leaderboard": "Leaderboard",
+    "done": "Challenge Complete!",
+    "accuracy": "accuracy",
+    "answered": "answered",
+    "join": "Join Challenge",
+    "submit": "Submit Answer",
+    "time_up": "Time's up!",
+    "score": "Score: {{score}}"
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "empty": "No results yet. Be the first!",
+    "rank": "Rank",
+    "score": "Score",
+    "accuracy": "Accuracy"
+  },
+  "playground": {
+    "title": "Code Playground",
+    "run": "Run Code",
+    "running": "Running...",
+    "output": "Output",
+    "error": "Error",
+    "placeholder": "Write your Java code here..."
+  },
+  "voice": {
+    "start": "Start Recording",
+    "stop": "Stop Recording",
+    "recording": "Recording...",
+    "transcript": "Your answer",
+    "submit": "Submit Answer"
+  },
+  "certificates": {
+    "title": "Certificate",
+    "congratulations": "Congratulations!",
+    "completed_track": "You've completed the track",
+    "download": "Download Certificate",
+    "share": "Share",
+    "close": "Close"
   }
 }

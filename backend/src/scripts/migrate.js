@@ -484,6 +484,126 @@ const migrations = [
       ALTER TABLE waitlist ADD COLUMN IF NOT EXISTS interest VARCHAR(30);
       CREATE INDEX IF NOT EXISTS idx_waitlist_likely_rb ON waitlist(likely_rb);
     `
+  },
+
+  // ── 028: Company tags for questions ──────────────────────────────
+  {
+    id: '028_company_tags',
+    sql: `
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS companies TEXT[] DEFAULT '{}';
+      CREATE INDEX IF NOT EXISTS idx_questions_companies ON questions USING GIN(companies);
+    `
+  },
+
+  // ── 029: Learning Tracks ────────────────────────────────────────
+  {
+    id: '029_learning_tracks',
+    sql: `
+      CREATE TABLE IF NOT EXISTS learning_tracks (
+        id SERIAL PRIMARY KEY,
+        language VARCHAR(50) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        level VARCHAR(50) DEFAULT 'Junior',
+        icon VARCHAR(50),
+        sort_order INT DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS track_steps (
+        id SERIAL PRIMARY KEY,
+        track_id INT REFERENCES learning_tracks(id) ON DELETE CASCADE,
+        question_id INT REFERENCES questions(id) ON DELETE CASCADE,
+        step_order INT NOT NULL,
+        UNIQUE(track_id, question_id),
+        UNIQUE(track_id, step_order)
+      );
+      CREATE TABLE IF NOT EXISTS user_track_progress (
+        user_id BIGINT REFERENCES users(telegram_id) ON DELETE CASCADE,
+        track_id INT REFERENCES learning_tracks(id) ON DELETE CASCADE,
+        current_step INT DEFAULT 0,
+        completed BOOLEAN DEFAULT FALSE,
+        started_at TIMESTAMP DEFAULT NOW(),
+        completed_at TIMESTAMP,
+        PRIMARY KEY(user_id, track_id)
+      );
+    `
+  },
+
+  // ── 030: Weekly Challenges ──────────────────────────────────────
+  {
+    id: '030_weekly_challenges',
+    sql: `
+      CREATE TABLE IF NOT EXISTS weekly_challenges (
+        id SERIAL PRIMARY KEY,
+        language VARCHAR(50) NOT NULL,
+        theme VARCHAR(255),
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS challenge_results (
+        id SERIAL PRIMARY KEY,
+        challenge_id INT REFERENCES weekly_challenges(id) ON DELETE CASCADE,
+        user_id BIGINT REFERENCES users(telegram_id) ON DELETE CASCADE,
+        score INT DEFAULT 0,
+        questions_answered INT DEFAULT 0,
+        accuracy DECIMAL(5,2) DEFAULT 0,
+        completed_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(challenge_id, user_id)
+      );
+    `
+  },
+
+  // ── 031: Rate limits for code execution ─────────────────────────
+  {
+    id: '031_code_exec_rate_limit',
+    sql: `
+      ALTER TABLE user_rate_limits ADD COLUMN IF NOT EXISTS code_executions_today INT DEFAULT 0;
+    `
+  },
+
+  // ── 032: Certificates ──────────────────────────────────────────
+  {
+    id: '032_certificates',
+    sql: `
+      CREATE TABLE IF NOT EXISTS certificates (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT REFERENCES users(telegram_id) ON DELETE CASCADE,
+        track_id INT REFERENCES learning_tracks(id) ON DELETE SET NULL,
+        title VARCHAR(255) NOT NULL,
+        score DECIMAL(5,2),
+        issued_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_id, track_id)
+      );
+    `
+  },
+
+  // ── 033: Company list for filter ────────────────────────────────
+  {
+    id: '033_company_list',
+    sql: `
+      CREATE TABLE IF NOT EXISTS company_list (
+        name VARCHAR(100) PRIMARY KEY,
+        icon VARCHAR(50),
+        sort_order INT DEFAULT 0
+      );
+      INSERT INTO company_list (name, icon, sort_order) VALUES
+        ('Google', 'google', 1),
+        ('Amazon', 'amazon', 2),
+        ('Meta', 'meta', 3),
+        ('Microsoft', 'microsoft', 4),
+        ('Apple', 'apple', 5),
+        ('Netflix', 'netflix', 6),
+        ('Tinkoff', 'tinkoff', 7),
+        ('Yandex', 'yandex', 8),
+        ('Sber', 'sber', 9),
+        ('Ozon', 'ozon', 10),
+        ('Wildberries', 'wildberries', 11)
+      ON CONFLICT DO NOTHING;
+      ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS selected_company VARCHAR(100);
+    `
   }
 ];
 

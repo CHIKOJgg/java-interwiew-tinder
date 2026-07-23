@@ -79,6 +79,7 @@ export async function incrementCounter(userId, field) {
     'ai_generations_this_month',
     'resume_analyses_this_month',
     'interview_evals_this_month',
+    'code_executions_today',
   ]);
   if (!ALLOWED_FIELDS.has(field)) {
     logger.error({ field, userId }, 'Refused incrementCounter with non-allowlisted field');
@@ -167,6 +168,9 @@ export function rateLimit(limitType = 'requests') {
       case 'interview':
         counterField = 'interview_evals_this_month';
         break;
+      case 'code_executions':
+        counterField = 'code_executions_today';
+        break;
     }
 
     if (counterField) {
@@ -189,6 +193,7 @@ export function rateLimit(limitType = 'requests') {
         ai_generations_this_month: 'ai_generations_per_month',
         resume_analyses_this_month: 'resume_analysis_limit',
         interview_evals_this_month: 'interview_eval_limit',
+        code_executions_today: 'requests_per_day',
       };
     const maxKey = MAX_FIELD[counterField];
       const max = (maxKey && limits[maxKey]) || (maxKey && FREE_DEFAULTS[maxKey]) || FREE_DEFAULTS.requests_per_day;

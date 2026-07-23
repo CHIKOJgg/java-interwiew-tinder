@@ -57,6 +57,8 @@ const useStore = create((set, get) => ({
   categoryStats: { known: 0, total: 0 },
   // Difficulty filter (Junior / Middle / Senior) — empty = all difficulties.
   selectedDifficulties: [],
+  // Company filter — null = all companies.
+  selectedCompany: null,
 
   // ─── Saved / bookmarked questions ────────────────────────────────
   savedIds: {},          // { [questionId]: true }
@@ -203,6 +205,11 @@ const useStore = create((set, get) => ({
     set({ selectedDifficulties: diffs });
   },
 
+  // Set company filter — null = all companies.
+  setSelectedCompany: (company) => {
+    set({ selectedCompany: company });
+  },
+
   // ─── Saved / bookmarked questions ─────────────────────────────────
   loadSaved: async () => {
     try {
@@ -269,7 +276,7 @@ const useStore = create((set, get) => ({
     logger.debug(`Store: loadQuestions start (append=${append}, mode=${mode}, cursor=${feedCursor})`);
     set({ _loadingLock: true, isLoadingQuestions: !append });
     try {
-      const response = await apiClient.getQuestionsFeed(5, mode, { cursor: feedCursor, seed: feedSeed, difficulties: get().selectedDifficulties });
+      const response = await apiClient.getQuestionsFeed(5, mode, { cursor: feedCursor, seed: feedSeed, difficulties: get().selectedDifficulties, company: get().selectedCompany });
       const newQs = response.questions || [];
       // An empty page means the feed is exhausted — never treat an empty
       // page as "has more", otherwise loadQuestions(true) loops forever
@@ -694,6 +701,53 @@ const useStore = create((set, get) => ({
   currentReviewIndex: 0,
   isLoadingReview: false,
   reviewDone: false,
+
+  // ─── Learning Tracks ─────────────────────────────────────────────
+  tracks: [],
+  currentTrack: null,
+  trackComplete: false,
+
+  // ─── Playground ──────────────────────────────────────────────────
+  playgroundQuestion: null,
+  setPlaygroundQuestion: (q) => set({ playgroundQuestion: q }),
+
+  loadTracks: async () => {
+    const { language } = get();
+    try {
+      const data = await apiClient.getTracks(language);
+      set({ tracks: data.tracks || [] });
+    } catch (err) {
+      logger.error('Failed to load tracks:', err.message);
+    }
+  },
+
+  startTrack: async (trackId) => {
+    set({ currentTrack: trackId, learningMode: 'track', trackComplete: false, currentIndex: 0, questions: [] });
+    try {
+      const { question } = await apiClient.getNextTrackQuestion(trackId);
+      if (question) set({ questions: [question] });
+    } catch (err) {
+      logger.error('Failed to start track:', err.message);
+    }
+  },
+
+  advanceTrack: async () => {
+    const { currentTrack } = get();
+    if (!currentTrack) return;
+    try {
+      const result = await apiClient.advanceTrack(currentTrack);
+      if (result.completed) {
+        set({ trackComplete: true });
+      } else {
+        const { question } = await apiClient.getNextTrackQuestion(currentTrack);
+        if (question) {
+          set(s => ({ questions: [...s.questions, question], currentIndex: s.currentIndex + 1 }));
+        }
+      }
+    } catch (err) {
+      logger.error('Failed to advance track:', err.message);
+    }
+  },
 
   loadReviewQuestions: async () => {
     set({ isLoadingReview: true, reviewDone: false, currentReviewIndex: 0, reviewQuestions: [] });

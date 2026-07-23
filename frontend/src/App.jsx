@@ -7,6 +7,8 @@ const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const ReviewMode = lazy(() => import('./components/ReviewMode'));
 const ProgressScreen = lazy(() => import('./components/ProgressScreen'));
 const SavedQuestions = lazy(() => import('./components/SavedQuestions'));
+const TracksScreen = lazy(() => import('./components/TracksScreen'));
+const TrackDetail = lazy(() => import('./components/TrackDetail'));
 import CategorySelection from './components/CategorySelection';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import LanguageSelection from './components/LanguageSelection';
@@ -22,6 +24,9 @@ import BugHuntingMode from './components/BugHuntingMode';
 import BlitzMode from './components/BlitzMode';
 import ConceptLinker from './components/ConceptLinker';
 import CodeCompletionMode from './components/CodeCompletionMode';
+const TrackMode = lazy(() => import('./components/LearningModes/TrackMode'));
+const PlaygroundMode = lazy(() => import('./components/LearningModes/PlaygroundMode'));
+const CertificateModal = lazy(() => import('./components/CertificateModal'));
 import DeckComplete from './components/DeckComplete';
 import PaywallModal from './components/PaywallModal';
 import ProNudge from './components/ProNudge';
@@ -85,6 +90,7 @@ function App() {
     stats,
     closePaywall,
     feedRefresher, dismissRefresher,
+    playgroundQuestion, setPlaygroundQuestion,
   } = useStore();
   const { t } = useTranslation();
 
@@ -99,7 +105,7 @@ function App() {
   const [authError, setAuthError] = useState(null);
   const [showShare, setShowShare] = useState(false);
   const [reportingQuestionId, setReportingQuestionId] = useState(null);
-  // On-screen debug overlay (no DevTools inside Telegram WebApp).
+  const [currentTrackId, setCurrentTrackId] = useState(null);
   const [debugOpen, setDebugOpen] = useState(false);
   // When the user re-opens the onboarding from the help button, "done" should
   // return them to the app (not back to language selection).
@@ -332,7 +338,9 @@ function App() {
   }
 
   if (screen === 'onboarding') return <Onboarding onStart={handleOnboardingDone} />;
-  if (screen === 'language') return <LanguageSelection onSelect={() => setScreen('category')} />;
+  if (screen === 'language') return <LanguageSelection onSelect={() => setScreen('tracks')} />;
+  if (screen === 'tracks') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TracksScreen onStartTrack={(id) => { setCurrentTrackId(id); setScreen('track-detail'); }} onBack={() => setScreen('language')} onSkipToCategories={() => setScreen('category')} /></Suspense>;
+  if (screen === 'track-detail') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TrackDetail trackId={currentTrackId} onStart={() => { useStore.getState().startTrack(currentTrackId); setScreen('main'); }} onBack={() => setScreen('tracks')} /></Suspense>;
   if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('language')} />;
   if (screen === 'resume') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ResumeAnalyzer onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'subscriptions') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SubscriptionPlans onBack={() => setScreen('main')} /></Suspense>;
@@ -340,6 +348,7 @@ function App() {
   if (screen === 'saved') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SavedQuestions onBack={() => setScreen('main')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
   if (screen === 'progress') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProgressScreen onBack={() => setScreen('main')} onReview={() => setScreen('review')} onUpgrade={() => setScreen('subscriptions')} onSavedClick={() => setScreen('saved')} /></Suspense>;
   if (screen === 'review') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ReviewMode onBack={() => setScreen('progress')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
+  if (playgroundQuestion) return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PlaygroundMode initialCode={playgroundQuestion.code} onBack={() => setPlaygroundQuestion(null)} /></Suspense>;
 
   const renderMode = () => {
     switch (learningMode) {
@@ -398,6 +407,8 @@ function App() {
       case 'code-completion':
         if (!hasMoreQuestions()) return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
         return <CodeCompletionMode />;
+      case 'track':
+        return <Suspense fallback={<SkeletonCard />}><TrackMode onBack={() => setScreen('tracks')} /></Suspense>;
       default: return <TestMode />;
     }
   };
@@ -449,6 +460,13 @@ function App() {
         />
       )}
       <PaywallModal onUpgrade={handleUpgrade} />
+      <Suspense fallback={null}>
+        <CertificateModal
+          isOpen={useStore.getState().trackComplete}
+          onClose={() => useStore.setState({ trackComplete: false })}
+          certificate={null}
+        />
+      </Suspense>
       <MissedPanel />
       <DebugOverlay visible={debugOpen} onClose={() => setDebugOpen(false)} />
     </div>

@@ -9,6 +9,9 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade, onSavedClick }) => {
   const { t, i18n } = useTranslation();
   const { stats, categoryStats, selectedCategories, language, canAccessMode, savedIds } = useStore();
   const [percentile, setPercentile] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [topics, setTopics] = useState([]);
+  const [period, setPeriod] = useState('7d');
 
   useEffect(() => {
     let cancelled = false;
@@ -17,6 +20,11 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade, onSavedClick }) => {
     }).catch(() => { if (!cancelled) setPercentile(null); });
     return () => { cancelled = true; };
   }, [stats.known]);
+
+  useEffect(() => {
+    apiClient.getStatsHistory(period).then(r => setHistory(r.history || [])).catch(() => setHistory([]));
+    apiClient.getTopicStats().then(r => setTopics(r.topics || [])).catch(() => setTopics([]));
+  }, [period, language]);
 
   const answered = stats.known + stats.unknown;
   const accuracy = answered > 0 ? Math.round((stats.known / answered) * 100) : 0;
@@ -112,6 +120,49 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade, onSavedClick }) => {
             <div className="bar-track">
               <div className="bar-fill topic" style={{ width: `${(categoryStats.known / Math.max(categoryStats.total, 1)) * 100}%` }} />
             </div>
+          </div>
+        )}
+
+        {/* Progress History Chart */}
+        {history.length > 0 && (
+          <div className="progress-card">
+            <div className="period-tabs">
+              <button className={period === '7d' ? 'active' : ''} onClick={() => setPeriod('7d')}>7 {t('progress.days', 'days')}</button>
+              <button className={period === '30d' ? 'active' : ''} onClick={() => setPeriod('30d')}>30 {t('progress.days', 'days')}</button>
+            </div>
+            <div className="history-bars">
+              {history.map((h, i) => {
+                const maxH = Math.max(...history.map(x => (x.known || 0) + (x.unknown || 0)), 1);
+                return (
+                  <div key={i} className="history-bar-col">
+                    <div className="history-bar-stack">
+                      <div className="history-bar" style={{ height: `${((h.known || 0) / maxH) * 100}%`, background: '#51cf66' }} />
+                      <div className="history-bar" style={{ height: `${((h.unknown || 0) / maxH) * 100}%`, background: '#ff6b6b' }} />
+                    </div>
+                    <span className="history-date">{new Date(h.day).toLocaleDateString(i18n.language === 'ru' ? 'ru-RU' : 'en', { day: 'numeric', month: 'short' })}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Topic Accuracy Bars */}
+        {topics.length > 0 && (
+          <div className="progress-card">
+            <h3>{t('progress.topic_accuracy', 'Accuracy by Topic')}</h3>
+            {topics.map(t => (
+              <div className="topic-accuracy-row" key={t.name}>
+                <span className="topic-name">{t.name}</span>
+                <div className="topic-bar-track">
+                  <div className="topic-bar-fill" style={{
+                    width: `${t.accuracy}%`,
+                    background: t.accuracy >= 80 ? '#51cf66' : t.accuracy >= 50 ? '#fcc419' : '#ff6b6b'
+                  }} />
+                </div>
+                <span className="topic-accuracy">{t.accuracy}%</span>
+              </div>
+            ))}
           </div>
         )}
 

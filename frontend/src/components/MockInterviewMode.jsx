@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import useStore from '../store/useStore';
 import { useTranslation } from 'react-i18next';
-import { User, MessageSquare, Send, Loader2, Star, ChevronRight } from 'lucide-react';
+import { User, MessageSquare, Send, Loader2, Star, ChevronRight, Mic, MicOff } from 'lucide-react';
 import './MockInterviewMode.css';
 
 const MockInterviewMode = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     interviewHistory,
     isEvaluatingInterview,
@@ -16,6 +16,9 @@ const MockInterviewMode = () => {
   } = useStore();
 
   const [answer, setAnswer] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -26,23 +29,64 @@ const MockInterviewMode = () => {
     scrollToBottom();
   }, [interviewHistory, isEvaluatingInterview]);
 
-  // If the interview hasn't been initialized (e.g. startInterview() raced with
-  // a slow question load), kick it off so the user never sees a blank chat.
   useEffect(() => {
     if (interviewHistory.length === 0 && !isLoadingQuestions) {
       startInterview();
     }
   }, [interviewHistory.length, isLoadingQuestions, startInterview]);
 
+  const toggleRecording = useCallback(() => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert(t('interview.voice_not_supported', 'Voice input is not supported in your browser'));
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onresult = (event) => {
+      const text = Array.from(event.results)
+        .map(r => r[0].transcript)
+        .join(' ');
+      setTranscript(text);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+      if (transcript.trim()) {
+        setAnswer(prev => prev ? `${prev} ${transcript}` : transcript);
+        setTranscript('');
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  }, [isRecording, transcript, i18n.language, t]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!answer.trim() || isEvaluatingInterview) return;
+    const textToSend = isRecording ? transcript : answer;
+    if (!textToSend.trim() || isEvaluatingInterview) return;
 
     const currentQuestion = interviewHistory[interviewHistory.length - 1]?.content;
-    const currentAnswer = answer;
     setAnswer('');
+    setTranscript('');
 
-    await submitInterviewAnswer(currentQuestion, currentAnswer);
+    await submitInterviewAnswer(currentQuestion, textToSend);
   };
 
   const lastMessage = interviewHistory[interviewHistory.length - 1];
@@ -100,11 +144,28 @@ const MockInterviewMode = () => {
         <div ref={messagesEndRef} />
       </div>
 
+      <div className="voice-controls">
+        <button
+          className={`voice-btn ${isRecording ? 'recording' : ''}`}
+          onClick={toggleRecording}
+          disabled={!canAnswer || isEvaluatingInterview}
+          type="button"
+        >
+          {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+        </button>
+        {isRecording && (
+          <div className="recording-indicator">
+            <span className="recording-pulse" />
+            <span className="recording-text">{t('interview.speaking', 'Speak...')}</span>
+          </div>
+        )}
+      </div>
+
       <form className="interview-input-area" onSubmit={handleSubmit}>
         <textarea
           placeholder={canAnswer ? t('interview.placeholder_answer') : t('interview.placeholder_wait')}
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
+          value={isRecording ? transcript : answer}
+          onChange={(e) => !isRecording && setAnswer(e.target.value)}
           disabled={!canAnswer || isEvaluatingInterview}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -116,7 +177,7 @@ const MockInterviewMode = () => {
         <button
           type="submit"
           className="send-btn"
-          disabled={!canAnswer || !answer.trim() || isEvaluatingInterview}
+          disabled={!canAnswer || !(isRecording ? transcript : answer).trim() || isEvaluatingInterview}
         >
           {isEvaluatingInterview ? <Loader2 className="spinner" size={20} /> : <Send size={20} />}
         </button>

@@ -1,0 +1,135 @@
+.track-mode {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.track-mode-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 4px;
+}
+
+.track-back-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.track-progress-text {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.track-mode-progress {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.track-mode-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #5c7cfa, #339af0);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.track-card-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.track-question-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+.track-question-card.swiped-left {
+  transform: translateX(-120%) rotate(-15deg);
+  opacity: 0;
+}
+
+.track-question-card.swiped-right {
+  transform: translateX(120%) rotate(15deg);
+  opacity: 0;
+}
+
+.track-q-category {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #5c7cfa;
+  margin-bottom: 16px;
+}
+
+.track-q-text {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.track-swipe-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 20px 16px 32px;
+}
+
+.track-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.track-btn:active {
+  transform: scale(0.9);
+}
+
+.track-btn-left {
+  background: rgba(255, 107, 107, 0.15);
+  color: #ff6b6b;
+}
+
+.track-btn-right {
+  background: rgba(81, 207, 102, 0.15);
+  color: #51cf66;
+}
+
+.track-mode-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  opacity: 0.6;
+}

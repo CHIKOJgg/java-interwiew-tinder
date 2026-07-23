@@ -10,10 +10,12 @@ const DIFFICULTIES = ['Junior', 'Middle', 'Senior'];
 
 const CategorySelection = ({ onComplete, onBack }) => {
   const { t } = useTranslation();
-  const { setSelectedCategories, setSelectedDifficulties, selectedDifficulties: savedDiffs, user } = useStore();
+  const { setSelectedCategories, setSelectedDifficulties, setSelectedCompany, selectedDifficulties: savedDiffs, selectedCompany: savedCompany, user } = useStore();
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setLocalSelected] = useState([]);
   const [selectedDifficulties, setLocalDifficulties] = useState(savedDiffs || []);
+  const [companies, setCompanies] = useState([]);
+  const [selectedCompany, setLocalCompany] = useState(savedCompany || null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [refStats, setRefStats] = useState({ total: 0, converted: 0, rewardDays: 0 });
@@ -29,9 +31,19 @@ const CategorySelection = ({ onComplete, onBack }) => {
       setCategories(categoriesData.categories || []);
 
       try {
+        const companiesData = await api.getCompanies();
+        setCompanies(companiesData.companies || []);
+      } catch {
+        // No companies available
+      }
+
+      try {
         const prefsData = await api.getPreferences();
         if (prefsData.selectedCategories && prefsData.selectedCategories.length > 0) {
           setLocalSelected(prefsData.selectedCategories);
+        }
+        if (prefsData.selectedCompany) {
+          setLocalCompany(prefsData.selectedCompany);
         }
       } catch {
         // No saved preferences, use defaults
@@ -83,9 +95,10 @@ const CategorySelection = ({ onComplete, onBack }) => {
     }
       try {
         setSaving(true);
-        await api.updatePreferences(selectedCategories);
+        await api.updatePreferences(selectedCategories, undefined, selectedCompany);
         setSelectedCategories(selectedCategories);
         setSelectedDifficulties(selectedDifficulties);
+        setSelectedCompany(selectedCompany || null);
         onComplete();
       } catch (error) {
       console.error('Error saving preferences:', error);
@@ -163,6 +176,29 @@ const CategorySelection = ({ onComplete, onBack }) => {
           </button>
         )}
       </div>
+
+      {companies.length > 0 && (
+        <div className="company-filter">
+          <span className="difficulty-filter-label">{t('category.company', 'Company')}:</span>
+          <div className="company-chips">
+            {companies.map(c => (
+              <button
+                key={c.name}
+                className={`company-chip ${selectedCompany === c.name ? 'active' : ''}`}
+                onClick={() => setLocalCompany(prev => prev === c.name ? null : c.name)}
+                type="button"
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+          {selectedCompany && (
+            <button className="difficulty-clear" onClick={() => setLocalCompany(null)} type="button">
+              {t('common.clear', 'Clear')}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="categories-grid">
         {categories.map((category) => {

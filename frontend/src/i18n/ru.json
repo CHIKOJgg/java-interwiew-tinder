@@ -39,7 +39,9 @@
   "category": {
     "difficulty": "Сложность",
     "select_at_least_one": "Выберите хотя бы одну категорию",
-    "save_error": "Ошибка сохранения категорий"
+    "save_error": "Ошибка сохранения категорий",
+    "company_filter": "Фильтр по компании",
+    "all_companies": "Все компании"
   },
   "difficulty": {
     "Junior": "Джун",
@@ -53,7 +55,10 @@
     "blitz": "Блиц",
     "mock_interview": "Интервью",
     "concept_linker": "Связи",
-    "code_completion": "Код"
+    "code_completion": "Код",
+    "track_mode": "Трек",
+    "playground": "Песочница",
+    "challenge": "Челлендж"
   },
   "referral": {
     "title": "Приглашайте друзей",
@@ -461,5 +466,56 @@
     "copied": "✓ Скопировано!",
     "replay": "Ещё 10 вопросов",
     "share_text": "Моя готовность к собесу по {{language}} — {{score}}% на Interview Tinder 🃏 Попробуй бесплатно:"
+  },
+  "tracks": {
+    "title": "Треки обучения",
+    "subtitle": "Структурированные пути к мастерству",
+    "start": "Начать",
+    "continue": "Продолжить",
+    "completed": "Завершено",
+    "steps": "{{completed}}/{{total}} шагов",
+    "step_of": "Шаг {{current}} из {{total}}"
+  },
+  "challenges": {
+    "weekly": "Еженедельное задание",
+    "days_left": "дней осталось",
+    "leaderboard": "Таблица лидеров",
+    "done": "Задание выполнено!",
+    "accuracy": "точность",
+    "answered": "ответов",
+    "join": "Принять участие",
+    "submit": "Отправить ответ",
+    "time_up": "Время вышло!",
+    "score": "Счёт: {{score}}"
+  },
+  "leaderboard": {
+    "title": "Таблица лидеров",
+    "empty": "Пока нет результатов. Будь первым!",
+    "rank": "Место",
+    "score": "Очки",
+    "accuracy": "Точность"
+  },
+  "playground": {
+    "title": "Песочница кода",
+    "run": "Запустить",
+    "running": "Выполняется...",
+    "output": "Вывод",
+    "error": "Ошибка",
+    "placeholder": "Напишите код на Java здесь..."
+  },
+  "voice": {
+    "start": "Начать запись",
+    "stop": "Остановить запись",
+    "recording": "Запись...",
+    "transcript": "Ваш ответ",
+    "submit": "Отправить ответ"
+  },
+  "certificates": {
+    "title": "Сертификат",
+    "congratulations": "Поздравляем!",
+    "completed_track": "Вы завершили трек",
+    "download": "Скачать сертификат",
+    "share": "Поделиться",
+    "close": "Закрыть"
   }
 }

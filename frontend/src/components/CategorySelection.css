@@ -483,3 +483,35 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* ── Company filter ─────────────────────────────────────────────── */
+.company-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+.company-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.company-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.company-chip.active {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  border-color: transparent;
+}

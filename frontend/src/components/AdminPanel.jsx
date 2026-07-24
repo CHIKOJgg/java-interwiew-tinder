@@ -60,7 +60,7 @@ const AdminPanel = ({ onBack }) => {
     );
   }
 
-  const { overview, activity, topFailedQuestions, jobs } = metrics;
+  const { overview = {}, activity = {}, topFailedQuestions = [], jobs = {} } = metrics || {};
 
   return (
     <div className="admin-panel">

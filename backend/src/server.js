@@ -97,6 +97,23 @@ const globalLimiter = expressRateLimit({
   message: { error: 'Too many requests, please try again later.' }
 });
 
+// Per-route rate limiters for sensitive endpoints
+const emailSendLimiter = expressRateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 5, // 5 email sends per IP per 10 min
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many code requests. Please wait before trying again.' }
+});
+
+const reportLimiter = expressRateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5, // 5 reports per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many reports. Please slow down.' }
+});
+
 // Apply the rate limiting middleware to all requests
 app.use(globalLimiter);
 // ─── Stripe Webhook (MUST be before express.json) ─────────────────────
@@ -161,7 +178,7 @@ app.get('/health', async (req, res) => {
 });
 
 // ─── Sentry Debug ────────────────────────────────────────────────────
-app.get('/debug-sentry', (_req, _res) => {
+app.get('/debug-sentry', authMiddleware, requireAdmin, (_req, _res) => {
   throw new Error('Sentry backend test error');
 });
 // ─── Languages ───────────────────────────────────────────────────────
@@ -341,6 +358,7 @@ app.use('/api', (req, res, next) => {
   // secret-token / signature checks (Telegram Bot API, YooKassa), not JWT.
   if (
     req.path === '/auth/login' ||
+    req.path.startsWith('/auth/email/') ||
     req.path === '/languages' ||
     req.path.startsWith('/demo/') ||
     req.path.startsWith('/waitlist') ||
@@ -540,7 +558,7 @@ app.post('/api/waitlist/unsubscribe',
 );
 
 // ─── Email magic-link (web auth) ────────────────────────────────────
-app.post('/api/auth/email/send', async (req, res) => {
+app.post('/api/auth/email/send', emailSendLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     await issueEmailCode(email);
@@ -1156,7 +1174,7 @@ app.delete('/api/questions/swipe/:questionId', async (req, res) => {
 });
 
 // ─── Report Question ───────────────────────────────────────────────────
-app.post('/api/questions/:questionId/report', async (req, res) => {
+app.post('/api/questions/:questionId/report', reportLimiter, async (req, res) => {
   try {
     const { questionId } = req.params;
     const { reason, comment } = req.body;
@@ -1243,9 +1261,10 @@ app.post('/api/questions/bug-hunt-answer',
 
 // ─── Blitz answer ─────────────────────────────────────────────────────
 app.post('/api/questions/blitz-answer',
+  validateBody({ questionId: { required: true }, answer: { required: true } }),
   async (req, res) => {
     try {
-      const { questionId, answer, clientIsCorrect } = req.body;
+      const { questionId, answer } = req.body;
       const userId = req.userId;
       let isCorrect;
       try {
@@ -1253,11 +1272,11 @@ app.post('/api/questions/blitz-answer',
         if (data) {
           isCorrect = Boolean(answer) === Boolean(data.isCorrect);
         } else {
-          // Blitz data not in DB yet (fallback statement used) — trust client evaluation
-          isCorrect = Boolean(clientIsCorrect);
+          // Blitz data not available — default to false (don't trust client)
+          isCorrect = false;
         }
       } catch {
-        isCorrect = Boolean(clientIsCorrect);
+        isCorrect = false;
       }
       await recordProgress(userId, questionId, isCorrect);
       const streak = await updateStreak(userId);
@@ -2303,7 +2322,11 @@ app.get('/api/challenges/current', async (req, res) => {
 app.post('/api/challenges/submit', async (req, res) => {
   try {
     const { challengeId, score, questionsAnswered, accuracy } = req.body;
-    await challengeService.submitChallengeResult(challengeId, req.userId, score, questionsAnswered, accuracy);
+    // Validate inputs to prevent leaderboard manipulation
+    const safeScore = Math.min(Math.max(0, parseInt(score) || 0), 10000);
+    const safeAnswered = Math.min(Math.max(0, parseInt(questionsAnswered) || 0), 100);
+    const safeAccuracy = Math.min(Math.max(0, parseFloat(accuracy) || 0), 100);
+    await challengeService.submitChallengeResult(challengeId, req.userId, safeScore, safeAnswered, safeAccuracy);
     res.json({ success: true });
   } catch (err) {
     logger.error({ err }, 'Challenge submit error');

@@ -85,7 +85,7 @@ function App() {
     questions, currentIndex,
     showExplanation, currentExplanation, isLoadingExplanation,
     isLoadingQuestions,
-    login, loginWithToken, swipeCard, closeExplanation, hasMoreQuestions, loadQuestions,
+    login, loginWithToken, swipeCard, undoSwipe, closeExplanation, hasMoreQuestions, loadQuestions,
     learningMode,
     switchLanguage,
     stats,
@@ -108,6 +108,8 @@ function App() {
   const [reportingQuestionId, setReportingQuestionId] = useState(null);
   const [currentTrackId, setCurrentTrackId] = useState(null);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [undoInfo, setUndoInfo] = useState(null);
+  const undoTimerRef = useRef(null);
   // When the user re-opens the onboarding from the help button, "done" should
   // return them to the app (not back to language selection).
   const onboardingReopen = useRef(false);
@@ -262,7 +264,19 @@ function App() {
 
   const handleSwipe = (direction) => {
     const q = questions[currentIndex];
-    if (q) swipeCard(q.id, direction);
+    if (q) {
+      swipeCard(q.id, direction);
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+      setUndoInfo({ questionId: q.id, direction, swipedAt: Date.now() });
+      undoTimerRef.current = setTimeout(() => setUndoInfo(null), 3500);
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!undoInfo) return;
+    if (undoTimerRef.current) { clearTimeout(undoTimerRef.current); undoTimerRef.current = null; }
+    await undoSwipe(undoInfo.questionId, undoInfo.direction);
+    setUndoInfo(null);
   };
 
   const handleButtonSwipe = (direction) => {
@@ -441,6 +455,13 @@ function App() {
           onSwipeRight={() => handleButtonSwipe('right')}
           disabled={!hasMoreQuestions() || isLoadingQuestions}
         />
+      )}
+      {undoInfo && (
+        <div className="undo-bar">
+          <button className="undo-btn" onClick={handleUndo} type="button">
+            ↩ {t('card.undo', 'Undo')}
+          </button>
+        </div>
       )}
       <ExplanationModal
         isOpen={showExplanation}

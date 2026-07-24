@@ -115,6 +115,32 @@ app.use(express.json({ limit: '1mb' }));
 app.use(sanitizeBody);
 app.use(requestLogger);
 
+// ─── Public Stats (no auth) ──────────────────────────────────────────
+app.get('/api/public/stats', async (req, res) => {
+  try {
+    const cacheKey = 'public:stats';
+    if (redis) {
+      const cached = await redis.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+    const [users, questions, companies] = await Promise.all([
+      pool.query('SELECT COUNT(*) as count FROM users'),
+      pool.query('SELECT COUNT(*) as count FROM questions WHERE is_active = TRUE'),
+      pool.query('SELECT COUNT(*) as count FROM company_list'),
+    ]);
+    const data = {
+      users: parseInt(users.rows[0].count) || 0,
+      questions: parseInt(questions.rows[0].count) || 0,
+      companies: parseInt(companies.rows[0].count) || 0,
+    };
+    if (redis) redis.set(cacheKey, JSON.stringify(data), 'EX', 60).catch(() => {});
+    res.json(data);
+  } catch (err) {
+    logger.error({ err }, 'Public stats error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ─── Health ──────────────────────────────────────────────────────────
 app.get('/health', async (req, res) => {
   let dbOk = false;

@@ -486,8 +486,8 @@ function App() {
       <Suspense fallback={null}>
         <CertificateModal
           isOpen={useStore.getState().trackComplete}
-          onClose={() => useStore.setState({ trackComplete: false })}
-          certificate={null}
+          onClose={() => useStore.setState({ trackComplete: false, currentCertificate: null })}
+          certificate={useStore.getState().currentCertificate}
         />
       </Suspense>
       <MissedPanel />

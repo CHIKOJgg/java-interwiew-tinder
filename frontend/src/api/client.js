@@ -153,13 +153,16 @@ class ApiClient {
     logger.api(`${method} ${endpoint}`);
 
     try {
+      const headers = {
+        ...authHeaders,
+        ...options.headers
+      };
+      if (method !== 'GET') {
+        headers['Content-Type'] = 'application/json';
+      }
       const response = await fetch(url, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-          ...options.headers
-        },
+        headers,
       });
 
       if (response.status === 401 && endpoint !== '/auth/login') {

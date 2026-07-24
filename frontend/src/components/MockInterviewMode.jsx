@@ -18,6 +18,7 @@ const MockInterviewMode = () => {
   const [answer, setAnswer] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const transcriptRef = useRef('');
   const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -57,13 +58,16 @@ const MockInterviewMode = () => {
       const text = Array.from(event.results)
         .map(r => r[0].transcript)
         .join(' ');
+      transcriptRef.current = text;
       setTranscript(text);
     };
 
     recognition.onend = () => {
       setIsRecording(false);
-      if (transcript.trim()) {
-        setAnswer(prev => prev ? `${prev} ${transcript}` : transcript);
+      const finalText = transcriptRef.current;
+      if (finalText.trim()) {
+        setAnswer(prev => prev ? `${prev} ${finalText}` : finalText);
+        transcriptRef.current = '';
         setTranscript('');
       }
     };

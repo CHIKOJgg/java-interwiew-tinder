@@ -740,6 +740,7 @@ const useStore = create((set, get) => ({
   tracks: [],
   currentTrack: null,
   trackComplete: false,
+  currentCertificate: null,
 
   // ─── System Design ──────────────────────────────────────────────
   sdTopics: [],
@@ -841,7 +842,12 @@ const useStore = create((set, get) => ({
     try {
       const result = await apiClient.advanceTrack(currentTrack);
       if (result.completed) {
-        set({ trackComplete: true });
+        let certificate = null;
+        try {
+          const certResult = await apiClient.generateCertificate(currentTrack, `Track ${currentTrack}`, result.score || 100);
+          certificate = certResult;
+        } catch { /* certificate generation failed, show modal without cert data */ }
+        set({ trackComplete: true, currentCertificate: certificate });
       } else {
         const { question } = await apiClient.getNextTrackQuestion(currentTrack);
         if (question) {

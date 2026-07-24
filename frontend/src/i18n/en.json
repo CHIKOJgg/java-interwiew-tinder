@@ -161,7 +161,14 @@
     "bullet_4": "Priority models and unlimited questions",
     "cta": "Unlock Pro",
     "later": "Not now",
-    "why_title": "Why Pro?"
+    "why_title": "Why Pro?",
+    "comp_modes": "Practice modes",
+    "comp_questions": "Questions",
+    "comp_ai": "AI explanations",
+    "comp_mock": "Mock interview",
+    "comp_review": "Mistakes review",
+    "comp_resume": "Resume analysis",
+    "trial_note": "7-day free trial · Cancel anytime · No card needed"
   },
   "nudge": {
     "title": "Tip",
@@ -438,7 +445,8 @@
     "faq4_q": "Will my progress sync?",
     "faq4_a": "Yes. Sign in with Telegram or email and your streak, readiness score and saved questions follow you across the Mini App and the web/PWA.",
     "final_title": "Ready to walk in confident?",
-    "final_sub": "10 free minutes a day is all it takes."
+    "final_sub": "10 free minutes a day is all it takes.",
+    "used_by": "Prepare for interviews at"
   },
   "pwa": {
     "install_title": "Install Interview Tinder",

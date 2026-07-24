@@ -3,13 +3,15 @@ import { X, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import './SwipeButtons.css';
 
+const vibrate = () => { try { navigator.vibrate(10); } catch { } };
+
 const SwipeButtons = ({ onSwipeLeft, onSwipeRight, disabled = false }) => {
   const { t } = useTranslation();
   return (
     <div className="swipe-buttons">
       <button
         className="swipe-button swipe-button-left"
-        onClick={onSwipeLeft}
+        onClick={() => { vibrate(); onSwipeLeft(); }}
         disabled={disabled}
         type="button"
       >
@@ -19,7 +21,7 @@ const SwipeButtons = ({ onSwipeLeft, onSwipeRight, disabled = false }) => {
 
       <button
         className="swipe-button swipe-button-right"
-        onClick={onSwipeRight}
+        onClick={() => { vibrate(); onSwipeRight(); }}
         disabled={disabled}
         type="button"
       >

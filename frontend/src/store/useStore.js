@@ -389,6 +389,26 @@ const useStore = create((set, get) => ({
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
   },
 
+  undoSwipe: async (questionId, direction) => {
+    const status = direction === 'right' ? 'known' : 'unknown';
+    set(s => ({
+      stats: {
+        ...s.stats,
+        [status]: Math.max(0, s.stats[status] - 1),
+        totalSeen: Math.max(0, s.stats.totalSeen - 1),
+      },
+      currentIndex: Math.max(0, s.currentIndex - 1),
+    }));
+    try {
+      await apiClient.request(`/questions/swipe/${questionId}`, { method: 'DELETE' });
+    } catch (err) {
+      logger.error('Store: undo swipe failed', err.message);
+    }
+    if (direction === 'left') {
+      get().closeMissed();
+    }
+  },
+
   reportQuestion: async (questionId, reason, comment) => {
     try {
       await apiClient.reportQuestion(questionId, reason, comment);

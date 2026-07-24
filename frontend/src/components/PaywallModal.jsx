@@ -2,7 +2,7 @@ import React from 'react';
 import useStore from '../store/useStore';
 import { useTranslation } from 'react-i18next';
 import { useModalA11y } from '../utils/useModalA11y';
-import { Lock, Star, Zap, X, Check, Mic, Bug, Braces, Link2 } from 'lucide-react';
+import { Lock, Star, Zap, X, Check, Mic, Bug, Braces, Link2, TrendingUp, Shield } from 'lucide-react';
 import './PaywallModal.css';
 
 const MODE_META = {
@@ -11,9 +11,17 @@ const MODE_META = {
   'mock-interview': { icon: Mic, key: 'modes.mock_interview' },
   'concept-linker': { icon: Link2, key: 'modes.concept_linker' },
   'code-completion': { icon: Braces, key: 'modes.code_completion' },
+  'system-design': { icon: TrendingUp, key: 'modes.system_design' },
 };
 
-const BULLETS = ['bullet_1', 'bullet_2', 'bullet_3', 'bullet_4'];
+const COMPARE_ROWS = [
+  { labelKey: 'paywall.comp_modes', free: '2', pro: '8' },
+  { labelKey: 'paywall.comp_questions', free: '40/day', pro: 'Unlimited' },
+  { labelKey: 'paywall.comp_ai', free: '3/day', pro: 'Unlimited' },
+  { labelKey: 'paywall.comp_mock', free: <X size={14} />, pro: <Check size={14} /> },
+  { labelKey: 'paywall.comp_review', free: <X size={14} />, pro: <Check size={14} /> },
+  { labelKey: 'paywall.comp_resume', free: <X size={14} />, pro: <Check size={14} /> },
+];
 
 const PaywallModal = ({ onUpgrade }) => {
   const { t } = useTranslation();
@@ -51,26 +59,30 @@ const PaywallModal = ({ onUpgrade }) => {
           </div>
         </div>
 
-        <h2 className="paywall-title">{t('paywall.title')}</h2>
-        <p className="paywall-subtitle">
-          {modeLabel
-            ? t('paywall.locked_mode', { mode: modeLabel })
-            : t('paywall.subtitle')}
-        </p>
-        <p className="paywall-subtitle muted">{t('paywall.subtitle')}</p>
+        <h2 className="paywall-title">{modeLabel ? t('paywall.locked_mode', { mode: modeLabel }) : t('paywall.title')}</h2>
+        <p className="paywall-subtitle">{t('paywall.subtitle')}</p>
 
-        <div className="paywall-why">
-          <span className="paywall-why-title"><Star size={13} fill="#ffd43b" /> {t('paywall.why_title')}</span>
-          <ul className="paywall-bullets">
-            {BULLETS.map((b) => (
-              <li key={b}><Check size={15} className="paywall-check" /> {t(`paywall.${b}`)}</li>
-            ))}
-          </ul>
+        {/* ── Comparison table ─────────────────────────────────── */}
+        <div className="paywall-compare">
+          <div className="paywall-compare-row header">
+            <span />
+            <span className="paywall-compare-free">Free</span>
+            <span className="paywall-compare-pro">Pro</span>
+          </div>
+          {COMPARE_ROWS.map((row, i) => (
+            <div className="paywall-compare-row" key={i}>
+              <span className="paywall-compare-label">{t(row.labelKey)}</span>
+              <span className="paywall-compare-free">{row.free}</span>
+              <span className="paywall-compare-pro">{row.pro}</span>
+            </div>
+          ))}
         </div>
 
+        {/* ── Trial CTA ────────────────────────────────────────── */}
         <button className="paywall-cta" onClick={onUpgrade} type="button">
           <Star size={18} fill="#1a1d29" /> {t('paywall.cta')}
         </button>
+        <p className="paywall-trial-note"><Shield size={12} /> {t('paywall.trial_note', '7-day free trial · Cancel anytime · No card needed')}</p>
         <button className="paywall-later" onClick={closePaywall} type="button">{t('paywall.later')}</button>
       </div>
     </div>

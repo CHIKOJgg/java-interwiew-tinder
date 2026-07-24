@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import './Landing.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 export default function Landing({ onStart }) {
   const { t } = useTranslation();
 
@@ -10,6 +12,21 @@ export default function Landing({ onStart }) {
 
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [installed, setInstalled] = useState(false);
+  const [publicStats, setPublicStats] = useState(null);
+  const [scrolledPast, setScrolledPast] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/public/stats`)
+      .then(r => r.json())
+      .then(d => setPublicStats(d))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => setScrolledPast(window.scrollY > window.innerHeight * 0.6);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     const onPrompt = (e) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -111,16 +128,26 @@ export default function Landing({ onStart }) {
       {/* ── Social proof ──────────────────────────────────────── */}
       <div className="landing-stats">
         <div className="landing-stat">
-          <strong>12k+</strong>
+          <strong>{(publicStats?.users ?? 12000).toLocaleString()}+</strong>
           <span>{t('landing.stat_candidates', 'candidates practicing')}</span>
         </div>
         <div className="landing-stat">
-          <strong>1000+</strong>
+          <strong>{(publicStats?.questions ?? 1000).toLocaleString()}+</strong>
           <span>{t('landing.stat_questions', 'real interview questions')}</span>
         </div>
         <div className="landing-stat">
           <strong>3</strong>
           <span>{t('landing.stat_langs', 'languages: Java · Python · TS')}</span>
+        </div>
+      </div>
+
+      {/* ── Prepare for interviews at ───────────────────────── */}
+      <div className="landing-companies">
+        <span className="landing-companies-label">{t('landing.used_by', 'Prepare for interviews at')}</span>
+        <div className="landing-companies-logos">
+          {['Google', 'Amazon', 'Meta', 'Microsoft', 'Apple'].map(name => (
+            <span key={name} className="landing-company-logo">{name}</span>
+          ))}
         </div>
       </div>
 
@@ -290,6 +317,16 @@ export default function Landing({ onStart }) {
       <footer className="landing-footer">
         <p className="landing-copy">© {new Date().getFullYear()} Interview Tinder</p>
       </footer>
+
+      {/* ── Sticky CTA ──────────────────────────────────────────── */}
+      <div className={`landing-sticky-cta ${scrolledPast ? 'visible' : ''}`}>
+        <div className="landing-sticky-content">
+          <span className="landing-sticky-text">10 min/day • Free • No card</span>
+          <button className="landing-cta landing-cta--green" onClick={onStart}>
+            {t('landing.cta', 'Try a real question free')} →
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

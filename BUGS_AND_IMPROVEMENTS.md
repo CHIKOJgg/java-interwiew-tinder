@@ -32,7 +32,7 @@
 **Description**: Live production secrets are committed to the repository in plaintext:
 - **Supabase DB password**: `***REMOVED***` (full read/write access to all user data)
 - **Telegram Bot Token**: `***REMOVED***` (can send messages as the bot)
-- **OpenRouter API Key**: `sk-or-v1-a5340217f6691338...` (unlimited AI generation at your cost)
+- **OpenRouter API Key**: `***REMOVED***` (unlimited AI generation at your cost)
 - **JWT Secret**: `your_super_secret_jwt_key_change_this_in_production` (trivially forgeable)
 - **Redis URL**: Contains password to production Redis instance
 - **TON Wallet Address**: Crypto payment wallet exposed

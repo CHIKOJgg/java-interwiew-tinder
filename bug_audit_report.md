@@ -91,8 +91,8 @@ import { Check, Gift, Copy, Share2 } from 'lucide-react';
 
 The `.env` file contains **live production credentials** and is checked into the repository:
 - Database password: `***REMOVED***`
-- Bot token: `8220422658:AAGuf...`
-- OpenRouter API key: `sk-or-v1-a534...`
+- Bot token: `***REMOVED***`
+- OpenRouter API key: `***REMOVED***`
 - JWT secret: `your_super_secret_jwt_key_change_this_in_production`
 
 **Impact**: Anyone with repo access has full database, bot, and API access. The JWT secret is literally the placeholder string.

@@ -180,7 +180,7 @@ const SystemDesignMode = () => {
   const handleEvaluate = async (topicId, answer) => {
     try {
       await submitSDEvaluation(topicId, answer);
-    } catch { }
+    } catch { /* noop */ }
   };
 
   const handleBack = () => {

@@ -3,7 +3,7 @@ import { X, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import './SwipeButtons.css';
 
-const vibrate = () => { try { navigator.vibrate(10); } catch { } };
+const vibrate = () => { try { navigator.vibrate(10); } catch { /* noop */ } };
 
 const SwipeButtons = ({ onSwipeLeft, onSwipeRight, disabled = false }) => {
   const { t } = useTranslation();

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useStore } from '../store/useStore';
+import useStore from '../store/useStore';
 import { Sun, Moon } from 'lucide-react';
 
 function ThemeToggle() {

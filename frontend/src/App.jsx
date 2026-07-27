@@ -350,7 +350,7 @@ function App() {
         referralId={referralId}
         onAuthenticated={(user, token) => {
           loginWithToken(user, token);
-          if (localStorage.getItem(ONBOARD_KEY)) setScreen('language');
+          if (localStorage.getItem(ONBOARD_KEY)) setScreen('tracks');
           else setScreen('onboarding');
           setInitState('ready');
         }}
@@ -386,8 +386,8 @@ if (screen === 'track-detail') return <Suspense fallback={<div className="app-lo
   if (screen === 'saved') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SavedQuestions onBack={() => setScreen('main')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
    if (screen === 'progress') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProgressScreen onBack={() => setScreen('main')} onReview={() => setScreen('review')} onUpgrade={() => setScreen('subscriptions')} onSavedClick={() => setScreen('saved')} /></Suspense>;
    if (screen === 'review') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ReviewMode onBack={() => setScreen('progress')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
-if (screen === 'achievements') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><Achievements onBack={() => setScreen('main')} /></Suspense>;
-  if (screen === 'profile') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProfileScreen onBack={() => setScreen('main')} onSettingsClick={() => setScreen('settings')} /></Suspense>;
+if (screen === 'achievements') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AchievementScreen onBack={() => setScreen('main')} /></Suspense>;
+  if (screen === 'profile') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProfileScreen onBack={() => setScreen('main')} onSettingsClick={() => setScreen('language')} /></Suspense>;
   if (screen === 'peer-interview') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PeerInterviewScreen onBack={() => setScreen('main')} /></Suspense>;
   if (playgroundQuestion) return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PlaygroundMode initialCode={playgroundQuestion.code} onBack={() => setPlaygroundQuestion(null)} /></Suspense>;
 
@@ -472,6 +472,7 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
          onAchievementsClick={() => setScreen('achievements')}
          onProfileClick={() => setScreen('profile')}
          onPeerInterviewClick={() => setScreen('peer-interview')}
+         onCompaniesClick={() => setScreen('companies')}
          />
       <div className="card-container">
         <Suspense fallback={<SkeletonCard />}>

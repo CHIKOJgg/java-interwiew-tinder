@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 
-const mockPoolQuery = vi.fn();
+process.env.JWT_SECRET = 'test_secret';
+const validToken = jwt.sign({ userId: '123456', plan: 'pro' }, 'test_secret');
+
+const mockPoolQuery = vi.hoisted(() => vi.fn());
 
 vi.mock('../src/config/database.js', () => ({
   default: { query: mockPoolQuery },
@@ -23,7 +27,8 @@ vi.mock('../src/config/logger.js', () => ({
 }));
 
 vi.mock('../src/config/redis.js', () => ({
-  default: { get: vi.fn(), setex: vi.fn(), isConnected: vi.fn(() => true) },
+  default: { get: vi.fn(), setex: vi.fn() },
+  isConnected: vi.fn(() => Promise.resolve(true)),
 }));
 
 vi.mock('../src/utils/telegram.js', () => ({
@@ -102,7 +107,15 @@ vi.mock('../src/services/peerToPeer.js', () => ({
   default: class PeerToPeerSignaling { handleConnection() {} },
 }));
 
-import { app } from '../src/server.js';
+import ADMIN_IDS from '../src/config/admin.js';
+ADMIN_IDS.add('123456');
+
+import app from '../src/server.js';
+
+beforeEach(() => {
+  mockPoolQuery.mockReset();
+  mockPoolQuery.mockResolvedValue({ rows: [], rowCount: 0 });
+});
 
 describe('GET /health', () => {
   it('returns 200 with status ok', async () => {
@@ -128,10 +141,10 @@ describe('GET /api/me', () => {
 
     const res = await request(app)
       .get('/api/me')
-      .set('Authorization', 'Bearer valid-token');
+      .set('Authorization', `Bearer ${validToken}`);
     expect(res.status).toBe(200);
-    expect(res.body.user.first_name).toBe('Test');
-    expect(res.body.user.username).toBe('testuser');
+    expect(res.body.first_name).toBe('Test');
+    expect(res.body.username).toBe('testuser');
   });
 });
 
@@ -146,19 +159,19 @@ describe('PUT /api/me', () => {
 
     const res = await request(app)
       .put('/api/me')
-      .set('Authorization', 'Bearer valid-token')
+      .set('Authorization', `Bearer ${validToken}`)
       .send({});
     expect(res.status).toBe(400);
   });
 
   it('updates first_name when valid', async () => {
-    mockPoolQuery.mockResolvedValueOnce({
+    mockPoolQuery.mockResolvedValue({
       rows: [{ id: 1, first_name: 'NewName', username: 'testuser', language: 'Java', plan: 'pro' }],
     });
 
     const res = await request(app)
       .put('/api/me')
-      .set('Authorization', 'Bearer valid-token')
+      .set('Authorization', `Bearer ${validToken}`)
       .send({ first_name: 'NewName' });
     expect(res.status).toBe(200);
     expect(res.body.user.first_name).toBe('NewName');
@@ -178,7 +191,7 @@ describe('POST /api/questions/submit (UGC)', () => {
 
     const res = await request(app)
       .post('/api/questions/submit')
-      .set('Authorization', 'Bearer valid-token')
+      .set('Authorization', `Bearer ${validToken}`)
       .send({ question_text: 'What is Java?', short_answer: 'A programming language', category: 'Java', difficulty: 'Junior' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -191,7 +204,9 @@ describe('GET /api/questions/ugc', () => {
       rows: [{ id: 1, category: 'Java', difficulty: 'Junior', question_text: 'Q1', short_answer: 'A1', language: 'Java', status: 'approved', created_at: new Date().toISOString() }],
     });
 
-    const res = await request(app).get('/api/questions/ugc?language=Java');
+    const res = await request(app)
+      .get('/api/questions/ugc?language=Java')
+      .set('Authorization', `Bearer ${validToken}`);
     expect(res.status).toBe(200);
     expect(res.body.questions).toBeInstanceOf(Array);
   });
@@ -205,7 +220,7 @@ describe('GET /api/admin/ugc', () => {
 
     const res = await request(app)
       .get('/api/admin/ugc')
-      .set('Authorization', 'Bearer valid-token');
+      .set('Authorization', `Bearer ${validToken}`);
     expect(res.status).toBe(200);
     expect(res.body.questions).toBeInstanceOf(Array);
   });
@@ -215,19 +230,17 @@ describe('POST /api/admin/ugc/:id/review', () => {
   it('returns 400 for invalid action', async () => {
     const res = await request(app)
       .post('/api/admin/ugc/1/review')
-      .set('Authorization', 'Bearer valid-token')
+      .set('Authorization', `Bearer ${validToken}`)
       .send({ action: 'invalid' });
     expect(res.status).toBe(400);
   });
 
   it('approves a UGC question', async () => {
-    mockPoolQuery.mockResolvedValueOnce({ rows: [{ id: 1, question_text: 'Q', short_answer: 'A', category: 'Java', difficulty: 'Junior', language: 'Java' }] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ id: 1 }] });
+    mockPoolQuery.mockResolvedValue({ rows: [{ id: 1, question_text: 'Q', short_answer: 'A', category: 'Java', difficulty: 'Junior', language: 'Java' }] });
 
     const res = await request(app)
       .post('/api/admin/ugc/1/review')
-      .set('Authorization', 'Bearer valid-token')
+      .set('Authorization', `Bearer ${validToken}`)
       .send({ action: 'approve' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -238,6 +251,7 @@ describe('POST /api/email/subscribe', () => {
   it('returns 400 for invalid email', async () => {
     const res = await request(app)
       .post('/api/email/subscribe')
+      .set('Authorization', `Bearer ${validToken}`)
       .send({ email: 'not-an-email' });
     expect(res.status).toBe(400);
   });
@@ -247,6 +261,7 @@ describe('POST /api/email/subscribe', () => {
 
     const res = await request(app)
       .post('/api/email/subscribe')
+      .set('Authorization', `Bearer ${validToken}`)
       .send({ email: 'test@example.com', language: 'Java' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -259,6 +274,7 @@ describe('POST /api/email/unsubscribe', () => {
 
     const res = await request(app)
       .post('/api/email/unsubscribe')
+      .set('Authorization', `Bearer ${validToken}`)
       .send({ email: 'test@example.com' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -267,21 +283,27 @@ describe('POST /api/email/unsubscribe', () => {
 
 describe('GET /api/email/daily-challenge', () => {
   it('returns null when no challenge for today', async () => {
-    mockPoolQuery.mockResolvedValueOnce({ rows: [] });
+    mockPoolQuery.mockResolvedValue({ rows: [] });
 
-    const res = await request(app).get('/api/email/daily-challenge?language=Java');
+    const res = await request(app)
+      .get('/api/email/daily-challenge?language=Java')
+      .set('Authorization', `Bearer ${validToken}`);
     expect(res.status).toBe(200);
     expect(res.body.challenge).toBeNull();
   });
 
   it('returns today challenge with questions', async () => {
-    mockPoolQuery.mockResolvedValueOnce({
-      rows: [{ id: 1, question_ids: [1, 2] }],
-    }).mockResolvedValueOnce({
-      rows: [{ id: 1, category: 'Java', question_text: 'Q1', short_answer: 'A1' }, { id: 2, category: 'Java', question_text: 'Q2', short_answer: 'A2' }],
-    });
+    mockPoolQuery
+      .mockResolvedValueOnce({
+        rows: [{ id: 1, question_ids: [1, 2] }],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ id: 1, category: 'Java', question_text: 'Q1', short_answer: 'A1' }, { id: 2, category: 'Java', question_text: 'Q2', short_answer: 'A2' }],
+      });
 
-    const res = await request(app).get('/api/email/daily-challenge?language=Java');
+    const res = await request(app)
+      .get('/api/email/daily-challenge?language=Java')
+      .set('Authorization', `Bearer ${validToken}`);
     expect(res.status).toBe(200);
     expect(res.body.challenge).not.toBeNull();
     expect(res.body.challenge.questions).toHaveLength(2);

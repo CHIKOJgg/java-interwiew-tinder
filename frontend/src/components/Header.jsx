@@ -22,7 +22,7 @@ const MODES = [
 ];
 const BOTTOM_VISIBLE = 4;
 
-const Header = ({ onSettingsClick, onResumeClick, onVacancyClick, onTrendsClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick, onHelpClick, onExportClick, onAchievementsClick, onProfileClick, onPeerInterviewClick }) => {
+const Header = ({ onSettingsClick, onResumeClick, onVacancyClick, onTrendsClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick, onHelpClick, onExportClick, onAchievementsClick, onProfileClick, onPeerInterviewClick, onCompaniesClick }) => {
   const { t, i18n } = useTranslation();
   const { stats, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -115,7 +115,7 @@ const Header = ({ onSettingsClick, onResumeClick, onVacancyClick, onTrendsClick,
                       {menuItem(t('header.vacancy'), Target, onVacancyClick)}
                       {menuItem(t('header.trends'), TrendingUp, onTrendsClick)}
                        {menuItem(t('header.help'), HelpCircle, onHelpClick)}
-                       {menuItem(t('header.companies'), Globe, () => setScreen('companies'))}
+                       {menuItem(t('header.companies'), Globe, () => onCompaniesClick?.())}
 {menuItem(t('header.achievements'), Award, onAchievementsClick)}
 {menuItem(t('header.export'), Download, onExportClick)}
 {menuItem(t('header.profile'), User, onProfileClick)}

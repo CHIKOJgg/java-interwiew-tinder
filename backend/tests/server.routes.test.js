@@ -962,14 +962,14 @@ describe('Subscription', () => {
     pool.query.mockResolvedValueOnce({ rows: [] });
     const res = await request(app).get('/api/subscription/plans').set('Authorization', `Bearer ${userToken}`);
     expect(res.status).toBe(200);
-    expect(res.body.plans).toHaveLength(2);
+    expect(res.body.plans).toHaveLength(3);
   });
 
   it('GET plans 500 -> defaults', async () => {
     pool.query.mockRejectedValueOnce(new Error('x'));
     const res = await request(app).get('/api/subscription/plans').set('Authorization', `Bearer ${userToken}`);
     expect(res.status).toBe(200);
-    expect(res.body.plans).toHaveLength(2);
+    expect(res.body.plans).toHaveLength(3);
   });
 
   it('GET status admin', async () => {

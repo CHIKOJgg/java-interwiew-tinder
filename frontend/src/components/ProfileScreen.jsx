@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
-import { User, CircleCheck, Download, Trophy, Flame, Settings, ArrowLeft, Edit2, Save, X, Mail, Phone, Globe } from 'lucide-react';
+import { User, CheckCircle2, Download, Trophy, Flame, Settings, ArrowLeft, Edit2, Save, X, Mail, Phone, Globe } from 'lucide-react';
 import './ProfileScreen.css';
 
 function ProfileScreen({ onBack, onSettingsClick }) {
@@ -83,7 +83,7 @@ function ProfileScreen({ onBack, onSettingsClick }) {
           <span className="profile-stat-lbl">{t('profile.streak')}</span>
         </div>
         <div className="profile-stat">
-          <CircleCheck size={18} />
+          <CheckCircle2 size={18} />
           <span className="profile-stat-val">{stats?.accuracy || 0}%</span>
           <span className="profile-stat-lbl">{t('profile.accuracy')}</span>
         </div>

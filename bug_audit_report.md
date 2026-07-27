@@ -93,7 +93,7 @@ The `.env` file contains **live production credentials** and is checked into the
 - Database password: `***REMOVED***`
 - Bot token: `***REMOVED***`
 - OpenRouter API key: `***REMOVED***`
-- JWT secret: `your_super_secret_jwt_key_change_this_in_production`
+- JWT secret: `<REDACTED_JWT_SECRET>`
 
 **Impact**: Anyone with repo access has full database, bot, and API access. The JWT secret is literally the placeholder string.
 
@@ -103,7 +103,7 @@ The `.env` file contains **live production credentials** and is checked into the
 **File**: [.env](file:///c:/Users/Honor/Desktop/Code/java-interview-tinder/backend/.env#L22)
 
 ```
-JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
+JWT_SECRET=<REDACTED_JWT_SECRET>
 ```
 
 This is a placeholder, not a real secret. Tokens can be trivially forged.

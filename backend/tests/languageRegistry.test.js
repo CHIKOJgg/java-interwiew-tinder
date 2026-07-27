@@ -38,8 +38,8 @@ describe('languageRegistry', () => {
     expect(getLanguage('Nope')).toBe(LANGUAGES.Java);
   });
 
-  it('getAvailableLanguages returns all three', () => {
-    expect(getAvailableLanguages()).toEqual(['Java', 'Python', 'TypeScript']);
+  it('getAvailableLanguages returns allseven', () => {
+    expect(getAvailableLanguages()).toEqual(['Java', 'Python', 'TypeScript', 'Go', 'Rust', 'React', 'Kotlin']);
   });
 
   it('getCategories returns array for Java', () => {

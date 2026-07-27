@@ -354,3 +354,17 @@ export function analyzeResume(resumeText, _userId, language = 'Java') {
   const { system, user } = prompts.resume(resumeText);
   return callAI({ questionText: resumeText.substring(0, 300), mode: 'resume', language, isJson: true, maxTokens: 600, temperature: 0.3, systemPrompt: system, userPrompt: user });
 }
+
+export function generateResumeQuestions(resumeData, language = 'Java') {
+  const { prompts } = getLanguage(language);
+  const { system, user } = prompts.resumePractice(resumeData);
+  logger.info({ mode: 'resumePractice', language, resumeKeys: Object.keys(resumeData || {}) }, 'generateResumeQuestions called');
+  return callAI({ questionText: JSON.stringify(resumeData), mode: 'resumePractice', language, isJson: true, maxTokens: 800, temperature: 0.5, systemPrompt: system, userPrompt: user });
+}
+
+export function generateVacancyQuestions(vacancyText, language = 'Java') {
+  const { prompts } = getLanguage(language);
+  const { system, user } = prompts.vacancy(language, vacancyText);
+  logger.info({ mode: 'vacancy', language, textLength: vacancyText?.length }, 'generateVacancyQuestions called');
+  return callAI({ questionText: vacancyText.substring(0, 300), mode: 'vacancy', language, isJson: true, maxTokens: 800, temperature: 0.5, systemPrompt: system, userPrompt: user });
+}

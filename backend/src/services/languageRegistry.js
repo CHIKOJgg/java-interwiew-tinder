@@ -184,6 +184,46 @@ Analyze this resume and provide a structured scoring rubric. Return JSON in this
 
 Return only the JSON.`,
   },
+
+  resumePractice: {
+    system: () => jsonSystem({
+      questions: ["string — specific interview question tailored to gaps"]
+    }),
+    user: (lang, data) =>
+      `Programming language focus: ${lang}
+Resume analysis data: ${typeof data === 'string' ? data : JSON.stringify(data)}
+
+Based on this resume analysis, generate 5 specific interview questions that target the user's identified skill gaps and improvement areas. Focus on questions that would help the user strengthen their weakest areas. Return JSON in this exact format:
+{
+  "questions": [
+    "Explain how garbage collection works in Java and when tuning is necessary.",
+    "Describe the difference between abstract and interface in Go."
+  ]
+}
+
+Return only the JSON.`,
+  },
+
+  vacancy: {
+    system: () => jsonSystem({
+      questions: ["string — interview question about the vacancy"],
+      suggestedTopTopics: ["string — top topics to study for this vacancy"]
+    }),
+    user: (lang, vacancyText) =>
+      `Programming language focus: ${lang}
+Vacancy description: ${vacancyText.substring(0, 2000)}
+
+Analyze this job vacancy and generate 8 interview questions that would be asked for this role. Include questions that cover both core concepts and practical skills mentioned in the vacancy. Also identify the top topics the candidate should study. Return JSON in this exact format:
+{
+  "questions": [
+    "Explain how to handle concurrency in the context of this role.",
+    "What design patterns are most relevant for building scalable microservices?"
+  ],
+  "suggestedTopTopics": ["Concurrency", "Microservices Architecture"]
+}
+
+Return only the JSON.`,
+  },
 };
 
 // ─── Language definitions ──────────────────────────────────────────────
@@ -232,6 +272,66 @@ export const LANGUAGES = {
     },
     codeLanguage: 'typescript',
     systemPrompt: 'You are an expert TypeScript mentor. Explain clearly. Use Russian language.',
+  },
+  Go: {
+    id: 'Go', name: 'Go',
+    categories: ['Go Core', 'Concurrency', 'Goroutines', 'Channels', 'Interfaces', 'Packages', 'Testing', 'Web (net/http)', 'Middleware', 'ORM (GORM)', 'Design Patterns', 'Database'],
+    prompts: {
+      explanation: (q, a) => ({ system: PROMPTS.explanation.system(), user: PROMPTS.explanation.user('Go', q, a) }),
+      test: (q, a) => ({ system: PROMPTS.test.system(), user: PROMPTS.test.user('Go', q, a) }),
+      bug: (q, t) => ({ system: PROMPTS.bug.system(), user: PROMPTS.bug.user('Go', q, t) }),
+      blitz: (q, t) => ({ system: PROMPTS.blitz.system(), user: PROMPTS.blitz.user('Go', q, t) }),
+      code: (q, t) => ({ system: PROMPTS.code.system(), user: PROMPTS.code.user('Go', q, t) }),
+      interview: (q, a) => ({ system: PROMPTS.interview.system(), user: PROMPTS.interview.user('Go', q, a) }),
+      resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('Go', t) }),
+    },
+    codeLanguage: 'go',
+    systemPrompt: 'You are an expert Go mentor. Explain clearly. Use Russian language.',
+  },
+  Rust: {
+    id: 'Rust', name: 'Rust',
+    categories: ['Rust Core', 'Ownership', 'Borrowing', 'Lifetimes', 'Traits', 'Enums', 'Pattern Matching', 'Async/Await', 'Unsafe', 'Cargo', 'Testing', 'Web (Actix/Axum)', 'Design Patterns'],
+    prompts: {
+      explanation: (q, a) => ({ system: PROMPTS.explanation.system(), user: PROMPTS.explanation.user('Rust', q, a) }),
+      test: (q, a) => ({ system: PROMPTS.test.system(), user: PROMPTS.test.user('Rust', q, a) }),
+      bug: (q, t) => ({ system: PROMPTS.bug.system(), user: PROMPTS.bug.user('Rust', q, t) }),
+      blitz: (q, t) => ({ system: PROMPTS.blitz.system(), user: PROMPTS.blitz.user('Rust', q, t) }),
+      code: (q, t) => ({ system: PROMPTS.code.system(), user: PROMPTS.code.user('Rust', q, t) }),
+      interview: (q, a) => ({ system: PROMPTS.interview.system(), user: PROMPTS.interview.user('Rust', q, a) }),
+      resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('Rust', t) }),
+    },
+    codeLanguage: 'rust',
+    systemPrompt: 'You are an expert Rust mentor. Explain clearly. Use Russian language.',
+  },
+  React: {
+    id: 'React', name: 'React',
+    categories: ['React Core', 'Hooks', 'State Management', 'Context API', 'Redux', 'TypeScript', 'Next.js', 'Testing (RTL)', 'Performance', 'Design Patterns', 'Server Components', 'React Native'],
+    prompts: {
+      explanation: (q, a) => ({ system: PROMPTS.explanation.system(), user: PROMPTS.explanation.user('React', q, a) }),
+      test: (q, a) => ({ system: PROMPTS.test.system(), user: PROMPTS.test.user('React', q, a) }),
+      bug: (q, t) => ({ system: PROMPTS.bug.system(), user: PROMPTS.bug.user('React', q, t) }),
+      blitz: (q, t) => ({ system: PROMPTS.blitz.system(), user: PROMPTS.blitz.user('React', q, t) }),
+      code: (q, t) => ({ system: PROMPTS.code.system(), user: PROMPTS.code.user('React', q, t) }),
+      interview: (q, a) => ({ system: PROMPTS.interview.system(), user: PROMPTS.interview.user('React', q, a) }),
+      resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('React', t) }),
+    },
+    codeLanguage: 'javascript',
+    systemPrompt: 'You are an expert React mentor. Explain clearly. Use Russian language.',
+  },
+  Kotlin: {
+    id: 'Kotlin', name: 'Kotlin',
+    categories: ['Kotlin Core', 'Coroutines', 'Null Safety', 'DSL', 'Android', 'Spring Boot', 'Ktor', 'Multiplatform', 'Testing', 'Design Patterns', 'Extension Functions', 'Sealed Classes'],
+    prompts: {
+      explanation: (q, a) => ({ system: PROMPTS.explanation.system(), user: PROMPTS.explanation.user('Kotlin', q, a) }),
+      test: (q, a) => ({ system: PROMPTS.test.system(), user: PROMPTS.test.user('Kotlin', q, a) }),
+      bug: (q, t) => ({ system: PROMPTS.bug.system(), user: PROMPTS.bug.user('Kotlin', q, t) }),
+      blitz: (q, t) => ({ system: PROMPTS.blitz.system(), user: PROMPTS.blitz.user('Kotlin', q, t) }),
+      code: (q, t) => ({ system: PROMPTS.code.system(), user: PROMPTS.code.user('Kotlin', q, t) }),
+      interview: (q, a) => ({ system: PROMPTS.interview.system(), user: PROMPTS.interview.user('Kotlin', q, a) }),
+      resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('Kotlin', t) }),
+    },
+    codeLanguage: 'kotlin',
+    systemPrompt: 'You are an expert Kotlin mentor. Explain clearly. Use Russian language.',
   },
 };
 

@@ -38,7 +38,7 @@ sit in `backend/.env` / `frontend/.env` on disk. Treat them as compromised.
    ```
    Then ask collaborators to re-clone.
 
-✅ Verify: `backend/.env` and `frontend/.env` do not exist; `git ls-files | Select-String '\.env$'` returns only `.env.example` / `.env.docker`.
+✅ Verify: `backend/.env` and `frontend/.env` do not exist; `git ls-files | Select-String '\.env'` returns only `.env.example` / `.env.docker.example`.
 
 ---
 

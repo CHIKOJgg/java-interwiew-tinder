@@ -1,29 +1,99 @@
-import React, { useState } from 'react';
-import useStore from '../store/useStore';
+import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, Search, Star, AlertCircle, ListChecks, Loader2, Sparkles } from 'lucide-react';
+import useStore from '../store/useStore';
+import { FileText, Search, Star, AlertCircle, ListChecks, Loader2, Sparkles, Upload, File, Trash2, Play, ArrowLeft } from 'lucide-react';
 import './ResumeAnalyzer.css';
 
-const ResumeAnalyzer = ({ onBack }) => {
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const ACCEPTED_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+];
+
+const ResumeAnalyzer = ({ onBack, onStartPractice }) => {
   const { t } = useTranslation();
   const {
     analyzeResume,
     isAnalyzingResume,
     resumeData,
-    clearResumeData
+    clearResumeData,
+    setLearningMode,
   } = useStore();
 
   const [resumeText, setResumeText] = useState('');
-
   const [analyzeError, setAnalyzeError] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [fileError, setFileError] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = (file) => {
+    setFileError(null);
+    if (!file) return;
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setFileError(t('resume.file_type_error', 'Unsupported file type. Use PDF, DOCX, TXT.'));
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setFileError(t('resume.file_size_error', 'File too large. Max 5 MB.'));
+      return;
+    }
+    setSelectedFile(file);
+    setResumeText('');
+    parseFile(file);
+  };
+
+  const parseFile = async (file) => {
+    setAnalyzeError(null);
+    try {
+      if (file.type === 'application/pdf') {
+        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = await import('pdfjs-dist/legacy/build/pdf.worker.mjs?url').then(m => m.default || m);
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+        let text = '';
+        for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = content.items.map(item => item.str).join(' ');
+          text += pageText + '\n';
+        }
+        setResumeText(text);
+      } else if (file.type.includes('word') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        const text = await file.text();
+        const stripped = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        setResumeText(stripped);
+      } else {
+        const text = await file.text();
+        setResumeText(text);
+      }
+    } catch (err) {
+      setFileError(t('resume.parse_error', 'Failed to parse file. Please try again.'));
+      console.error('File parse error:', err);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileSelect(file);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = () => setDragActive(false);
 
   const handleAnalyze = async () => {
     if (!resumeText.trim() || isAnalyzingResume) return;
     setAnalyzeError(null);
     try {
       const result = await analyzeResume(resumeText);
-      // Guard: if the AI returned an object missing key fields, show an error
-      // instead of rendering empty template cards.
       if (!result || !result.skills || !result.experienceLevel) {
         setAnalyzeError(t('resume.error_parse'));
         clearResumeData();
@@ -36,27 +106,90 @@ const ResumeAnalyzer = ({ onBack }) => {
     }
   };
 
+  const handleStartPractice = () => {
+    if (!resumeData) return;
+    setLearningMode('swipe');
+    onStartPractice?.('main');
+  };
+
+  const handleClear = () => {
+    setResumeText('');
+    setSelectedFile(null);
+    setFileError(null);
+    setAnalyzeError(null);
+    clearResumeData();
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
     <div className="resume-analyzer">
       <div className="analyzer-container">
         <div className="analyzer-header">
-          <button className="back-btn" onClick={onBack}>← {t('resume.back')}</button>
-          <h2>AI Resume Analyzer</h2>
+          <button className="back-btn" onClick={onBack}>
+            <ArrowLeft size={18} /> {t('resume.back')}
+          </button>
+          <h2>{t('resume.title', 'AI Resume Analyzer')}</h2>
           <p className="subtitle">{t('resume.subtitle')}</p>
         </div>
 
         {!resumeData ? (
           <div className="analyzer-input-section">
+            <div
+              className={`drop-zone ${dragActive ? 'drag-active' : ''} ${selectedFile ? 'has-file' : ''}`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onClick={() => fileInputRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              aria-label={t('resume.drop_zone_label', 'Drop your resume here or click to browse')}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt"
+                onChange={(e) => handleFileSelect(e.target.files?.[0])}
+                style={{ display: 'none' }}
+              />
+              {selectedFile ? (
+                <div className="file-selected">
+                  <File size={28} />
+                  <span>{selectedFile.name}</span>
+                  <span className="file-size">{(selectedFile.size / 1024).toFixed(0)} KB</span>
+                </div>
+              ) : (
+                <>
+                  <Upload size={40} className="drop-icon" />
+                  <p className="drop-text">{t('resume.drop_text', 'Drop your resume here')}</p>
+                  <p className="drop-sub">{t('resume.drop_sub', 'PDF, DOCX, or TXT — up to 5 MB')}</p>
+                </>
+              )}
+            </div>
+
+            {fileError && <div className="analyze-error">⚠️ {fileError}</div>}
+
+            <div className="textarea-divider">
+              <span className="divider-label">{t('resume.or_paste', 'or paste text')}</span>
+            </div>
+
             <div className="input-group">
-              <label htmlFor="resume-input">{t('resume.label')}</label>
               <textarea
                 id="resume-input"
                 placeholder={t('resume.placeholder')}
                 value={resumeText}
-                onChange={(e) => setResumeText(e.target.value)}
-                rows={12}
+                onChange={(e) => { setResumeText(e.target.value); setSelectedFile(null); }}
+                rows={8}
+                disabled={!!selectedFile}
               />
             </div>
+
+            {selectedFile && (
+              <button className="clear-file-btn" onClick={handleClear}>
+                <Trash2 size={16} /> {t('resume.clear_file', 'Clear file, type instead')}
+              </button>
+            )}
+
             <button
               className="analyze-btn"
               onClick={handleAnalyze}
@@ -74,6 +207,7 @@ const ResumeAnalyzer = ({ onBack }) => {
                 </>
               )}
             </button>
+
             {analyzeError && (
               <div className="analyze-error">
                 ⚠️ {analyzeError}
@@ -82,12 +216,20 @@ const ResumeAnalyzer = ({ onBack }) => {
           </div>
         ) : (
           <div className="analyzer-results-section">
+            <div className="resume-practice-cta">
+              <button className="analyze-btn analyze-btn--large" onClick={handleStartPractice}>
+                <Play size={20} />
+                <span>{t('resume.start_practice', 'Start Practice Based on My Resume →')}</span>
+              </button>
+              <p className="cta-hint">{t('resume.cta_hint', 'Switches to Swipe mode with AI-curated questions for your gaps')}</p>
+            </div>
+
             <div className="results-grid">
               <div className="result-card level-card">
                 <div className="card-icon"><Star size={24} /></div>
                 <div className="card-info">
                   <h3>{t('resume.level')}</h3>
-                  <div className="level-badge">{resumeData.experienceLevel || "—"}</div>
+                  <div className="level-badge">{resumeData.experienceLevel || '—'}</div>
                 </div>
               </div>
 
@@ -138,7 +280,7 @@ const ResumeAnalyzer = ({ onBack }) => {
               </div>
             </div>
 
-            <button className="reset-analyzer-btn" onClick={() => { setResumeText(''); clearResumeData(); }}>
+            <button className="reset-analyzer-btn" onClick={() => { setResumeText(''); setSelectedFile(null); setFileError(null); setAnalyzeError(null); clearResumeData(); }}>
               {t('resume.reset')}
             </button>
           </div>
@@ -146,6 +288,4 @@ const ResumeAnalyzer = ({ onBack }) => {
       </div>
     </div>
   );
-};
-
-export default ResumeAnalyzer;
+}

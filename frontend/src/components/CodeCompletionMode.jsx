@@ -1,31 +1,40 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import DOMPurify from 'dompurify';
 import useStore from '../store/useStore';
 import { Code2, Check, X, Loader2, Braces, AlertTriangle } from 'lucide-react';
-import { highlight } from '../utils/highlight';
+import MonacoEditor from '@monaco-editor/react';
 import '../utils/highlight.css';
 import './CodeCompletionMode.css';
 
-// Render a code snippet that has ___ as the blank.
-// Before selection: shows '___'. After selection: shows the chosen option highlighted.
+// Render a code snippet using Monaco Editor (read-only) with ___ as blank.
 function SnippetBlock({ snippet, selected, result, codeLanguage }) {
   const parts = (snippet || '').split('___');
-
-  // Build the full code string for highlighting, replacing ___ with the selected or blank token
-  const placeholder = result
-    ? (result.isCorrect ? selected : selected)  // always show what was chosen
+  const displayPlaceholder = result
+    ? (result.isCorrect ? selected : selected)
     : (selected || '___');
-
-  const fullCode = parts.join(placeholder);
-
-  const html = useMemo(() => highlight(fullCode, codeLanguage), [fullCode, codeLanguage]);
+  const fullCode = parts.join(displayPlaceholder);
 
   return (
-    <div
-      className="hl-code-block snippet-block"
-      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
-    />
+    <div className="hl-code-block snippet-block">
+      <MonacoEditor
+        height="auto"
+        language={codeLanguage}
+        theme="vs-dark"
+        value={fullCode}
+        options={{
+          minimap: { enabled: false },
+          fontSize: 14,
+          lineNumbers: 'off',
+          tabSize: 2,
+          wordWrap: 'on',
+          automaticLayout: true,
+          scrollBeyondLastLine: false,
+          readOnly: true,
+          cursorBlinking: 'solid',
+          padding: { top: 12, bottom: 12 },
+        }}
+      />
+    </div>
   );
 }
 

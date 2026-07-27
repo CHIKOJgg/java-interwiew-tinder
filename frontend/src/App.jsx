@@ -2,6 +2,8 @@
 import { lazy, Suspense, useState, useRef, useEffect } from 'react';
 const MockInterviewMode = lazy(() => import('./components/MockInterviewMode'));
 const ResumeAnalyzer = lazy(() => import('./components/ResumeAnalyzer'));
+const VacancyPrep = lazy(() => import('./components/VacancyPrep'));
+const MarketTrends = lazy(() => import('./components/MarketTrends'));
 const SubscriptionPlans = lazy(() => import('./components/SubscriptionPlans'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const ReviewMode = lazy(() => import('./components/ReviewMode'));
@@ -217,7 +219,7 @@ function App() {
         if (cancelled) return;
         setInitState('ready');
         // First-time users see a quick explainer before choosing a language.
-        setScreen(localStorage.getItem(ONBOARD_KEY) ? 'language' : 'onboarding');
+        setScreen(localStorage.getItem(ONBOARD_KEY) ? 'tracks' : 'onboarding');
         loadQuestions().catch(console.error);
       } catch (err) {
         if (cancelled) return;
@@ -303,7 +305,7 @@ function App() {
 
   if (initState === 'landing') {
     return (
-      <Landing onStart={() => setInitState('demo')} />
+      <Landing onStart={() => setInitState('demo')} onLogin={() => setInitState('web_login')} />
     );
   }
 
@@ -357,7 +359,9 @@ function App() {
   if (screen === 'tracks') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TracksScreen onStartTrack={(id) => { setCurrentTrackId(id); setScreen('track-detail'); }} onBack={() => setScreen('language')} onSkipToCategories={() => setScreen('category')} /></Suspense>;
   if (screen === 'track-detail') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TrackDetail trackId={currentTrackId} onStart={() => { useStore.getState().startTrack(currentTrackId); setScreen('main'); }} onBack={() => setScreen('tracks')} /></Suspense>;
   if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('language')} />;
-  if (screen === 'resume') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ResumeAnalyzer onBack={() => setScreen('main')} /></Suspense>;
+  if (screen === 'resume') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ResumeAnalyzer onBack={() => setScreen('main')} onStartPractice={() => { useStore.getState().setLearningMode('swipe'); setScreen('main'); }} /></Suspense>;
+  if (screen === 'vacancy') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><VacancyPrep onBack={() => setScreen('main')} /></Suspense>;
+  if (screen === 'trends') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><MarketTrends onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'subscriptions') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SubscriptionPlans onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'admin') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AdminPanel onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'saved') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SavedQuestions onBack={() => setScreen('main')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
@@ -432,10 +436,12 @@ function App() {
   return (
     <div className={`app ${learningMode === 'swipe' ? 'swipe-mode' : ''}`}>
       <PwaInstallPrompt show={showPwa} />
-      <Header
-        onSettingsClick={() => setScreen('language')}
-        onResumeClick={() => setScreen('resume')}
-        onSubscriptionClick={() => setScreen('subscriptions')}
+       <Header
+         onSettingsClick={() => setScreen('language')}
+         onResumeClick={() => setScreen('resume')}
+         onVacancyClick={() => setScreen('vacancy')}
+         onTrendsClick={() => setScreen('trends')}
+         onSubscriptionClick={() => setScreen('subscriptions')}
         onLanguageChange={handleLanguageChange}
         onAdminClick={() => setScreen('admin')}
         onProgressClick={() => setScreen('progress')}

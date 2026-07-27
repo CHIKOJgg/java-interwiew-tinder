@@ -81,6 +81,7 @@ const useStore = create((set, get) => ({
 
   resumeData: null,
   isAnalyzingResume: false,
+  isGeneratingQuestions: false,
 
   showExplanation: false,
   currentExplanation: null,
@@ -579,6 +580,29 @@ const useStore = create((set, get) => ({
     }
   },
   clearResumeData: () => set({ resumeData: null }),
+  generateResumeQuestions: async (resumeData) => {
+    set({ isGeneratingQuestions: true });
+    try {
+      const response = await apiClient.generateResumeQuestions(resumeData);
+      set({ isGeneratingQuestions: false });
+      return response.questions;
+    } catch (err) {
+      set({ isGeneratingQuestions: false });
+      throw err;
+    }
+  },
+
+  prepareVacancy: async (vacancyText) => {
+    set({ isAnalyzingResume: true });
+    try {
+      const response = await apiClient.prepareVacancy(vacancyText);
+      set({ isAnalyzingResume: false });
+      return response;
+    } catch (err) {
+      set({ isAnalyzingResume: false });
+      throw err;
+    }
+  },
 
   // ─── AI generation ─────────────────────────────────────────────────
   fetchGeneration: async (type, questionId, _attempt = 0) => {
@@ -741,8 +765,6 @@ const useStore = create((set, get) => ({
   currentTrack: null,
   trackComplete: false,
   currentCertificate: null,
-
-  // ─── System Design ──────────────────────────────────────────────
   sdTopics: [],
   sdCurrentTopic: null,
   sdEvaluation: null,

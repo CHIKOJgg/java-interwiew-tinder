@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import MonacoEditor from '@monaco-editor/react';
 import { Play, RotateCcw, ArrowLeft } from 'lucide-react';
 import apiClient from '../../api/client';
 import useStore from '../../store/useStore';
@@ -17,6 +18,8 @@ export default function PlaygroundMode({ initialCode, onBack }) {
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState(null);
+
+  const codeLanguage = { Java: 'java', Python: 'python', TypeScript: 'typescript' }[language] || 'java';
 
   const handleRun = async () => {
     setIsRunning(true);
@@ -53,11 +56,25 @@ export default function PlaygroundMode({ initialCode, onBack }) {
       </div>
 
       <div className="playground-editor">
-        <textarea
+        <MonacoEditor
+          height="300"
+          language={codeLanguage}
+          theme="vs-dark"
           value={code}
-          onChange={e => setCode(e.target.value)}
-          spellCheck={false}
-          className="code-textarea"
+          onChange={val => setCode(val || '')}
+          options={{
+            minimap: { enabled: false },
+            fontSize: 14,
+            lineNumbers: 'on',
+            tabSize: 2,
+            wordWrap: 'on',
+            automaticLayout: true,
+            scrollBeyondLastLine: false,
+            renderWhitespace: 'all',
+            cursorBlinking: 'smooth',
+            cursorSmoothCaretAnimation: 'on',
+            smoothScrolling: true,
+          }}
         />
       </div>
 

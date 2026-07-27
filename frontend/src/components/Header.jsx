@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   TrendingUp, Settings, GraduationCap, Bug,
-  Zap, Mic, Link, Braces, FileText, Star, ChevronUp, X, ShieldCheck, HelpCircle,
+  Zap, Mic, Link, Braces, FileText, Target, Star, ChevronUp, X, ShieldCheck, HelpCircle,
   MoreVertical, Globe, Languages, Lock,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore, { readinessFromStats } from '../store/useStore';
 import './Header.css';
 
-const LANG_LABELS = { Java: '☕ Java', Python: '🐍 Python', TypeScript: '🔷 TS' };
+const LANG_LABELS = { Java: '☕ Java', Python: '🐍 Python', TypeScript: '🔷 TS', Go: '🐹 Go', Rust: '🦀 Rust', React: '⚛️ React', Kotlin: '🅰️ Kotlin' };
 const MODES = [
   { id: 'swipe', icon: GraduationCap, titleKey: 'modes.swipe', shortKey: 'modes.swipe' },
   { id: 'test', icon: GraduationCap, titleKey: 'modes.test', shortKey: 'modes.test' },
@@ -21,7 +21,7 @@ const MODES = [
 ];
 const BOTTOM_VISIBLE = 4;
 
-const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick, onHelpClick }) => {
+const Header = ({ onSettingsClick, onResumeClick, onVacancyClick, onTrendsClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick, onHelpClick }) => {
   const { t, i18n } = useTranslation();
   const { stats, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -111,6 +111,8 @@ const Header = ({ onSettingsClick, onResumeClick, onSubscriptionClick, onLanguag
                     <div className="menu-list">
                       {menuItem(t('header.subscription'), Star, onSubscriptionClick, { highlight: !isPremium, tag: isPremium ? 'PRO' : null })}
                       {menuItem(t('header.resume'), FileText, onResumeClick)}
+                      {menuItem(t('header.vacancy'), Target, onVacancyClick)}
+                      {menuItem(t('header.trends'), TrendingUp, onTrendsClick)}
                       {menuItem(t('header.help'), HelpCircle, onHelpClick)}
                       {menuItem(t('header.settings'), Settings, onSettingsClick)}
                       {user?.plan === 'admin' && menuItem(t('header.admin'), ShieldCheck, onAdminClick)}

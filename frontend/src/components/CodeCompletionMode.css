@@ -67,15 +67,9 @@
 
 .snippet-block {
   margin: 0;
-  padding: 20px;
-  overflow-x: auto;
-}
-
-.snippet-block code {
-  font-family: 'Fira Code', 'Courier New', monospace;
-  font-size: 13px;
-  color: #abb2bf;
-  line-height: 1.6;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
 }
 
 .code-placeholder {

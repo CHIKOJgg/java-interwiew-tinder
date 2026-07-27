@@ -15,6 +15,7 @@ Thumbs.db
 
 # Ignore secrets
 .env
+.env.docker
 *.ps1
 
 # Ignore coverage reports

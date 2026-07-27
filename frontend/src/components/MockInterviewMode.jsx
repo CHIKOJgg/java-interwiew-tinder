@@ -1,8 +1,22 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import useStore from '../store/useStore';
 import { useTranslation } from 'react-i18next';
-import { User, MessageSquare, Send, Loader2, Star, ChevronRight, Mic, MicOff } from 'lucide-react';
+import { User, MessageSquare, Send, Loader2, Star, ChevronRight, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import './MockInterviewMode.css';
+
+const speak = (text) => {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = document.documentElement.lang || 'en-US';
+  utterance.rate = 0.95;
+  utterance.pitch = 1;
+  window.speechSynthesis.speak(utterance);
+};
+
+const stopSpeaking = () => {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+};
 
 const MockInterviewMode = () => {
   const { t, i18n } = useTranslation();
@@ -18,9 +32,11 @@ const MockInterviewMode = () => {
   const [answer, setAnswer] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [isMuted, setIsMuted] = useState(false);
   const transcriptRef = useRef('');
   const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const prevInterviewerLenRef = useRef(0);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -35,6 +51,16 @@ const MockInterviewMode = () => {
       startInterview();
     }
   }, [interviewHistory.length, isLoadingQuestions, startInterview]);
+
+  useEffect(() => {
+    const interviewerMessages = interviewHistory.filter(m => m.role === 'interviewer');
+    if (interviewerMessages.length > prevInterviewerLenRef.current && !isMuted) {
+      const latest = interviewerMessages[interviewerMessages.length - 1];
+      speak(latest.content);
+    }
+    prevInterviewerLenRef.current = interviewerMessages.length;
+    return () => { stopSpeaking(); };
+  }, [interviewHistory, isMuted]);
 
   const toggleRecording = useCallback(() => {
     if (isRecording) {
@@ -148,22 +174,34 @@ const MockInterviewMode = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="voice-controls">
-        <button
-          className={`voice-btn ${isRecording ? 'recording' : ''}`}
-          onClick={toggleRecording}
-          disabled={!canAnswer || isEvaluatingInterview}
-          type="button"
-        >
-          {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
-        </button>
-        {isRecording && (
-          <div className="recording-indicator">
-            <span className="recording-pulse" />
-            <span className="recording-text">{t('interview.speaking', 'Speak...')}</span>
-          </div>
-        )}
-      </div>
+       <div className="voice-controls">
+         <button
+           className={`voice-btn ${isRecording ? 'recording' : ''}`}
+           onClick={toggleRecording}
+           disabled={!canAnswer || isEvaluatingInterview}
+           type="button"
+         >
+           {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+         </button>
+         <button
+           className={`voice-btn ${isMuted ? 'muted' : ''}`}
+           onClick={() => {
+             setIsMuted(!isMuted);
+             if (!isMuted) stopSpeaking();
+           }}
+           disabled={!canAnswer || isEvaluatingInterview}
+           type="button"
+           title={isMuted ? t('interview.unmute', 'Unmute TTS') : t('interview.mute', 'Mute TTS')}
+         >
+           {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+         </button>
+         {isRecording && (
+           <div className="recording-indicator">
+             <span className="recording-pulse" />
+             <span className="recording-text">{t('interview.speaking', 'Speak...')}</span>
+           </div>
+         )}
+       </div>
 
       <form className="interview-input-area" onSubmit={handleSubmit}>
         <textarea

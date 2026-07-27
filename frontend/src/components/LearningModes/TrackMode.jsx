@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
-import useStore from '../store/useStore';
+import useStore from '../../store/useStore';
 import apiClient from '../../api/client';
 import './TrackMode.css';
 

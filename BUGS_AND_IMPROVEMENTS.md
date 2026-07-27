@@ -33,7 +33,7 @@
 - **Supabase DB password**: `***REMOVED***` (full read/write access to all user data)
 - **Telegram Bot Token**: `***REMOVED***` (can send messages as the bot)
 - **OpenRouter API Key**: `***REMOVED***` (unlimited AI generation at your cost)
-- **JWT Secret**: `your_super_secret_jwt_key_change_this_in_production` (trivially forgeable)
+- **JWT Secret**: `<REDACTED_JWT_SECRET>` (trivially forgeable)
 - **Redis URL**: Contains password to production Redis instance
 - **TON Wallet Address**: Crypto payment wallet exposed
 
@@ -350,7 +350,7 @@ const { questions, currentIndex, submitCodeCompletionAnswer, isLoadingQuestions,
 ### BUG-09 [P0] [Security] JWT secret is a placeholder string
 
 > ⚠️ **STATUS: STALE / PARTIALLY RESOLVED.** The originally reported placeholder
-> (`your_super_secret_jwt_key_change_this_in_production`) is no longer present in
+> (`<REDACTED_JWT_SECRET>`) is no longer present in
 > `backend/.env` (it now holds an empty value that must be supplied via env/CI).
 > The real risk remains: **the production JWT secret was committed in plaintext**
 > in `backend/.env` and `set-secrets-*.ps1`. Rotate it immediately (see BUG-SEC-1)
@@ -365,7 +365,7 @@ const { questions, currentIndex, submitCodeCompletionAnswer, isLoadingQuestions,
 **Description**: A weak/committed JWT secret lets anyone forge valid JWT tokens for any user, including admins.
 
 ```dotenv
-JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
+JWT_SECRET=<REDACTED_JWT_SECRET>
 ```
 
 **Impact**: Complete token forgery. Attacker can:
@@ -375,14 +375,14 @@ JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
 
 **Steps to Reproduce**:
 1. Use any JWT library (e.g., `jwt.io`) to create a token with `{ userId: 1, plan: 'admin' }`
-2. Sign it with secret `your_super_secret_jwt_key_change_this_in_production`
+2. Sign it with secret `<REDACTED_JWT_SECRET>`
 3. Use this token to call any protected API endpoint
 4. Server accepts the forged token
 
 **Solution**:
 1. Generate a real secret: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 2. Update the secret in production environment
-3. Add a fallback in code: if `process.env.JWT_SECRET === 'your_super_secret_jwt_key_change_this_in_production'`, log a critical warning and/or refuse to start
+3. Add a fallback in code: if `process.env.JWT_SECRET === '<REDACTED_JWT_SECRET>'`, log a critical warning and/or refuse to start
 4. Better: validate on startup:
    ```javascript
    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {

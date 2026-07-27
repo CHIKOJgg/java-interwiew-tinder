@@ -251,6 +251,24 @@ class ApiClient {
     });
   }
 
+  async generateResumeQuestions(resumeData) {
+    return this.request('/user/resume-questions', {
+      method: 'POST',
+      body: JSON.stringify({ resumeData, language: this.language }),
+    });
+  }
+
+  async prepareVacancy(vacancyText) {
+    return this.request('/vacancy/prepare', {
+      method: 'POST',
+      body: JSON.stringify({ vacancyText, language: this.language }),
+    });
+  }
+
+  async fetchMarketTrends(language) {
+    return this.request('/trends/market?language=' + encodeURIComponent(language || this.language));
+  }
+
   // ─── Subscription ──────────────────────────────────────────────────
   async getPlans() {
     return this.request('/subscription/plans');

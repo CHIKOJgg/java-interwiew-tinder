@@ -25,7 +25,7 @@ Use this as a gate before any production deployment. **All P0 and P1 items must 
 |---|-----------|--------|------------|--------|
 | 1.1 | **No secrets in VCS** — `.env`, `set-*.ps1`, credentials not in git history | ❌ **FAIL** | 0 secrets leaked | `git log -p -- backend/.env` reveals plaintext DB password, bot token, API keys, JWT secret |
 | 1.2 | **Telegram initData validation enforces HMAC check** | ❌ **FAIL** | 100% of invalid tokens rejected | `telegram.js:40` skips validation on hash mismatch — logs warning but continues |
-| 1.3 | **JWT secret is strong, rotated, and not default** | ❌ **FAIL** | Secret ≥ 256 bits, not in repo | Current: `your_super_secret_jwt_key_change_this_in_production` |
+| 1.3 | **JWT secret is strong, rotated, and not default** | ❌ **FAIL** | Secret ≥ 256 bits, not in repo | Current: `<REDACTED_JWT_SECRET>` |
 | 1.4 | **No XSS vectors** — no unescaped `dangerouslySetInnerHTML` | ❌ **FAIL** | 0 occurrences | `CodeCompletionMode.jsx:26` renders AI output via innerHTML |
 | 1.5 | **Security headers set** (CSP, HSTS, X-Content-Type-Options, X-Frame-Options) | ❌ **FAIL** | ≥ 5 security headers | `server.js` has no helmet/csp middleware |
 | 1.6 | **Error details not leaked to client in production** | ❌ **FAIL** | 0 endpoints leak `error.message` to response | 12+ endpoints (lines 612, 799, 897, 963, etc.) include `detail: error.message` |
@@ -165,7 +165,7 @@ Use this as a gate before any production deployment. **All P0 and P1 items must 
 |------|----------|---------------|-----|
 | **G-1** | No plaintext secrets in git | **FAIL** — DB password, bot token, API keys, JWT secret visible | 4h |
 | **G-2** | Telegram auth validates HMAC or rejects | **FAIL** — hash mismatch does NOT reject | 30m |
-| **G-3** | Strong JWT secret (not placeholder) | **FAIL** — using `your_super_secret_jwt_key_change_this_in_production` | 15m |
+| **G-3** | Strong JWT secret (not placeholder) | **FAIL** — using `<REDACTED_JWT_SECRET>` | 15m |
 | **G-4** | No empty `catch()` blocks on payment/DB paths | **FAIL** — 20+ silent swallows | 1h |
 | **G-5** | AI timeout ≥ 15s (current 3s causes 90% failures) | **FAIL** — AI_TIMEOUT_MS = 3000 | 15m |
 | **G-6** | Rate limiter checks `req.userId` not `req.body.userId` | **FAIL** — current code reads wrong property → rate limiting disabled | 30m |

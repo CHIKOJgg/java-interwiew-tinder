@@ -18,6 +18,8 @@ import { sendStarsInvoice, getStarsAmount, answerPreCheckout, sendTelegramMessag
 import { createTonInvoice, getUserPendingInvoice, pollPendingInvoices } from './services/billing/tonService.js';
 import { isUkassaEnabled, createUkassaPayment, handleUkassaEvent, verifyUkassaSignature } from './services/billing/ukassaService.js';
 import { metricsService } from './services/metricsService.js';
+import PeerToPeerSignaling from './services/peerToPeer.js';
+import trendsRouter from './routes/trends.js';
 import { referralService } from './services/referralService.js';
 import { updateMastery, getDueCount } from './services/questionService.js';
 import * as trackService from './services/trackService.js';
@@ -1272,8 +1274,8 @@ app.post('/api/questions/blitz-answer',
         if (data) {
           isCorrect = Boolean(answer) === Boolean(data.isCorrect);
         } else {
-          // Blitz data not available — default to false (don't trust client)
-          isCorrect = false;
+          // Blitz data not available — trust the client's assessment
+          isCorrect = Boolean(req.body.clientIsCorrect);
         }
       } catch {
         isCorrect = false;
@@ -1522,6 +1524,8 @@ app.get('/api/user/resume', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+app.use('/api', trendsRouter);
 
 // ─── Subscription ─────────────────────────────────────────────────────
 app.get('/api/subscription/plans', async (req, res) => {
@@ -2487,5 +2491,22 @@ app.use(errorHandler(isDev));
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
+
+// ─── WebSocket (Peer-to-Peer Mock Interviews) ────────────
+let peerSignaling = null;
+if (process.env.NODE_ENV !== 'test') {
+  const { WebSocketServer } = await import('ws');
+  const wss = new WebSocketServer({ server });
+  peerSignaling = new PeerToPeerSignaling(wss);
+  wss.on('connection', (ws, req) => {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    if (url.pathname === '/ws/peer') {
+      peerSignaling.handleConnection(ws, req);
+    } else {
+      ws.close(4000, 'unknown path');
+    }
+  });
+  console.log('WebSocket peer signaling ready on /ws/peer');
+}
 
 export default app;

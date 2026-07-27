@@ -7,6 +7,10 @@ const languages = [
   { id: 'Java', name: 'Java', emoji: '☕', color: '#f89820' },
   { id: 'Python', name: 'Python', emoji: '🐍', color: '#3776ab' },
   { id: 'TypeScript', name: 'TypeScript', emoji: '🟦', color: '#3178c6' },
+  { id: 'Go', name: 'Go', emoji: '🐹', color: '#00ADD8' },
+  { id: 'Rust', name: 'Rust', emoji: '🦀', color: '#CE422B' },
+  { id: 'React', name: 'React', emoji: '⚛️', color: '#61DAFB' },
+  { id: 'Kotlin', name: 'Kotlin', emoji: '🅰️', color: '#7F52FF' },
 ];
 
 const LanguageSelection = ({ onSelect }) => {

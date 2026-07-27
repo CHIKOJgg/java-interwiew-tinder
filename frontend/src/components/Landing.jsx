@@ -4,7 +4,7 @@ import './Landing.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
-export default function Landing({ onStart }) {
+export default function Landing({ onStart, onLogin }) {
   const { t } = useTranslation();
 
   const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'JavaInterviewTinderBot';
@@ -54,7 +54,7 @@ export default function Landing({ onStart }) {
   ];
 
   const features = [
-    { icon: '💞', title: t('landing.f_swipe', 'Know exactly what they\'ll ask'), text: t('landing.f_swipe_d', 'Real questions from real Java, Python & TypeScript interviews — not random trivia.') },
+    { icon: '💞', title: t('landing.f_swipe', 'Know exactly what they\'ll ask'), text: t('landing.f_swipe_d', 'Real questions from real Java, Python, TypeScript, Go, Rust, React & Kotlin interviews — not random trivia.') },
     { icon: '🤖', title: t('landing.f_modes', 'Never get stuck on a blank'), text: t('landing.f_modes_d', 'Swipe left on anything you don\'t know and get an instant, plain-language AI breakdown.') },
     { icon: '🔁', title: t('landing.f_streak', 'Remember it on interview day'), text: t('landing.f_streak_d', 'Spaced repetition brings weak topics back right before you\'d forget — so it\'s there when it counts.') },
     { icon: '📊', title: t('landing.f_percentile', 'Know when you\'re ready'), text: t('landing.f_percentile_d', 'A readiness score vs other candidates tells you if you\'re good to go.') },
@@ -86,7 +86,7 @@ export default function Landing({ onStart }) {
   const faqs = [
     { q: t('landing.faq1_q', 'Do I need to install anything?'), a: t('landing.faq1_a', 'No. You can open Interview Tinder right inside Telegram, or play on the web — no download required.') },
     { q: t('landing.faq2_q', 'Is it really free?'), a: t('landing.faq2_a', 'Yes — the Free plan gives you 40 questions a day and 3 AI explanations, forever. Pro unlocks every mode and unlimited AI breakdowns.') },
-    { q: t('landing.faq3_q', 'Which languages are covered?'), a: t('landing.faq3_a', 'Java, Python and TypeScript — with questions spanning core syntax, data structures, concurrency, system design and framework internals.') },
+    { q: t('landing.faq3_q', 'Which languages are covered?'), a: t('landing.faq3_a', 'Java, Python, TypeScript, Go, Rust, React and Kotlin — with questions spanning core syntax, data structures, concurrency, system design and framework internals.') },
     { q: t('landing.faq4_q', 'Will my progress sync?'), a: t('landing.faq4_a', 'Yes. Sign in with Telegram or email and your streak, readiness score and saved questions follow you across the Mini App and the web/PWA.') },
   ];
 
@@ -114,6 +114,11 @@ export default function Landing({ onStart }) {
           <button className="landing-cta landing-cta--green" onClick={onStart}>
             {t('landing.cta', 'Try a real question free')} →
           </button>
+          {onLogin && (
+            <button className="landing-cta landing-cta--ghost" onClick={onLogin}>
+              {t('landing.login', 'Log in')} →
+            </button>
+          )}
           <a className="landing-cta landing-cta--ghost" href={miniAppUrl} target="_blank" rel="noopener noreferrer">
             {t('landing.open_tg', 'Open in Telegram')}
           </a>
@@ -308,6 +313,11 @@ export default function Landing({ onStart }) {
           <button className="landing-cta landing-cta--green" onClick={onStart}>
             {t('landing.cta', 'Try a real question free')} →
           </button>
+          {onLogin && (
+            <button className="landing-cta landing-cta--ghost" onClick={onLogin}>
+              {t('landing.login', 'Log in')} →
+            </button>
+          )}
           <a className="landing-cta landing-cta--ghost" href={miniAppUrl} target="_blank" rel="noopener noreferrer">
             {t('landing.open_tg', 'Open in Telegram')}
           </a>

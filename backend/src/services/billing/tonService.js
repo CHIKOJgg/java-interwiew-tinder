@@ -33,39 +33,48 @@ function makeInvoiceId(userId) {
 
 // ─── Create a new pending invoice ──────────────────────────────────────
 export async function createTonInvoice(userId, planId, interval = 'monthly') {
-  if (!getTonWallet()) throw new Error('TON_WALLET_ADDRESS is not configured');
+  try {
+    if (!getTonWallet()) throw new Error('TON_WALLET_ADDRESS is not configured');
 
-  const amountTon = getPriceTon(planId, interval);
-  const invoiceId = makeInvoiceId(userId);
-  const expiresAt = new Date(Date.now() + INVOICE_TTL);
+    const amountTon = getPriceTon(planId, interval);
+    const invoiceId = makeInvoiceId(userId);
+    const expiresAt = new Date(Date.now() + INVOICE_TTL);
 
-  // Cancel any existing pending invoice for this user first (one at a time)
-  await pool.query(
-    `UPDATE pending_ton_invoices SET fulfilled = true
-     WHERE user_id = $1 AND fulfilled = false`,
-    [userId]
-  );
+    await pool.query(
+      `UPDATE pending_ton_invoices SET fulfilled = true
+       WHERE user_id = $1 AND fulfilled = false`,
+      [userId]
+    );
 
-  await pool.query(
-    `INSERT INTO pending_ton_invoices
-       (invoice_id, user_id, plan_id, interval, amount_ton, expires_at)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [invoiceId, userId, planId, interval, amountTon, expiresAt]
-  );
+    await pool.query(
+      `INSERT INTO pending_ton_invoices
+         (invoice_id, user_id, plan_id, interval, amount_ton, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [invoiceId, userId, planId, interval, amountTon, expiresAt]
+    );
 
-  logger.info({ userId, invoiceId, amountTon }, '💎 TON invoice created');
-  return { address: getTonWallet(), amountTon, comment: invoiceId, invoiceId, expiresAt };
+    logger.info({ userId, invoiceId, amountTon }, 'TON invoice created');
+    return { address: getTonWallet(), amountTon, comment: invoiceId, invoiceId, expiresAt };
+  } catch (err) {
+    logger.error({ err, userId, planId, interval }, 'createTonInvoice failed');
+    throw err;
+  }
 }
 
 // ─── Check a specific user's pending invoice ────────────────────────────
 export async function getUserPendingInvoice(userId) {
-  const { rows } = await pool.query(
-    `SELECT * FROM pending_ton_invoices
-     WHERE user_id = $1 AND fulfilled = false AND expires_at > NOW()
-     ORDER BY created_at DESC LIMIT 1`,
-    [userId]
-  );
-  return rows[0] ?? null;
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM pending_ton_invoices
+       WHERE user_id = $1 AND fulfilled = false AND expires_at > NOW()
+       ORDER BY created_at DESC LIMIT 1`,
+      [userId]
+    );
+    return rows[0] ?? null;
+  } catch (err) {
+    logger.error({ err, userId }, 'getUserPendingInvoice failed');
+    throw err;
+  }
 }
 
 // ─── Query TON Center for recent inbound transactions ───────────────────

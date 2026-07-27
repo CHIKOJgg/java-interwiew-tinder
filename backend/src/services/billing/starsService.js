@@ -29,53 +29,66 @@ export async function getStarsAmount(planId, interval = 'monthly') {
 
 // ─── Send Stars invoice to user's Telegram chat ────────────────────
 export async function sendStarsInvoice(telegramUserId, planId, interval) {
-  const isYearly = interval === 'yearly';
+  try {
+    const isYearly = interval === 'yearly';
 
-  // Single source of truth: pull the Stars amount from the plan in the DB so
-  // the invoice always matches what the UI shows. Fall back to env defaults.
-  const amount = await getStarsAmount(planId, interval);
+    const amount = await getStarsAmount(planId, interval);
 
-  const label    = isYearly ? 'Pro — 1 year' : 'Pro — 1 month';
-  const payload  = JSON.stringify({ userId: telegramUserId.toString(), planId, interval });
+    const label    = isYearly ? 'Pro — 1 year' : 'Pro — 1 month';
+    const payload  = JSON.stringify({ userId: telegramUserId.toString(), planId, interval });
 
-  const res = await fetch(`${tgApi()}/sendInvoice`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id:        telegramUserId,
-      title:          'Interview Tinder Pro',
-      description:    'Unlimited AI explanations · All languages · All study modes',
-      payload,                         // Returned verbatim in successful_payment
-      currency:       'XTR',           // XTR = Telegram Stars
-      prices:         [{ label, amount }],
-      provider_token: '',              // Empty = Stars payment (no external provider)
-    }),
-  });
+    const res = await fetch(`${tgApi()}/sendInvoice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id:        telegramUserId,
+        title:          'Interview Tinder Pro',
+        description:    'Unlimited AI explanations · All languages · All study modes',
+        payload,
+        currency:       'XTR',
+        prices:         [{ label, amount }],
+        provider_token: '',
+      }),
+    });
 
-  const json = await res.json();
-  if (!json.ok) throw new Error(`sendInvoice failed: ${json.description}`);
-  return json;
+    const json = await res.json();
+    if (!json.ok) throw new Error(`sendInvoice failed: ${json.description}`);
+    return json;
+  } catch (err) {
+    logger.error({ err, telegramUserId, planId, interval }, 'sendStarsInvoice failed');
+    throw err;
+  }
 }
 
 // ─── Answer pre_checkout_query (must happen within 10 s) ───────────
 export async function answerPreCheckout(preCheckoutQueryId, ok = true, errorMsg = null) {
-  const body = { pre_checkout_query_id: preCheckoutQueryId, ok };
-  if (!ok && errorMsg) body.error_message = errorMsg;
+  try {
+    const body = { pre_checkout_query_id: preCheckoutQueryId, ok };
+    if (!ok && errorMsg) body.error_message = errorMsg;
 
-  await fetch(`${tgApi()}/answerPreCheckoutQuery`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+    await fetch(`${tgApi()}/answerPreCheckoutQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    logger.error({ err, preCheckoutQueryId }, 'answerPreCheckout failed');
+    throw err;
+  }
 }
 
 // ─── Send a simple text message to a chat ─────────────────────────
 export async function sendTelegramMessage(chatId, text) {
-  await fetch(`${tgApi()}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text }),
-  });
+  try {
+    await fetch(`${tgApi()}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+  } catch (err) {
+    logger.error({ err, chatId }, 'sendTelegramMessage failed');
+    throw err;
+  }
 }
 
 import logger from '../../config/logger.js';

@@ -18,7 +18,7 @@ export async function initQueueTable() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(task_type, payload)
     );
-  `).catch(() => {}); // table may already exist
+  `).catch((err) => { logger.warn({ err }, 'initQueueTable: table may already exist'); });
 }
 
 /**

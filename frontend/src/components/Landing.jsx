@@ -292,6 +292,28 @@ export default function Landing({ onStart, onLogin }) {
         </p>
       </section>
 
+      {/* ── Testimonials ──────────────────────────────────────────── */}
+      <section className="landing-testimonials">
+        <h2>{t('landing.testimonial_title', 'What developers say')}</h2>
+        <div className="landing-testimonial-grid">
+          <div className="landing-testimonial">
+            <div className="landing-testimonial-stars">⭐⭐⭐⭐⭐</div>
+            <p className="landing-testimonial-text">"{t('landing.testimonial_1')}"</p>
+            <span className="landing-testimonial-author">— {t('landing.testimonial_1_author')}</span>
+          </div>
+          <div className="landing-testimonial">
+            <div className="landing-testimonial-stars">⭐⭐⭐⭐⭐</div>
+            <p className="landing-testimonial-text">"{t('landing.testimonial_2')}"</p>
+            <span className="landing-testimonial-author">— {t('landing.testimonial_2_author')}</span>
+          </div>
+          <div className="landing-testimonial">
+            <div className="landing-testimonial-stars">⭐⭐⭐⭐⭐</div>
+            <p className="landing-testimonial-text">"{t('landing.testimonial_3')}"</p>
+            <span className="landing-testimonial-author">— {t('landing.testimonial_3_author')}</span>
+          </div>
+        </div>
+      </section>
+
       {/* ── FAQ ─────────────────────────────────────────────────── */}
       <section className="landing-faq" aria-labelledby="faq-heading">
         <h2 id="faq-heading">{t('landing.faq_title', 'Questions developers ask before starting')}</h2>

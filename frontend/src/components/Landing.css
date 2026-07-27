@@ -346,6 +346,37 @@
   letter-spacing: -0.3px;
 }
 
+/* ── Testimonials ───────────────────────────────────────────────── */
+.landing-testimonials { text-align: center; }
+.landing-testimonials h2 { font-size: 26px; margin: 0 0 24px; }
+.landing-testimonial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.landing-testimonial {
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.landing-testimonial-stars { font-size: 14px; letter-spacing: 2px; }
+.landing-testimonial-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.8;
+  flex: 1;
+}
+.landing-testimonial-author {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.55;
+}
+
 /* ── Sticky CTA ────────────────────────────────────────────────── */
 .landing-sticky-cta {
   position: fixed;
@@ -390,5 +421,6 @@
   .landing-cost-grid { grid-template-columns: 1fr; }
   .landing-steps { grid-template-columns: 1fr; }
   .landing-math-grid { grid-template-columns: repeat(2, 1fr); }
+  .landing-testimonial-grid { grid-template-columns: 1fr; }
   .landing-cta { width: 100%; justify-content: center; }
 }

@@ -27,6 +27,7 @@ import { executeCode } from './services/executionService.js';
 import { generateCertificate, getUserCertificates } from './services/certificateService.js';
 import * as challengeService from './services/challengeService.js';
 import { getTopics as getSDTopics, getTopicDetail, evaluateAnswer as evaluateSDAnswer, getUserProgress } from './services/systemDesignService.js';
+import { getDiscussions, createDiscussion, voteDiscussion, markSolution } from './services/discussionService.js';
 import jwt from 'jsonwebtoken';
 import { authMiddleware, requireAdmin } from './middleware/auth.js';
 import ADMIN_IDS from './config/admin.js';
@@ -999,7 +1000,6 @@ const FREE_DAILY_AI_EXPLAIN_LIMIT = parseInt(process.env.FREE_DAILY_AI_EXPLAIN_L
 
 async function checkDailyAiExplain(userId) {
   const today = localDateStr();
-  // Upsert the row and reset the counter if the stored date is stale.
   await pool.query(
     `INSERT INTO user_rate_limits (user_id, ai_explanations_today, ai_explain_date)
      VALUES ($1, 0, $2)
@@ -1007,7 +1007,7 @@ async function checkDailyAiExplain(userId) {
        SET ai_explanations_today = CASE
              WHEN user_rate_limits.ai_explain_date = $2 THEN user_rate_limits.ai_explanations_today
              ELSE 0 END,
-           ai_explain_date = $2`,
+         ai_explain_date = $2`,
     [userId, today]
   );
   const { rows } = await pool.query(
@@ -1015,14 +1015,24 @@ async function checkDailyAiExplain(userId) {
     [userId]
   );
   const used = rows[0]?.ai_explanations_today || 0;
-  if (used >= FREE_DAILY_AI_EXPLAIN_LIMIT) {
-    return { allowed: false, used, limit: FREE_DAILY_AI_EXPLAIN_LIMIT };
+
+  // Streak bonus: +1 free AI explanation per day for every 3-day streak milestone
+  const { rows: userRows } = await pool.query(
+    'SELECT current_streak FROM users WHERE telegram_id = $1',
+    [userId]
+  );
+  const streak = userRows[0]?.current_streak || 0;
+  const streakBonus = Math.floor(streak / 3);
+  const effectiveLimit = FREE_DAILY_AI_EXPLAIN_LIMIT + streakBonus;
+
+  if (used >= effectiveLimit) {
+    return { allowed: false, used, limit: effectiveLimit, streakBonus };
   }
   await pool.query(
     'UPDATE user_rate_limits SET ai_explanations_today = ai_explanations_today + 1 WHERE user_id = $1',
     [userId]
   );
-  return { allowed: true, used: used + 1, limit: FREE_DAILY_AI_EXPLAIN_LIMIT };
+  return { allowed: true, used: used + 1, limit: effectiveLimit, streakBonus };
 }
 
 async function updateStreak(userId) {
@@ -1063,6 +1073,13 @@ async function updateStreak(userId) {
 
     if (newStreak > user.current_streak) {
       metricsService.trackEvent(userId, 'streak_increased', { streak: newStreak });
+      // Notify user of streak milestone via Telegram if milestone hit
+      if (newStreak % 7 === 0 || newStreak === 30) {
+        const milestoneMsg = `🔥 Streak milestone! You've been studying for ${newStreak} days in a row.`;
+        sendTelegramMessage(userId, milestoneMsg).catch(
+          (err) => logger.error({ err, userId }, 'Failed to send streak milestone notification')
+        );
+      }
     }
 
     return { current: newStreak, longest: newLongest, increased: newStreak > user.current_streak };
@@ -2449,7 +2466,568 @@ app.get('/api/system-design/progress', async (req, res) => {
   }
 });
 
-// ─── Server ───────────────────────────────────────────────────────────
+// ─── Question Discussions (community) ─────────────────────────────────
+app.get('/api/questions/:id/discussions', async (req, res) => {
+  try {
+    const questionId = parseInt(req.params.id);
+    const discussions = await getDiscussions(questionId, req.userId);
+    res.json({ discussions });
+  } catch (err) {
+    logger.error({ err }, 'Error in /questions/:id/discussions');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/questions/:id/discussions',
+  validateBody({ content: { required: true } }),
+  async (req, res) => {
+    try {
+      const questionId = parseInt(req.params.id);
+      const { content, codeSnippet, parentId } = req.body;
+      const discussion = await createDiscussion(questionId, req.userId, content, codeSnippet, parentId);
+      res.status(201).json({ discussion });
+      metricsService.trackEvent(req.userId, 'discussion_created', { questionId });
+    } catch (err) {
+      logger.error({ err }, 'Error in POST /questions/:id/discussions');
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
+
+app.post('/api/discussions/:id/vote',
+  validateBody({ vote: { required: true } }),
+  async (req, res) => {
+    try {
+      const discussionId = parseInt(req.params.id);
+      const { vote } = req.body;
+      if (![-1, 1].includes(vote)) return res.status(400).json({ error: 'Vote must be -1 or 1' });
+      const result = await voteDiscussion(discussionId, req.userId, vote);
+      res.json(result);
+    } catch (err) {
+      logger.error({ err }, 'Error in POST /discussions/:id/vote');
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
+
+app.post('/api/discussions/:id/solution', async (req, res) => {
+  try {
+    const discussionId = parseInt(req.params.id);
+    const { rows } = await pool.query('SELECT question_id, user_id FROM question_discussions WHERE id = $1', [discussionId]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Discussion not found' });
+    await markSolution(discussionId, rows[0].question_id, req.userId);
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, 'Error in POST /discussions/:id/solution');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Badges / Achievements ──────────────────────────────────
+const BADGE_DEFINITIONS = [
+  { key: 'first_question', name: 'First Steps', icon: '🎯', description: 'Answer your first question' },
+  { key: 'streak_3', name: 'Getting Warm', icon: '🔥', description: '3-day streak' },
+  { key: 'streak_7', name: 'On Fire', icon: '🔥', description: '7-day streak' },
+  { key: 'streak_30', name: 'Unstoppable', icon: '💎', description: '30-day streak' },
+  { key: 'known_10', name: 'Novice', icon: '🏅', description: 'Mark 10 questions as known' },
+  { key: 'known_50', name: 'Intermediate', icon: '🏆', description: 'Mark 50 questions as known' },
+  { key: 'known_100', name: 'Expert', icon: '🏆', description: 'Mark 100 questions as known' },
+  { key: 'known_500', name: 'Master', icon: '👑', description: 'Mark 500 questions as known' },
+  { key: 'bug_hunter', name: 'Bug Hunter', icon: '🐛', description: 'Complete 5 Bug Hunting questions' },
+  { key: 'blitz_master', name: 'Blitz Master', icon: '⚡', description: 'Score 90%+ in Blitz mode' },
+  { key: 'daily_login', name: 'Consistent', icon: '📅', description: 'Log in for 5 consecutive days' },
+  { key: 'refer_friend', name: 'Social', icon: '🤝', description: 'Invite a friend' },
+];
+
+app.get('/api/badges', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT badge_key, unlocked_at FROM user_badges WHERE user_id = $1',
+      [req.userId]
+    );
+    const unlocked = new Set(rows.map(r => r.badge_key));
+    const badges = BADGE_DEFINITIONS.map(b => ({
+      ...b,
+      unlocked: unlocked.has(b.key),
+    }));
+    res.json({ badges });
+  } catch (err) {
+    logger.error({ err }, 'Badges error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/badges/check', async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { rows: userRows } = await pool.query(
+      'SELECT subscription_plan FROM users WHERE telegram_id = $1', [userId]
+    );
+    const plan = userRows[0]?.subscription_plan || 'free';
+
+    const stats = await pool.query(
+      'SELECT COUNT(*) as known_count, COUNT(*) FILTER (WHERE status = \'unknown\') as unknown_count FROM user_progress WHERE user_id = $1',
+      [userId]
+    );
+    const knownCount = parseInt(stats.rows[0].known_count) || 0;
+
+    const streakRows = await pool.query(
+      'SELECT current_streak FROM users WHERE telegram_id = $1', [userId]
+    );
+    const currentStreak = streakRows.rows[0]?.current_streak || 0;
+
+    const newBadges = [];
+    const existing = new Set(
+      (await pool.query('SELECT badge_key FROM user_badges WHERE user_id = $1', [userId])).rows.map(r => r.badge_key)
+    );
+
+    const checks = [
+      { key: 'first_question', condition: knownCount >= 1 },
+      { key: 'known_10', condition: knownCount >= 10 },
+      { key: 'known_50', condition: knownCount >= 50 },
+      { key: 'known_100', condition: knownCount >= 100 },
+      { key: 'known_500', condition: knownCount >= 500 },
+      { key: 'streak_3', condition: currentStreak >= 3 },
+      { key: 'streak_7', condition: currentStreak >= 7 },
+      { key: 'streak_30', condition: currentStreak >= 30 },
+    ];
+
+    for (const check of checks) {
+      if (check.condition && !existing.has(check.key)) {
+        await pool.query(
+          'INSERT INTO user_badges (user_id, badge_key) VALUES ($1, $2)',
+          [userId, check.key]
+        );
+        newBadges.push(check.key);
+      }
+    }
+
+    res.json({ newBadges, totalUnlocked: existing.size + newBadges.length });
+  } catch (err) {
+    logger.error({ err }, 'Badge check error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Daily Challenge ───────────────────────────────────────
+app.get('/api/daily-challenge', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const today = new Date().toISOString().split('T')[0];
+
+    let { rows } = await pool.query(
+      'SELECT * FROM daily_challenges WHERE challenge_date = $1 AND language = $2',
+      [today, language]
+    );
+
+    if (rows.length === 0) {
+      const { rows: questionRows } = await pool.query(
+        `SELECT id, question_text, short_answer, category, difficulty, language
+         FROM questions
+         WHERE language = $1 AND is_active = TRUE
+         ORDER BY RANDOM()
+         LIMIT 5`,
+        [language]
+      );
+
+      if (questionRows.length === 0) {
+        return res.json({ challenge: null });
+      }
+
+      const { rows: insertResult } = await pool.query(
+        'INSERT INTO daily_challenges (challenge_date, question_ids, language) VALUES ($1, $2, $3) RETURNING *',
+        [today, questionRows.map(q => q.id), language]
+      );
+
+      const challenge = insertResult[0];
+      challenge.questions = questionRows.map(q => ({
+        id: q.id,
+        question: q.question_text,
+        shortAnswer: q.short_answer,
+        category: q.category,
+        difficulty: q.difficulty,
+      }));
+
+      return res.json({ challenge });
+    }
+
+    const challenge = rows[0];
+    const { rows: qRows } = await pool.query(
+      `SELECT id, question_text, short_answer, category, difficulty, language
+       FROM questions
+       WHERE id = ANY($1)`,
+      [challenge.question_ids]
+    );
+    challenge.questions = qRows.map(q => ({
+      id: q.id,
+      question: q.question_text,
+      shortAnswer: q.short_answer,
+      category: q.category,
+      difficulty: q.difficulty,
+    }));
+
+    res.json({ challenge });
+  } catch (err) {
+    logger.error({ err }, 'Daily challenge error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/daily-challenge/submit', async (req, res) => {
+  try {
+    const { challengeId, score, questionsAnswered, accuracy } = req.body;
+    const userId = req.userId;
+    const safeScore = Math.min(Math.max(0, parseInt(score) || 0), 10000);
+    const safeAnswered = Math.min(Math.max(0, parseInt(questionsAnswered) || 0), 100);
+    const safeAccuracy = Math.min(Math.max(0, parseFloat(accuracy) || 0), 100);
+
+    await pool.query(
+      `INSERT INTO daily_challenge_results (challenge_id, user_id, score, questions_answered, accuracy)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (challenge_id, user_id) DO UPDATE SET
+         score = GREATEST(daily_challenge_results.score, $3),
+         questions_answered = $4,
+         accuracy = $5,
+         completed_at = NOW()`,
+      [challengeId, userId, safeScore, safeAnswered, safeAccuracy]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, 'Daily challenge submit error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Global Leaderboard ─────────────────────────────────────
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+    const period = req.query.period || 'week'; // week, month, all
+
+    let dateFilter = '';
+    if (period === 'week') {
+      dateFilter = `AND up.updated_at >= CURRENT_DATE - INTERVAL '7 days'`;
+    } else if (period === 'month') {
+      dateFilter = `AND up.updated_at >= CURRENT_DATE - INTERVAL '30 days'`;
+    }
+
+    const { rows } = await pool.query(`
+      SELECT
+        u.telegram_id,
+        u.username,
+        u.first_name,
+        COUNT(*) as questions_answered,
+        COUNT(*) FILTER (WHERE up.status = 'known') as known_count,
+        COALESCE(u.current_streak, 0) as streak,
+        ROUND(
+          CASE WHEN COUNT(*) > 0
+            THEN (COUNT(*) FILTER (WHERE up.status = 'known')::FLOAT / COUNT(*)) * 100
+            ELSE 0 END,
+          1
+        ) as accuracy
+      FROM user_progress up
+      JOIN users u ON u.telegram_id = up.user_id
+      JOIN questions q ON q.id = up.question_id
+      WHERE q.language = $1 AND up.status IN ('known', 'unknown')
+        ${dateFilter}
+      GROUP BY u.telegram_id, u.username, u.first_name, u.current_streak
+      HAVING COUNT(*) >= 5
+      ORDER BY known_count DESC, accuracy DESC, streak DESC
+      LIMIT $2
+    `, [language, limit]);
+
+    const leaderboard = rows.map((r, i) => ({
+      rank: i + 1,
+      userId: r.telegram_id,
+      username: r.username || r.first_name || 'Anonymous',
+      questionsAnswered: parseInt(r.questions_answered),
+      knownCount: parseInt(r.known_count),
+      streak: parseInt(r.streak),
+      accuracy: parseFloat(r.accuracy),
+    }));
+
+    res.json({ leaderboard, period });
+  } catch (err) {
+    logger.error({ err }, 'Leaderboard error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Progress Export ────────────────────────────────────────
+app.get('/api/progress/export', async (req, res) => {
+  try {
+    const userId = req.userId;
+    const language = req.query.language || 'Java';
+    const format = req.query.format || 'json';
+
+    const { rows: progress } = await pool.query(`
+      SELECT q.id, q.category, q.question_text, q.short_answer,
+             up.status, up.updated_at, q.difficulty
+      FROM user_progress up
+      JOIN questions q ON q.id = up.question_id
+      WHERE up.user_id = $1 AND q.language = $2
+      ORDER BY up.updated_at DESC
+    `, [userId, language]);
+
+    const { rows: stats } = await pool.query(
+      'SELECT current_streak, longest_streak FROM users WHERE telegram_id = $1',
+      [userId]
+    );
+
+    const { rows: badges } = await pool.query(
+      'SELECT badge_key, unlocked_at FROM user_badges WHERE user_id = $1',
+      [userId]
+    );
+
+    const exportData = {
+      generatedAt: new Date().toISOString(),
+      language,
+      stats: stats.rows[0] || {},
+      progress: progress.rows.map(r => ({
+        id: r.id,
+        category: r.category,
+        question: r.question_text,
+        shortAnswer: r.short_answer,
+        status: r.status,
+        difficulty: r.difficulty,
+        lastReviewed: r.updated_at,
+      })),
+      badges: badges.rows.map(b => b.badge_key),
+    };
+
+    if (format === 'csv') {
+      const csv = 'ID,Category,Question,Short Answer,Status,Difficulty,Last Reviewed\n' +
+        progress.rows.map(r =>
+          `${r.id},"${r.category}","${r.question_text}","${r.short_answer}",${r.status},${r.difficulty},"${r.updated_at}"`
+        ).join('\n');
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="progress-${language}-${new Date().toISOString().split('T')[0]}.csv"`);
+      return res.send(csv);
+    }
+
+    res.json(exportData);
+  } catch (err) {
+    logger.error({ err }, 'Progress export error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Companies ───────────────────────────────────────────────
+app.get('/api/companies', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT DISTINCT unnest(companies) as name
+      FROM questions
+      WHERE companies IS NOT NULL AND array_length(companies, 1) > 0
+      ORDER BY name
+    `);
+    res.json({ companies: rows.map(r => r.name) });
+  } catch (err) {
+    logger.error({ err }, 'Companies list error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── UGC Questions ─────────────────────────────────────────
+app.post('/api/questions/submit', validateBody({ question_text: { required: true }, short_answer: { required: true }, category: { required: true } }), async (req, res) => {
+  try {
+    const { question_text, short_answer, category, difficulty, options, language } = req.body;
+    const userId = req.userId;
+    await pool.query(
+      `INSERT INTO user_submitted_questions (user_id, category, difficulty, question_text, short_answer, options, language, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
+      [userId, category, difficulty || 'Junior', question_text, short_answer, options || [], language || 'Java']
+    );
+    res.json({ success: true, message: 'Question submitted for review.' });
+  } catch (err) {
+    logger.error({ err }, 'UGC question submit error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/questions/ugc', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const { rows } = await pool.query(
+      `SELECT id, category, difficulty, question_text, short_answer, options, language, status, created_at
+       FROM user_submitted_questions
+       WHERE language = $1 AND status = 'approved'
+       ORDER BY created_at DESC
+       LIMIT 100`,
+      [language]
+    );
+    res.json({ questions: rows });
+  } catch (err) {
+    logger.error({ err }, 'UGC questions list error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Admin UGC moderation ─────────────────────────────────
+app.get('/api/admin/ugc', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT uqs.*, u.username, u.first_name
+       FROM user_submitted_questions uqs
+       LEFT JOIN users u ON u.telegram_id = uqs.user_id
+       WHERE uqs.status = 'pending'
+       ORDER BY uqs.created_at DESC
+       LIMIT 50`
+    );
+    res.json({ questions: rows });
+  } catch (err) {
+    logger.error({ err }, 'Admin UGC list error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/admin/ugc/:id/review', validateBody({ action: { required: true, enum: ['approve', 'reject'] } }), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action } = req.body;
+    const adminId = req.userId;
+
+    if (action === 'approve') {
+      const { rows: q } = await pool.query(
+        'SELECT * FROM user_submitted_questions WHERE id = $1', [id]
+      );
+      if (q.length === 0) return res.status(404).json({ error: 'Question not found' });
+      const uq = q[0];
+
+      // Insert into questions table
+      await pool.query(
+        `INSERT INTO questions (category, difficulty, question_text, short_answer, options, language, is_ugc, company)
+         VALUES ($1, $2, $3, $4, $5, $6, TRUE, NULL)`,
+        [uq.category, uq.difficulty, uq.question_text, uq.short_answer, uq.options, uq.language]
+      );
+
+      await pool.query('UPDATE user_submitted_questions SET status = $1, reviewed_by = $2, reviewed_at = NOW() WHERE id = $3', ['approved', adminId, id]);
+    } else {
+      await pool.query('UPDATE user_submitted_questions SET status = $1, reviewed_by = $2, reviewed_at = NOW() WHERE id = $3', ['rejected', adminId, id]);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, 'UGC review error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Email Digest ────────────────────────────────────────────
+app.post('/api/email/subscribe', validateBody({ email: { required: true } }), async (req, res) => {
+  try {
+    const { email, language } = req.body;
+    const cleanEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Invalid email address' });
+    }
+    await pool.query(
+      `INSERT INTO user_email_preferences (email, language) VALUES ($1, $2)
+       ON CONFLICT (email) DO UPDATE SET digest_enabled = TRUE, language = $2`,
+      [cleanEmail, language || 'Java']
+    );
+    res.json({ success: true, message: 'Subscribed to daily digest.' });
+  } catch (err) {
+    logger.error({ err }, 'Email subscribe error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/email/unsubscribe', validateBody({ email: { required: true } }), async (req, res) => {
+  try {
+    const { email } = req.body;
+    await pool.query(
+      'UPDATE user_email_preferences SET digest_enabled = FALSE WHERE email = $1',
+      [email.trim().toLowerCase()]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, 'Email unsubscribe error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/email/daily-challenge', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const today = new Date().toISOString().split('T')[0];
+    const { rows } = await pool.query(
+      `SELECT dc.id, dc.question_ids FROM daily_challenges dc
+       WHERE dc.challenge_date = $1 AND dc.language = $2`,
+      [today, language]
+    );
+    if (rows.length === 0) return res.json({ challenge: null });
+
+    const qIds = rows[0].question_ids;
+    const { rows: questions } = await pool.query(
+      `SELECT id, category, question_text, short_answer FROM questions WHERE id = ANY($1)`,
+      [qIds]
+    );
+    res.json({ challenge: { id: rows[0].id, questions } });
+  } catch (err) {
+    logger.error({ err }, 'Daily challenge email error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── User Profile ────────────────────────────────────
+app.get('/api/me', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, telegram_id, first_name, username, language, plan, current_streak, longest_streak, known_count, total_answered, avatar_url, created_at
+       FROM users WHERE id = $1`,
+      [req.userId]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const u = rows[0];
+    res.json({
+      id: u.id,
+      telegram_id: u.telegram_id,
+      first_name: u.first_name,
+      username: u.username,
+      language: u.language,
+      plan: u.plan,
+      current_streak: u.current_streak,
+      longest_streak: u.longest_streak,
+      known_count: u.known_count,
+      total_answered: u.total_answered,
+      avatar_url: u.avatar_url,
+      created_at: u.created_at,
+    });
+  } catch (err) {
+    logger.error({ err }, 'Get profile error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/me', authMiddleware, validateBody({}), async (req, res) => {
+  try {
+    const { first_name, username, avatar_url } = req.body;
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    if (first_name !== undefined) { updates.push(`first_name = $${idx++}`); values.push(first_name); }
+    if (username !== undefined) { updates.push(`username = $${idx++}`); values.push(username); }
+    if (avatar_url !== undefined) { updates.push(`avatar_url = $${idx++}`); values.push(avatar_url); }
+
+    if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+
+    values.push(req.userId);
+    const { rows } = await pool.query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${idx} RETURNING id, telegram_id, first_name, username, language, plan`,
+      values
+    );
+    res.json({ user: rows[0] });
+  } catch (err) {
+    logger.error({ err }, 'Update profile error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Server ───────────────────────────────────────────
 let server = null;
 let tonTimer = null;
 

@@ -5,9 +5,10 @@ import React, {
   useImperativeHandle,
 } from 'react';
 import TinderCard from 'react-tinder-card';
-import { RotateCcw, Flag, Sparkles, Bookmark, BookmarkCheck } from 'lucide-react';
+import { RotateCcw, Flag, Sparkles, Bookmark, BookmarkCheck, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
+import DiscussionSheet from './DiscussionSheet';
 import './QuestionCard.css';
 
 const categoryColors = {
@@ -36,6 +37,7 @@ const QuestionCard = forwardRef(
   const { learningMode, loadExplanation, savedIds, toggleSave } = useStore();
   const [isFlipped, setIsFlipped] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showDiscussion, setShowDiscussion] = useState(false);
   const tinderRef = useRef(null);
 
   const isSaved = !!savedIds[question.id];
@@ -216,6 +218,27 @@ const QuestionCard = forwardRef(
                 >
                   <Sparkles size={15} /> {t('card.explain_ai', 'Explain with AI')}
                 </button>
+              )}
+
+              {learningMode === 'swipe' && (
+                <button
+                  className="discuss-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDiscussion(true);
+                  }}
+                  type="button"
+                >
+                  <MessageSquare size={15} /> {t('card.discuss', 'Discuss')}
+                </button>
+              )}
+
+              {showDiscussion && (
+                <DiscussionSheet
+                  questionId={question.id}
+                  onClose={() => setShowDiscussion(false)}
+                  isOwner={false}
+                />
               )}
 
               <button

@@ -9,8 +9,12 @@ const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const ReviewMode = lazy(() => import('./components/ReviewMode'));
 const ProgressScreen = lazy(() => import('./components/ProgressScreen'));
 const SavedQuestions = lazy(() => import('./components/SavedQuestions'));
+const AchievementScreen = lazy(() => import('./components/AchievementScreen'));
 const TracksScreen = lazy(() => import('./components/TracksScreen'));
 const TrackDetail = lazy(() => import('./components/TrackDetail'));
+const CompaniesScreen = lazy(() => import('./components/CompaniesScreen'));
+const PeerInterviewScreen = lazy(() => import('./components/PeerInterviewScreen'));
+const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 import CategorySelection from './components/CategorySelection';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import LanguageSelection from './components/LanguageSelection';
@@ -248,6 +252,20 @@ function App() {
     onboardingReopen.current = true;
     setScreen('onboarding');
   };
+  // Achievements screen
+  const handleAchievements = () => {
+    onboardingReopen.current = true;
+    setScreen('achievements');
+  };
+  // Export progress as JSON/CSV
+  const exportProgress = async () => {
+    try {
+      const language = useStore.getState().language;
+      window.open(`/api/progress/export?language=${language}&format=json`, '_blank');
+    } catch (err) {
+      console.error('Export failed:', err);
+    }
+  };
   // After onboarding: return to the app if it was a re-open, else continue to
   // language selection (first-time flow).
   const handleOnboardingDone = () => {
@@ -357,16 +375,20 @@ function App() {
   if (screen === 'onboarding') return <Onboarding onStart={handleOnboardingDone} />;
   if (screen === 'language') return <LanguageSelection onSelect={() => setScreen('tracks')} />;
   if (screen === 'tracks') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TracksScreen onStartTrack={(id) => { setCurrentTrackId(id); setScreen('track-detail'); }} onBack={() => setScreen('language')} onSkipToCategories={() => setScreen('category')} /></Suspense>;
-  if (screen === 'track-detail') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TrackDetail trackId={currentTrackId} onStart={() => { useStore.getState().startTrack(currentTrackId); setScreen('main'); }} onBack={() => setScreen('tracks')} /></Suspense>;
-  if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('language')} />;
+if (screen === 'track-detail') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TrackDetail trackId={currentTrackId} onStart={() => { useStore.getState().startTrack(currentTrackId); setScreen('main'); }} onBack={() => setScreen('tracks')} /></Suspense>;
+   if (screen === 'companies') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><CompaniesScreen onBack={() => setScreen('main')} /></Suspense>;
+   if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('language')} />;
   if (screen === 'resume') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ResumeAnalyzer onBack={() => setScreen('main')} onStartPractice={() => { useStore.getState().setLearningMode('swipe'); setScreen('main'); }} /></Suspense>;
   if (screen === 'vacancy') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><VacancyPrep onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'trends') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><MarketTrends onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'subscriptions') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SubscriptionPlans onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'admin') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AdminPanel onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'saved') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><SavedQuestions onBack={() => setScreen('main')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
-  if (screen === 'progress') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProgressScreen onBack={() => setScreen('main')} onReview={() => setScreen('review')} onUpgrade={() => setScreen('subscriptions')} onSavedClick={() => setScreen('saved')} /></Suspense>;
-  if (screen === 'review') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ReviewMode onBack={() => setScreen('progress')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
+   if (screen === 'progress') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProgressScreen onBack={() => setScreen('main')} onReview={() => setScreen('review')} onUpgrade={() => setScreen('subscriptions')} onSavedClick={() => setScreen('saved')} /></Suspense>;
+   if (screen === 'review') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ReviewMode onBack={() => setScreen('progress')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
+if (screen === 'achievements') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><Achievements onBack={() => setScreen('main')} /></Suspense>;
+  if (screen === 'profile') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProfileScreen onBack={() => setScreen('main')} onSettingsClick={() => setScreen('settings')} /></Suspense>;
+  if (screen === 'peer-interview') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PeerInterviewScreen onBack={() => setScreen('main')} /></Suspense>;
   if (playgroundQuestion) return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PlaygroundMode initialCode={playgroundQuestion.code} onBack={() => setPlaygroundQuestion(null)} /></Suspense>;
 
   const renderMode = () => {
@@ -436,17 +458,21 @@ function App() {
   return (
     <div className={`app ${learningMode === 'swipe' ? 'swipe-mode' : ''}`}>
       <PwaInstallPrompt show={showPwa} />
-       <Header
-         onSettingsClick={() => setScreen('language')}
-         onResumeClick={() => setScreen('resume')}
-         onVacancyClick={() => setScreen('vacancy')}
-         onTrendsClick={() => setScreen('trends')}
-         onSubscriptionClick={() => setScreen('subscriptions')}
-        onLanguageChange={handleLanguageChange}
-        onAdminClick={() => setScreen('admin')}
-        onProgressClick={() => setScreen('progress')}
-        onHelpClick={handleHelp}
-      />
+<Header
+          onSettingsClick={() => setScreen('language')}
+          onResumeClick={() => setScreen('resume')}
+          onVacancyClick={() => setScreen('vacancy')}
+          onTrendsClick={() => setScreen('trends')}
+          onSubscriptionClick={() => setScreen('subscriptions')}
+         onLanguageChange={handleLanguageChange}
+         onAdminClick={() => setScreen('admin')}
+         onProgressClick={() => setScreen('progress')}
+         onHelpClick={handleHelp}
+         onExportClick={exportProgress}
+         onAchievementsClick={() => setScreen('achievements')}
+         onProfileClick={() => setScreen('profile')}
+         onPeerInterviewClick={() => setScreen('peer-interview')}
+         />
       <div className="card-container">
         <Suspense fallback={<SkeletonCard />}>
           {renderMode()}

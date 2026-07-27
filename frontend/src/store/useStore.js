@@ -26,12 +26,20 @@ function saveDaily(count) {
   try { localStorage.setItem(`${CACHE_KEY}_daily`, JSON.stringify({ date: todayKey(), count })); } catch { /* ignore */ }
 }
 
+function getTheme() {
+  try { return localStorage.getItem(`${CACHE_KEY}_theme`) || 'light'; } catch { return 'light'; }
+}
+function saveTheme(theme) {
+  try { localStorage.setItem(`${CACHE_KEY}_theme`, theme); } catch { /* ignore */ }
+}
+
 const useStore = create((set, get) => ({
   user: null,
   token: loadFromSession('token'),
   isAuthenticated: !!loadFromSession('token'),
   isLoading: true,
   language: 'Java',
+  theme: getTheme(),
 
   questions: [],
   currentIndex: 0,
@@ -261,6 +269,12 @@ const useStore = create((set, get) => ({
     }
     // Return to category selection so user picks cats for the new language
     return 'category';
+  },
+
+  toggleTheme: () => {
+    const next = get().theme === 'light' ? 'dark' : 'light';
+    saveTheme(next);
+    set({ theme: next });
   },
 
   // ─── Questions ─────────────────────────────────────────────────────

@@ -1,0 +1,122 @@
+.profile-screen {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: 80px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-header h1 { flex: 1; font-size: 20px; margin: 0; }
+
+.back-btn, .settings-btn {
+  background: none;
+  border: none;
+  color: var(--secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.settings-btn { margin-left: auto; }
+
+.profile-avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 16px;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-name-section { display: flex; flex-direction: column; gap: 4px; }
+
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-name { font-size: 18px; font-weight: 700; }
+.profile-username { color: var(--secondary); font-size: 13px; }
+.profile-plan { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.profile-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: var(--text);
+  font-size: 16px;
+  outline: none;
+  width: 180px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--secondary);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 16px;
+}
+
+.profile-stat {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.profile-stat-val { font-size: 20px; font-weight: 700; }
+.profile-stat-lbl { font-size: 11px; color: var(--secondary); text-transform: uppercase; }
+
+.profile-progress { padding: 0 16px 16px; }
+.profile-progress-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; }
+
+.profile-menu { padding: 0 16px; display: flex; flex-direction: column; gap: 4px; }
+.menu-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px; background: var(--surface); border-radius: 12px;
+  cursor: pointer; color: var(--text); font-size: 15px;
+}
+
+.profile-toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 20px;
+  font-size: 14px; z-index: 100;
+}
+.profile-toast--error { background: var(--error); }

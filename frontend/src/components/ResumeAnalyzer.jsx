@@ -289,3 +289,5 @@ const ResumeAnalyzer = ({ onBack, onStartPractice }) => {
     </div>
   );
 }
+
+export default ResumeAnalyzer;

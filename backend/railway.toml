@@ -1,0 +1,10 @@
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  restart_policy_type = "ON_FAILURE"
+  restart_policy_max_retries = 5
+
+[env]
+  NODE_ENV = "production"
+  PORT = "10000"

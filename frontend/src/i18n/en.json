@@ -15,7 +15,12 @@
     "none": "None",
     "selected": "Selected",
     "questions": "questions",
-    "clear": "Clear"
+    "clear": "Clear",
+    "no_companies": "No companies tagged yet"
+  },
+  "companies": {
+    "title": "Companies",
+    "filter_by_company": "Filter by company"
   },
   "header": {
     "studied": "Studied",
@@ -36,7 +41,12 @@
     "readiness": "Readiness",
     "help": "How it works",
     "saved": "Saved",
-    "diff_filter": "Difficulty filter"
+    "diff_filter": "Difficulty filter",
+    "export": "Export",
+    "achievements": "Badges",
+    "companies": "Companies",
+    "profile": "Profile",
+    "peer_interview": "Peer Interview"
   },
   "category": {
     "difficulty": "Difficulty",
@@ -186,6 +196,7 @@
     "dont_know": "Don't know",
     "know": "Know",
     "explain_ai": "✨ Explain with AI",
+    "discuss": "Discuss",
     "bookmark": "Save to review later",
     "bookmark_short": "Save",
     "repeat": "Repeat",
@@ -480,7 +491,16 @@
     "faq4_a": "Yes. Sign in with Telegram or email and your streak, readiness score and saved questions follow you across the Mini App and the web/PWA.",
     "final_title": "Ready to walk in confident?",
     "final_sub": "10 free minutes a day is all it takes.",
-    "used_by": "Prepare for interviews at"
+    "testimonial_title": "What developers say",
+    "testimonial_1": "Was stuck on multithreading for weeks. Two sessions with the swipe mode and AI explanations and it finally clicked. Landed the offer.",
+    "testimonial_1_author": "Alex K., Senior Java Dev",
+    "testimonial_2": "The spaced repetition caught what I'd forgotten right before my Google interview. Absolutely clutch.",
+    "testimonial_2_author": "Maria S., Backend Engineer",
+    "testimonial_3": "Mock interview mode gave me the confidence I needed. Got my dream job at a FAANG.",
+    "testimonial_3_author": "Dmitry V., Software Engineer",
+    "stats_practicing": "Candidates practicing now",
+    "stats_live": "{{count}} active right now",
+    "sticky_cta": "Stop losing offers to forgotten questions"
   },
   "pwa": {
     "install_title": "Install Interview Tinder",
@@ -546,6 +566,21 @@
     "error": "Error",
     "placeholder": "Write your Java code here..."
   },
+  "discussions": {
+    "title": "Discussion",
+    "empty": "No discussions yet. Be the first to comment!",
+    "placeholder": "Share your approach, ask a question, or post a code solution...",
+    "code_placeholder": "Optional: add a code snippet",
+    "post": "Post",
+    "reply": "Reply",
+    "upvote": "Upvote",
+    "downvote": "Downvote",
+    "solution": "Accepted solution",
+    "mark_solution": "Mark as solution",
+    "reply_count": "{{count}} replies",
+    "login_to_comment": "Sign in to join the discussion",
+    "cancel": "Cancel"
+  },
   "voice": {
     "start": "Start Recording",
     "stop": "Stop Recording",
@@ -560,6 +595,33 @@
     "download": "Download Certificate",
     "share": "Share",
     "close": "Close"
+  },
+  "badges": {
+    "title": "Achievements",
+    "first_question": "First Steps",
+    "known_10": "Novice",
+    "known_50": "Intermediate",
+    "known_100": "Expert",
+    "known_500": "Master",
+    "streak_3": "Getting Warm",
+    "streak_7": "On Fire",
+    "streak_30": "Unstoppable",
+    "bug_hunter": "Bug Hunter",
+    "blitz_master": "Blitz Master",
+    "daily_login": "Consistent",
+    "refer_friend": "Social",
+    "first_question_locked": "???",
+    "known_10_locked": "???",
+    "known_50_locked": "???",
+    "known_100_locked": "???",
+    "known_500_locked": "???",
+    "streak_3_locked": "???",
+    "streak_7_locked": "???",
+    "streak_30_locked": "???",
+    "bug_hunter_locked": "???",
+    "blitz_master_locked": "???",
+    "daily_login_locked": "???",
+    "refer_friend_locked": "???"
   },
   "sd": {
     "title": "System Design",
@@ -583,5 +645,15 @@
     "no_feedback": "No specific feedback",
     "limit_reached": "Daily limit: {{used}}/{{limit}}. Upgrade to Pro for unlimited evaluations.",
     "score": "Score"
+  },
+  "profile": {
+    "title": "Profile",
+    "known": "Known",
+    "streak": "Day streak",
+    "accuracy": "Accuracy",
+    "total": "Total",
+    "readiness": "Readiness",
+    "saved": "Saved!",
+    "save_error": "Save failed"
   }
 }

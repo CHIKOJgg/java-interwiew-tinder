@@ -608,6 +608,33 @@ const migrations = [
 
   // ── 034: System Design module ──────────────────────────────────────
   {
+    id: '035_question_discussions',
+    sql: `
+      CREATE TABLE IF NOT EXISTS question_discussions (
+        id SERIAL PRIMARY KEY,
+        question_id INT REFERENCES questions(id) ON DELETE CASCADE,
+        user_id BIGINT REFERENCES users(telegram_id),
+        parent_id INT REFERENCES question_discussions(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        code_snippet TEXT,
+        upvotes INT DEFAULT 0,
+        is_solution BOOLEAN DEFAULT false,
+        is_hidden BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS discussion_votes (
+        user_id BIGINT REFERENCES users(telegram_id),
+        discussion_id INT REFERENCES question_discussions(id) ON DELETE CASCADE,
+        vote SMALLINT CHECK (vote IN (-1, 1)),
+        PRIMARY KEY (user_id, discussion_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_discussions_question ON question_discussions(question_id);
+      CREATE INDEX IF NOT EXISTS idx_discussions_parent ON question_discussions(parent_id);
+    `
+  },
+  {
     id: '034_system_design',
     sql: `
       CREATE TABLE IF NOT EXISTS system_design_topics (

@@ -313,6 +313,25 @@
   box-shadow: 0 4px 14px rgba(112, 72, 232, 0.35);
 }
 
+.discuss-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: var(--bg-tertiary, #2a2a3e);
+  color: var(--text-primary, #e0e0e0);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.discuss-btn:hover { background: var(--border-color, #3a3a4e); }
+
 .explain-ai-btn:active {
   transform: scale(0.98);
 }

@@ -14,6 +14,7 @@ export const PLANS = {
     id: 'free',
     name: 'Free',
     price_monthly: 0,
+    price_yearly: 0,
     stars_monthly: 0,
     stars_yearly: 0,
     requests_per_day: 40,
@@ -29,6 +30,7 @@ export const PLANS = {
     id: 'pro',
     name: 'Pro',
     price_monthly: 9.99,
+    price_yearly: 79.99,
     stars_monthly: 450,
     stars_yearly: 3000,
     requests_per_day: 1000,
@@ -37,13 +39,27 @@ export const PLANS = {
     interview_eval_limit: 50,
     sd_evaluation_limit: 100,
     available_languages: ['Java', 'Python', 'TypeScript'],
-    available_modes: ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'system-design'],
+    available_modes: ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'system-design', 'review'],
+    model_priority: 'quality',
+  },
+  annual_pro: {
+    id: 'annual_pro',
+    name: 'Pro Annual',
+    price_monthly: 0,
+    price_yearly: 79.99,
+    stars_monthly: 0,
+    stars_yearly: 4000,
+    requests_per_day: 1000,
+    ai_generations_per_month: 1000,
+    resume_analysis_limit: 10,
+    interview_eval_limit: 50,
+    sd_evaluation_limit: 100,
+    available_languages: ['Java', 'Python', 'TypeScript'],
+    available_modes: ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'system-design', 'review'],
     model_priority: 'quality',
   },
 };
 
-// Fallback limits for a free/unknown user when the plans table or the user's
-// plan row is unavailable. Mirrors PLANS.free.
 export const FREE_DEFAULTS = {
   requests_per_day: PLANS.free.requests_per_day,
   ai_generations_per_month: PLANS.free.ai_generations_per_month,
@@ -55,5 +71,4 @@ export const FREE_DEFAULTS = {
   model_priority: PLANS.free.model_priority,
 };
 
-// Ordered list for the /api/subscription/plans fallback response.
-export const PLANS_LIST = [PLANS.free, PLANS.pro];
+export const PLANS_LIST = [PLANS.free, PLANS.pro, PLANS.annual_pro];

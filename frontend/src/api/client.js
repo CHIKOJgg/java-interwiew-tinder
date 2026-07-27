@@ -391,6 +391,29 @@ class ApiClient {
     return this.request('/referrals/stats');
   }
 
+  // ─── Question Discussions (community) ──────────────────────────────
+  async getDiscussions(questionId) {
+    return this.request(`/questions/${questionId}/discussions`);
+  }
+
+  async createDiscussion(questionId, content, codeSnippet, parentId) {
+    return this.request(`/questions/${questionId}/discussions`, {
+      method: 'POST',
+      body: JSON.stringify({ content, codeSnippet, parentId })
+    });
+  }
+
+  async voteDiscussion(discussionId, vote) {
+    return this.request(`/discussions/${discussionId}/vote`, {
+      method: 'POST',
+      body: JSON.stringify({ vote })
+    });
+  }
+
+  async markSolution(discussionId) {
+    return this.request(`/discussions/${discussionId}/solution`, { method: 'POST' });
+  }
+
   async reportQuestion(questionId, reason, comment) {
     return this.request(`/questions/${questionId}/report`, {
       method: 'POST',

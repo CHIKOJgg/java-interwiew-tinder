@@ -45,8 +45,6 @@ describe('mode components import without throwing', () => {
     ]);
     for (const m of mods) {
       expect(m.default).toBeDefined();
-      // A component is either a plain function or a forwardRef/memo
-      // wrapper (which is an object carrying a $$typeof marker).
       const isComponent =
         typeof m.default === 'function' ||
         (typeof m.default === 'object' && m.default !== null && '$$typeof' in m.default);

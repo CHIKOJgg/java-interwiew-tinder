@@ -33,54 +33,64 @@ Evaluate this system design answer. Return only the JSON.`,
 });
 
 export async function getTopics(userId, language = 'Java', difficulty) {
-  const where = ['is_active = TRUE', 'language = $1'];
-  const params = [language];
-  let p = 2;
-  if (difficulty) { where.push(`difficulty = $${p}`); params.push(difficulty); p++; }
+  try {
+    const where = ['is_active = TRUE', 'language = $1'];
+    const params = [language];
+    let p = 2;
+    if (difficulty) { where.push(`difficulty = $${p}`); params.push(difficulty); p++; }
 
-  const { rows } = await pool.query(
-    `SELECT id, topic, title, description, difficulty, estimated_readiness_hours
-     FROM system_design_topics
-     WHERE ${where.join(' AND ')}
-     ORDER BY
-       CASE difficulty WHEN 'junior' THEN 0 WHEN 'middle' THEN 1 ELSE 2 END,
-       id ASC`,
-    params
-  );
-
-  let progressMap = {};
-  if (userId) {
-    const { rows: prog } = await pool.query(
-      'SELECT topic_id, status, score FROM system_design_progress WHERE user_id = $1',
-      [userId]
+    const { rows } = await pool.query(
+      `SELECT id, topic, title, description, difficulty, estimated_readiness_hours
+       FROM system_design_topics
+       WHERE ${where.join(' AND ')}
+       ORDER BY
+         CASE difficulty WHEN 'junior' THEN 0 WHEN 'middle' THEN 1 ELSE 2 END,
+         id ASC`,
+      params
     );
-    for (const p of prog) progressMap[p.topic_id] = { status: p.status, score: p.score };
-  }
 
-  return rows.map(r => ({
-    ...r,
-    progress: progressMap[r.id] || { status: 'not_started', score: null },
-  }));
+    let progressMap = {};
+    if (userId) {
+      const { rows: prog } = await pool.query(
+        'SELECT topic_id, status, score FROM system_design_progress WHERE user_id = $1',
+        [userId]
+      );
+      for (const p of prog) progressMap[p.topic_id] = { status: p.status, score: p.score };
+    }
+
+    return rows.map(r => ({
+      ...r,
+      progress: progressMap[r.id] || { status: 'not_started', score: null },
+    }));
+  } catch (err) {
+    logger.error({ err, userId, language, difficulty }, 'getTopics failed');
+    throw err;
+  }
 }
 
 export async function getTopicDetail(topicId, userId) {
-  const { rows } = await pool.query(
-    `SELECT * FROM system_design_topics WHERE id = $1 AND is_active = TRUE`,
-    [topicId]
-  );
-  if (rows.length === 0) return null;
-  const topic = rows[0];
-
-  let progress = null;
-  if (userId) {
-    const { rows: p } = await pool.query(
-      'SELECT * FROM system_design_progress WHERE user_id = $1 AND topic_id = $2',
-      [userId, topicId]
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM system_design_topics WHERE id = $1 AND is_active = TRUE`,
+      [topicId]
     );
-    if (p.length > 0) progress = p[0];
-  }
+    if (rows.length === 0) return null;
+    const topic = rows[0];
 
-  return { topic, progress };
+    let progress = null;
+    if (userId) {
+      const { rows: p } = await pool.query(
+        'SELECT * FROM system_design_progress WHERE user_id = $1 AND topic_id = $2',
+        [userId, topicId]
+      );
+      if (p.length > 0) progress = p[0];
+    }
+
+    return { topic, progress };
+  } catch (err) {
+    logger.error({ err, topicId, userId }, 'getTopicDetail failed');
+    throw err;
+  }
 }
 
 export async function evaluateAnswer(topicId, answer, userId) {
@@ -150,20 +160,25 @@ export async function evaluateAnswer(topicId, answer, userId) {
 }
 
 export async function getUserProgress(userId) {
-  const { rows } = await pool.query(
-    `SELECT sd.id, sd.topic, sd.title, sd.difficulty,
-            sdp.status, sdp.score, sdp.attempt_count, sdp.last_attempt_at
-     FROM system_design_topics sd
-     LEFT JOIN system_design_progress sdp ON sdp.topic_id = sd.id AND sdp.user_id = $1
-     WHERE sd.is_active = TRUE
-     ORDER BY sd.id`,
-    [userId]
-  );
+  try {
+    const { rows } = await pool.query(
+      `SELECT sd.id, sd.topic, sd.title, sd.difficulty,
+              sdp.status, sdp.score, sdp.attempt_count, sdp.last_attempt_at
+       FROM system_design_topics sd
+       LEFT JOIN system_design_progress sdp ON sdp.topic_id = sd.id AND sdp.user_id = $1
+       WHERE sd.is_active = TRUE
+       ORDER BY sd.id`,
+      [userId]
+    );
 
-  const attempted = rows.filter(r => r.status === 'completed');
-  const avgScore = attempted.length > 0
-    ? Math.round(attempted.reduce((s, r) => s + (r.score || 0), 0) / attempted.length)
-    : 0;
+    const attempted = rows.filter(r => r.status === 'completed');
+    const avgScore = attempted.length > 0
+      ? Math.round(attempted.reduce((s, r) => s + (r.score || 0), 0) / attempted.length)
+      : 0;
 
-  return { topics: rows, overallReadiness: avgScore };
+    return { topics: rows, overallReadiness: avgScore };
+  } catch (err) {
+    logger.error({ err, userId }, 'getUserProgress failed');
+    throw err;
+  }
 }

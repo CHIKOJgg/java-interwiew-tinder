@@ -74,7 +74,7 @@ Use this as a gate before any production deployment. **All P0 and P1 items must 
 |---|-----------|--------|------------|--------|
 | 3.1 | **Structured logging in production** (no `console.log`/`console.error` mixed in) | ❌ **FAIL** | 0 `console.*` calls outside scripts | 15+ `console.log`/`console.error` in auth.js, rateLimiter.js, billingService.js, server.js |
 | 3.2 | **Error tracking captures all unhandled rejections and exceptions** | ⚠️ **NEEDS WORK** | 100% of crashes captured | Sentry is configured on both ends, but 20+ errors are silently swallowed before reaching Sentry |
-| 3.3 | **Health check endpoint reflects real dependency status** | ⚠️ **NEEDS WORK** | `/health` returns 503 if DB/Redis down | Redis ping is checked; DB connectivity is not verified |
+| 3.3 | **Health check endpoint reflects real dependency status** | ✅ **PASS** | `/health` returns 503 if DB/Redis down | Both Postgres (`SELECT 1`) and Redis ping are checked; returns 200 only if both connected |
 | 3.4 | **Business metrics tracked** (DAU, questions answered, AI latency, cache hit rate) | ⚠️ **NEEDS WORK** | ≥ 5 business metrics dashboards | `metricsService.js` exists but no dashboard integration mentioned |
 | 3.5 | **Alerts configured for error budget burn, high latency, 5xx spikes** | ❌ **FAIL** | ≥ 3 alert rules | No alert configuration found in repo |
 
@@ -140,10 +140,10 @@ Use this as a gate before any production deployment. **All P0 and P1 items must 
 |---|-----------|--------|------------|--------|
 | 6.1 | **Disaster recovery procedure documented and tested** | ✅ **PASS** | RTO < 1h, RPO < 5min | `RESTORE_PROCEDURE.md` exists with restore steps |
 | 6.2 | **Database backups automated and verified** | ⚠️ **NEEDS WORK** | Daily backups with integrity check | Supabase provides automated backups; restore not tested |
-| 6.3 | **Deployment is zero-downtime (rolling updates)** | ⚠️ **NEEDS WORK** | 0 downtime during deploy | Fly.io VMs restart; no blue/green or rolling config |
+| 6.3 | **Deployment is zero-downtime (rolling updates)** | ✅ **PASS** | 0 downtime during deploy | Railway handles rolling deploys automatically; Docker builds are pushed as new images |
 | 6.4 | **LICENSE file present in repository** | ❌ **FAIL** | LICENSE file in root | README mentions MIT but no actual `LICENSE` file |
 | 6.5 | **CHANGELOG maintained** | ❌ **FAIL** | CHANGELOG.md with versioned entries | No changelog exists |
-| 6.6 | **Security policy / vulnerability reporting documented** | ❌ **FAIL** | SECURITY.md in root | No SECURITY.md |
+| 6.6 | **Security policy / vulnerability reporting documented** | ✅ **PASS** | SECURITY.md in root | `SECURITY.md` exists and documents vulnerability reporting procedure |
 
 ### 6.1 Remediation
 

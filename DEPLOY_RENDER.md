@@ -1,8 +1,11 @@
-# Deploying Java Interview Tinder for free (Vercel + Render + Supabase)
+# Deploying Java Interview Tinder — Render (deprecated)
 
-This is the cheapest end-to-end deploy path as of 2026 — everything runs on
-free tiers, with **one** Render web service that hosts BOTH the API and the
-background worker.
+> **This deployment method is deprecated.** The project now deploys to Railway.
+> See [DEPLOY.md](./DEPLOY.md) for the current Railway deployment guide.
+>
+> The project previously used Render (free tier) for the backend, but Render
+> spun down after 15 min of inactivity, causing cold-start delays. Railway
+> is now the primary backend host with Docker-based deploys.
 
 ```
                        ┌─────────────────┐

@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   TrendingUp, Settings, GraduationCap, Bug,
   Zap, Mic, Link, Braces, FileText, Target, Star, ChevronUp, X, ShieldCheck, HelpCircle,
-  MoreVertical, Globe, Languages, Lock,
+  MoreVertical, Globe, Languages, Lock, Moon, Sun, Download, Award, User, Video,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore, { readinessFromStats } from '../store/useStore';
+import ThemeToggle from './ThemeToggle';
 import './Header.css';
 
 const LANG_LABELS = { Java: '☕ Java', Python: '🐍 Python', TypeScript: '🔷 TS', Go: '🐹 Go', Rust: '🦀 Rust', React: '⚛️ React', Kotlin: '🅰️ Kotlin' };
@@ -21,7 +22,7 @@ const MODES = [
 ];
 const BOTTOM_VISIBLE = 4;
 
-const Header = ({ onSettingsClick, onResumeClick, onVacancyClick, onTrendsClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick, onHelpClick }) => {
+const Header = ({ onSettingsClick, onResumeClick, onVacancyClick, onTrendsClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick, onHelpClick, onExportClick, onAchievementsClick, onProfileClick, onPeerInterviewClick }) => {
   const { t, i18n } = useTranslation();
   const { stats, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -113,9 +114,14 @@ const Header = ({ onSettingsClick, onResumeClick, onVacancyClick, onTrendsClick,
                       {menuItem(t('header.resume'), FileText, onResumeClick)}
                       {menuItem(t('header.vacancy'), Target, onVacancyClick)}
                       {menuItem(t('header.trends'), TrendingUp, onTrendsClick)}
-                      {menuItem(t('header.help'), HelpCircle, onHelpClick)}
-                      {menuItem(t('header.settings'), Settings, onSettingsClick)}
-                      {user?.plan === 'admin' && menuItem(t('header.admin'), ShieldCheck, onAdminClick)}
+                       {menuItem(t('header.help'), HelpCircle, onHelpClick)}
+                       {menuItem(t('header.companies'), Globe, () => setScreen('companies'))}
+{menuItem(t('header.achievements'), Award, onAchievementsClick)}
+{menuItem(t('header.export'), Download, onExportClick)}
+{menuItem(t('header.profile'), User, onProfileClick)}
+{menuItem(t('header.peer_interview'), Video, onPeerInterviewClick)}
+{menuItem(t('header.settings'), Settings, onSettingsClick)}
+{user?.plan === 'admin' && menuItem(t('header.admin'), ShieldCheck, onAdminClick)}
                     </div>
                   </div>
                 )}

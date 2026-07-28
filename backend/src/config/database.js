@@ -1,7 +1,5 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
-import dns from 'node:dns';
-import { promisify } from 'node:util';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -10,7 +8,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const { Pool } = pg;
-const lookup = promisify(dns.lookup);
 
 let dbUrl = process.env.DATABASE_URL;
 if (dbUrl) {
@@ -25,36 +22,15 @@ if (dbUrl) {
   }
 }
 
-let poolConfig;
-if (dbUrl) {
-  const url = new URL(dbUrl);
-  const host = url.hostname;
-  const port = parseInt(url.port, 10) || 5432;
-  const user = url.username;
-  const password = url.password;
-  const database = url.pathname.slice(1);
-  const resolvedHost = await lookup(host, { family: 4 });
-  poolConfig = {
-    host: resolvedHost.address,
-    port,
-    user,
-    password,
-    database,
-    ssl: process.env.NODE_ENV !== 'development' ? { rejectUnauthorized: false } : false,
-    max: 5,
-    idleTimeoutMillis: 10000,
-    connectionTimeoutMillis: 5000,
-  };
-} else {
-  poolConfig = {
-    ssl: process.env.NODE_ENV !== 'development' ? { rejectUnauthorized: false } : false,
-    max: 5,
-    idleTimeoutMillis: 10000,
-    connectionTimeoutMillis: 5000,
-  };
-}
-
-const pool = new Pool(poolConfig);
+const pool = new Pool({
+  connectionString: dbUrl,
+  ssl: process.env.NODE_ENV !== 'development' ? { rejectUnauthorized: false } : false,
+  // Keep pool small — Supabase session pooler (port 6543) caps at 15 connections total
+  // With backend (max:5) + worker (max:3) = 8 connections max, well under the limit
+  max: 5,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 5000,
+});
 
 import logger from './logger.js';
 

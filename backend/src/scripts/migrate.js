@@ -103,6 +103,8 @@ const migrations = [
         resume_analysis_limit INT DEFAULT 0,
         interview_eval_limit INT DEFAULT 0,
         model_priority VARCHAR(20) DEFAULT 'fast',
+        stars_monthly INT DEFAULT 0,
+        stars_yearly INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 

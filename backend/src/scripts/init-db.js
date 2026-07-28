@@ -165,11 +165,7 @@ const initDatabase = async () => {
     `);
     console.log('✅ Table "user_email_preferences" created');
 
-    // Create index for companies array (GIN for array containment queries)
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_questions_companies ON questions USING GIN(companies)
-    `);
-    console.log('✅ Index idx_questions_companies created');
+    // Companies GIN index is created by migration 002_add_companies_column
 
     // Create company_list table
     await client.query(`

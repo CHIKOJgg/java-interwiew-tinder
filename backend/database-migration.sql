@@ -12,6 +12,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan  VARCHAR(50)  DEFAU
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP;
 
 -- ─── 2. Questions table — add missing columns ──────────────────────
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS is_active          BOOLEAN      DEFAULT TRUE;
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS language           VARCHAR(50)  DEFAULT 'Java';
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS difficulty         VARCHAR(50)  DEFAULT 'Middle';
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS options            JSONB;
@@ -19,6 +20,8 @@ ALTER TABLE questions ADD COLUMN IF NOT EXISTS bug_hunting_data   JSONB;
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS blitz_data         JSONB;
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS code_completion_data JSONB;
 
+-- Backfill is_active for existing questions
+UPDATE questions SET is_active = TRUE WHERE is_active IS NULL;
 -- Backfill language for existing Java questions
 UPDATE questions SET language = 'Java' WHERE language IS NULL;
 CREATE INDEX IF NOT EXISTS idx_questions_language ON questions(language);

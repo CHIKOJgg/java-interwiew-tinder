@@ -7,7 +7,7 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api';
 export default function Landing({ onStart, onLogin }) {
   const { t } = useTranslation();
 
-  const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'JavaInterviewTinderBot';
+  const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'prep_interview_bot';
   const miniAppUrl = import.meta.env.VITE_TELEGRAM_MINIAPP_URL || `https://t.me/${botUsername}`;
 
   const [deferredPrompt, setDeferredPrompt] = useState(null);

@@ -223,13 +223,13 @@ const CategorySelection = ({ onComplete, onBack }) => {
           <p className="referral-text">{t('referral.desc')}</p>
 
           <div className="referral-link-box" onClick={() => {
-            const bot = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'JavaInterviewTinderBot';
+            const bot = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'prep_interview_bot';
             const link = `https://t.me/${bot}?start=${user?.telegram_id}`;
             navigator.clipboard.writeText(link);
             showPopup(t('referral.copied', 'Link copied!'));
           }}>
             <span className="ref-url">
-              {user?.telegram_id ? `t.me/${(import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'JavaInterviewTinderBot')}?start=${user.telegram_id}` : t('referral.loading', 'Loading...')}
+              {user?.telegram_id ? `t.me/${(import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'prep_interview_bot')}?start=${user.telegram_id}` : t('referral.loading', 'Loading...')}
             </span>
             <Copy size={16} />
           </div>

@@ -69,6 +69,7 @@ Sentry.init({
 
 const app = express();
 app.use(helmet());
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV === 'development';
 

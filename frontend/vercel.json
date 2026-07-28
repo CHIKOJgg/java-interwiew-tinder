@@ -5,8 +5,7 @@
   "framework": "vite",
   "outputDirectory": "dist",
   "env": {
-    "VITE_API_URL": "@api_url",
-    "VITE_SENTRY_DSN": "@sentry_dsn"
+    "VITE_API_URL": "https://java-interview-tinder-production.up.railway.app/api"
   },
   "headers": [
     {

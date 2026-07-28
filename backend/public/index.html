@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+
+  <!--
+      FIX 4: Telegram WebView on iOS ignores the viewport unless these are set.
+      - width=device-width: prevents the 980px desktop layout zoom
+      - initial-scale=1.0: no zoom on open
+      - viewport-fit=cover: extends into notch/safe area on iPhone
+      - user-scalable=no: prevents pinch-zoom breaking card swipe gestures
+    -->
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#5c7cfa" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+  <!-- Google Search Console verification. Replace with real code from Search Console. -->
+  <meta name="google-site-verification" content="REPLACE_WITH_GSC_VERIFICATION_CODE" />
+
+  <!-- SEO -->
+  <meta name="description" content="You know how to code. But one forgotten question costs you the offer. Practice the EXACT questions companies ask, get instant AI explanations, and know you're ready. 10 min/day — free." />
+  <meta name="keywords" content="pass java interview, java interview questions, python coding interview prep, typescript interview, interview readiness score, mock interview AI" />
+
+  <!-- Open Graph / social share preview -->
+  <meta property="og:title" content="Stop Losing Job Offers — Interview Trainer for Java, Python & TypeScript" />
+  <meta property="og:description" content="One forgotten question = one lost offer. Practice the EXACT questions companies ask. AI explanations. Readiness score. Free." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://java-interview-tinder.fly.dev" />
+  <meta property="og:image" content="/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Stop Losing Job Offers — Interview Trainer" />
+  <meta name="twitter:description" content="Practice the EXACT questions companies ask. AI explanations. Readiness score. Free to start." />
+  <meta name="twitter:image" content="/og-image.png" />
+
+  <!-- Google One Tap (web login). Harmless if VITE_GOOGLE_CLIENT_ID unset. -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!--
+      Load Telegram WebApp script BEFORE your React bundle.
+      Without this, window.Telegram is undefined when main.jsx runs,
+      and the polling in getTelegramInitData has to wait for it to inject.
+      Loading it here ensures window.Telegram.WebApp is available immediately.
+     -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <title>Stop Losing Job Offers — Interview Trainer for Java, Python & TypeScript | Interview Tinder</title>
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+
+  <!-- FAQ schema.org structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [{
+      "@type": "Question",
+      "name": "Do I need to install anything?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. You can open Interview Tinder right inside Telegram, or play on the web — no download required."
+      }
+    }, {
+      "@type": "Question",
+      "name": "Is it really free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes — the Free plan gives you 40 questions a day and 3 AI explanations, forever. Pro unlocks every mode and unlimited AI breakdowns."
+      }
+    }, {
+      "@type": "Question",
+      "name": "Which languages are covered?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Java, Python and TypeScript — with questions spanning core syntax, data structures, concurrency, system design and framework internals."
+      }
+    }, {
+      "@type": "Question",
+      "name": "Will my progress sync?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Sign in with Telegram or email and your streak, readiness score and saved questions follow you across the Mini App and the web/PWA."
+      }
+    }]
+  }
+  </script>
+
+  <!-- Google Analytics 4 (no-op until VITE_GA_MEASUREMENT_ID is set at build) -->
+  <script>
+    (function () {
+      var id = window.__JIT_GA_ID__ || '%VITE_GA_MEASUREMENT_ID%';
+      if (!id || id.indexOf('%') === 0 || id.indexOf('G-') !== 0) return;
+      var s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + id;
+      document.head.appendChild(s);
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){ dataLayer.push(arguments); }
+      window.gtag = gtag;
+      gtag('js', new Date());
+      gtag('config', id);
+    })();
+  </script>
+  <script type="module" crossorigin src="/assets/index-DjUfccAT.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/react-vendor-C4Q0XVs3.js">
+  <link rel="modulepreload" crossorigin href="/assets/ui-CRsd9CzF.js">
+  <link rel="modulepreload" crossorigin href="/assets/ai-Bq5K-Cz5.js">
+  <link rel="stylesheet" crossorigin href="/assets/ai-uPiC6OBE.css">
+  <link rel="stylesheet" crossorigin href="/assets/index-BoJMXeer.css">
+</head>
+
+<body>
+  <div id="root"></div>
+</body>
+
+</html>

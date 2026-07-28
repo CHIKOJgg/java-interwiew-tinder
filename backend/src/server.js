@@ -4,8 +4,10 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import expressRateLimit from 'express-rate-limit';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import pool, { rbPool } from './config/database.js';
-import { resolveAuth, upsertUser, issueEmailCode, verifyEmailCode } from './utils/authProviders.js';
 import { evaluateInterviewAnswer, analyzeResume, checkCache } from './services/aiService.js';
 import { enqueueJob } from './services/queueService.js';
 import { getAvailableLanguages } from './services/languageRegistry.js';
@@ -3131,6 +3133,9 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 // via the logger transport) instead of being swallowed by an empty catch.
 // MUST be registered after all routes and before the 404 handler.
 app.use(errorHandler(isDev));
+
+// Static frontend (served at root, before API routes)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // 404 handler — must be registered after all routes.
 app.use((req, res) => {

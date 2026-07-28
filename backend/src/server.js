@@ -54,7 +54,7 @@ if (process.env.NODE_ENV === 'production') {
     logger.error({ missing }, '⚠️ Production environment is missing critical variables');
   }
   if (!process.env.ALLOWED_ORIGINS) {
-    logger.warn('ALLOWED_ORIGINS is not set — CORS will reject all non-dev origins in production');
+    logger.warn('ALLOWED_ORIGINS is not set — using defaults which include vercel.app domains');
   }
   if (process.env.NODE_ENV === 'production' && process.env.OPENROUTER_API_KEY) {
     logger.info('✅ Production secrets present');
@@ -71,9 +71,19 @@ const app = express();
 app.use(helmet());
 const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV === 'development';
-const ALLOWED_ORIGINS = new Set(
-  (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:5173').split(',').map(s => s.trim()).filter(Boolean)
-);
+
+  const defaultAllowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:8080',
+    'https://solve-it-rho.vercel.app',
+  ];
+
+  const ALLOWED_ORIGINS = new Set(
+    (process.env.ALLOWED_ORIGINS || defaultAllowedOrigins.join(',')).split(',').map(s => s.trim()).filter(Boolean)
+  );
+
+  const DEFAULT_ALLOWED_SUFFIXES = ['.vercel.app'];
 
 // Snapshot of the consent terms shown at signup. Stored alongside each lead so
 // we can later prove *what* the subject agreed to (Belarus data-protection:
@@ -84,9 +94,12 @@ const WAITLIST_CONSENT_TEXT = 'Согласие на обработку email д
 
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || ALLOWED_ORIGINS.has(origin) || isDev) return cb(null, true);
+    if (!origin || isDev) return cb(null, true);
+    const isExactMatch = ALLOWED_ORIGINS.has(origin);
+    const isSuffixMatch = DEFAULT_ALLOWED_SUFFIXES.some(suffix => origin.endsWith(suffix));
+    if (isExactMatch || isSuffixMatch) return cb(null, true);
     logger.warn({ origin }, 'CORS blocked');
-    cb(new Error('Not allowed by CORS'));
+    cb(new Error('CORS not allowed'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

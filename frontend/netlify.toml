@@ -3,5 +3,5 @@
   publish = "dist"
 
 [build.environment]
-  VITE_API_URL = "https://java-interwiew-tinder-production.up.railway.app/api"
+  VITE_API_URL = "/api"
   NODE_ENV = "production"

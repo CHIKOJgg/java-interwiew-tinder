@@ -22,22 +22,23 @@ const initDatabase = async () => {
 
     // Create questions table
     await client.query(`
-      CREATE TABLE IF NOT EXISTS questions (
-        id SERIAL PRIMARY KEY,
-        category VARCHAR(100) NOT NULL,
-        difficulty VARCHAR(20) DEFAULT 'Junior',
-        question_text TEXT NOT NULL,
-        short_answer TEXT NOT NULL,
-        options TEXT[],
-        bug_hunting_data JSONB,
-        blitz_data JSONB,
-        code_completion_data JSONB,
-        cached_explanation TEXT,
-        company VARCHAR(100),
-        is_ugc BOOLEAN DEFAULT FALSE,
-        language VARCHAR(50) DEFAULT 'Java',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+       CREATE TABLE IF NOT EXISTS questions (
+         id SERIAL PRIMARY KEY,
+         category VARCHAR(100) NOT NULL,
+         difficulty VARCHAR(20) DEFAULT 'Junior',
+         question_text TEXT NOT NULL,
+         short_answer TEXT NOT NULL,
+         options TEXT[],
+         bug_hunting_data JSONB,
+         blitz_data JSONB,
+         code_completion_data JSONB,
+         cached_explanation TEXT,
+         company VARCHAR(100),
+         is_ugc BOOLEAN DEFAULT FALSE,
+         is_active BOOLEAN DEFAULT TRUE,
+         language VARCHAR(50) DEFAULT 'Java',
+         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+       );
     `);
     console.log('✅ Table "questions" created');
 

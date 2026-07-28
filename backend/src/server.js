@@ -109,27 +109,30 @@ app.use(cors({
 
 // Global rate limiting to prevent DDoS
 const globalLimiter = expressRateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per `window`
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  windowMs: 15 * 60 * 1000,
+  max: 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  trustProxy: 1,
   message: { error: 'Too many requests, please try again later.' }
 });
 
 // Per-route rate limiters for sensitive endpoints
 const emailSendLimiter = expressRateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 5, // 5 email sends per IP per 10 min
+  windowMs: 10 * 60 * 1000,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: 1,
   message: { error: 'Too many code requests. Please wait before trying again.' }
 });
 
 const reportLimiter = expressRateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 5, // 5 reports per minute per IP
+  windowMs: 60 * 1000,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: 1,
   message: { error: 'Too many reports. Please slow down.' }
 });
 
@@ -383,8 +386,8 @@ app.use('/api', (req, res, next) => {
     req.path.startsWith('/auth/email/') ||
     req.path === '/languages' ||
     req.path.startsWith('/demo/') ||
-    req.path.startsWith('/waitlist') ||
     req.path.startsWith('/bot/webhook') ||
+    req.path.startsWith('/webhook/telegram') ||
     req.path.startsWith('/billing/ukassa/webhook')
   ) {
     return next();
@@ -1752,6 +1755,56 @@ app.post('/api/bot/webhook', async (req, res) => {
     }
   } catch (error) {
     logger.error({ err: error, update }, 'Webhook processing failed');
+    Sentry.captureException(error, {
+      extra: {
+        updateId: update.update_id,
+        userId: update.message?.from?.id || update.pre_checkout_query?.from?.id
+      }
+    });
+  }
+});
+
+// ─── Telegram Webhook (legacy path) ──────────────────────────
+// Some bot configurations send webhooks to /webhook/telegram
+// instead of /api/bot/webhook. This route mirrors the same
+// handler to avoid 404s.
+app.post('/webhook/telegram', async (req, res) => {
+  if (!verifyWebhookSecret(req)) {
+    logger.warn('Bot webhook rejected: invalid secret token (legacy path)');
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  res.json({ ok: true });
+  const update = req.body;
+  try {
+    if (update.pre_checkout_query) {
+      const pcq = update.pre_checkout_query;
+      try {
+        const { userId, planId } = JSON.parse(pcq.invoice_payload);
+        if (!userId || !planId) throw new Error('Invalid payload');
+        await answerPreCheckout(pcq.id, true);
+      } catch (err) {
+        logger.error({ err }, 'pre_checkout_query failed (legacy path)');
+        await answerPreCheckout(pcq.id, false, 'Payment validation failed. Please try again.');
+      }
+      return;
+    }
+    const message = update.message || update.edited_message;
+    if (message?.successful_payment) {
+      const payment = message.successful_payment;
+      const { userId, planId, interval } = JSON.parse(payment.invoice_payload);
+      logger.info({ userId, planId, interval }, '💰 Stars payment received (legacy path)');
+      await activateStarsSubscription(
+        userId, planId, interval ?? 'monthly',
+        payment.telegram_payment_charge_id
+      );
+      await sendTelegramMessage(message.chat.id,
+        `🎉 Payment confirmed! Your Pro plan is now active.\n` +
+        `Plan: ${interval === 'yearly' ? 'Annual' : 'Monthly'} Pro\n` +
+        `Enjoy unlimited interviews and deep theory explanations!`
+      );
+    }
+  } catch (error) {
+    logger.error({ err: error, update }, 'Webhook processing failed (legacy path)');
     Sentry.captureException(error, {
       extra: {
         updateId: update.update_id,

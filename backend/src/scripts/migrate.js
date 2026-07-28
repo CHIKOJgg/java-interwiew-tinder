@@ -38,6 +38,7 @@ const migrations = [
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS cached_bug_hunting_data JSONB;
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS cached_blitz_data JSONB;
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS cached_code_completion_data JSONB;
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
     `
   },
 

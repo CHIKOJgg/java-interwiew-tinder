@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  VITE_API_URL = "https://java-interwiew-tinder-production.up.railway.app/api"
+  NODE_ENV = "production"

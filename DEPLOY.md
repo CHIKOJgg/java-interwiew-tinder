@@ -1,300 +1,247 @@
-# Deployment Guide — Railway
+# 🚀 Гайд по деплою — Interview Tinder на Railway + Supabase
 
-This guide covers deploying the **java-interview-tinder** backend to Railway, step by step, from zero to production.
-
----
-
-## Architecture
-
-```
-  ┌─────────────┐      ┌──────────────────┐      ┌─────────────────────┐
-  │  Vercel      │ ───▶ │  Railway Backend │ ───▶ │  Supabase (Postgres)│
-  │  (Frontend)  │ ◀──  │  (Node.js + Redis)│      │  (managed DB)       │
-  └─────────────┘      └──────────────────┘      └─────────────────────┘
-         │                        │
-         │  VITE_API_URL          │  REDIS_URL, DATABASE_URL
-         │  /api                  │  (injected env vars)
-         ▼                        ▼
-  https://<proj>.vercel.app   https://<service>.up.railway.app
-```
-
-The backend runs **two processes** in a single Railway container:
-
-| Process   | Command          | Role                                              |
-| --------- | ---------------- | ------------------------------------------------- |
-| API       | `src/server.js`  | Express REST API (health, auth, search, TTS, etc.)|
-| Worker    | `src/worker.js`  | Background job processor (AI tasks, Redis queue)  |
-
-Both are started via `npm run start:all` (`backend/scripts/start-all.mjs`).
+> **Читать целиком перед началом.** Весь процесс занимает ~30–45 минут.
 
 ---
 
-## Prerequisites
+## 📦 Ага 1: Supabase — база данных
 
-1. **GitHub account** — repo already pushed
-2. **Railway account** — [railway.app](https://railway.app)
-3. **Vercel account** — [vercel.com](https://vercel.com)
-4. **Supabase account** — [supabase.com](https://supabase.com)
-5. **Telegram bot token** — from [@BotFather](https://t.me/BotFather)
-6. **Railway CLI** (optional, for manual deploys):
-   ```bash
-   # Windows:
-   winget install RailwayCLI.RailwayCLI
-   # macOS:
-   brew install railwayapp/tap/railway
-   # Linux:
-   npm install -g @railway/cli
+### 1.1 Создай проект
+
+1. Зайди на [supabase.com](https://supabase.com) → **New project**
+2. **Name:** `java-interview-tinder` (или своё)
+3. **Database password** — сгенерируй и **сохрани в менеджер паролей** (он больше нигде не покажется)
+4. **Region** — выбери ближайший к твоим пользователям (например, `EU West` (Frankfurt), `EU East` (Warsaw))
+5. **Pricing** — **Free Plan** (500 MB, 2 concurrent connections — хватит на старт)
+
+### 1.2 Забери Connection String
+
+1. В дашборде проекта → **Project Settings** → **Database**
+2. Скопируй **URI** из секции `Connection string` (поле `URI`)
+3. Выглядит так:
    ```
-
----
-
-## Step 1: Prepare the Repository
-
-### 1.1 Verify the config files exist
-
-```
-java-interview-tinder/
-├── railway.toml              ← Railway config (build, deploy, env)
-├── backend/
-│   ├── Dockerfile            ← Multi-stage Node 22 build, uses start:all
-│   └── package.json          ← start:all script defined
-├── .github/workflows/deploy.yml   ← CI/CD (frontend → Vercel)
-└── .env.example              ← Full env var template
-```
-
-### 1.2 Verify the Dockerfile uses `start:all`
-
-```dockerfile
-CMD ["npm", "run", "start:all"]
-```
-
-This runs both the API server and the background worker together.
-
----
-
-## Step 2: Set Up Supabase (Database)
-
-1. Create a project at https://supabase.com
-2. Go to **Project Settings → Database → Connection string (PSQL)**
-3. Run the migrations:
-   ```bash
-   psql "postgresql://..." -f backend/database-migration.sql
+   postgresql://postgres:YOUR_PASSWORD@db.xxxxxxxxxxxxx.supabase.co:6543/postgres
    ```
-4. Copy the connection URI (`postgresql://...`). You'll need it for Railway env vars.
+4. **Замени `YOUR_PASSWORD`** на тот, что сохранил в п. 1.1
+5. **Сохрани эту строку** — она понадобится в Railway
 
----
+### 1.3 Включи pgcrypto (опционально, но не повредит)
 
-## Step 3: Connect to Railway
+В Supabase **SQL Editor** → New query → выполни:
 
-### Option A: GitHub Auto-Deploy (Recommended)
-
-1. Go to [railway.app](https://railway.app) → **New Project** → **GitHub**
-2. Select your repo and the `backend` root directory
-3. Railway auto-detects the `Dockerfile` and `railway.toml`
-4. Push to `main` — Railway builds and deploys automatically
-
-### Option B: Manual CLI Deployment
-
-```bash
-# Login
-railway login
-
-# Create a new project (one-time)
-railway new jit-backend --region frankfurt
-
-# Link to the project
-railway link jit-backend
-
-# Deploy (builds Docker image and pushes)
-railway up
-
-# Check logs
-railway logs
+```sql
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 ```
 
 ---
 
-## Step 4: Configure Environment Variables
+## 🚂 Ага 2: Railway — бэкенд
 
-Set all production secrets in Railway dashboard → **Variables** tab (or via CLI):
+### 2.1 Создай проект
 
-```bash
-railway variables set \
-  DATABASE_URL="postgresql://..." \
-  BOT_TOKEN="your:telegram_bot_token" \
-  OPENROUTER_API_KEY="sk-or-..." \
-  JWT_SECRET="$(openssl rand -hex 32)" \
-  ADMIN_TELEGRAM_IDS="123456789,987654321" \
-  REDIS_URL="redis://..." \
-  ALLOWED_ORIGINS="https://your-frontend.vercel.app" \
-  FRONTEND_URL="https://your-frontend.vercel.app" \
-  SENTRY_DSN="https://..." \
-  LOGTAIL_TOKEN="..." \
-  TON_WALLET_ADDRESS="UQ..." \
-  TON_CENTER_API_KEY="..." \
-  NODE_ENV="production" \
-  PORT="10000"
-```
+1. Зайди на [railway.app](https://railway.app) → **New Project**
+2. **Deploy from GitHub repo** → выбери `CHIKOJgg/java-interwiew-tinder`
+3. **Root Directory:** `backend` (важно! Railway должен смотреть в папку `backend/`)
+4. Railway сам найдёт `railway.toml` и `Dockerfile` и начнёт билдить
 
-### Required variables
+### 2.2 Настрой переменные окружения
 
-| Variable | Description | Source |
-| -------- | ----------- | ------ |
-| `DATABASE_URL` | Supabase Postgres connection URI | Supabase dashboard → Settings → Database |
-| `BOT_TOKEN` | Telegram bot token | @BotFather |
-| `JWT_SECRET` | Random 32+ char string | `openssl rand -hex 32` |
-| `REDIS_URL` | Redis connection string | Railway Redis add-on |
-| `ALLOWED_ORIGINS` | Comma-separated CORS origins | Your Vercel URL |
-| `FRONTEND_URL` | Frontend URL for redirects | Your Vercel URL |
-| `TELEGRAM_WEBHOOK_SECRET` | Random secret for webhook auth | `openssl rand -hex 32` |
+После деплоя (он упадёт — это норм!) зайди в **Variables** своего сервиса и добавь:
 
-### Important notes
+| Variable | Значение | Откуда брать |
+|----------|----------|-------------|
+| `NODE_ENV` | `production` | Статично |
+| `PORT` | `10000` | Railway даёт 10000 по умолчанию |
+| `DATABASE_URL` | `postgresql://postgres:...` | Из Supabase (ага 1.2) |
+| `BOT_TOKEN` | `123456:ABC-DEF...` | От [@BotFather](https://t.me/botfather) |
+| `JWT_SECRET` | `случайная строка >= 16 символов` | `openssl rand -hex 32` |
+| `TELEGRAM_WEBHOOK_SECRET` | `случайная строка` | `openssl rand -hex 32` |
+| `OPENROUTER_API_KEY` | `sk-or-v1-...` | От [openrouter.ai](https://openrouter.ai/keys) |
+| `OPENROUTER_MODEL` | `google/gemini-2.0-flash-exp:free` | Твоя любимая модель |
+| `ALLOWED_ORIGINS` | `https://java-interview-tinder.vercel.app` | Твой фронтенд (веселый ага 4) |
+| `REDIS_URL` | *(см. ага 2.3)* | Из Railway Redis |
+| `ADMIN_TELEGRAM_IDS` | `123456789,987654321` | Твои Telegram ID (через запятую) |
+| `FRONTEND_URL` | `https://java-interview-tinder.vercel.app` | Твой фронтенд |
+| `SENTRY_DSN` | *(опционально)* | От [sentry.io](https://sentry.io) |
+| `LOGTAIL_TOKEN` | *(опционально)* | От [betterstack.com](https://betterstack.com) |
+| `ALLOW_RB_PII` | *(оставь пустым)* | GDPR/Закон РБ — не трогай |
+| `UKASSA_TOKEN` | *(оставь пустым)* | ЮKassa — опционально |
 
-- **`PORT`** must be `10000` (Railway's expected port). The `railway.toml` sets this.
-- **`NODE_ENV`** must be `production` for production hardening (fail-fast on missing secrets, etc.).
-- **`REDIS_URL`** — add a Redis add-on from Railway dashboard, or use Upstash (free tier). The backend reads this for rate limiting and AI response caching.
+### 2.3 Добавь Redis
 
----
+1. В твоём Railway проекте → **New** → **Add Plugin** → **Redis**
+2. Дождись, пока появится зелёный `⏺ Running`
+3. Зайди в **Variables** этого Redis-плагина → скопируй `REDIS_URL`
+4. **Вставь** в переменные сервиса как `REDIS_URL`
 
-## Step 5: Add Redis to Railway
+### 2.4 Инициализируй БД
 
-1. In the Railway dashboard, go to your project
-2. Click **"Add Service"** → **"Redis"**
-3. Railway provisions Redis and auto-wires `REDIS_URL`
-4. Copy the Redis connection string to your env vars if not auto-wired
+После того, как сервис запустился и переменные стоят:
 
-### Alternative: Upstash Redis (free tier)
+1. Открой **Railway Dashboard** → твой сервис → **Shell**
+2. Выполни:
 
 ```bash
-# Get URL from Upstash dashboard
-REDIS_URL="rediss://..."
+npm run init-db
+npm run migrate
+npm run migrate-stars
+npm run migrate-ton
+npm run migrate-ukassa
 ```
 
----
-
-## Step 6: Set Up the Telegram Bot
-
-1. Talk to [@BotFather](https://t.me/BotFather)
-2. Create a new bot (or use existing)
-3. Get the bot token (format: `123456:ABC-DEF...`)
-4. Optionally set the webhook URL to `https://<your-railway-app>.up.railway.app/webhook`
-5. Set `ADMIN_TELEGRAM_IDS` to your numeric ID (get it from @userinfobot)
-
----
-
-## Step 7: Run Migrations (One-Time)
-
-After the first deploy, run the database migrations:
+Или одной командой:
 
 ```bash
-# From your laptop
-cd backend
-DATABASE_URL="<your-supabase-url>" npm run setup-db
+npm run setup-db
 ```
 
-**Important:** The `setup-db` command is idempotent — running it twice is safe. It creates tables, seeds questions, and applies all migrations.
+Это создаст все таблицы, индексы и планы подписок. Если `seed` не нужен (только структура) — пропусти последний шаг.
 
-### Alternative: Run migrations on first deploy
+> **⚠️ Если после деплоя 502 / 503:** подожди 30 секунд. Railway запускает два процесса (API + worker) последовательно, healthcheck может не пройти с первого раза. После рестарта всё стабильно.
 
-Temporarily override the start command in Railway dashboard:
-1. Go to Railway → Service → Settings → **Start Command**
-2. Change to: `npm run setup-db && npm run start:all`
-3. Trigger a manual deploy
-4. After deploy succeeds, change back to `npm run start:all`
-5. Trigger another deploy
+### 2.5 Настрой healthcheck (уже в Dockerfile)
+
+Ручных действий не требуется. Dockerfile проверяет `/health` каждые 15 секунд.
 
 ---
 
-## Step 8: Connect the Frontend to Railway Backend
+## 🤖 Ага 3: Telegram Bot Webhook
 
-The frontend on Vercel needs to know the Railway backend URL.
+После деплоя нужно сказать Telegram, куда слать запросы.
 
-1. Deploy the backend to Railway first (Steps 1–7)
-2. Note the Railway URL (e.g., `https://jit-backend-production-xxxx.up.railway.app`)
-3. Go to your Vercel project → **Settings → Environment Variables**
-4. Set `VITE_API_URL` to: `https://<your-railway-app>.up.railway.app/api`
-5. Push to `main` — Vercel auto-deploys the frontend
+1. Открой браузер и перейди по ссылке (замени `<TOKEN>` и `<YOUR_RAILWAY_URL>`):
 
-### Local development
+```
+https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<YOUR_RAILWAY_URL>/webhook/telegram
+```
 
-For local dev, set `VITE_API_URL=http://localhost:3000/api` in `frontend/.env`.
+Пример:
+```
+https://api.telegram.org/bot123456:ABC-DEF123/setWebhook?url=https://java-interview-tinder.up.railway.app/webhook/telegram
+```
+
+2. Должен прийти JSON: `{"ok": true, "result": true, "description": "Webhook was set"}`
+
+3. Проверить можно так:
+```
+https://api.telegram.org/bot<TOKEN>/getWebhookInfo
+```
 
 ---
 
-## Step 9: Verify the Deployment
+## 🎨 Ага 4: Фронтенд на Vercel
 
-### Health check
+Репозиторий уже настроен на авто-деплой на Vercel из GitHub Actions (см. `.github/workflows/deploy.yml`).
 
-```bash
-curl https://<your-app>.up.railway.app/health
+1. Зайди на [vercel.com](https://vercel.com) → **Add New Project**
+2. Импортируй `CHIKOJgg/java-interwiew-tinder`
+3. **Root Directory:** `frontend` (если фронт в отдельной папке)
+4. **Framework Preset:** `Vite`
+5. **Environment Variables:**
+   - `VITE_API_URL` → `https://java-interview-tinder.up.railway.app`
+6. **Deploy**
+
+---
+
+## 🔬 Ага 5: Проверка
+
+### 5.1 Health endpoint
+
+Перейди по адресу:
+```
+https://java-interview-tinder.up.railway.app/health
 ```
 
-Expected response:
+Ожидаемый ответ:
 ```json
-{"status":"ok","db":"connected","redis":"connected","uptime":...}
+{"status":"ok","timestamp":"2026-07-28T...","uptime":42}
 ```
 
-### Smoke tests
+### 5.2 Webhook Telegram
 
-1. Open `https://<your-frontend>.vercel.app` in a browser
-2. Start a conversation with the Telegram bot
-3. Send `/start` — should return the welcome message
-4. Try swiping a card — API should respond
-5. Check Railway logs for any errors: `railway logs` or Railway dashboard → Logs
+Напиши боту любое сообщение. Если он ответил — всё работает.
 
-### Common issues
+### 5.3 Логи
 
-| Symptom | Cause | Fix |
-| ------- | ----- | --- |
-| `db: disconnected` | Wrong `DATABASE_URL` | Verify Supabase pooler URL & credentials |
-| CORS error | `ALLOWED_ORIGINS` missing Vercel URL | Add frontend URL and redeploy |
-| Cold start slow | Free tier spins down after 15 min idle | Use a pinger (UptimeRobot) every 5 min |
-| Worker not running | `start:all` not set | Verify Dockerfile `CMD` uses `npm run start:all` |
-| `JWT_SECRET` too short | Under 16 characters | Regenerate with `openssl rand -hex 32` |
+В Railway Dashboard → сервис → **Logs**. Ты увидишь:
 
----
+```
+[supervisor] launching worker...
+[supervisor] launching api...
+[worker] Worker started and waiting for jobs...
+[api] Server running on port 10000
+```
 
-## Pricing (Railway Hobby Plan)
+### 5.4 Тесты (локально)
 
-| Item | Cost | Included |
-| ---- | ---- | -------- |
-| Railway Hobby | $5/mo | 512MB RAM, 512MB storage, 100GB bandwidth |
-| Redis add-on | Free tier | Rate limiting + AI cache |
-| Supabase | Free tier | Postgres database |
-| Vercel | Free tier | Frontend hosting |
-| **Total** | **$5/month** | Full app (backend + frontend + DB + cache) |
-
-### Limitations to know
-
-- Railway Hobby **spins down** after 15 min of inactivity (~1 min cold start)
-- For 24/7 uptime (no cold starts), upgrade to Railway Pro ($20/month)
-- Free Redis (Railway or Upstash) has memory limits — sufficient for rate-limiting and AI cache
+```bash
+cd backend
+npm test    # 433 теста, все зелёные
+npm run lint  # 0 errors
+```
 
 ---
 
-## CI/CD Summary
+## 💰 Ага 6: Цены
 
-| Service | Deployment | Trigger |
-| ------- | ---------- | ------- |
-| Backend | Railway | Push to `main` (GitHub auto-deploy) |
-| Frontend | Vercel | Push to `main` (GitHub auto-deploy) |
-| Tests | GitHub Actions CI | PR / push to any branch |
+| Сервис | План | Цена |
+|--------|------|------|
+| **Railway** | Hobby | $5/мес (512 MB RAM, always-on) |
+| **Supabase** | Free | $0 (500 MB, 2 conn) |
+| **Redis (Railway)** | входит в Hobby | $0 (25 MB) |
+| **Vercel** | Hobby | $0 |
+| **OpenRouter** | Pay-as-you-go | ~$0.50–2/мес на Gemini Flash Free |
+| **Telegram Stars** | комиссия Telegram | 30% от продаж |
 
-The GitHub Actions workflow (`.github/workflows/deploy.yml`) handles frontend Vercel deployments. Backend deploys automatically via Railway's GitHub integration. No backend CI deploy step is needed.
+**Итого:** ~$5–8/мес на старт.
 
 ---
 
-## File Reference
+## ⚡ Ага 7: Полезные команды Railway
 
-| File | Purpose |
-| ---- | ------- |
-| `railway.toml` | Railway deployment config (build, deploy, env) |
-| `backend/Dockerfile` | Docker build for Railway container |
-| `backend/package.json` | Scripts (`start:all`, `start`, `migrate`, etc.) |
-| `backend/.env.example` | Full env var template for local/Railway |
-| `backend/.env` | Local env (never commit real secrets) |
-| `.github/workflows/deploy.yml` | Frontend Vercel CI/CD |
-| `.github/workflows/ci.yml` | Backend + frontend test/lint CI |
-| `DEPLOY.md` | This guide |
-| `DEPLOY_RENDER.md` | Legacy Render deployment reference (deprecated) |
-| `render.yaml` | Deprecated Render Blueprint (do not use) |
+**Railway CLI** (опционально):
+```bash
+# установка
+npm i -g @railway/cli
+
+# логи в реальном времени
+railway logs
+
+# запустить shell в контейнере
+railway shell
+
+# переменные
+railway variables
+
+# открыть дашборд
+railway open
+```
+
+**Без CLI — всё в дашборде:** https://railway.app/dashboard
+
+---
+
+## 🧯 Ага 8: Если что-то пошло не так
+
+### 502 Bad Gateway
+- Жди 30–60 сек, worker + api запускаются последовательно
+- Проверь `PORT=10000` в переменных (Railway по умолчанию 10000, не 3000!)
+- Проверь `Dockerfile` — healthcheck может валить контейнер, если порт не совпадает
+
+### Webhook не отвечает
+- Проверь `BOT_TOKEN` — не перепутан ли?
+- `setWebhook` возвращает ошибку? Проверь URL без `http://` (только `https://`)
+- Логи Railway: есть ли `POST /webhook/telegram`?
+
+### База не подключается
+- `DATABASE_URL` — точная строка из Supabase, пароль без спецсимволов?
+- В Supabase → **Settings** → **Database** → убедись, что IP не заблокирован
+- Для Railway IP-блокировки нет (подключение по паролю)
+
+### 429 Too Many Requests (Telegram)
+- Telegram лимитирует запросы. Если бот популярный — это норма.
+- Решение: подожди 1–2 минуты, Telegram сам восстановит.
+
+---
+
+**Всё! 🚀** Если на каком-то шаге застрял — пиши, помогу разобраться.

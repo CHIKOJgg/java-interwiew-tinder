@@ -79,9 +79,13 @@ export function sanitizeText(text) {
   return text
     .replace(/\r\n/g, '\n')
     .replace(new RegExp(String.fromCharCode(0), 'g'), '')
-    .replace(/<script[^>]*>/gi, '') // basic XSS
-    .replace(/<\/script>/gi, '')
-    .slice(0, 10000);               // hard cap
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;')
+    .slice(0, 10000);
 }
 
 /**

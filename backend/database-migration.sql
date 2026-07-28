@@ -181,10 +181,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_user_subs_one_active
 CREATE INDEX IF NOT EXISTS idx_user_subs_user_status
   ON user_subscriptions(user_id, status);
 
--- ── Clear bad AI cache entries (prose responses from v1 prompts) ───────
--- PROMPT_VERSION bumped to 'v2' so these are no longer served,
--- but deleting them frees space and prevents confusion.
-DELETE FROM ai_cache WHERE prompt_version = 'v1';
+-- ── Additional performance indexes (added post-migration) ──
+CREATE INDEX IF NOT EXISTS idx_user_progress_user_status ON user_progress(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_user_progress_question ON user_progress(question_id);
+CREATE INDEX IF NOT EXISTS idx_user_progress_updated ON user_progress(updated_at);
+CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
+CREATE INDEX IF NOT EXISTS idx_daily_challenges_date ON daily_challenges(challenge_date, language);
 
--- ── Confirm ────────────────────────────────────────────────────────────
+-- ── Confirm ────────────────────────────────────────────────────
 SELECT 'Constraint + cache patch applied!' AS status;

@@ -13,13 +13,15 @@ export default function Landing({ onStart, onLogin }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [installed, setInstalled] = useState(false);
   const [publicStats, setPublicStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [scrolledPast, setScrolledPast] = useState(false);
 
   useEffect(() => {
+    setStatsLoading(true);
     fetch(`${API_BASE}/public/stats`)
       .then(r => r.json())
-      .then(d => setPublicStats(d))
-      .catch(() => {});
+      .then(d => { setPublicStats(d); setStatsLoading(false); })
+      .catch(() => setStatsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -130,30 +132,41 @@ export default function Landing({ onStart, onLogin }) {
         </div>
       </header>
 
-      {/* ── Social proof ──────────────────────────────────────── */}
+      {/* ── Social proof ──────────────────────────────── */}
       <div className="landing-stats">
-        <div className="landing-stat">
-          <strong>{(publicStats?.users ?? 12000).toLocaleString()}+</strong>
-          <span>{t('landing.stat_candidates', 'candidates practicing')}</span>
-        </div>
-        <div className="landing-stat">
-          <strong>{(publicStats?.questions ?? 1000).toLocaleString()}+</strong>
-          <span>{t('landing.stat_questions', 'real interview questions')}</span>
-        </div>
-        <div className="landing-stat">
-          <strong>3</strong>
-          <span>{t('landing.stat_langs', 'languages: Java · Python · TS')}</span>
-        </div>
+        {statsLoading ? (
+          <>
+            <div className="landing-stat"><strong>—</strong><span>candidates practicing</span></div>
+            <div className="landing-stat"><strong>—</strong><span>real interview questions</span></div>
+            <div className="landing-stat"><strong>3</strong><span>languages: Java · Python · TS</span></div>
+          </>
+        ) : (
+          <>
+            <div className="landing-stat">
+              <strong>{publicStats?.users?.toLocaleString() ?? '?'}+</strong>
+              <span>{t('landing.stat_candidates', 'candidates practicing')}</span>
+            </div>
+            <div className="landing-stat">
+              <strong>{publicStats?.questions?.toLocaleString() ?? '?'}+</strong>
+              <span>{t('landing.stat_questions', 'real interview questions')}</span>
+            </div>
+            <div className="landing-stat">
+              <strong>3</strong>
+              <span>{t('landing.stat_langs', 'languages: Java · Python · TS')}</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Prepare for interviews at ───────────────────────── */}
       <div className="landing-companies">
-        <span className="landing-companies-label">{t('landing.used_by', 'Prepare for interviews at')}</span>
+        <span className="landing-companies-label">{t('landing.used_by', 'Used by developers at')}</span>
         <div className="landing-companies-logos">
           {['Google', 'Amazon', 'Meta', 'Microsoft', 'Apple'].map(name => (
             <span key={name} className="landing-company-logo">{name}</span>
           ))}
         </div>
+        <p className="landing-companies-note">{t('landing.companies_note', 'These companies publish Java, Python & TypeScript interview questions that appear in our decks.')}</p>
       </div>
 
       {/* ── The Real Cost ─────────────────────────────────────── */}

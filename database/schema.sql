@@ -205,3 +205,8 @@ CREATE INDEX IF NOT EXISTS idx_ai_cache_lookup ON ai_cache(cluster_id, mode, pro
 CREATE INDEX IF NOT EXISTS idx_analytics_user ON analytics_events(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_subs_user_status ON user_subscriptions(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_ai_jobs_status ON ai_jobs(status, next_run_at);
+CREATE INDEX IF NOT EXISTS idx_user_progress_user_status ON user_progress(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_user_progress_question ON user_progress(question_id);
+CREATE INDEX IF NOT EXISTS idx_user_progress_updated ON user_progress(updated_at);
+CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
+CREATE INDEX IF NOT EXISTS idx_daily_challenges_date ON daily_challenges(challenge_date, language);

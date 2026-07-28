@@ -4,7 +4,6 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import expressRateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import pool, { rbPool } from './config/database.js';
 import { resolveAuth, upsertUser, issueEmailCode, verifyEmailCode } from './utils/authProviders.js';
 import { evaluateInterviewAnswer, analyzeResume, checkCache } from './services/aiService.js';
@@ -34,8 +33,6 @@ import ADMIN_IDS from './config/admin.js';
 import redis, { isConnected as isRedisConnected } from './config/redis.js';
 import logger from './config/logger.js';
 import { PLANS_LIST } from './config/plans.js';
-
-dotenv.config();
 
 if (process.env.NODE_ENV !== 'test' && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 16)) {
   console.error('FATAL: JWT_SECRET must be at least 16 characters long');
@@ -70,7 +67,7 @@ app.use(helmet());
 const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV === 'development';
 const ALLOWED_ORIGINS = new Set(
-  (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
+  (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:5173').split(',').map(s => s.trim()).filter(Boolean)
 );
 
 // Snapshot of the consent terms shown at signup. Stored alongside each lead so
@@ -153,7 +150,7 @@ app.get('/api/public/stats', async (req, res) => {
       questions: parseInt(questions.rows[0].count) || 0,
       companies: parseInt(companies.rows[0].count) || 0,
     };
-    if (redis) redis.set(cacheKey, JSON.stringify(data), 'EX', 60).catch(() => {});
+    if (redis) redis.set(cacheKey, JSON.stringify(data), 'EX', 60).catch((err) => logger.error({ err }, 'Failed to cache stats'));
     res.json(data);
   } catch (err) {
     logger.error({ err }, 'Public stats error');
@@ -216,7 +213,7 @@ app.get('/api/companies', async (req, res) => {
 });
 
 // ─── Auth ────────────────────────────────────────────────────────────
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', emailSendLimiter, async (req, res) => {
   try {
     const { provider, initData, idToken, email, code, referralId } = req.body;
 
@@ -271,7 +268,7 @@ app.post('/api/auth/login', async (req, res) => {
           [user.telegram_id]
         );
         for (const q of preload.rows) {
-          enqueueJob('explanation', {
+          await enqueueJob('explanation', {
             questionId: q.id,
             questionText: q.question_text,
             shortAnswer: q.short_answer,
@@ -322,7 +319,10 @@ app.post('/api/auth/login', async (req, res) => {
           if (planRes.rows[0].available_modes) availableModes = normalize(planRes.rows[0].available_modes);
           if (planRes.rows[0].available_languages) availableLanguages = normalize(planRes.rows[0].available_languages);
         }
-      } catch { /* keep defaults */ }
+      } catch (err) {
+        logger.error({ err }, 'Failed to load plan settings using defaults');
+        /* keep defaults */
+      }
     }
 
     res.json({
@@ -568,11 +568,11 @@ app.post('/api/auth/email/send', emailSendLimiter, async (req, res) => {
     res.json({ success: true, message: 'Code sent' });
   } catch (err) {
     logger.error({ err }, 'Email code issue failed');
-    res.status(400).json({ error: err.message || 'Failed to send code' });
+    res.status(400).json({ error: 'Failed to send code' });
   }
 });
 
-app.post('/api/auth/email/verify', async (req, res) => {
+app.post('/api/auth/email/verify', emailSendLimiter, async (req, res) => {
   try {
     const { email, code, referralId } = req.body;
     const userData = verifyEmailCode(email, code);
@@ -584,7 +584,7 @@ app.post('/api/auth/email/verify', async (req, res) => {
     res.json({ success: true, token, user: { telegram_id: user.telegram_id, email: user.email, plan: user.subscription_plan } });
   } catch (err) {
     logger.error({ err }, 'Email verify failed');
-    res.status(401).json({ error: err.message || 'Invalid code' });
+    res.status(401).json({ error: 'Invalid code' });
   }
 });
 
@@ -646,7 +646,8 @@ app.get('/api/preferences', async (req, res) => {
       selectedLanguage: rows[0]?.selected_language || 'Java',
       selectedCompany: rows[0]?.selected_company || null,
     });
-  } catch {
+  } catch (err) {
+    logger.error({ err }, 'Failed to fetch preferences');
     res.status(500).json({ error: 'Failed to fetch preferences' });
   }
 });
@@ -666,10 +667,12 @@ app.post('/api/preferences', validateBody({ categories: { required: true } }), a
       [userId, categories, language || 'Java', company || null]
     );
     if (language) {
-      await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId]).catch(() => { });
+      await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId])
+        .catch((err) => logger.error({ err, userId }, 'Failed to sync language to users table'));
     }
     res.json({ success: true });
-  } catch {
+  } catch (err) {
+    logger.error({ err }, 'Failed to update preferences');
     res.status(500).json({ error: 'Failed to update preferences' });
   }
 });
@@ -878,7 +881,7 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
       const JSON_MODES = new Set(['test', 'bug', 'blitz', 'code']);
       let data = cachedRaw;
       if (JSON_MODES.has(mode)) {
-        try { data = JSON.parse(cachedRaw); } catch { /* keep raw string */ }
+        try { data = JSON.parse(cachedRaw); } catch (err) { logger.error({ err, questionId }, 'Failed to parse cached AI data'); /* keep raw string */ }
       }
       return res.json({ status: 'ready', data });
     }
@@ -907,7 +910,7 @@ app.post('/api/execute',
     } catch (err) {
       logger.error({ err }, 'Code execution error');
       const status = err.message.includes('not allowed') ? 400 : 500;
-      res.status(status).json({ error: err.message });
+      res.status(status).json({ error: status === 400 ? 'Invalid code execution request' : 'Internal server error' });
     }
   }
 );
@@ -946,8 +949,11 @@ async function resolveAIData(questionId, columnName, cacheMode) {
       try {
         data = JSON.parse(cached);
         // Opportunistically backfill so next hit is fast
-        pool.query(`UPDATE questions SET ${columnName}=$1 WHERE id=$2`, [JSON.stringify(data), questionId]).catch(err => logger.error({ err, questionId }, 'Failed to backfill AI data'));
-      } catch { data = null; }
+        await pool.query(`UPDATE questions SET ${columnName}=$1 WHERE id=$2`, [JSON.stringify(data), questionId]).catch(err => logger.error({ err, questionId }, 'Failed to backfill AI data'));
+      } catch (err) {
+        logger.error({ err, questionId }, 'Failed to parse cached AI data');
+        data = null;
+      }
     }
   }
 
@@ -1000,23 +1006,6 @@ const FREE_DAILY_AI_EXPLAIN_LIMIT = parseInt(process.env.FREE_DAILY_AI_EXPLAIN_L
 
 async function checkDailyAiExplain(userId) {
   const today = localDateStr();
-  await pool.query(
-    `INSERT INTO user_rate_limits (user_id, ai_explanations_today, ai_explain_date)
-     VALUES ($1, 0, $2)
-     ON CONFLICT (user_id) DO UPDATE
-       SET ai_explanations_today = CASE
-             WHEN user_rate_limits.ai_explain_date = $2 THEN user_rate_limits.ai_explanations_today
-             ELSE 0 END,
-         ai_explain_date = $2`,
-    [userId, today]
-  );
-  const { rows } = await pool.query(
-    'SELECT ai_explanations_today FROM user_rate_limits WHERE user_id = $1',
-    [userId]
-  );
-  const used = rows[0]?.ai_explanations_today || 0;
-
-  // Streak bonus: +1 free AI explanation per day for every 3-day streak milestone
   const { rows: userRows } = await pool.query(
     'SELECT current_streak FROM users WHERE telegram_id = $1',
     [userId]
@@ -1025,12 +1014,26 @@ async function checkDailyAiExplain(userId) {
   const streakBonus = Math.floor(streak / 3);
   const effectiveLimit = FREE_DAILY_AI_EXPLAIN_LIMIT + streakBonus;
 
+  const { rows } = await pool.query(
+    `INSERT INTO user_rate_limits (user_id, ai_explanations_today, ai_explain_date)
+     VALUES ($1, 0, $2)
+     ON CONFLICT (user_id) DO UPDATE
+       SET ai_explanations_today = CASE
+             WHEN user_rate_limits.ai_explain_date = $2 THEN user_rate_limits.ai_explanations_today
+             ELSE 0 END,
+           ai_explain_date = $2
+     RETURNING ai_explanations_today`,
+    [userId, today]
+  );
+  const used = rows[0]?.ai_explanations_today || 0;
+
   if (used >= effectiveLimit) {
     return { allowed: false, used, limit: effectiveLimit, streakBonus };
   }
   await pool.query(
-    'UPDATE user_rate_limits SET ai_explanations_today = ai_explanations_today + 1 WHERE user_id = $1',
-    [userId]
+    `UPDATE user_rate_limits SET ai_explanations_today = ai_explanations_today + 1
+     WHERE user_id = $1 AND ai_explain_date = $2 AND ai_explanations_today < $3`,
+    [userId, today, effectiveLimit]
   );
   return { allowed: true, used: used + 1, limit: effectiveLimit, streakBonus };
 }
@@ -1076,7 +1079,7 @@ async function updateStreak(userId) {
       // Notify user of streak milestone via Telegram if milestone hit
       if (newStreak % 7 === 0 || newStreak === 30) {
         const milestoneMsg = `🔥 Streak milestone! You've been studying for ${newStreak} days in a row.`;
-        sendTelegramMessage(userId, milestoneMsg).catch(
+        await sendTelegramMessage(userId, milestoneMsg).catch(
           (err) => logger.error({ err, userId }, 'Failed to send streak milestone notification')
         );
       }
@@ -1199,6 +1202,13 @@ app.post('/api/questions/:questionId/report', reportLimiter, async (req, res) =>
     const { reason, comment } = req.body;
     const userId = req.userId;
 
+    if (typeof reason !== 'string' || reason.length > 50) {
+      return res.status(400).json({ error: 'reason must be a string with max 50 characters' });
+    }
+    if (typeof comment !== 'string' || comment.length > 500) {
+      return res.status(400).json({ error: 'comment must be a string with max 500 characters' });
+    }
+
     await pool.query(
       'INSERT INTO question_reports (question_id, user_id, reason, comment) VALUES ($1, $2, $3, $4)',
       [questionId, userId, reason, comment]
@@ -1222,7 +1232,7 @@ app.post('/api/questions/:questionId/report', reportLimiter, async (req, res) =>
 
       // Send to all admins
       for (const adminId of ADMIN_IDS) {
-        sendTelegramMessage(adminId, adminMsg)
+        await sendTelegramMessage(adminId, adminMsg)
           .catch((err) => logger.error({ err, adminId }, 'Failed to notify admin of question reports'));
       }
     }
@@ -1291,10 +1301,10 @@ app.post('/api/questions/blitz-answer',
         if (data) {
           isCorrect = Boolean(answer) === Boolean(data.isCorrect);
         } else {
-          // Blitz data not available — trust the client's assessment
-          isCorrect = Boolean(req.body.clientIsCorrect);
+          return res.status(404).json({ error: 'Blitz data not generated yet — please wait' });
         }
-      } catch {
+      } catch (err) {
+        logger.error({ err, questionId }, 'Blitz answer parse error');
         isCorrect = false;
       }
       await recordProgress(userId, questionId, isCorrect);
@@ -1413,6 +1423,17 @@ app.get('/api/questions/saved', async (req, res) => {
 // retries on `pending`) doesn't spawn a storm of duplicate worker jobs for
 // the same question. One enqueue per question per ~20s window is enough.
 const explanationEnqueueLock = new Map();
+const MAX_ENQUEUE_LOCKS = 500;
+
+function setEnqueueLock(key, value) {
+  if (explanationEnqueueLock.size >= MAX_ENQUEUE_LOCKS) {
+    const firstKey = explanationEnqueueLock.keys().next().value;
+    explanationEnqueueLock.delete(firstKey);
+  }
+  explanationEnqueueLock.set(key, value);
+}
+function getEnqueueLock(key) { return explanationEnqueueLock.get(key); }
+function delEnqueueLock(key) { explanationEnqueueLock.delete(key); }
 
 app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) => {
   try {
@@ -1436,7 +1457,7 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
     const cachedAI = await checkCache(question.question_text, 'explanation', null, question.language || 'Java');
     if (cachedAI) {
       // Backfill the questions table cache too
-      pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cachedAI, questionId]).catch(err => logger.error({ err, questionId }, 'Failed to backfill cached explanation'));
+      await pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cachedAI, questionId]).catch(err => logger.error({ err, questionId }, 'Failed to backfill cached explanation'));
       return res.json({ explanation: cachedAI, cached: true });
     }
 
@@ -1479,10 +1500,10 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
     const now = Date.now();
     const lastEnqueue = explanationEnqueueLock.get(enqueueKey) || 0;
     if (now - lastEnqueue > 20000) {
-      explanationEnqueueLock.set(enqueueKey, now);
+      setEnqueueLock(enqueueKey, now);
       // Auto-clear after the dedup window to prevent unbounded memory growth
       // in long-running processes (the Map is never otherwise pruned).
-      setTimeout(() => explanationEnqueueLock.delete(enqueueKey), 25000);
+      setTimeout(() => delEnqueueLock(enqueueKey), 25000);
       await enqueueJob('explanation', {
         questionText: question.question_text,
         shortAnswer: question.short_answer,
@@ -1557,7 +1578,8 @@ app.get('/api/subscription/plans', async (req, res) => {
       return res.json({ plans: PLANS_LIST });
     }
     res.json({ plans: rows });
-  } catch {
+  } catch (err) {
+    logger.error({ err }, 'Failed to fetch subscription plans');
     res.json({ plans: PLANS_LIST });
   }
 });
@@ -1595,7 +1617,10 @@ app.get('/api/subscription/status', async (req, res) => {
       });
     }
     res.json(rows[0]);
-  } catch { res.json({ plan: 'free', status: 'active' }); }
+  } catch (err) {
+    logger.error({ err }, 'Failed to get subscription status');
+    res.json({ plan: 'free', status: 'active' });
+  }
 });
 
 app.post('/api/billing/stars/create-invoice', async (req, res) => {
@@ -1603,9 +1628,14 @@ app.post('/api/billing/stars/create-invoice', async (req, res) => {
     const { planId, interval } = req.body;
     const userId = req.userId;
 
-    // Amount is sourced from the DB (subscription_plans.stars_*) via
-    // getStarsAmount — the single source of truth, so the link always shows
-    // the same number the UI and sendStarsInvoice use (no more 250/500 vs 450).
+    const { rows: planRows } = await pool.query(
+      'SELECT id FROM subscription_plans WHERE id = $1',
+      [planId]
+    );
+    if (planRows.length === 0) {
+      return res.status(400).json({ error: 'Invalid plan' });
+    }
+
     const amount = await getStarsAmount(planId, interval || 'monthly');
 
     const response = await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/createInvoiceLink`, {
@@ -1651,7 +1681,8 @@ function verifyWebhookSecret(req) {
   if (!received || received.length !== expected.length) return false;
   try {
     return crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected));
-  } catch {
+  } catch (err) {
+    logger.error({ err }, 'Timing-safe comparison error');
     return false;
   }
 }
@@ -1794,6 +1825,13 @@ app.post('/api/billing/ton/invoice',
         return res.status(503).json({ error: 'TON payments are not configured on this server' });
       }
       const { planId, interval = 'monthly' } = req.body;
+      const { rows: planRows } = await pool.query(
+        'SELECT id FROM subscription_plans WHERE id = $1',
+        [planId]
+      );
+      if (planRows.length === 0) {
+        return res.status(400).json({ error: 'Invalid plan' });
+      }
       const invoice = await createTonInvoice(req.userId, planId, interval);
       res.json(invoice);
     } catch (err) {
@@ -1833,15 +1871,21 @@ app.post('/api/billing/ukassa/invoice',
         return res.status(503).json({ error: 'Card payments are not configured on this server' });
       }
       const { planId, interval = 'monthly', returnUrl } = req.body;
+      const { rows: planRows } = await pool.query(
+        'SELECT id FROM subscription_plans WHERE id = $1',
+        [planId]
+      );
+      if (planRows.length === 0) {
+        return res.status(400).json({ error: 'Invalid plan' });
+      }
       const redirect = returnUrl || process.env.FRONTEND_URL || 'https://t.me';
       const result = await createUkassaPayment(req.userId, planId, interval, redirect);
       res.json(result);
     } catch (error) {
       logger.error({ err: error }, 'U-Kassa invoice error');
-      res.status(500).json({
-        error: 'Failed to create card payment',
-        ...(process.env.NODE_ENV !== 'production' && { detail: error.message }),
-      });
+       res.status(500).json({
+         error: 'Failed to create card payment',
+       });
     }
   }
 );
@@ -2087,7 +2131,7 @@ app.get('/api/stats/categories', async (req, res) => {
     const { language = 'Java', categories } = req.query;
 
     let cats = [];
-    try { cats = JSON.parse(decodeURIComponent(categories || '[]')); } catch { /* ignore */ }
+    try { cats = JSON.parse(decodeURIComponent(categories || '[]')); } catch (err) { logger.error({ err }, 'Failed to parse categories'); /* ignore */ }
 
     if (cats.length === 0) return res.json({ known: 0, total: 0 });
 
@@ -2451,7 +2495,7 @@ app.post('/api/system-design/evaluate',
       metricsService.trackEvent(userId, 'system_design_evaluation', { topicId });
     } catch (err) {
       logger.error({ err }, 'Error in /system-design/evaluate');
-      res.status(err.message.includes('not found') ? 404 : 500).json({ error: err.message });
+      res.status(err.message.includes('not found') ? 404 : 500).json({ error: err.message.includes('not found') ? 'Not found' : 'Internal server error' });
     }
   }
 );
@@ -2835,6 +2879,23 @@ app.post('/api/questions/submit', validateBody({ question_text: { required: true
   try {
     const { question_text, short_answer, category, difficulty, options, language } = req.body;
     const userId = req.userId;
+
+    if (typeof question_text !== 'string' || question_text.length > 2000) {
+      return res.status(400).json({ error: 'question_text must be a string with max 2000 characters' });
+    }
+    if (typeof short_answer !== 'string' || short_answer.length > 500) {
+      return res.status(400).json({ error: 'short_answer must be a string with max 500 characters' });
+    }
+    if (typeof category !== 'string' || category.length > 100) {
+      return res.status(400).json({ error: 'category must be a string with max 100 characters' });
+    }
+    if (!['Junior', 'Middle', 'Senior'].includes(difficulty)) {
+      return res.status(400).json({ error: 'difficulty must be one of: Junior, Middle, Senior' });
+    }
+    if (typeof language !== 'string' || language.length > 50) {
+      return res.status(400).json({ error: 'language must be a string with max 50 characters' });
+    }
+
     await pool.query(
       `INSERT INTO user_submitted_questions (user_id, category, difficulty, question_text, short_answer, options, language, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
@@ -3038,7 +3099,13 @@ if (process.env.NODE_ENV !== 'test') {
     // ── TON payment poller: every 30 s, check for fulfilled invoices ──
     if (process.env.TON_WALLET_ADDRESS) {
       logger.info('💫 TON poller started (30 s interval)');
-      tonTimer = setInterval(() => pollPendingInvoices().catch(err => logger.error({ err }, 'TON poller error')), 30_000);
+      tonTimer = setInterval(async () => {
+    try {
+      await pollPendingInvoices();
+    } catch (err) {
+      logger.error({ err }, 'TON poller error');
+    }
+  }, 30_000);
     }
   });
 }

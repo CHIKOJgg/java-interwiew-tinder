@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import pool, { rbPool } from './config/database.js';
+import { resolveAuth, upsertUser, issueEmailCode, verifyEmailCode } from './utils/authProviders.js';
 import { evaluateInterviewAnswer, analyzeResume, checkCache } from './services/aiService.js';
 import { enqueueJob } from './services/queueService.js';
 import { getAvailableLanguages } from './services/languageRegistry.js';
@@ -40,6 +41,8 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.JWT_SECRET || process.env.J
   console.error('FATAL: JWT_SECRET must be at least 16 characters long');
   process.exit(1);
 }
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ─── Production pre-flight checks ─────────────────────────────────────
 // Fail-fast on missing critical configuration so mis-deploys are obvious
@@ -3135,7 +3138,7 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 app.use(errorHandler(isDev));
 
 // Static frontend (served at root, before API routes)
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
 // 404 handler — must be registered after all routes.
 app.use((req, res) => {

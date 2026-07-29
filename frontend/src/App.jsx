@@ -72,10 +72,14 @@ function getTelegramInitData() {
         try { tg.expand(); } catch (e) { console.warn('tg.expand() failed:', e); }
       }
 
-      if (tg.initData && tg.initData.includes('hash=')) {
-        clearInterval(interval);
-        resolve(tg.initData);
-        return;
+      if (tg.initData) {
+        const hasHash = tg.initData.includes('hash=');
+        logger.warn({ attempt: attempts, len: tg.initData.length, hasHash, preview: tg.initData.slice(0,60) }, 'getTelegramInitData poll');
+        if (hasHash) {
+          clearInterval(interval);
+          resolve(tg.initData);
+          return;
+        }
       }
 
       if (attempts >= maxAttempts) {

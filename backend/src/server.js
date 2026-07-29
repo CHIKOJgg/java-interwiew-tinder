@@ -2375,7 +2375,7 @@ app.get('/api/tracks', async (req, res) => {
       );
       return {
         ...t,
-        totalSteps: parseInt(count.rows[0].total),
+        totalSteps: parseInt(count[0]?.total || 0),
         currentStep: p.rows[0]?.current_step || 0,
         completed: p.rows[0]?.completed || false,
       };

@@ -95,7 +95,7 @@ export function sanitizeText(text) {
 export function sanitizeBody(req, res, next) {
   if (req.body && typeof req.body === 'object') {
     for (const [key, value] of Object.entries(req.body)) {
-      if (typeof value === 'string') {
+      if (typeof value === 'string' && key !== 'initData') {
         req.body[key] = sanitizeText(value);
       }
     }

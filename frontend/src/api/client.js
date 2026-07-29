@@ -1,6 +1,8 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 import logger from '../utils/logger';
 
+const REQUEST_TIMEOUT_MS = 30_000;
+
 class ApiClient {
   constructor() {
     this.baseUrl = API_BASE_URL.replace(/\/$/, '');
@@ -169,10 +171,14 @@ class ApiClient {
         if (method !== 'GET') {
           headers['Content-Type'] = 'application/json';
         }
-        const response = await fetch(url, {
-          ...options,
-          headers,
-        });
+         const controller = new AbortController();
+         const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+         const response = await fetch(url, {
+           ...options,
+           headers,
+           signal: controller.signal,
+         });
+         clearTimeout(timeout);
 
         if (response.status === 401 && endpoint !== '/auth/login') {
           const { default: useStore } = await import('../store/useStore');
@@ -197,17 +203,22 @@ class ApiClient {
         }
         logger.api(`${response.status} ${method} ${endpoint}`);
         return response.json();
-      } catch (error) {
-        if (error.status) {
-          throw error;
-        }
-        if (attempt < maxRetries) {
-          logger.warn(`API network error [${endpoint}] — retrying...`);
-          continue;
-        }
-        logger.error(`API Error [${endpoint}]:`, error.message);
-        throw error;
-      }
+       } catch (error) {
+         if (error.name === 'AbortError') {
+           const timeoutError = new Error('Server is taking too long to respond, please try again');
+           timeoutError.status = 503;
+           throw timeoutError;
+         }
+         if (error.status) {
+           throw error;
+         }
+         if (attempt < maxRetries) {
+           logger.warn(`API network error [${endpoint}] — retrying...`);
+           continue;
+         }
+         logger.error(`API Error [${endpoint}]:`, error.message);
+         throw error;
+       }
     }
   }
 

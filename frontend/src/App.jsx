@@ -45,7 +45,7 @@ import i18n from './i18n/config';
 import logger from './utils/logger';
 import DebugOverlay from './components/DebugOverlay';
 import WebLogin from './components/WebLogin';
-import Landing from './components/Landing';
+const Landing = lazy(() => import('./components/Landing'));
 import DemoMode from './components/DemoMode';
 import './App.css';
 
@@ -298,11 +298,13 @@ function App() {
     );
   }
 
-  if (initState === 'landing') {
-    return (
-      <Landing onStart={() => setInitState('demo')} onLogin={() => setInitState('web_login')} />
-    );
-  }
+if (initState === 'landing') {
+     return (
+       <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}>
+         <Landing onStart={() => setInitState('demo')} onLogin={() => setInitState('web_login')} />
+       </Suspense>
+     );
+   }
 
   if (initState === 'demo') {
     const tg = window.Telegram?.WebApp;

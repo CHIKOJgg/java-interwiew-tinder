@@ -72,9 +72,15 @@ function getTelegramInitData() {
         try { tg.expand(); } catch (e) { console.warn('tg.expand() failed:', e); }
       }
 
-      if (tg.initData && /(^|&)hash=[^&]/.test(tg.initData)) {
+      if (tg.initData) {
         clearInterval(interval);
         resolve(tg.initData);
+        return;
+      }
+
+      if (tg.initDataUnsafe?.user) {
+        clearInterval(interval);
+        resolve(`user=${JSON.stringify(tg.initDataUnsafe.user)}`);
         return;
       }
 

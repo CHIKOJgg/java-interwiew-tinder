@@ -72,7 +72,7 @@ function getTelegramInitData() {
         try { tg.expand(); } catch (e) { console.warn('tg.expand() failed:', e); }
       }
 
-      if (tg.initData && tg.initData.length > 0) {
+      if (tg.initData && tg.initData.includes('hash=')) {
         clearInterval(interval);
         resolve(tg.initData);
         return;

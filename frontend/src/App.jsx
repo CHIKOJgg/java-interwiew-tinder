@@ -49,27 +49,43 @@ const Landing = lazy(() => import('./components/Landing'));
 import DemoMode from './components/DemoMode';
 import './App.css';
 
+function hasTelegramUrlSignals() {
+  return typeof window !== 'undefined' && (
+    window.location.hash.includes('tgWebAppData') ||
+    new URLSearchParams(window.location.search).has('tgWebAppStartParam')
+  );
+}
+
+function waitForTelegramSDK() {
+  return new Promise((resolve) => {
+    const tg = window.Telegram?.WebApp;
+    if (tg) { resolve(tg); return; }
+    let attempts = 0;
+    const maxAttempts = 80;
+    const interval = setInterval(() => {
+      attempts++;
+      const w = window.Telegram?.WebApp;
+      if (w) { clearInterval(interval); resolve(w); return; }
+      if (attempts >= maxAttempts) { clearInterval(interval); resolve(null); }
+    }, 100);
+  });
+}
+
 function getTelegramInitData() {
-   return new Promise((resolve, reject) => {
-     const tg = window.Telegram?.WebApp;
-     if (!tg) { reject(new Error('Telegram not available')); return; }
-     if (!tg._readyCalled) {
-       tg._readyCalled = true;
-       try { tg.ready(); } catch (e) { /* noop */ }
-       try { tg.expand(); } catch (e) { /* noop */ }
-     }
-     if (tg.initData) { resolve(tg.initData); return; }
-     if (tg.initDataUnsafe?.user) { resolve(`user=${JSON.stringify(tg.initDataUnsafe.user)}`); return; }
-     let attempts = 0;
-     const maxAttempts = 3;
-     const interval = setInterval(() => {
-       attempts++;
-       if (tg.initData) { clearInterval(interval); resolve(tg.initData); return; }
-       if (tg.initDataUnsafe?.user) { clearInterval(interval); resolve(`user=${JSON.stringify(tg.initDataUnsafe.user)}`); return; }
-       if (attempts >= maxAttempts) { clearInterval(interval); reject(new Error(i18n.t('app.initdata_empty'))); }
-     }, 50);
-   });
- }
+  return new Promise((resolve, reject) => {
+    const raw = window.Telegram?.WebApp?.initData;
+    if (raw) { resolve(raw); return; }
+    const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    if (user) { resolve(`user=${JSON.stringify(user)}`); return; }
+    const failSafe = setTimeout(() => reject(new Error(i18n.t('app.initdata_empty'))), 8000);
+    const interval = setInterval(() => {
+      const r = window.Telegram?.WebApp?.initData;
+      if (r) { clearInterval(interval); clearTimeout(failSafe); resolve(r); return; }
+      const u = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      if (u) { clearInterval(interval); clearTimeout(failSafe); resolve(`user=${JSON.stringify(u)}`); return; }
+    }, 100);
+  });
+}
 
 function App() {
   const {
@@ -86,12 +102,9 @@ function App() {
   } = useStore();
   const { t } = useTranslation();
 
-   const isTelegram = !!window.Telegram?.WebApp?.initData;
-  const showPwa = !isTelegram && (stats?.totalSeen || 0) >= 10;
-
-   const isTelegramContext = !!window.Telegram?.WebApp;
-
-   const [initState, setInitState] = useState(isTelegramContext ? 'waiting_telegram' : 'landing');
+const isTelegramContext = !!window.Telegram?.WebApp || hasTelegramUrlSignals();
+   const [isWeb, setIsWeb] = useState(!isTelegramContext);
+    const [initState, setInitState] = useState(isTelegramContext ? 'waiting_telegram' : 'landing');
   const [screen, setScreen] = useState('language');
   const [authError, setAuthError] = useState(null);
   const [showShare, setShowShare] = useState(false);
@@ -179,36 +192,37 @@ function App() {
     useEffect(() => {
       let cancelled = false;
 
-      const startApp = async () => {
+const startApp = async () => {
         try {
           if (isTelegramContext) {
-           const initData = await getTelegramInitData();
-           if (cancelled) return;
-           const tg = window.Telegram?.WebApp;
-           logger.warn('[DEBUG] initData len:', initData.length, 'hasHash:', initData.includes('hash='), 'preview:', initData.slice(0,80));
-           let referralId = null;
-           if (tg?.initDataUnsafe?.start_param) {
-             referralId = tg.initDataUnsafe.start_param;
-           }
-           setInitState('auth');
-           await login(initData, referralId);
-         } else {
-           // Not inside Telegram: go straight to landing.
-           setInitState('landing');
-           return;
-         }
+            if (!window.Telegram?.WebApp) {
+              const tg = await waitForTelegramSDK();
+              if (cancelled) return;
+              if (!tg) throw new Error(i18n.t('app.initdata_empty'));
+            }
+            const initData = await getTelegramInitData();
+            if (cancelled) return;
+            const tg = window.Telegram?.WebApp;
+            let referralId = null;
+            if (tg?.initDataUnsafe?.start_param) {
+              referralId = tg.initDataUnsafe.start_param;
+            }
+            await login(initData, referralId);
+          } else {
+            setIsWeb(true);
+            setInitState('landing');
+            return;
+          }
 
-         if (cancelled) return;
-         setInitState('ready');
-         // First-time users see a quick explainer before choosing a language.
-         setScreen(localStorage.getItem(ONBOARD_KEY) ? 'tracks' : 'onboarding');
-       } catch (err) {
-         if (cancelled) return;
-         console.error('Startup failed:', err);
-         setAuthError(err.message);
-         setInitState('error');
-       }
-     };
+          if (cancelled) return;
+          setInitState('ready');
+          setScreen(localStorage.getItem(ONBOARD_KEY) ? 'tracks' : 'onboarding');
+        } catch (err) {
+          if (cancelled) return;
+          setAuthError(err.message);
+          setInitState('error');
+        }
+      };
 
      startApp();
      return () => { cancelled = true; };
@@ -474,7 +488,7 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
 
   return (
     <div className={`app ${learningMode === 'swipe' ? 'swipe-mode' : ''}`}>
-      <PwaInstallPrompt show={showPwa} />
+      <PwaInstallPrompt show={isWeb && (stats?.totalSeen || 0) >= 10} />
 <Header
           onSettingsClick={() => setScreen('language')}
           onResumeClick={() => setScreen('resume')}

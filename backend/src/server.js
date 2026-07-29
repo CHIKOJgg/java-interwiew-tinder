@@ -3239,13 +3239,18 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 // MUST be registered after all routes and before the 404 handler.
 app.use(errorHandler(isDev));
 
-// Static frontend (served at root, before API routes)
-app.use(express.static(path.join(__dirname, "public")));
+  // Health check endpoint (Railway probes and Docker health checks)
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok' });
+  });
 
-// 404 handler — must be registered after all routes.
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
-});
+  // Static frontend (served at root, before API routes)
+  app.use(express.static(path.join(__dirname, "public")));
+
+  // 404 handler must be registered after all routes.
+  app.use((req, res) => {
+    res.status(404).json({ error: 'Not found' });
+  });
 
 // ─── WebSocket (Peer-to-Peer Mock Interviews) ────────────
 let peerSignaling = null;

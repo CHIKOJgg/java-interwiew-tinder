@@ -89,12 +89,9 @@ function App() {
    const isTelegram = !!window.Telegram?.WebApp?.initData;
   const showPwa = !isTelegram && (stats?.totalSeen || 0) >= 10;
 
-  const isTelegramWebApp = () => {
-    const tg = window.Telegram?.WebApp;
-    return !!(tg && (tg.initData || tg.initDataUnsafe?.user));
-  };
+   const isTelegramContext = !!window.Telegram?.WebApp;
 
-  const [initState, setInitState] = useState(isTelegramWebApp() ? 'waiting_telegram' : 'landing');
+   const [initState, setInitState] = useState(isTelegramContext ? 'waiting_telegram' : 'landing');
   const [screen, setScreen] = useState('language');
   const [authError, setAuthError] = useState(null);
   const [showShare, setShowShare] = useState(false);
@@ -179,16 +176,12 @@ function App() {
     };
    }, []);
 
-   // Detect if we are inside Telegram WebApp (not just the SDK script loaded).
-   const tg = window.Telegram?.WebApp;
-   const isTelegramContext = !!(tg && (tg.initData || tg.initDataUnsafe?.user));
+    useEffect(() => {
+      let cancelled = false;
 
-   useEffect(() => {
-     let cancelled = false;
-
-     const startApp = async () => {
-       try {
-         if (isTelegramContext) {
+      const startApp = async () => {
+        try {
+          if (isTelegramContext) {
            const initData = await getTelegramInitData();
            if (cancelled) return;
            const tg = window.Telegram?.WebApp;

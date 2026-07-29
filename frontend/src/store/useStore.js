@@ -261,13 +261,10 @@ const useStore = create((set, get) => ({
     set({ language, currentIndex: 0, questions: [] });
 
     if (user?.telegram_id) {
-      try {
-        await apiClient.switchLanguage(language);
-      } catch (err) {
+      apiClient.switchLanguage(language).catch((err) => {
         console.error('Language preference save failed:', err);
-      }
+      });
     }
-    // Return to category selection so user picks cats for the new language
     return 'category';
   },
 

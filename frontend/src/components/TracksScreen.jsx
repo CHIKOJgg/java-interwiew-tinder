@@ -19,6 +19,7 @@ const TracksScreen = ({ onStartTrack, onBack, onSkipToCategories }) => {
     try {
       setLoading(true);
       const data = await apiClient.getTracks(language);
+      console.debug('[TracksScreen] language:', language, 'received:', JSON.stringify(data).slice(0, 200));
       setTracks(data.tracks || []);
     } catch (err) {
       console.error('Failed to load tracks:', err);

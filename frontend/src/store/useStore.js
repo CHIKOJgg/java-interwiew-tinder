@@ -291,7 +291,8 @@ const useStore = create((set, get) => ({
     logger.debug(`Store: loadQuestions start (append=${append}, mode=${mode}, cursor=${feedCursor})`);
     set({ _loadingLock: true, isLoadingQuestions: !append });
     try {
-      const response = await apiClient.getQuestionsFeed(5, mode, { cursor: feedCursor, seed: feedSeed, difficulties: get().selectedDifficulties, company: get().selectedCompany });
+       const response = await apiClient.getQuestionsFeed(5, mode, { cursor: feedCursor, seed: feedSeed, difficulties: get().selectedDifficulties, company: get().selectedCompany });
+      console.debug('[loadQuestions] language:', get().language, 'mode:', mode, 'response:', JSON.stringify(response).slice(0, 200));
       const newQs = response.questions || [];
       // An empty page means the feed is exhausted — never treat an empty
       // page as "has more", otherwise loadQuestions(true) loops forever

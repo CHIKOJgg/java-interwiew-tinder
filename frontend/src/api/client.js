@@ -172,12 +172,13 @@ class ApiClient {
           headers['Content-Type'] = 'application/json';
         }
          const controller = new AbortController();
-         const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-         const response = await fetch(url, {
-           ...options,
-           headers,
-           signal: controller.signal,
-         });
+          const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+          const response = await fetch(url, {
+            ...options,
+            headers,
+            signal: controller.signal,
+            cache: 'no-store',
+          });
          clearTimeout(timeout);
 
         if (response.status === 401 && endpoint !== '/auth/login') {

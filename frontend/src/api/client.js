@@ -154,7 +154,7 @@ class ApiClient {
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       if (attempt > 0) {
-        const delay = 800 * attempt;
+        const delay = 1000 * Math.pow(2, attempt);
         logger.api(`Retry ${attempt}/${maxRetries} for ${method} ${endpoint} after ${delay}ms`);
         await new Promise(r => setTimeout(r, delay));
       }
@@ -169,14 +169,10 @@ class ApiClient {
         if (method !== 'GET') {
           headers['Content-Type'] = 'application/json';
         }
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
         const response = await fetch(url, {
           ...options,
           headers,
-          signal: controller.signal,
         });
-        clearTimeout(timeout);
 
         if (response.status === 401 && endpoint !== '/auth/login') {
           const { default: useStore } = await import('../store/useStore');
@@ -202,15 +198,6 @@ class ApiClient {
         logger.api(`${response.status} ${method} ${endpoint}`);
         return response.json();
       } catch (error) {
-        if (error.name === 'AbortError') {
-          if (attempt < maxRetries) {
-            logger.warn(`API timeout [${endpoint}] — retrying...`);
-            continue;
-          }
-          const timeoutError = new Error('Server is starting up, please wait...');
-          timeoutError.status = 503;
-          throw timeoutError;
-        }
         if (error.status) {
           throw error;
         }

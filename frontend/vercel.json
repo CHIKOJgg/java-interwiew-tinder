@@ -7,7 +7,7 @@
     "VITE_API_URL": "/api"
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://java-interview-tinder-production.up.railway.app/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://java-interwiew-tinder-production.up.railway.app/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

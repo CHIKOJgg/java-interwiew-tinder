@@ -9022,7 +9022,7 @@ async function seedDB() {
       const res = await client.query(
         `INSERT INTO questions (category, question_text, short_answer, options, difficulty, language)
          VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING RETURNING id`,
-        [q.category, q.question, q.short_answer, JSON.stringify(q.options), q.difficulty, q.language]
+        [q.category, q.question, q.short_answer, q.options, q.difficulty, q.language]
       );
       if (res.rows.length > 0) count++;
     }

@@ -203,6 +203,19 @@ app.get('/debug-sentry', authMiddleware, requireAdmin, (_req, _res) => {
 // ─── Languages ───────────────────────────────────────────────────────
 app.get('/api/languages', (req, res) => res.json({ languages: getAvailableLanguages() }));
 
+// ─── Debug: track counts (temporary) ─────────────────────────────────
+app.get('/api/debug/track-counts', async (_req, res) => {
+  try {
+    const { rows: tracks } = await pool.query('SELECT id, language, name, is_active FROM learning_tracks ORDER BY id');
+    const { rows: steps } = await pool.query('SELECT track_id, COUNT(*) as steps FROM track_steps GROUP BY track_id');
+    const stepMap = {};
+    for (const s of steps) stepMap[s.track_id] = parseInt(s.steps);
+    res.json({ tracks: tracks.map(t => ({ ...t, steps: stepMap[t.id] || 0 })) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Categories (language-aware) ─────────────────────────────────────
 app.get('/api/categories', async (req, res) => {
   try {

@@ -15,36 +15,37 @@ export default function Landing({ onStart, onLogin }) {
   const [publicStats, setPublicStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [scrolledPast, setScrolledPast] = useState(false);
-  const [tgInfo, setTgInfo] = useState({ step: 'waiting', info: null });
+  const [tgInfo, setTgInfo] = useState(() => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) return { step: 'no_tg', info: null };
+    return { step: 'waiting', info: null };
+  });
 
   useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) { setTgInfo({ step: 'no_tg', info: null }); return; }
     let attempts = 0;
-    const max = 80;
+    const max = 5;
     const iv = setInterval(() => {
       attempts++;
-      const tg = window.Telegram?.WebApp;
-      if (tg) {
-        setTgInfo({
-          step: 'found',
-          info: {
-            hasInitData: !!tg.initData,
-            initDataLen: tg.initData?.length ?? 0,
-            initDataPreview: tg.initData?.slice(0, 60) ?? '',
-            hasHash: tg.initData ? /(^|&)hash=[^&]/.test(tg.initData) : false,
-            hasInitDataUnsafeUser: !!tg.initDataUnsafe?.user,
-            id: tg.initDataUnsafe?.user?.id ?? null,
-          },
-        });
-        if (tg.initData || tg.initDataUnsafe?.user) {
-          clearInterval(iv);
-          setTgInfo(prev => ({ ...prev, step: 'has_data' }));
-        }
-        return;
-      }
-      if (attempts >= max) {
+      const tgNow = window.Telegram?.WebApp;
+      if (!tgNow) { clearInterval(iv); setTgInfo({ step: 'no_tg', info: null }); return; }
+      setTgInfo({
+        step: 'found',
+        info: {
+          hasInitData: !!tgNow.initData,
+          initDataLen: tgNow.initData?.length ?? 0,
+          initDataPreview: tgNow.initData?.slice(0, 60) ?? '',
+          hasHash: tgNow.initData ? /(^|&)hash=[^&]/.test(tgNow.initData) : false,
+          hasInitDataUnsafeUser: !!tgNow.initDataUnsafe?.user,
+          id: tgNow.initDataUnsafe?.user?.id ?? null,
+        },
+      });
+      if (tgNow.initData || tgNow.initDataUnsafe?.user) {
         clearInterval(iv);
-        setTgInfo({ step: 'no_tg', info: null });
+        setTgInfo(prev => ({ ...prev, step: 'has_data' }));
       }
+      if (attempts >= max) { clearInterval(iv); }
     }, 100);
     return () => clearInterval(iv);
   }, []);

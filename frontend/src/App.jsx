@@ -51,43 +51,22 @@ import './App.css';
 
 function getTelegramInitData() {
   return new Promise((resolve, reject) => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) { reject(new Error('Telegram not available')); return; }
+    if (!tg._readyCalled) {
+      tg._readyCalled = true;
+      try { tg.ready(); } catch (e) { /* noop */ }
+      try { tg.expand(); } catch (e) { /* noop */ }
+    }
+    if (tg.initData) { resolve(tg.initData); return; }
+    if (tg.initDataUnsafe?.user) { resolve(`user=${JSON.stringify(tg.initDataUnsafe.user)}`); return; }
     let attempts = 0;
-    const maxAttempts = 80;
-
+    const maxAttempts = 5;
     const interval = setInterval(() => {
       attempts++;
-      const tg = window.Telegram?.WebApp;
-
-      if (!tg) {
-        if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          reject(new Error(i18n.t('app.tg_not_loaded')));
-        }
-        return;
-      }
-
-      if (!tg._readyCalled) {
-        tg._readyCalled = true;
-        try { tg.ready(); } catch (e) { console.warn('tg.ready() failed:', e); }
-        try { tg.expand(); } catch (e) { console.warn('tg.expand() failed:', e); }
-      }
-
-      if (tg.initData) {
-        clearInterval(interval);
-        resolve(tg.initData);
-        return;
-      }
-
-      if (tg.initDataUnsafe?.user) {
-        clearInterval(interval);
-        resolve(`user=${JSON.stringify(tg.initDataUnsafe.user)}`);
-        return;
-      }
-
-      if (attempts >= maxAttempts) {
-        clearInterval(interval);
-        reject(new Error(i18n.t('app.initdata_empty')));
-      }
+      if (tg.initData) { clearInterval(interval); resolve(tg.initData); return; }
+      if (tg.initDataUnsafe?.user) { clearInterval(interval); resolve(`user=${JSON.stringify(tg.initDataUnsafe.user)}`); return; }
+      if (attempts >= maxAttempts) { clearInterval(interval); reject(new Error(i18n.t('app.initdata_empty'))); }
     }, 100);
   });
 }

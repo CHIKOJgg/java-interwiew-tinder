@@ -2360,6 +2360,31 @@ app.post('/api/questions/mastery', validateBody({ questionId: { required: true }
   }
 });
 
+// ─── Debug ──────────────────────────────────────────────────────────
+app.get('/api/debug/tracks', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const tracks = await pool.query(
+      'SELECT id, language, name, is_active, sort_order FROM learning_tracks WHERE language = $1 ORDER BY sort_order',
+      [language]
+    );
+    const tracksCount = await pool.query('SELECT language, COUNT(*) as count FROM learning_tracks GROUP BY language ORDER BY language');
+    const questionsCount = await pool.query(
+      'SELECT language, category, COUNT(*) as count FROM questions WHERE language = $1 AND is_active = TRUE GROUP BY language, category ORDER BY category',
+      [language]
+    );
+    res.json({
+      language,
+      tracks: tracks.rows,
+      tracksByLanguage: tracksCount.rows,
+      questionsByCategory: questionsCount.rows,
+    });
+  } catch (err) {
+    logger.error({ err }, 'Debug tracks error');
+    res.status(500).json({ error: 'Debug error', detail: err.message });
+  }
+});
+
 // ─── Learning Tracks ─────────────────────────────────────────────
 app.get('/api/tracks', async (req, res) => {
   try {

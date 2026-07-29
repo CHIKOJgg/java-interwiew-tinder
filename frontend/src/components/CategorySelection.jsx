@@ -27,34 +27,17 @@ const CategorySelection = ({ onComplete, onBack }) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const categoriesData = await api.getCategories();
-      setCategories(categoriesData.categories || []);
-
-      try {
-        const companiesData = await api.getCompanies();
-        setCompanies(companiesData.companies || []);
-      } catch {
-        // No companies available
-      }
-
-      try {
-        const prefsData = await api.getPreferences();
-        if (prefsData.selectedCategories && prefsData.selectedCategories.length > 0) {
-          setLocalSelected(prefsData.selectedCategories);
-        }
-        if (prefsData.selectedCompany) {
-          setLocalCompany(prefsData.selectedCompany);
-        }
-      } catch {
-        // No saved preferences, use defaults
-      }
-
-      try {
-        const stats = await api.getReferralStats();
-        setRefStats(stats);
-      } catch (e) {
-        console.error('Failed to load referral stats', e);
-      }
+      const [categoriesData, companiesData, prefsData, statsData] = await Promise.all([
+        api.getCategories(),
+        api.getCompanies().catch(() => null),
+        api.getPreferences().catch(() => null),
+        api.getReferralStats().catch(() => null),
+      ]);
+      setCategories(categoriesData?.categories || []);
+      if (companiesData?.companies) setCompanies(companiesData.companies);
+      if (prefsData?.selectedCategories?.length) setLocalSelected(prefsData.selectedCategories);
+      if (prefsData?.selectedCompany) setLocalCompany(prefsData.selectedCompany);
+      if (statsData) setRefStats(statsData);
     } catch (error) {
       console.error('Error loading categories:', error);
     } finally {

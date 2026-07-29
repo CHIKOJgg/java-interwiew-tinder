@@ -187,9 +187,9 @@ app.get('/health', async (req, res) => {
     logger.error({ err }, 'Health check: Postgres unreachable');
   }
   const redisOk = await isRedisConnected();
-  const healthy = dbOk;
+  const healthy = dbOk && redisOk;
   res.status(healthy ? 200 : 503).json({
-    status: healthy ? (redisOk ? 'ok' : 'degraded') : 'unhealthy',
+    status: healthy ? 'ok' : 'degraded',
     db: dbOk ? 'connected' : 'disconnected',
     redis: redisOk ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString()

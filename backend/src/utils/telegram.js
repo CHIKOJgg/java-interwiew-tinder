@@ -13,7 +13,7 @@ export const validateTelegramWebAppData = (initData, botToken) => {
     const hash = urlParams.get('hash');
 
     if (!hash) {
-      logger.debug('No hash in initData');
+      logger.warn('No hash in initData — rejecting');
       return null;
     }
 
@@ -45,14 +45,14 @@ export const validateTelegramWebAppData = (initData, botToken) => {
       hashBuffer.length !== receivedBuffer.length ||
       !crypto.timingSafeEqual(hashBuffer, receivedBuffer)
     ) {
-      logger.warn({ hash, calculatedHash }, '❌ Telegram initData hash mismatch — rejecting request');
+      logger.warn({ hash: hash.slice(0,16)+'...', calcHash: calculatedHash.slice(0,16)+'...', initDataLen: initData?.length, hasUser: urlParams.has('user') }, '❌ Telegram initData hash mismatch — rejecting request');
       return null;
     }
 
     // Parse user data
     const userParam = urlParams.get('user');
     if (!userParam) {
-      logger.debug('No user parameter in initData');
+      logger.warn('No user parameter in initData — rejecting');
       return null;
     }
 

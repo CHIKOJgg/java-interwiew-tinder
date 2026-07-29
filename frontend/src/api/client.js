@@ -202,11 +202,7 @@ class ApiClient {
           throw thrown;
         }
         logger.api(`${response.status} ${method} ${endpoint}`);
-        const data = await response.json();
-        if (endpoint.includes('/tracks') || endpoint.includes('/questions/feed')) {
-          console.debug('[API DEBUG]', method, endpoint, 'status:', response.status, 'data:', JSON.stringify(data).slice(0, 200));
-        }
-        return data;
+        return response.json();
        } catch (error) {
          if (error.name === 'AbortError') {
            const timeoutError = new Error('Server is taking too long to respond, please try again');

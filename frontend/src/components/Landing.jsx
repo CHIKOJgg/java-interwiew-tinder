@@ -15,6 +15,39 @@ export default function Landing({ onStart, onLogin }) {
   const [publicStats, setPublicStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [scrolledPast, setScrolledPast] = useState(false);
+  const [tgInfo, setTgInfo] = useState({ step: 'waiting', info: null });
+
+  useEffect(() => {
+    let attempts = 0;
+    const max = 80;
+    const iv = setInterval(() => {
+      attempts++;
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        setTgInfo({
+          step: 'found',
+          info: {
+            hasInitData: !!tg.initData,
+            initDataLen: tg.initData?.length ?? 0,
+            initDataPreview: tg.initData?.slice(0, 60) ?? '',
+            hasHash: tg.initData ? /(^|&)hash=[^&]/.test(tg.initData) : false,
+            hasInitDataUnsafeUser: !!tg.initDataUnsafe?.user,
+            id: tg.initDataUnsafe?.user?.id ?? null,
+          },
+        });
+        if (tg.initData || tg.initDataUnsafe?.user) {
+          clearInterval(iv);
+          setTgInfo(prev => ({ ...prev, step: 'has_data' }));
+        }
+        return;
+      }
+      if (attempts >= max) {
+        clearInterval(iv);
+        setTgInfo({ step: 'no_tg', info: null });
+      }
+    }, 100);
+    return () => clearInterval(iv);
+  }, []);
 
   useEffect(() => {
     setStatsLoading(true);
@@ -371,6 +404,19 @@ export default function Landing({ onStart, onLogin }) {
             {t('landing.cta', 'Try a real question free')} →
           </button>
         </div>
+      </div>
+
+      {/* ── Telegram diagnostic bar ────────────────────────────── */}
+      <div style={{ position:'fixed', bottom:0, left:0, right:0, fontSize:10, fontFamily:'monospace', background:'rgba(0,0,0,0.85)', color:'#0f0', padding:'4px 8px', zIndex:9999, lineHeight:1.4, whiteSpace:'pre-wrap', wordBreak:'break-all' }}>
+        <div>TG: {tgInfo.step === 'waiting' ? '⏳ ожидание...' : tgInfo.step === 'no_tg' ? '❌ нет window.Telegram.WebApp' : tgInfo.step === 'found' ? '✅ WebApp найден' : '✅ Есть initData'}</div>
+        {tgInfo.info && (
+          <>
+            <div>initData: {tgInfo.info.hasInitData ? `${tgInfo.info.initDataLen} символов` : '❌ пусто'}</div>
+            {tgInfo.info.hasInitData && <div>hash: {tgInfo.info.hasHash ? '✅ есть' : '❌ нет'}</div>}
+            <div>initDataUnsafe.user: {tgInfo.info.hasInitDataUnsafeUser ? `✅ id=${tgInfo.info.id}` : '❌ нет'}</div>
+            {tgInfo.info.hasInitData && <div>preview: {tgInfo.info.initDataPreview}</div>}
+          </>
+        )}
       </div>
     </div>
   );

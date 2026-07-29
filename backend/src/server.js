@@ -113,7 +113,6 @@ const globalLimiter = expressRateLimit({
   max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: 1,
   message: { error: 'Too many requests, please try again later.' }
 });
 
@@ -123,7 +122,6 @@ const emailSendLimiter = expressRateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: 1,
   message: { error: 'Too many code requests. Please wait before trying again.' }
 });
 
@@ -132,7 +130,6 @@ const reportLimiter = expressRateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: 1,
   message: { error: 'Too many reports. Please slow down.' }
 });
 

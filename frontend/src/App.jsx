@@ -49,28 +49,6 @@ const Landing = lazy(() => import('./components/Landing'));
 import DemoMode from './components/DemoMode';
 import './App.css';
 
-function hasTelegramUrlSignals() {
-  return typeof window !== 'undefined' && (
-    window.location.hash.includes('tgWebAppData') ||
-    new URLSearchParams(window.location.search).has('tgWebAppStartParam')
-  );
-}
-
-function waitForTelegramSDK() {
-  return new Promise((resolve) => {
-    const tg = window.Telegram?.WebApp;
-    if (tg) { resolve(tg); return; }
-    let attempts = 0;
-    const maxAttempts = 80;
-    const interval = setInterval(() => {
-      attempts++;
-      const w = window.Telegram?.WebApp;
-      if (w) { clearInterval(interval); resolve(w); return; }
-      if (attempts >= maxAttempts) { clearInterval(interval); resolve(null); }
-    }, 100);
-  });
-}
-
 function getTelegramInitData() {
   return new Promise((resolve, reject) => {
     const raw = window.Telegram?.WebApp?.initData;
@@ -102,7 +80,7 @@ function App() {
   } = useStore();
   const { t } = useTranslation();
 
-const isTelegramContext = !!window.Telegram?.WebApp || hasTelegramUrlSignals();
+const isTelegramContext = !!window.Telegram?.WebApp;
    const [isWeb, setIsWeb] = useState(!isTelegramContext);
     const [initState, setInitState] = useState(isTelegramContext ? 'waiting_telegram' : 'landing');
   const [screen, setScreen] = useState('language');
@@ -195,11 +173,6 @@ const isTelegramContext = !!window.Telegram?.WebApp || hasTelegramUrlSignals();
 const startApp = async () => {
         try {
           if (isTelegramContext) {
-            if (!window.Telegram?.WebApp) {
-              const tg = await waitForTelegramSDK();
-              if (cancelled) return;
-              if (!tg) throw new Error(i18n.t('app.initdata_empty'));
-            }
             const initData = await getTelegramInitData();
             if (cancelled) return;
             const tg = window.Telegram?.WebApp;

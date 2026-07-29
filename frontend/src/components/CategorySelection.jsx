@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, Gift, Copy, Share2, ArrowLeft } from 'lucide-react';
+import { Check, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonGrid } from './Skeleton';
 import api from '../api/client';
@@ -7,6 +7,23 @@ import useStore from '../store/useStore';
 import './CategorySelection.css';
 
 const DIFFICULTIES = ['Junior', 'Middle', 'Senior'];
+
+const CACHE_KEY = 'jit_categories_cache';
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+function loadCategoriesCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.timestamp > CACHE_TTL) return null;
+    return parsed.data;
+  } catch { return null; }
+}
+
+function saveCategoriesCache(data) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data })); } catch { /* ignore */ }
+}
 
 const CategorySelection = ({ onComplete, onBack }) => {
   const { t } = useTranslation();
@@ -18,7 +35,6 @@ const CategorySelection = ({ onComplete, onBack }) => {
   const [selectedCompany, setLocalCompany] = useState(savedCompany || null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [refStats, setRefStats] = useState({ total: 0, converted: 0, rewardDays: 0 });
 
   useEffect(() => {
     loadData();
@@ -27,17 +43,29 @@ const CategorySelection = ({ onComplete, onBack }) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [categoriesData, companiesData, prefsData, statsData] = await Promise.all([
+      const cached = loadCategoriesCache();
+      if (cached) {
+        setCategories(cached.categories || []);
+        if (cached.companies) setCompanies(cached.companies);
+        if (cached.prefs?.selectedCategories?.length) setLocalSelected(cached.prefs.selectedCategories);
+        if (cached.prefs?.selectedCompany) setLocalCompany(cached.prefs.selectedCompany);
+        setLoading(false);
+      }
+
+      const [categoriesData, companiesData, prefsData] = await Promise.all([
         api.getCategories(),
         api.getCompanies().catch(() => null),
         api.getPreferences().catch(() => null),
-        api.getReferralStats().catch(() => null),
       ]);
-      setCategories(categoriesData?.categories || []);
-      if (companiesData?.companies) setCompanies(companiesData.companies);
-      if (prefsData?.selectedCategories?.length) setLocalSelected(prefsData.selectedCategories);
-      if (prefsData?.selectedCompany) setLocalCompany(prefsData.selectedCompany);
-      if (statsData) setRefStats(statsData);
+
+      const cats = categoriesData?.categories || [];
+      setCategories(cats);
+      if (!cached) {
+        if (companiesData?.companies) setCompanies(companiesData.companies);
+        if (prefsData?.selectedCategories?.length) setLocalSelected(prefsData.selectedCategories);
+        if (prefsData?.selectedCompany) setLocalCompany(prefsData.selectedCompany);
+      }
+      saveCategoriesCache({ categories: cats, companies: companiesData?.companies || [], prefs: prefsData || {} });
     } catch (error) {
       console.error('Error loading categories:', error);
     } finally {
@@ -195,44 +223,6 @@ const CategorySelection = ({ onComplete, onBack }) => {
             />
           );
         })}
-      </div>
-      
-      <div className="referral-section">
-        <div className="referral-card">
-          <div className="referral-title">
-            <Gift className="gift-icon" size={20} />
-            <h3>{t('referral.title')}</h3>
-          </div>
-          <p className="referral-text">{t('referral.desc')}</p>
-
-          <div className="referral-link-box" onClick={() => {
-            const bot = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'prep_interview_bot';
-            const link = `https://t.me/${bot}?start=${user?.telegram_id}`;
-            navigator.clipboard.writeText(link);
-            showPopup(t('referral.copied', 'Link copied!'));
-          }}>
-            <span className="ref-url">
-              {user?.telegram_id ? `t.me/${(import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'prep_interview_bot')}?start=${user.telegram_id}` : t('referral.loading', 'Loading...')}
-            </span>
-            <Copy size={16} />
-          </div>
-
-          <div className="referral-stats">
-            <div className="ref-stat">
-              <span className="ref-val">{refStats.total}</span>
-              <span className="ref-lab">{t('referral.invited')}</span>
-            </div>
-            <div className="ref-stat">
-              <span className="ref-val">{refStats.converted}</span>
-              <span className="ref-lab">{t('referral.paid')}</span>
-            </div>
-            <div className="ref-stat highlight">
-              <span className="ref-val">{refStats.rewardDays}</span>
-              <span className="ref-lab">{t('referral.pro_days')}</span>
-            </div>
-            <p className="referral-note">{t('referral.note', 'Both you and your friend get PRO — no purchase needed to start.')}</p>
-          </div>
-        </div>
       </div>
 
       <div className="category-footer">

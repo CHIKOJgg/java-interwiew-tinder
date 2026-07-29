@@ -15,39 +15,11 @@ export default function Landing({ onStart, onLogin }) {
   const [publicStats, setPublicStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [scrolledPast, setScrolledPast] = useState(false);
-  const [tgInfo, setTgInfo] = useState(() => {
-    const tg = window.Telegram?.WebApp;
-    if (!tg) return { step: 'no_tg', info: null };
-    return { step: 'waiting', info: null };
-  });
 
   useEffect(() => {
-    const tg = window.Telegram?.WebApp;
-    if (!tg) { setTgInfo({ step: 'no_tg', info: null }); return; }
-    let attempts = 0;
-    const max = 5;
-    const iv = setInterval(() => {
-      attempts++;
-      const tgNow = window.Telegram?.WebApp;
-      if (!tgNow) { clearInterval(iv); setTgInfo({ step: 'no_tg', info: null }); return; }
-      setTgInfo({
-        step: 'found',
-        info: {
-          hasInitData: !!tgNow.initData,
-          initDataLen: tgNow.initData?.length ?? 0,
-          initDataPreview: tgNow.initData?.slice(0, 60) ?? '',
-          hasHash: tgNow.initData ? /(^|&)hash=[^&]/.test(tgNow.initData) : false,
-          hasInitDataUnsafeUser: !!tgNow.initDataUnsafe?.user,
-          id: tgNow.initDataUnsafe?.user?.id ?? null,
-        },
-      });
-      if (tgNow.initData || tgNow.initDataUnsafe?.user) {
-        clearInterval(iv);
-        setTgInfo(prev => ({ ...prev, step: 'has_data' }));
-      }
-      if (attempts >= max) { clearInterval(iv); }
-    }, 100);
-    return () => clearInterval(iv);
+    const onScroll = () => setScrolledPast(window.scrollY > window.innerHeight * 0.6);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -70,12 +42,6 @@ export default function Landing({ onStart, onLogin }) {
       setStatsLoading(false);
     };
     fetchStats();
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolledPast(window.scrollY > window.innerHeight * 0.6);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -142,7 +108,6 @@ export default function Landing({ onStart, onLogin }) {
 
   return (
     <div className="landing">
-      {/* ── Top nav ─────────────────────────────────────────────── */}
       <nav className="landing-nav">
         <div className="landing-nav-brand">
           <img className="landing-logo-sm" src="/icon.svg" alt="Interview Tinder" width="32" height="32" />
@@ -153,7 +118,6 @@ export default function Landing({ onStart, onLogin }) {
         </a>
       </nav>
 
-      {/* ── Hero ────────────────────────────────────────────────── */}
       <header className="landing-hero" role="banner">
         <span className="landing-pill">🔥 {t('landing.pill', 'Real questions from real interviews · 3 languages · no fluff')}</span>
         <h1>{t('landing.title', 'You know how to code.')}&nbsp;<span className="landing-hl">{t('landing.title_hl', 'One forgotten question')}<br/>{t('landing.title_hl2', 'shouldn\'t cost you the offer.')}</span></h1>
@@ -180,7 +144,6 @@ export default function Landing({ onStart, onLogin }) {
         </div>
       </header>
 
-      {/* ── Social proof ──────────────────────────────── */}
       <div className="landing-stats">
         {statsLoading ? (
           <>
@@ -206,7 +169,6 @@ export default function Landing({ onStart, onLogin }) {
         )}
       </div>
 
-      {/* ── Prepare for interviews at ───────────────────────── */}
       <div className="landing-companies">
         <span className="landing-companies-label">{t('landing.used_by', 'Used by developers at')}</span>
         <div className="landing-companies-logos">
@@ -217,7 +179,6 @@ export default function Landing({ onStart, onLogin }) {
         <p className="landing-companies-note">{t('landing.companies_note', 'These companies publish Java, Python & TypeScript interview questions that appear in our decks.')}</p>
       </div>
 
-      {/* ── The Real Cost ─────────────────────────────────────── */}
       <section className="landing-cost">
         <h2>{t('landing.cost_title', 'The real cost of "I\'ll prepare later"')}</h2>
         <p className="landing-cost-sub">{t('landing.cost_sub', 'It\'s not about being a bad developer. It\'s about what happens when preparation meets luck — and luck runs out.')}</p>
@@ -240,7 +201,6 @@ export default function Landing({ onStart, onLogin }) {
         </div>
       </section>
 
-      {/* ── Features ────────────────────────────────────────────── */}
       <section className="landing-features-section">
         <h2>{t('landing.features_title', 'Everything you need to get the offer')}</h2>
         <p className="landing-features-sub">{t('landing.features_sub', 'Every feature exists to make the answer stick — and to prove you\'re ready.')}</p>
@@ -255,7 +215,6 @@ export default function Landing({ onStart, onLogin }) {
         </div>
       </section>
 
-      {/* ── How it works ────────────────────────────────────────── */}
       <section className="landing-how">
         <h2>{t('landing.how_title', 'From "I hope they don\'t ask that" to "bring it on"')}</h2>
         <div className="landing-steps">
@@ -277,7 +236,6 @@ export default function Landing({ onStart, onLogin }) {
         </div>
       </section>
 
-      {/* ── The Math ─────────────────────────────────────────── */}
       <section className="landing-math">
         <h2>{t('landing.math_title', 'The math of getting the offer')}</h2>
         <p className="landing-math-sub">{t('landing.math_sub', 'Interview Tinder isn\'t a cost — it\'s the highest-ROI investment in your career this year.')}</p>
@@ -292,7 +250,6 @@ export default function Landing({ onStart, onLogin }) {
         </div>
       </section>
 
-      {/* ── Get the app ───────────────────────────────────────── */}
       <section className="landing-getapp">
         <h2>{t('landing.getapp_title', 'Get Interview Tinder your way')}</h2>
         <p className="landing-getapp-sub">
@@ -324,7 +281,6 @@ export default function Landing({ onStart, onLogin }) {
         </div>
       </section>
 
-      {/* ── Pricing ─────────────────────────────────────────────── */}
       <section className="landing-pricing">
         <h2>{t('landing.pricing_title', 'Less than a coffee a week to stop losing offers')}</h2>
         <p className="landing-pricing-sub">{t('landing.pricing_sub', 'Free core forever · PRO unlocks unlimited AI & Mock · 7-day trial, cancel anytime.')}</p>
@@ -353,7 +309,6 @@ export default function Landing({ onStart, onLogin }) {
         </p>
       </section>
 
-      {/* ── Testimonials ──────────────────────────────────────────── */}
       <section className="landing-testimonials">
         <h2>{t('landing.testimonial_title', 'What developers say')}</h2>
         <div className="landing-testimonial-grid">
@@ -375,7 +330,6 @@ export default function Landing({ onStart, onLogin }) {
         </div>
       </section>
 
-      {/* ── FAQ ─────────────────────────────────────────────────── */}
       <section className="landing-faq" aria-labelledby="faq-heading">
         <h2 id="faq-heading">{t('landing.faq_title', 'Questions developers ask before starting')}</h2>
         <div className="landing-faq-list">
@@ -388,7 +342,6 @@ export default function Landing({ onStart, onLogin }) {
         </div>
       </section>
 
-      {/* ── Final CTA ───────────────────────────────────────────── */}
       <section className="landing-final">
         <h2>{t('landing.final_title', 'Your next interview is closer than you think.')}</h2>
         <p>{t('landing.final_sub', 'Be the candidate who\'s actually ready. Swipe your first real questions now — free, no card.')}</p>
@@ -411,7 +364,6 @@ export default function Landing({ onStart, onLogin }) {
         <p className="landing-copy">© {new Date().getFullYear()} Interview Tinder</p>
       </footer>
 
-      {/* ── Sticky CTA ──────────────────────────────────────────── */}
       <div className={`landing-sticky-cta ${scrolledPast ? 'visible' : ''}`}>
         <div className="landing-sticky-content">
           <span className="landing-sticky-text">10 min/day • Free • No card</span>
@@ -419,19 +371,6 @@ export default function Landing({ onStart, onLogin }) {
             {t('landing.cta', 'Try a real question free')} →
           </button>
         </div>
-      </div>
-
-      {/* ── Telegram diagnostic bar ────────────────────────────── */}
-      <div style={{ position:'fixed', bottom:0, left:0, right:0, fontSize:10, fontFamily:'monospace', background:'rgba(0,0,0,0.85)', color:'#0f0', padding:'4px 8px', zIndex:9999, lineHeight:1.4, whiteSpace:'pre-wrap', wordBreak:'break-all' }}>
-        <div>TG: {tgInfo.step === 'waiting' ? '⏳ ожидание...' : tgInfo.step === 'no_tg' ? '❌ нет window.Telegram.WebApp' : tgInfo.step === 'found' ? '✅ WebApp найден' : '✅ Есть initData'}</div>
-        {tgInfo.info && (
-          <>
-            <div>initData: {tgInfo.info.hasInitData ? `${tgInfo.info.initDataLen} символов` : '❌ пусто'}</div>
-            {tgInfo.info.hasInitData && <div>hash: {tgInfo.info.hasHash ? '✅ есть' : '❌ нет'}</div>}
-            <div>initDataUnsafe.user: {tgInfo.info.hasInitDataUnsafeUser ? `✅ id=${tgInfo.info.id}` : '❌ нет'}</div>
-            {tgInfo.info.hasInitData && <div>preview: {tgInfo.info.initDataPreview}</div>}
-          </>
-        )}
       </div>
     </div>
   );

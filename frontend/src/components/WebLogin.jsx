@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../api/client';
 
@@ -15,6 +15,17 @@ export default function WebLogin({ referralId, onAuthenticated, onBack }) {
   const [step, setStep] = useState('request'); // 'request' | 'verify'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (mode === 'google' && !window.google?.accounts?.id) {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+      return () => { document.head.removeChild(script); };
+    }
+  }, [mode]);
 
   const handleSendCode = async (e) => {
     e.preventDefault();

@@ -86,13 +86,15 @@ function App() {
   } = useStore();
   const { t } = useTranslation();
 
-  // Show the PWA install prompt only on web (not inside Telegram WebView,
-  // where install is irrelevant) and only after the user has done a real
-  // session worth of swipes.
-  const isTelegram = !!window.Telegram?.WebApp?.initData;
+   const isTelegram = !!window.Telegram?.WebApp?.initData;
   const showPwa = !isTelegram && (stats?.totalSeen || 0) >= 10;
 
-  const [initState, setInitState] = useState('waiting_telegram');
+  const isTelegramWebApp = () => {
+    const tg = window.Telegram?.WebApp;
+    return !!(tg && (tg.initData || tg.initDataUnsafe?.user));
+  };
+
+  const [initState, setInitState] = useState(isTelegramWebApp() ? 'waiting_telegram' : 'landing');
   const [screen, setScreen] = useState('language');
   const [authError, setAuthError] = useState(null);
   const [showShare, setShowShare] = useState(false);
@@ -175,61 +177,56 @@ function App() {
       window.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointerup', onPointerUp);
     };
-  }, []);
+   }, []);
 
-  useEffect(() => {
-    const handleReport = (e) => setReportingQuestionId(e.detail);
-    window.addEventListener('report-question', handleReport);
-    return () => window.removeEventListener('report-question', handleReport);
-  }, []);
+   // Detect if we are inside Telegram WebApp (not just the SDK script loaded).
+   const tg = window.Telegram?.WebApp;
+   const isTelegramContext = !!(tg && (tg.initData || tg.initDataUnsafe?.user));
 
-  useEffect(() => {
-    let cancelled = false;
+   useEffect(() => {
+     let cancelled = false;
 
-    const startApp = async () => {
-      try {
-        // Prefer Telegram Mini App if available.
-        const initData = await getTelegramInitData().catch(() => null);
-        if (initData) {
-          const tg = window.Telegram?.WebApp;
-          logger.warn('[DEBUG] initData len:', initData.length, 'hasHash:', initData.includes('hash='), 'preview:', initData.slice(0,80));
-          let referralId = null;
-          if (tg?.initDataUnsafe?.start_param) {
-            referralId = tg.initDataUnsafe.start_param;
-          }
-          setInitState('auth');
-          await login(initData, referralId);
-        } else {
-          // Standalone web / PWA: show the public landing page first, then
-          // the web login when the user clicks "Start free".
-          setInitState('landing');
-          return;
-        }
+     const startApp = async () => {
+       try {
+         if (isTelegramContext) {
+           const initData = await getTelegramInitData();
+           if (cancelled) return;
+           const tg = window.Telegram?.WebApp;
+           logger.warn('[DEBUG] initData len:', initData.length, 'hasHash:', initData.includes('hash='), 'preview:', initData.slice(0,80));
+           let referralId = null;
+           if (tg?.initDataUnsafe?.start_param) {
+             referralId = tg.initDataUnsafe.start_param;
+           }
+           setInitState('auth');
+           await login(initData, referralId);
+         } else {
+           // Not inside Telegram: go straight to landing.
+           setInitState('landing');
+           return;
+         }
 
-        if (cancelled) return;
-        setInitState('ready');
-        // First-time users see a quick explainer before choosing a language.
-        setScreen(localStorage.getItem(ONBOARD_KEY) ? 'tracks' : 'onboarding');
-        // Questions are already loaded inside login() — no need to call again.
-      } catch (err) {
-        if (cancelled) return;
-        console.error('Startup failed:', err);
-        setAuthError(err.message);
-        setInitState('error');
-      }
-    };
+         if (cancelled) return;
+         setInitState('ready');
+         setScreen(localStorage.getItem(ONBOARD_KEY) ? 'tracks' : 'onboarding');
+       } catch (err) {
+         if (cancelled) return;
+         console.error('Startup failed:', err);
+         setAuthError(err.message);
+         setInitState('error');
+       }
+     };
 
-    startApp();
-    return () => { cancelled = true; };
-  }, []);
+     startApp();
+     return () => { cancelled = true; };
+   }, []);
 
   const handleCategoryDone = () => {
     loadQuestions();
     setScreen('main');
   };
 
-  const handleLanguageChange = async (newLang) => {
-    await switchLanguage(newLang);
+   const handleLanguageChange = (newLang) => {
+    switchLanguage(newLang);
     setScreen('category');
   };
 

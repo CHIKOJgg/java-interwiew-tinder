@@ -38,11 +38,10 @@
   <meta name="twitter:description" content="Practice the EXACT questions companies ask. AI explanations. Readiness score. Free to start." />
   <meta name="twitter:image" content="/og-image.png" />
 
-  <!-- Google One Tap (web login). Harmless if VITE_GOOGLE_CLIENT_ID unset. -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Telegram SDK (async — non-blocking, only used inside Telegram WebView) -->
+  <script src="https://telegram.org/js/telegram-web-app.js" async></script>
 
-  <!-- Telegram Mini App SDK — required for Telegram WebView to inject window.Telegram.WebApp -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- GA loaded dynamically only when VITE_GA_MEASUREMENT_ID is set -->
 
   <title>Stop Losing Job Offers — Interview Trainer for Java, Python & TypeScript | Interview Tinder</title>
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />

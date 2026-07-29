@@ -258,7 +258,15 @@ const useStore = create((set, get) => ({
   switchLanguage: async (language) => {
     const { user } = get();
     apiClient.setLanguage(language);
-    set({ language, currentIndex: 0, questions: [] });
+    const cacheKey = `tracks_${language}`;
+    const cachedTracks = get().tracksCache[cacheKey]?.tracks || [];
+    set(state => ({
+      language,
+      currentIndex: 0,
+      questions: [],
+      tracks: cachedTracks,
+      tracksCache: { ...state.tracksCache, [cacheKey]: state.tracksCache[cacheKey] || null },
+    }));
 
     if (user?.telegram_id) {
       apiClient.switchLanguage(language).catch((err) => {
@@ -773,6 +781,7 @@ const useStore = create((set, get) => ({
 
   // ─── Learning Tracks ─────────────────────────────────────────────
   tracks: [],
+  tracksCache: {},
   currentTrack: null,
   trackComplete: false,
   currentCertificate: null,
@@ -850,10 +859,20 @@ const useStore = create((set, get) => ({
   setPlaygroundQuestion: (q) => set({ playgroundQuestion: q }),
 
   loadTracks: async () => {
-    const { language } = get();
+    const { language, tracksCache } = get();
+    const cacheKey = `tracks_${language}`;
+    const cached = tracksCache[cacheKey];
+    if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
+      set({ tracks: cached.tracks });
+      return;
+    }
     try {
       const data = await apiClient.getTracks(language);
-      set({ tracks: data.tracks || [] });
+      const tracks = data.tracks || [];
+      set(s => ({
+        tracks,
+        tracksCache: { ...s.tracksCache, [cacheKey]: { tracks, timestamp: Date.now() } },
+      }));
     } catch (err) {
       logger.error('Failed to load tracks:', err.message);
     }

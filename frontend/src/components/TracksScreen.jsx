@@ -1,31 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, BookOpen, CheckCircle, ChevronRight, Play } from 'lucide-react';
-import apiClient from '../api/client';
 import useStore from '../store/useStore';
 import './TracksScreen.css';
 
 const TracksScreen = ({ onStartTrack, onBack, onSkipToCategories }) => {
   const { t } = useTranslation();
-  const { language } = useStore();
-  const [tracks, setTracks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { language, tracks, loadTracks } = useStore();
+  const [loading, setLoading] = useState(!tracks || tracks.length === 0);
 
   useEffect(() => {
-    loadTracks();
-  }, [language]);
-
-  const loadTracks = async () => {
-    try {
-      setLoading(true);
-      const data = await apiClient.getTracks(language);
-      setTracks(data.tracks || []);
-    } catch (err) {
-      console.error('Failed to load tracks:', err);
-    } finally {
+    if (tracks && tracks.length > 0) {
       setLoading(false);
+      return;
     }
-  };
+    const load = async () => {
+      setLoading(true);
+      await loadTracks();
+      setLoading(false);
+    };
+    load();
+  }, [language]);
 
   return (
     <div className="tracks-screen">

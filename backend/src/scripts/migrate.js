@@ -704,6 +704,107 @@ const migrations = [
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
       UPDATE questions SET is_active = TRUE WHERE is_active IS NULL;
     `
+  },
+
+  // ── 037: Seed learning tracks for Java ─────────────────────────────
+  {
+    id: '037_seed_learning_tracks',
+    sql: `
+      -- Only seed if learning_tracks is empty (first run)
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM questions WHERE language = 'Java' LIMIT 1)
+           AND NOT EXISTS (SELECT 1 FROM learning_tracks WHERE language = 'Java') THEN
+
+          INSERT INTO learning_tracks (language, name, description, level, icon, sort_order, is_active)
+          VALUES
+            ('Java', 'Java Core Fundamentals', 'Master OOP, exceptions, and core Java concepts', 'Junior', '☕', 1, TRUE),
+            ('Java', 'Multithreading Mastery', 'Thread management, synchronization, and concurrent APIs', 'Middle', '⚡', 2, TRUE),
+            ('Java', 'Collections & Stream API', 'Data structures, algorithms, and functional streaming', 'Junior', '📦', 3, TRUE),
+            ('Java', 'Spring Framework', 'Spring Boot, DI, REST APIs, and enterprise patterns', 'Middle', '🌱', 4, TRUE),
+            ('Java', 'JVM Deep Dive', 'Memory model, GC tuning, classloading, and performance', 'Senior', '🔧', 5, TRUE),
+            ('Java', 'Design Patterns', 'Gang of Four patterns and modern Java approaches', 'Middle', '🏗️', 6, TRUE);
+
+          -- Track 1: Java Core Fundamentals (OOP + Exceptions + Java Core, 10 steps)
+          INSERT INTO track_steps (track_id, question_id, step_order)
+          SELECT
+            (SELECT id FROM learning_tracks WHERE name = 'Java Core Fundamentals' AND language = 'Java'),
+            q.id,
+            ROW_NUMBER() OVER (ORDER BY q.id)
+          FROM (
+            (SELECT id FROM questions WHERE language = 'Java' AND category = 'OOP' AND is_active = TRUE ORDER BY RANDOM() LIMIT 4)
+            UNION ALL
+            (SELECT id FROM questions WHERE language = 'Java' AND category = 'Exceptions' AND is_active = TRUE ORDER BY RANDOM() LIMIT 3)
+            UNION ALL
+            (SELECT id FROM questions WHERE language = 'Java' AND category = 'Java Core' AND is_active = TRUE ORDER BY RANDOM() LIMIT 3)
+          ) q;
+
+          -- Track 2: Multithreading Mastery (Multithreading, 10 steps)
+          INSERT INTO track_steps (track_id, question_id, step_order)
+          SELECT
+            (SELECT id FROM learning_tracks WHERE name = 'Multithreading Mastery' AND language = 'Java'),
+            q.id,
+            ROW_NUMBER() OVER (ORDER BY q.id)
+          FROM (
+            SELECT id FROM questions
+            WHERE language = 'Java' AND category = 'Multithreading' AND is_active = TRUE
+            ORDER BY RANDOM() LIMIT 10
+          ) q;
+
+          -- Track 3: Collections & Stream API (Collections + Stream API, 10 steps)
+          INSERT INTO track_steps (track_id, question_id, step_order)
+          SELECT
+            (SELECT id FROM learning_tracks WHERE name = 'Collections & Stream API' AND language = 'Java'),
+            q.id,
+            ROW_NUMBER() OVER (ORDER BY q.id)
+          FROM (
+            (SELECT id FROM questions WHERE language = 'Java' AND category = 'Collections' AND is_active = TRUE ORDER BY RANDOM() LIMIT 6)
+            UNION ALL
+            (SELECT id FROM questions WHERE language = 'Java' AND category = 'Stream API' AND is_active = TRUE ORDER BY RANDOM() LIMIT 4)
+          ) q;
+
+          -- Track 4: Spring Framework (Spring, 10 steps)
+          INSERT INTO track_steps (track_id, question_id, step_order)
+          SELECT
+            (SELECT id FROM learning_tracks WHERE name = 'Spring Framework' AND language = 'Java'),
+            q.id,
+            ROW_NUMBER() OVER (ORDER BY q.id)
+          FROM (
+            SELECT id FROM questions
+            WHERE language = 'Java' AND category = 'Spring' AND is_active = TRUE
+            ORDER BY RANDOM() LIMIT 10
+          ) q;
+
+          -- Track 5: JVM Deep Dive (JVM, 8 steps)
+          INSERT INTO track_steps (track_id, question_id, step_order)
+          SELECT
+            (SELECT id FROM learning_tracks WHERE name = 'JVM Deep Dive' AND language = 'Java'),
+            q.id,
+            ROW_NUMBER() OVER (ORDER BY q.id)
+          FROM (
+            SELECT id FROM questions
+            WHERE language = 'Java' AND category = 'JVM' AND is_active = TRUE
+            ORDER BY RANDOM() LIMIT 8
+          ) q;
+
+          -- Track 6: Design Patterns (Design Patterns, 8 steps)
+          INSERT INTO track_steps (track_id, question_id, step_order)
+          SELECT
+            (SELECT id FROM learning_tracks WHERE name = 'Design Patterns' AND language = 'Java'),
+            q.id,
+            ROW_NUMBER() OVER (ORDER BY q.id)
+          FROM (
+            SELECT id FROM questions
+            WHERE language = 'Java' AND category = 'Design Patterns' AND is_active = TRUE
+            ORDER BY RANDOM() LIMIT 8
+          ) q;
+
+          RAISE NOTICE '✅ Seeded 6 Java learning tracks with track_steps';
+        ELSE
+          RAISE NOTICE '⏭️ Skipping track seed: no Java questions or tracks already exist';
+        END IF;
+      END $$;
+    `
   }
 ];
 

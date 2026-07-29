@@ -150,46 +150,64 @@ class ApiClient {
     const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
     const method = (options.method || 'GET').toUpperCase();
     const authHeaders = await this.getAuthHeaders();
-    logger.api(`${method} ${endpoint}`);
+    const maxRetries = (options.method || 'GET').toUpperCase() === 'GET' ? 2 : 0;
 
-    try {
-      const headers = {
-        ...authHeaders,
-        ...options.headers
-      };
-      if (method !== 'GET') {
-        headers['Content-Type'] = 'application/json';
-      }
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
-
-      if (response.status === 401 && endpoint !== '/auth/login') {
-        const { default: useStore } = await import('../store/useStore');
-        useStore.getState().logout();
-        logger.warn(`API 401 Session expired [${endpoint}]`);
-        throw new Error('Session expired. Please log in again.');
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (attempt > 0) {
+        const delay = 1000 * Math.pow(2, attempt);
+        logger.api(`Retry ${attempt}/${maxRetries} for ${method} ${endpoint} after ${delay}ms`);
+        await new Promise(r => setTimeout(r, delay));
       }
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        const thrown = new Error(err.detail || err.error || `HTTP ${response.status}`);
-        thrown.status = response.status;
-        thrown.feature = err.feature || null;
-        thrown.code = err.code || null;
-        logger.error(`API ${response.status} ${method} ${endpoint}:`, err.detail || err.error || response.statusText, thrown.feature ? `feature=${thrown.feature}` : '');
-        throw thrown;
-      }
-      logger.api(`${response.status} ${method} ${endpoint}`);
-      return response.json();
-    } catch (error) {
-      if (error.status) {
-        // already logged above for HTTP errors
-      } else {
+      logger.api(`${method} ${endpoint}`);
+
+      try {
+        const headers = {
+          ...authHeaders,
+          ...options.headers
+        };
+        if (method !== 'GET') {
+          headers['Content-Type'] = 'application/json';
+        }
+        const response = await fetch(url, {
+          ...options,
+          headers,
+        });
+
+        if (response.status === 401 && endpoint !== '/auth/login') {
+          const { default: useStore } = await import('../store/useStore');
+          useStore.getState().logout();
+          logger.warn(`API 401 Session expired [${endpoint}]`);
+          throw new Error('Session expired. Please log in again.');
+        }
+
+        if (response.status === 503 && attempt < maxRetries) {
+          logger.warn(`API 503 ${method} ${endpoint} — retrying...`);
+          continue;
+        }
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          const thrown = new Error(err.detail || err.error || `HTTP ${response.status}`);
+          thrown.status = response.status;
+          thrown.feature = err.feature || null;
+          thrown.code = err.code || null;
+          logger.error(`API ${response.status} ${method} ${endpoint}:`, err.detail || err.error || response.statusText, thrown.feature ? `feature=${thrown.feature}` : '');
+          throw thrown;
+        }
+        logger.api(`${response.status} ${method} ${endpoint}`);
+        return response.json();
+      } catch (error) {
+        if (error.status) {
+          throw error;
+        }
+        if (attempt < maxRetries) {
+          logger.warn(`API network error [${endpoint}] — retrying...`);
+          continue;
+        }
         logger.error(`API Error [${endpoint}]:`, error.message);
+        throw error;
       }
-      throw error;
     }
   }
 

@@ -51,10 +51,24 @@ export default function Landing({ onStart, onLogin }) {
 
   useEffect(() => {
     setStatsLoading(true);
-    fetch(`${API_BASE}/public/stats`)
-      .then(r => r.json())
-      .then(d => { setPublicStats(d); setStatsLoading(false); })
-      .catch(() => setStatsLoading(false));
+    const fetchStats = async (retries = 2) => {
+      for (let i = 0; i <= retries; i++) {
+        try {
+          const r = await fetch(`${API_BASE}/public/stats`);
+          if (r.ok) {
+            const d = await r.json();
+            setPublicStats(d);
+            setStatsLoading(false);
+            return;
+          }
+          if (i < retries) await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+        } catch {
+          if (i < retries) await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+        }
+      }
+      setStatsLoading(false);
+    };
+    fetchStats();
   }, []);
 
   useEffect(() => {

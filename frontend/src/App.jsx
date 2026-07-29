@@ -231,7 +231,7 @@ function App() {
         setInitState('ready');
         // First-time users see a quick explainer before choosing a language.
         setScreen(localStorage.getItem(ONBOARD_KEY) ? 'tracks' : 'onboarding');
-        loadQuestions().catch(console.error);
+        // Questions are already loaded inside login() — no need to call again.
       } catch (err) {
         if (cancelled) return;
         console.error('Startup failed:', err);

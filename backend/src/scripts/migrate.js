@@ -799,6 +799,69 @@ const migrations = [
       CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Design Patterns' AND language = 'Java' LIMIT 1) lt
       WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
     `
+  },
+
+  // ── 039: Re-seed track_steps (migration 038 ran before questions existed,
+  // so track steps are empty). Delete existing steps first, then re-insert.
+  {
+    id: '039_reseed_track_steps',
+    sql: `
+      DELETE FROM track_steps WHERE track_id IN (SELECT id FROM learning_tracks WHERE language = 'Java');
+
+      -- Track 1: Java Core Fundamentals
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        (SELECT id FROM questions WHERE language = 'Java' AND category = 'OOP' AND is_active = TRUE ORDER BY id LIMIT 4)
+        UNION ALL
+        (SELECT id FROM questions WHERE language = 'Java' AND category = 'Exceptions' AND is_active = TRUE ORDER BY id LIMIT 3)
+        UNION ALL
+        (SELECT id FROM questions WHERE language = 'Java' AND category = 'Java Core' AND is_active = TRUE ORDER BY id LIMIT 3)
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Java Core Fundamentals' AND language = 'Java' LIMIT 1) lt;
+
+      -- Track 2: Multithreading Mastery
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Java' AND category = 'Multithreading' AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Multithreading Mastery' AND language = 'Java' LIMIT 1) lt;
+
+      -- Track 3: Collections & Stream API
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        (SELECT id FROM questions WHERE language = 'Java' AND category = 'Collections' AND is_active = TRUE ORDER BY id LIMIT 6)
+        UNION ALL
+        (SELECT id FROM questions WHERE language = 'Java' AND category = 'Stream API' AND is_active = TRUE ORDER BY id LIMIT 4)
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Collections & Stream API' AND language = 'Java' LIMIT 1) lt;
+
+      -- Track 4: Spring Framework
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Java' AND category = 'Spring' AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Spring Framework' AND language = 'Java' LIMIT 1) lt;
+
+      -- Track 5: JVM Deep Dive
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Java' AND category = 'JVM' AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'JVM Deep Dive' AND language = 'Java' LIMIT 1) lt;
+
+      -- Track 6: Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Java' AND category = 'Design Patterns' AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Design Patterns' AND language = 'Java' LIMIT 1) lt;
+    `
   }
 ];
 

@@ -38,7 +38,6 @@ const migrations = [
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS cached_bug_hunting_data JSONB;
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS cached_blitz_data JSONB;
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS cached_code_completion_data JSONB;
-      ALTER TABLE questions ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
     `
   },
 
@@ -695,6 +694,15 @@ const migrations = [
         ('Java', 'design-notification', 'Design Notification System', 'Design a scalable push notification system.', 'Middle', ARRAY['Send push notifications', 'Support iOS/Android/Web', 'Preference management', 'Rate limiting'], ARRAY['10M notifications/day', '<1s delivery latency', 'Support scheduled notifications'], ARRAY['Message Queue', 'Notification Worker Pool', 'Apple/Google/FCM Connector', 'User Preference DB']),
         ('Java', 'design-key-value', 'Design Distributed Key-Value Store', 'Design a distributed key-value store like Redis or Cassandra.', 'Senior', ARRAY['Get/put key-value pairs', 'Support replication', 'Fault tolerance', 'Consistency levels'], ARRAY['1M QPS', 'Store 100TB data', '99.999% availability', 'Eventual consistency acceptable'], ARRAY['Partition Layer (Consistent Hashing)', 'Replication Manager', 'Storage Engine', 'Consistency Coordinator'])
       ON CONFLICT DO NOTHING;
+    `
+  },
+
+  // ── 036: Add is_active column to questions ──────────────────────────
+  {
+    id: '036_add_is_active_column',
+    sql: `
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+      UPDATE questions SET is_active = TRUE WHERE is_active IS NULL;
     `
   }
 ];

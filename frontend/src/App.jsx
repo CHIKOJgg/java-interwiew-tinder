@@ -73,7 +73,7 @@ function getTelegramInitData() {
       }
 
       if (tg.initData) {
-        const hasHash = tg.initData.includes('hash=');
+        const hasHash = /(^|&)hash=[^&]/.test(tg.initData);
         logger.warn({ attempt: attempts, len: tg.initData.length, hasHash, preview: tg.initData.slice(0,60) }, 'getTelegramInitData poll');
         if (hasHash) {
           clearInterval(interval);

@@ -207,6 +207,7 @@ function App() {
         const initData = await getTelegramInitData().catch(() => null);
         if (initData) {
           const tg = window.Telegram?.WebApp;
+          logger.warn('[DEBUG] initData len:', initData.length, 'hasHash:', initData.includes('hash='), 'preview:', initData.slice(0,80));
           let referralId = null;
           if (tg?.initDataUnsafe?.start_param) {
             referralId = tg.initDataUnsafe.start_param;

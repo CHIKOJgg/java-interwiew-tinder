@@ -13,7 +13,7 @@ export const validateTelegramWebAppData = (initData, botToken) => {
     const hash = urlParams.get('hash');
 
     if (!hash) {
-      logger.warn('No hash in initData — rejecting');
+      logger.warn({ initDataPreview: initData?.slice(0,120), initDataLen: initData?.length }, 'No hash in initData — rejecting');
       return null;
     }
 

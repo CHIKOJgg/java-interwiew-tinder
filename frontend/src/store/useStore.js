@@ -338,7 +338,7 @@ const useStore = create((set, get) => ({
         }
       }
       logger.error('Store: loadQuestions failed', error.message);
-      set({ isLoadingQuestions: false, _loadingLock: false });
+      set({ isLoadingQuestions: false, _loadingLock: false, hasMore: false });
     }
   },
 

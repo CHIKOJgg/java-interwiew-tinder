@@ -372,23 +372,47 @@ if (screen === 'track-detail') return <Suspense fallback={<div className="app-lo
    if (screen === 'review') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ReviewMode onBack={() => setScreen('progress')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
 if (screen === 'achievements') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AchievementScreen onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'profile') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProfileScreen onBack={() => setScreen('main')} onSettingsClick={() => setScreen('language')} /></Suspense>;
-  if (screen === 'peer-interview') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PeerInterviewScreen onBack={() => setScreen('main')} /></Suspense>;
-  if (playgroundQuestion) return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PlaygroundMode initialCode={playgroundQuestion.code} onBack={() => setPlaygroundQuestion(null)} /></Suspense>;
+   if (screen === 'peer-interview') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PeerInterviewScreen onBack={() => setScreen('main')} /></Suspense>;
+   if (playgroundQuestion) return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PlaygroundMode initialCode={playgroundQuestion.code} onBack={() => setPlaygroundQuestion(null)} /></Suspense>;
 
-  const renderMode = () => {
+   const emptyDeck = () => (
+     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16, padding: 24 }}>
+       <p style={{ fontSize: 18, fontWeight: 600 }}>{t('demo.no_questions', 'No questions available yet.')}</p>
+       <p style={{ textAlign: 'center', opacity: 0.6, maxWidth: 320 }}>{t('demo.no_questions_desc', 'Select a different language or category to get started.')}</p>
+       <button className="start-button" onClick={() => setScreen('language')} style={{ marginTop: 8 }}>
+         {t('common.go_back', 'Choose Language')}
+       </button>
+     </div>
+   );
+
+   const renderMode = () => {
     switch (learningMode) {
-      case 'swipe':
-        // Swipe mode: show skeleton during load, completion screen when exhausted
-        if (isLoadingQuestions) return <SkeletonCard />;
+       case 'swipe':
+         if (isLoadingQuestions) return <SkeletonCard />;
 
-        if (!hasMoreQuestions()) {
-          return (
-            <DeckComplete
-              onChooseOther={() => setScreen('language')}
-              onShare={() => setShowShare(true)}
-            />
-          );
-        }
+         if (!hasMoreQuestions()) {
+           // If the feed is exhausted but there are still known cards,
+           // show the refresher/completion screen. If there are zero
+           // questions at all, redirect to language/category selection
+           // so the user can still use the app.
+           if (questions.length === 0) {
+             return (
+               <div className="card-stack" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16, padding: 24 }}>
+                 <p style={{ fontSize: 18, fontWeight: 600 }}>{t('demo.no_questions', 'No questions available yet.')}</p>
+                 <p style={{ textAlign: 'center', opacity: 0.6, maxWidth: 320 }}>{t('demo.no_questions_desc', 'Select a different language or category to get started.')}</p>
+                 <button className="start-button" onClick={() => setScreen('language')} style={{ marginTop: 8 }}>
+                   {t('common.go_back', 'Choose Language')}
+                 </button>
+               </div>
+             );
+           }
+           return (
+             <DeckComplete
+               onChooseOther={() => setScreen('language')}
+               onShare={() => setShowShare(true)}
+             />
+           );
+         }
 
         return (
           <div className="card-stack">
@@ -418,24 +442,38 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
             ))}
           </div>
         );
-      case 'test':
-        if (!hasMoreQuestions()) return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
-        return <TestMode />;
-      case 'bug-hunting':
-        if (!hasMoreQuestions()) return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
-        return <BugHuntingMode />;
-      case 'blitz': return <BlitzMode />;
-      case 'system-design': return <SystemDesignMode />;
-      case 'mock-interview': return <Suspense fallback={<SkeletonCard />}><MockInterviewMode /></Suspense>;
-      case 'concept-linker':
-        if (!hasMoreQuestions()) return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
-        return <ConceptLinker />;
-      case 'code-completion':
-        if (!hasMoreQuestions()) return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
-        return <CodeCompletionMode />;
+       case 'test':
+         if (!hasMoreQuestions()) {
+           if (questions.length === 0) return emptyDeck();
+           return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
+         }
+         return <TestMode />;
+       case 'bug-hunting':
+         if (!hasMoreQuestions()) {
+           if (questions.length === 0) return emptyDeck();
+           return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
+         }
+         return <BugHuntingMode />;
+       case 'blitz': return <BlitzMode />;
+       case 'system-design': return <SystemDesignMode />;
+       case 'mock-interview': return <Suspense fallback={<SkeletonCard />}><MockInterviewMode /></Suspense>;
+       case 'concept-linker':
+         if (!hasMoreQuestions()) {
+           if (questions.length === 0) return emptyDeck();
+           return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
+         }
+         return <ConceptLinker />;
+       case 'code-completion':
+         if (!hasMoreQuestions()) {
+           if (questions.length === 0) return emptyDeck();
+           return <DeckComplete onChooseOther={() => setScreen('language')} onShare={() => setShowShare(true)} />;
+         }
+         return <CodeCompletionMode />;
       case 'track':
         return <Suspense fallback={<SkeletonCard />}><TrackMode onBack={() => setScreen('tracks')} /></Suspense>;
-      default: return <TestMode />;
+       default:
+         if (questions.length === 0) return emptyDeck();
+         return <TestMode />;
     }
   };
 

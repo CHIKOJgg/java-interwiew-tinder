@@ -9016,17 +9016,21 @@ function Q(category, question, short_answer, options, difficulty, language) {
 async function seedDB() {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
     let count = 0;
-    for (const q of questions) {
-      const res = await client.query(
-        `INSERT INTO questions (category, question_text, short_answer, options, difficulty, language)
-         VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING RETURNING id`,
-        [q.category, q.question, q.short_answer, q.options, q.difficulty, q.language]
-      );
-      if (res.rows.length > 0) count++;
+    const batchSize = 500;
+    for (let i = 0; i < questions.length; i += batchSize) {
+      const batch = questions.slice(i, i + batchSize);
+      await client.query('BEGIN');
+      for (const q of batch) {
+        const res = await client.query(
+          `INSERT INTO questions (category, question_text, short_answer, options, difficulty, language)
+           VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING RETURNING id`,
+          [q.category, q.question, q.short_answer, q.options, q.difficulty, q.language]
+        );
+        if (res.rows.length > 0) count++;
+      }
+      await client.query('COMMIT');
     }
-    await client.query('COMMIT');
     console.log(`Seeded ${count} new questions (${questions.length} total in memory)`);
   } catch (e) {
     await client.query('ROLLBACK');

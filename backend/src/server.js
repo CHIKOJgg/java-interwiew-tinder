@@ -52,6 +52,7 @@ if (process.env.NODE_ENV === 'production') {
   const missing = critical.filter(k => !process.env[k]);
   if (missing.length) {
     logger.error({ missing }, '⚠️ Production environment is missing critical variables');
+    process.exit(1);
   }
   if (!process.env.ALLOWED_ORIGINS) {
     logger.warn('ALLOWED_ORIGINS is not set — using defaults which include vercel.app domains');

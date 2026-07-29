@@ -40,6 +40,8 @@ const QuestionCard = forwardRef(
   const [showDiscussion, setShowDiscussion] = useState(false);
   const tinderRef = useRef(null);
 
+  useEffect(() => { setShowDiscussion(false); }, [question.id]);
+
   const isSaved = !!savedIds[question.id];
   const isRepeat = !!question.prevStatus;
 

@@ -101,6 +101,12 @@ const useStore = create((set, get) => ({
   // every subsequent tap within the same session (reduce upsell fatigue).
   aiLimitDismissed: false,
 
+  // ─── Polling cancellation ──────────────────────────────────
+  // Each poll is tagged with a request ID. When a new poll starts
+  // for the same key, the old one is cancelled so stale responses
+  // never update state after the user has moved on.
+  _pollRequestId: 0,
+
   // ─── Missed ("don't know") sheet ──────────────────────────────────
   // Populated when the user swipes left in swipe mode so we can show the
   // short answer + a one-tap AI explanation instead of silently advancing.
@@ -383,33 +389,35 @@ const useStore = create((set, get) => ({
   },
 
   // ─── Swipe ─────────────────────────────────────────────────────────
-  swipeCard: async (questionId, direction) => {
-    const status = direction === 'right' ? 'known' : 'unknown';
-    const q = get().questions[get().currentIndex];
-    logger.debug(`Store: swipe ${direction} (${status}) q=${questionId}`);
-    set(s => ({
-      stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 },
-      currentIndex: s.currentIndex + 1,
-    }));
+   swipeCard: async (questionId, direction) => {
+     const status = direction === 'right' ? 'known' : 'unknown';
+     const q = get().questions[get().currentIndex];
+     if (!q) return;
+     logger.debug(`Store: swipe ${direction} (${status}) q=${questionId}`);
+     const prevIndex = get().currentIndex;
+     const prevStats = { ...get().stats };
+     set(s => ({
+       stats: { ...s.stats, [status]: s.stats[status] + 1, totalSeen: s.stats.totalSeen + 1 },
+       currentIndex: s.currentIndex + 1,
+     }));
 
-    try {
-      const response = await apiClient.recordSwipe(questionId, status);
-      if (response.streak) {
-        get().applyStreak(response.streak);
-      }
-    } catch (err) {
-      logger.error('Store: swipe recording failed', err.message);
-    }
+     try {
+       const response = await apiClient.recordSwipe(questionId, status);
+       if (response.streak) {
+         get().applyStreak(response.streak);
+       }
+     } catch (err) {
+       logger.error('Store: swipe recording failed', err.message);
+       set({ currentIndex: prevIndex, stats: prevStats });
+       return;
+     }
 
-    // Swipe left ("don't know") in swipe mode now opens the learning sheet
-    // with the short answer + a one-tap AI explanation — instead of silently
-    // advancing and leaving the user with nothing.
-    if (direction === 'left' && get().learningMode === 'swipe' && q) {
-      get().openMissed(q);
-    }
-    get().bumpDaily();
-    if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
-  },
+     if (direction === 'left' && get().learningMode === 'swipe' && q) {
+       get().openMissed(q);
+     }
+     get().bumpDaily();
+     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+   },
 
   undoSwipe: async (questionId, direction) => {
     const status = direction === 'right' ? 'known' : 'unknown';
@@ -627,8 +635,9 @@ const useStore = create((set, get) => ({
 
   // ─── AI generation ─────────────────────────────────────────────────
   fetchGeneration: async (type, questionId, _attempt = 0) => {
-    const MAX_ATTEMPTS = 10;       // ~20s total at 2s intervals
+    const MAX_ATTEMPTS = 10;
     const POLL_INTERVAL_MS = 2000;
+    const pollId = ++get()._pollRequestId;
 
     const question = get().questions.find(q => q.id === questionId);
     if (!question) return;
@@ -665,6 +674,8 @@ const useStore = create((set, get) => ({
         type, question.question, question.shortAnswer, question.category, questionId
       );
 
+      if (pollId !== get()._pollRequestId) return;
+
       if (response.status === 'ready' && response.data) {
         set(state => ({
           questions: state.questions.map(q =>
@@ -686,24 +697,26 @@ const useStore = create((set, get) => ({
 
       // Still pending — wait and retry
       await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+      if (pollId !== get()._pollRequestId) return;
       return get().fetchGeneration(type, questionId, _attempt + 1);
     } catch (err) {
       console.error(`fetchGeneration(${type}) attempt ${_attempt} failed:`, err.message);
       await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+      if (pollId !== get()._pollRequestId) return;
       return get().fetchGeneration(type, questionId, _attempt + 1);
     }
   },
 
   // ─── Explanation ───────────────────────────────────────────────────
   loadExplanation: async (questionId, _attempt = 0) => {
+    const pollId = ++get()._pollRequestId;
     set({ isLoadingExplanation: true, showExplanation: true });
     try {
       const response = await apiClient.getExplanation(questionId);
-      // Backend generates explanations asynchronously via the worker; when
-      // it is not ready yet it returns { status: 'pending' }. Poll a few
-      // times before giving up.
+      if (pollId !== get()._pollRequestId) return;
       if (response.status === 'pending' && _attempt < 8) {
         await new Promise(r => setTimeout(r, 1500));
+        if (pollId !== get()._pollRequestId) return;
         return get().loadExplanation(questionId, _attempt + 1);
       }
       set({

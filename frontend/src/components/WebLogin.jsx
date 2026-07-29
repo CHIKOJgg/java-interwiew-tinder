@@ -61,6 +61,8 @@ export default function WebLogin({ referralId, onAuthenticated, onBack }) {
     }
   };
 
+  const isGoogleEnabled = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
   return (
     <div className="web-login">
       <h1>{t('auth.connecting', 'Interview Tinder')}</h1>
@@ -72,9 +74,11 @@ export default function WebLogin({ referralId, onAuthenticated, onBack }) {
         <button className={mode === 'email' ? 'active' : ''} onClick={() => setMode('email')}>
           {t('auth.by_email', 'Email')}
         </button>
-        <button className={mode === 'google' ? 'active' : ''} onClick={() => setMode('google')}>
-          Google
-        </button>
+        {isGoogleEnabled && (
+          <button className={mode === 'google' ? 'active' : ''} onClick={() => setMode('google')}>
+            Google
+          </button>
+        )}
       </div>
 
       {mode === 'email' && (

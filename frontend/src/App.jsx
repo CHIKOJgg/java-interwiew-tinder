@@ -50,26 +50,26 @@ import DemoMode from './components/DemoMode';
 import './App.css';
 
 function getTelegramInitData() {
-  return new Promise((resolve, reject) => {
-    const tg = window.Telegram?.WebApp;
-    if (!tg) { reject(new Error('Telegram not available')); return; }
-    if (!tg._readyCalled) {
-      tg._readyCalled = true;
-      try { tg.ready(); } catch (e) { /* noop */ }
-      try { tg.expand(); } catch (e) { /* noop */ }
-    }
-    if (tg.initData) { resolve(tg.initData); return; }
-    if (tg.initDataUnsafe?.user) { resolve(`user=${JSON.stringify(tg.initDataUnsafe.user)}`); return; }
-    let attempts = 0;
-    const maxAttempts = 5;
-    const interval = setInterval(() => {
-      attempts++;
-      if (tg.initData) { clearInterval(interval); resolve(tg.initData); return; }
-      if (tg.initDataUnsafe?.user) { clearInterval(interval); resolve(`user=${JSON.stringify(tg.initDataUnsafe.user)}`); return; }
-      if (attempts >= maxAttempts) { clearInterval(interval); reject(new Error(i18n.t('app.initdata_empty'))); }
-    }, 100);
-  });
-}
+   return new Promise((resolve, reject) => {
+     const tg = window.Telegram?.WebApp;
+     if (!tg) { reject(new Error('Telegram not available')); return; }
+     if (!tg._readyCalled) {
+       tg._readyCalled = true;
+       try { tg.ready(); } catch (e) { /* noop */ }
+       try { tg.expand(); } catch (e) { /* noop */ }
+     }
+     if (tg.initData) { resolve(tg.initData); return; }
+     if (tg.initDataUnsafe?.user) { resolve(`user=${JSON.stringify(tg.initDataUnsafe.user)}`); return; }
+     let attempts = 0;
+     const maxAttempts = 3;
+     const interval = setInterval(() => {
+       attempts++;
+       if (tg.initData) { clearInterval(interval); resolve(tg.initData); return; }
+       if (tg.initDataUnsafe?.user) { clearInterval(interval); resolve(`user=${JSON.stringify(tg.initDataUnsafe.user)}`); return; }
+       if (attempts >= maxAttempts) { clearInterval(interval); reject(new Error(i18n.t('app.initdata_empty'))); }
+     }, 50);
+   });
+ }
 
 function App() {
   const {
@@ -207,6 +207,7 @@ function App() {
 
          if (cancelled) return;
          setInitState('ready');
+         // First-time users see a quick explainer before choosing a language.
          setScreen(localStorage.getItem(ONBOARD_KEY) ? 'tracks' : 'onboarding');
        } catch (err) {
          if (cancelled) return;

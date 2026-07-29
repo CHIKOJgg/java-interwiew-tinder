@@ -119,31 +119,33 @@ const useStore = create((set, get) => ({
       const lang = user.language || 'Java';
       apiClient.setLanguage(lang);
 
-      saveToSession('token', token);
-      set({
-        user,
-        token,
-        isAuthenticated: true,
-        isLoading: false,
-        language: lang,
-        availableModes: user.available_modes || ['swipe', 'test'],
-        availableLanguages: user.available_languages || ['Java', 'Python', 'TypeScript'],
-      });
-       logger.info('Store: login ok', `plan=${user.plan || 'free'}`, `modes=${(user.available_modes || []).join(',')}`);
+        saveToSession('token', token);
+        set({
+          user,
+          token,
+          isAuthenticated: true,
+          isLoading: false,
+          language: lang,
+          availableModes: user.available_modes || ['swipe', 'test'],
+          availableLanguages: user.available_languages || ['Java', 'Python', 'TypeScript'],
+        });
+         logger.info('Store: login ok', `plan=${user.plan || 'free'}`, `modes=${(user.available_modes || []).join(',')}`);
 
-       await get().loadQuestions();
-       get().loadStats();
-       get().initDaily();
-       get().loadSaved();
+        // Preload data in background — don't block login response.
+        get().loadQuestions().catch(() => {});
+        get().loadStats().catch(() => {});
+        get().initDaily();
+        get().loadSaved().catch(() => {});
+        get().loadTracks().catch(() => {});
 
-       // Migrate zero-login demo answers (if any) into the new account.
-       import('../utils/guestProgress').then(({ takeGuestProgress }) => {
-         const items = takeGuestProgress(lang);
-         if (items.length) {
-           apiClient.importProgress(items).catch(() => { /* non-fatal */ });
-         }
-       });
-       return user;
+        // Migrate zero-login demo answers (if any) into the new account.
+        import('../utils/guestProgress').then(({ takeGuestProgress }) => {
+          const items = takeGuestProgress(lang);
+          if (items.length) {
+            apiClient.importProgress(items).catch(() => { /* non-fatal */ });
+          }
+        });
+        return user;
     } catch (error) {
       set({ isLoading: false, _loadingLock: false });
       logger.error('Store: login failed', error.message);

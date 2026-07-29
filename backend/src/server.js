@@ -2390,20 +2390,31 @@ app.get('/api/tracks', async (req, res) => {
   try {
     const language = req.query.language || 'Java';
     const tracks = await trackService.getTracks(language);
-    const withProgress = await Promise.all(tracks.map(async (t) => {
-      const p = await pool.query(
-        'SELECT current_step, completed FROM user_track_progress WHERE user_id = $1 AND track_id = $2',
-        [req.userId, t.id]
-      );
-      const { rows: count } = await pool.query(
-        'SELECT COUNT(*) as total FROM track_steps WHERE track_id = $1', [t.id]
-      );
-      return {
-        ...t,
-        totalSteps: parseInt(count[0]?.total || 0),
-        currentStep: p.rows[0]?.current_step || 0,
-        completed: p.rows[0]?.completed || false,
-      };
+    if (tracks.length === 0) {
+      return res.json({ tracks: [] });
+    }
+    const trackIds = tracks.map(t => t.id);
+    const placeholders = trackIds.map((_, i) => `$${i + 1}`).join(',');
+    const [{ rows: progressRows }, { rows: stepCounts }] = await Promise.all([
+      pool.query(
+        `SELECT track_id, current_step, completed FROM user_track_progress
+         WHERE user_id = $1 AND track_id IN (${placeholders})`,
+        [req.userId, ...trackIds]
+      ),
+      pool.query(
+        `SELECT track_id, COUNT(*) as total FROM track_steps
+         WHERE track_id IN (${placeholders})
+         GROUP BY track_id`,
+        trackIds
+      ),
+    ]);
+    const progressMap = Object.fromEntries(progressRows.map(r => [r.track_id, r]));
+    const stepsMap = Object.fromEntries(stepCounts.map(r => [r.track_id, parseInt(r.total)]));
+    const withProgress = tracks.map(t => ({
+      ...t,
+      totalSteps: stepsMap[t.id] || 0,
+      currentStep: progressMap[t.id]?.current_step || 0,
+      completed: progressMap[t.id]?.completed || false,
     }));
     res.json({ tracks: withProgress });
   } catch (err) {

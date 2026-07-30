@@ -9020,20 +9020,22 @@ async function seedDB() {
     const batchSize = 500;
     for (let i = 0; i < questions.length; i += batchSize) {
       const batch = questions.slice(i, i + batchSize);
-      await client.query('BEGIN');
+      const placeholders = [];
+      const values = [];
+      let p = 1;
       for (const q of batch) {
-        const res = await client.query(
-          `INSERT INTO questions (category, question_text, short_answer, options, difficulty, language)
-           VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING RETURNING id`,
-          [q.category, q.question, q.short_answer, q.options, q.difficulty, q.language]
-        );
-        if (res.rows.length > 0) count++;
+        placeholders.push(`($${p++}, $${p++}, $${p++}, $${p++}, $${p++}, $${p++})`);
+        values.push(q.category, q.question, q.short_answer, JSON.stringify(q.options), q.difficulty, q.language);
       }
-      await client.query('COMMIT');
+      const res = await client.query(
+        `INSERT INTO questions (category, question_text, short_answer, options, difficulty, language)
+         VALUES ${placeholders.join(', ')} ON CONFLICT DO NOTHING`,
+        values
+      );
+      count += res.rowCount || 0;
     }
     console.log(`Seeded ${count} new questions (${questions.length} total in memory)`);
   } catch (e) {
-    await client.query('ROLLBACK');
     console.error('Seed failed:', e);
     throw e;
   } finally {

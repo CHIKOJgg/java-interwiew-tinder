@@ -388,16 +388,17 @@ app.post('/api/auth/login', emailSendLimiter, async (req, res) => {
     let tracks = [];
     if (rawTracks.length > 0) {
       const trackIds = rawTracks.map(t => t.id);
-      const placeholders = trackIds.map((_, i) => `$${i + 1}`).join(',');
+      const progressPlaceholders = trackIds.map((_, i) => `$${i + 2}`).join(',');
+      const stepsPlaceholders = trackIds.map((_, i) => `$${i + 1}`).join(',');
       const [{ rows: progressRows }, { rows: stepCounts }] = await Promise.all([
         pool.query(
           `SELECT track_id, current_step, completed FROM user_track_progress
-           WHERE user_id = $1 AND track_id IN (${placeholders})`,
+           WHERE user_id = $1 AND track_id IN (${progressPlaceholders})`,
           [user.telegram_id, ...trackIds]
         ),
         pool.query(
           `SELECT track_id, COUNT(*) as total FROM track_steps
-           WHERE track_id IN (${placeholders})
+           WHERE track_id IN (${stepsPlaceholders})
            GROUP BY track_id`,
           trackIds
         ),
@@ -702,16 +703,17 @@ app.post('/api/auth/email/verify', emailSendLimiter, async (req, res) => {
     let tracks = [];
     if (rawTracks.length > 0) {
       const trackIds = rawTracks.map(t => t.id);
-      const placeholders = trackIds.map((_, i) => `$${i + 1}`).join(',');
+      const progressPlaceholders = trackIds.map((_, i) => `$${i + 2}`).join(',');
+      const stepsPlaceholders = trackIds.map((_, i) => `$${i + 1}`).join(',');
       const [{ rows: progressRows }, { rows: stepCounts }] = await Promise.all([
         pool.query(
           `SELECT track_id, current_step, completed FROM user_track_progress
-           WHERE user_id = $1 AND track_id IN (${placeholders})`,
+           WHERE user_id = $1 AND track_id IN (${progressPlaceholders})`,
           [user.telegram_id, ...trackIds]
         ),
         pool.query(
           `SELECT track_id, COUNT(*) as total FROM track_steps
-           WHERE track_id IN (${placeholders})
+           WHERE track_id IN (${stepsPlaceholders})
            GROUP BY track_id`,
           trackIds
         ),
@@ -2533,16 +2535,17 @@ app.get('/api/tracks', async (req, res) => {
       return res.json(result);
     }
     const trackIds = tracks.map(t => t.id);
-    const placeholders = trackIds.map((_, i) => `$${i + 1}`).join(',');
+    const progressPlaceholders = trackIds.map((_, i) => `$${i + 2}`).join(',');
+    const stepsPlaceholders = trackIds.map((_, i) => `$${i + 1}`).join(',');
     const [{ rows: progressRows }, { rows: stepCounts }] = await Promise.all([
       pool.query(
         `SELECT track_id, current_step, completed FROM user_track_progress
-         WHERE user_id = $1 AND track_id IN (${placeholders})`,
+         WHERE user_id = $1 AND track_id IN (${progressPlaceholders})`,
         [userId, ...trackIds]
       ),
       pool.query(
         `SELECT track_id, COUNT(*) as total FROM track_steps
-         WHERE track_id IN (${placeholders})
+         WHERE track_id IN (${stepsPlaceholders})
          GROUP BY track_id`,
         trackIds
       ),

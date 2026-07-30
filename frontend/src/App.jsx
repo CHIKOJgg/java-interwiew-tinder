@@ -45,7 +45,7 @@ import i18n from './i18n/config';
 import logger from './utils/logger';
 
 const TracksScreenWrapper = ({ onStartTrack, onBack, onSkipToCategories }) => {
-  const { tracks, loadTracks, language, setSelectedCategories, loadQuestions, setLearningMode } = useStore();
+  const { tracks, loadTracks, language, setSelectedCategories, loadQuestions, setLearningMode, user } = useStore();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -59,13 +59,15 @@ const TracksScreenWrapper = ({ onStartTrack, onBack, onSkipToCategories }) => {
   useEffect(() => {
     if (ready && tracks.length === 0) {
       setSelectedCategories([]);
-      setLearningMode('swipe');
+      if (typeof setLearningMode === 'function') {
+        setLearningMode('swipe');
+      }
       onSkipToCategories();
     }
   }, [ready, tracks]);
 
   if (!ready) return <div className="app-loading"><SkeletonCard /></div>;
-  if (tracks.length === 0) return null;
+  if (tracks.length === 0) return <div className="app-loading"><div className="empty-deck"><p style={{ fontSize: 18, fontWeight: 600 }}>No tracks available yet.</p><p style={{ textAlign: 'center', opacity: 0.6, maxWidth: 320, marginTop: 8 }}>Select a different language or try again later.</p><button className="start-button" onClick={() => setScreen('language')} style={{ marginTop: 16 }}>Choose Language</button></div></div>;
 
   return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}>
     <TracksScreen onStartTrack={onStartTrack} onBack={onBack} onSkipToCategories={onSkipToCategories} />
@@ -79,12 +81,11 @@ import DemoMode from './components/DemoMode';
 import './App.css';
 
 // Detect Telegram Mini App context.
-// Check 1: initData from the Telegram SDK (most reliable — requires the SDK to have loaded)
-// Check 2: URL params that Telegram injects synchronously (fallback for edge cases)
+// Check 1: initData from the Telegram SDK (most reliable)
+// Check 2: URL params Telegram injects
 function detectContext() {
   const tg = window.Telegram?.WebApp;
   if (tg?.initData || tg?.initDataUnsafe?.user) return 'telegram';
-  if (tg) return 'telegram';
   const params = new URLSearchParams(window.location.search);
   if (params.has('tgWebAppData') || params.has('tgWebAppPlatform') || params.has('tgWebAppVersion')) return 'telegram';
   if (window.location.hash.includes('tgWebAppData')) return 'telegram';
@@ -254,10 +255,10 @@ function App() {
     setScreen('main');
   };
 
-   const handleLanguageChange = (newLang) => {
-    switchLanguage(newLang);
-    setScreen('category');
-  };
+   const handleLanguageChange = async (newLang) => {
+     await switchLanguage(newLang);
+     setScreen('category');
+   };
 
   // Re-open the first-run explainer from the Header help button.
   const handleHelp = () => {

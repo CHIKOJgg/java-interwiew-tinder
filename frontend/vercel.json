@@ -4,7 +4,7 @@
   "installCommand": "npm install",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://java-interwiew-tinder-production.up.railway.app/api/$1" },
+    { "source": "/api/(.*)", "destination": "https://java-interview-tinder-production.up.railway.app/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

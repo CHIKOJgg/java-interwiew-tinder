@@ -49,11 +49,33 @@ const Landing = lazy(() => import('./components/Landing'));
 import DemoMode from './components/DemoMode';
 import './App.css';
 
+// Detect Telegram Mini App context via URL params (reliable, synchronous) or Telegram SDK
+// Telegram injects tgWebAppData/tgWebAppPlatform/tgWebAppVersion in the URL — these are
+// available immediately, unlike window.Telegram.WebApp which may load asynchronously.
+function detectContext() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('tgWebAppData') || params.has('tgWebAppPlatform') || params.has('tgWebAppVersion')) return 'telegram';
+  if (window.Telegram?.WebApp) return 'telegram';
+  return 'web';
+}
+
 function getTelegramInitData() {
   const raw = window.Telegram?.WebApp?.initData;
   if (raw) return raw;
   const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
   if (user) return `user=${JSON.stringify(user)}`;
+  throw new Error(i18n.t('app.initdata_empty'));
+}
+
+// Poll briefly for Telegram SDK to become available (max 1s)
+async function waitForTelegramSdk() {
+  if (window.Telegram?.WebApp?.initData) return window.Telegram.WebApp.initData;
+  if (window.Telegram?.WebApp?.initDataUnsafe?.user) return `user=${JSON.stringify(window.Telegram.WebApp.initDataUnsafe.user)}`;
+  for (let i = 0; i < 10; i++) {
+    await new Promise(r => setTimeout(r, 100));
+    if (window.Telegram?.WebApp?.initData) return window.Telegram.WebApp.initData;
+    if (window.Telegram?.WebApp?.initDataUnsafe?.user) return `user=${JSON.stringify(window.Telegram.WebApp.initDataUnsafe.user)}`;
+  }
   throw new Error(i18n.t('app.initdata_empty'));
 }
 
@@ -72,9 +94,9 @@ function App() {
   } = useStore();
   const { t } = useTranslation();
 
-const isTelegramContext = !!window.Telegram?.WebApp;
-   const [isWeb, setIsWeb] = useState(!isTelegramContext);
-    const [initState, setInitState] = useState(isTelegramContext ? 'waiting_telegram' : 'landing');
+  const context = detectContext();
+  const [isWeb, setIsWeb] = useState(context === 'web');
+  const [initState, setInitState] = useState(context === 'telegram' ? 'starting' : 'landing');
   const [screen, setScreen] = useState('language');
   const [authError, setAuthError] = useState(null);
   const [showShare, setShowShare] = useState(false);
@@ -159,39 +181,38 @@ const isTelegramContext = !!window.Telegram?.WebApp;
     };
    }, []);
 
-    useEffect(() => {
-      let cancelled = false;
+  // ─── Initialization ────────────────────────────────────────────────
+  // Runs once on mount. In Telegram context: wait for SDK + login, then go
+  // to tracks/onboarding.  In web context: stay on landing — never touch
+  // Telegram auth.  The context never changes after mount, so this effect
+  // has no dependencies.
+  useEffect(() => {
+    if (context === 'web') return;
+    let cancelled = false;
 
-const startApp = async () => {
-        try {
-          if (isTelegramContext) {
-            const initData = await getTelegramInitData();
-            if (cancelled) return;
-            const tg = window.Telegram?.WebApp;
-            let referralId = null;
-            if (tg?.initDataUnsafe?.start_param) {
-              referralId = tg.initDataUnsafe.start_param;
-            }
-            await login(initData, referralId);
-          } else {
-            setIsWeb(true);
-            setInitState('landing');
-            return;
-          }
-
-          if (cancelled) return;
-          setInitState('ready');
-          setScreen(localStorage.getItem(ONBOARD_KEY) ? 'tracks' : 'onboarding');
-        } catch (err) {
-          if (cancelled) return;
-          setAuthError(err.message);
-          setInitState('error');
+    const startApp = async () => {
+      try {
+        const initData = await waitForTelegramSdk();
+        if (cancelled) return;
+        const tg = window.Telegram?.WebApp;
+        let referralId = null;
+        if (tg?.initDataUnsafe?.start_param) {
+          referralId = tg.initDataUnsafe.start_param;
         }
-      };
+        await login(initData, referralId);
+        if (cancelled) return;
+        setInitState('ready');
+        setScreen(localStorage.getItem(ONBOARD_KEY) ? 'tracks' : 'onboarding');
+      } catch (err) {
+        if (cancelled) return;
+        setAuthError(err.message);
+        setInitState('error');
+      }
+    };
 
-     startApp();
-     return () => { cancelled = true; };
-   }, []);
+    startApp();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleCategoryDone = () => {
     loadQuestions();
@@ -259,20 +280,11 @@ const startApp = async () => {
     cardRefs.current[0]?.swipe?.(direction);
   };
 
-  if (initState === 'waiting_telegram') {
+   if (initState === 'starting') {
     return (
       <div className="app-loading">
         <SkeletonCard />
         <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>{t('auth.connecting')}</p>
-      </div>
-    );
-  }
-
-  if (initState === 'auth') {
-    return (
-      <div className="app-loading">
-        <SkeletonCard />
-        <p style={{ textAlign: 'center', opacity: 0.5, marginTop: 16 }}>{t('auth.signing_in')}</p>
       </div>
     );
   }

@@ -3,6 +3,7 @@ import React, {
   useRef,
   forwardRef,
   useImperativeHandle,
+  useEffect,
 } from 'react';
 import TinderCard from 'react-tinder-card';
 import { RotateCcw, Flag, Sparkles, Bookmark, BookmarkCheck, MessageSquare } from 'lucide-react';

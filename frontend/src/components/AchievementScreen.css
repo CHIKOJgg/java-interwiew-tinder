@@ -6,7 +6,6 @@
   padding: 16px;
   box-sizing: border-box;
   overflow-y: auto;
-  background: var(--tg-theme-bg-color, #f8f9fa);
 }
 
 .achievement-header {
@@ -14,7 +13,7 @@
   align-items: center;
   gap: 12px;
   padding: 8px 0;
-  border-bottom: 1px solid var(--tg-theme-hint-color, #e9ecef);
+  border-bottom: 2px solid var(--ink);
   margin-bottom: 16px;
 }
 
@@ -23,22 +22,25 @@
   font-size: 20px;
   font-weight: 700;
   margin: 0;
-  color: var(--tg-theme-text-color);
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .achievement-count {
   font-size: 13px;
   font-weight: 600;
-  color: var(--tg-theme-button-color, #667eea);
-  background: rgba(102, 126, 234, 0.1);
+  color: var(--blue);
+  background: var(--cream);
+  border: 2px solid var(--ink);
   padding: 4px 10px;
   border-radius: 12px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .back-btn {
   background: none;
-  border: 1px solid var(--tg-theme-hint-color, #dee2e6);
-  color: var(--tg-theme-text-color);
+  border: 2.5px solid var(--ink);
+  color: var(--ink);
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -47,27 +49,27 @@
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  transition: background 0.2s;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.back-btn:hover {
-  background: var(--tg-theme-button-color, #667eea);
-  color: #fff;
-  border-color: var(--tg-theme-button-color, #667eea);
+.back-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
 .progress-bar-container {
-  height: 8px;
-  background: var(--tg-theme-hint-color, #e9ecef);
-  border-radius: 4px;
+  height: 10px;
+  background: var(--ink);
+  border-radius: 5px;
   overflow: hidden;
   margin-bottom: 20px;
+  border: 2.5px solid var(--ink);
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea, #764ba2);
-  border-radius: 4px;
+  background: var(--lime);
+  border-radius: 3px;
   transition: width 0.4s ease;
 }
 
@@ -83,16 +85,16 @@
   align-items: center;
   gap: 6px;
   padding: 16px 8px;
-  border-radius: 16px;
-  background: var(--tg-theme-bg-color, #f8f9fa);
-  border: 2px solid var(--tg-theme-hint-color, #dee2e6);
-  transition: transform 0.2s, border-color 0.2s;
+  border-radius: 14px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  transition: transform 0.15s;
+  position: relative;
 }
 
 .badge-card.unlocked {
-  border-color: var(--badge-color, #667eea);
-  background: rgba(102, 126, 234, 0.08);
-  transform: scale(1);
+  background: var(--cream);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .badge-card.locked {
@@ -109,41 +111,30 @@
   font-size: 11px;
   font-weight: 600;
   text-align: center;
-  color: var(--tg-theme-text-color);
+  color: var(--ink);
   line-height: 1.2;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .badge-check {
   position: absolute;
   top: 4px;
   right: 4px;
-  width: 16px;
-  height: 16px;
-  background: #69db7c;
-  color: #fff;
+  width: 18px;
+  height: 18px;
+  background: var(--green);
+  color: var(--ink);
   border-radius: 50%;
   font-size: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-}
-
-.badge-card {
-  position: relative;
+  border: 2px solid var(--ink);
 }
 
 @media (max-width: 400px) {
-  .badges-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .badge-card {
-    padding: 12px 6px;
-  }
-
-  .badge-icon {
-    font-size: 26px;
-  }
+  .badges-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .badge-card { padding: 12px 6px; }
+  .badge-icon { font-size: 26px; }
 }

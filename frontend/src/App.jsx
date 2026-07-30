@@ -78,6 +78,7 @@ import DebugScreen from './components/DebugScreen';
 import WebLogin from './components/WebLogin';
 const Landing = lazy(() => import('./components/Landing'));
 import DemoMode from './components/DemoMode';
+import Settings from './components/Settings';
 import './App.css';
 
 // Detect Telegram Mini App context.
@@ -397,7 +398,8 @@ if (screen === 'track-detail') return <Suspense fallback={<div className="app-lo
    if (screen === 'progress') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProgressScreen onBack={() => setScreen('main')} onReview={() => setScreen('review')} onUpgrade={() => setScreen('subscriptions')} onSavedClick={() => setScreen('saved')} /></Suspense>;
    if (screen === 'review') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ReviewMode onBack={() => setScreen('progress')} onUpgrade={() => setScreen('subscriptions')} /></Suspense>;
 if (screen === 'achievements') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AchievementScreen onBack={() => setScreen('main')} /></Suspense>;
-  if (screen === 'profile') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProfileScreen onBack={() => setScreen('main')} onSettingsClick={() => setScreen('language')} /></Suspense>;
+   if (screen === 'profile') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProfileScreen onBack={() => setScreen('main')} onSettingsClick={() => setScreen('settings')} /></Suspense>;
+   if (screen === 'settings') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><Settings onBack={() => setScreen('profile')} /></Suspense>;
    if (screen === 'peer-interview') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PeerInterviewScreen onBack={() => setScreen('main')} /></Suspense>;
    if (playgroundQuestion) return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PlaygroundMode initialCode={playgroundQuestion.code} onBack={() => setPlaygroundQuestion(null)} /></Suspense>;
 
@@ -507,7 +509,7 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
     <div className={`app ${learningMode === 'swipe' ? 'swipe-mode' : ''}`}>
       <PwaInstallPrompt show={isWeb && (stats?.totalSeen || 0) >= 10} />
 <Header
-          onSettingsClick={() => setScreen('language')}
+          onSettingsClick={() => setScreen('settings')}
           onResumeClick={() => setScreen('resume')}
           onVacancyClick={() => setScreen('vacancy')}
           onTrendsClick={() => setScreen('trends')}

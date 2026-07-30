@@ -35,7 +35,7 @@ function ProfileScreen({ onBack, onSettingsClick }) {
 
   const progress = stats?.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
   const planLabel = plan === 'pro' ? 'Pro' : plan === 'annual_pro' ? 'Annual Pro' : 'Free';
-  const planColor = plan === 'pro' ? '#f59f00' : plan === 'annual_pro' ? '#7950f2' : '#868e96';
+  const planColor = plan === 'pro' || plan === 'annual_pro' ? 'var(--amber)' : 'var(--ink-soft)';
 
   return (
     <div className="profile-screen">

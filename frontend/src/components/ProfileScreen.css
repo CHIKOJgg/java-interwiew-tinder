@@ -1,7 +1,7 @@
 .profile-screen {
   min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--cream);
+  color: var(--ink);
   padding-bottom: 80px;
 }
 
@@ -10,22 +10,37 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2.5px solid var(--ink);
 }
 
-.profile-header h1 { flex: 1; font-size: 20px; margin: 0; }
+.profile-header h1 {
+  flex: 1;
+  font-size: 20px;
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
 
 .back-btn, .settings-btn {
-  background: none;
-  border: none;
-  color: var(--secondary);
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  color: var(--ink);
   cursor: pointer;
   padding: 6px;
-  border-radius: 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.back-btn:active, .settings-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
 .settings-btn { margin-left: auto; }
 
+/* ── Avatar section ──────────────────────────── */
 .profile-avatar-section {
   display: flex;
   align-items: center;
@@ -37,14 +52,19 @@
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
+  background: var(--cream2);
+  border: 2.5px solid var(--ink);
+  color: var(--ink-soft);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.profile-name-section { display: flex; flex-direction: column; gap: 4px; }
+.profile-name-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 .profile-name-row {
   display: flex;
@@ -52,9 +72,23 @@
   gap: 8px;
 }
 
-.profile-name { font-size: 18px; font-weight: 700; }
-.profile-username { color: var(--secondary); font-size: 13px; }
-.profile-plan { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.profile-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.profile-username {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.profile-plan {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'JetBrains Mono', monospace;
+}
 
 .profile-edit-row {
   display: flex;
@@ -63,24 +97,36 @@
 }
 
 .profile-input {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
   border-radius: 8px;
   padding: 6px 10px;
-  color: var(--text);
+  color: var(--ink);
   font-size: 16px;
   outline: none;
   width: 180px;
+  font-family: 'Inter', sans-serif;
 }
 
 .icon-btn {
-  background: none;
-  border: none;
-  color: var(--secondary);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  color: var(--ink);
   cursor: pointer;
   padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
+.icon-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+/* ── Stats grid ──────────────────────────────── */
 .profile-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -89,7 +135,8 @@
 }
 
 .profile-stat {
-  background: var(--surface);
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
   border-radius: 12px;
   padding: 12px 8px;
   text-align: center;
@@ -99,24 +146,91 @@
   gap: 4px;
 }
 
-.profile-stat-val { font-size: 20px; font-weight: 700; }
-.profile-stat-lbl { font-size: 11px; color: var(--secondary); text-transform: uppercase; }
+.profile-stat svg { color: var(--ink-soft); }
 
-.profile-progress { padding: 0 16px 16px; }
-.profile-progress-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
-.progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-.progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; }
-
-.profile-menu { padding: 0 16px; display: flex; flex-direction: column; gap: 4px; }
-.menu-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px; background: var(--surface); border-radius: 12px;
-  cursor: pointer; color: var(--text); font-size: 15px;
+.profile-stat-val {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
 }
 
+.profile-stat-lbl {
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Progress bar ────────────────────────────── */
+.profile-progress {
+  padding: 0 16px 16px;
+}
+
+.profile-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.profile-progress .progress-bar {
+  height: 6px;
+  background: var(--cream);
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.profile-progress .progress-fill {
+  height: 100%;
+  background: var(--lime);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+/* ── Menu items ──────────────────────────────── */
+.profile-menu {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-menu .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 15px;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.profile-menu .menu-item:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+/* ── Toast ───────────────────────────────────── */
 .profile-toast {
-  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-  background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 20px;
-  font-size: 14px; z-index: 100;
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--lime);
+  border: 2.5px solid var(--ink);
+  color: var(--ink);
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 100;
 }
-.profile-toast--error { background: var(--error); }
+
+.profile-toast--error {
+  background: var(--coral);
+  color: var(--ink);
+}

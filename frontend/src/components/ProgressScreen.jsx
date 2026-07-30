@@ -79,7 +79,7 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade, onSavedClick }) => {
           </div>
           <div className="hero-stat">
             <Flame size={20} />
-            <div className="hero-value">{stats.streak}🔥</div>
+            <div className="hero-value">{stats.streak}</div>
             <div className="hero-label">
               {t('progress.streak', 'day streak')}{stats.longestStreak ? ` · ${stats.longestStreak}` : ''}
             </div>
@@ -88,7 +88,7 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade, onSavedClick }) => {
 
         {percentile !== null && percentile >= 70 && (
           <div className="progress-brag">
-            🏆 {t('progress.brag', 'You know more than {{p}}% of learners. Share your result!', { p: percentile })}
+            <Trophy size={18} /> {t('progress.brag', 'You know more than {{p}}% of learners. Share your result!', { p: percentile })}
           </div>
         )}
 

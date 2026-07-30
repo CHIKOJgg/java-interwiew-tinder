@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Zap, BookOpen, CheckCircle, Target, AlertTriangle, ChevronRight, Send, Star } from 'lucide-react';
+import { ArrowLeft, Zap, BookOpen, CheckCircle, Target, AlertTriangle, ChevronRight, Send, Star, Sprout, Flame, Gem, ClipboardList } from 'lucide-react';
 import './SystemDesignMode.css';
 
-const DIFFICULTY_ICONS = { junior: '🌱', middle: '🔥', senior: '💎' };
+const DIFFICULTY_ICONS = { junior: Sprout, middle: Flame, senior: Gem };
 const DIFFICULTY_COLORS = { junior: '#69db7c', middle: '#ffd43b', senior: '#ff6b6b' };
 const diffKey = (d) => (d || 'Middle').toLowerCase();
 
@@ -13,12 +13,13 @@ const TopicCard = ({ topic, onSelect }) => {
   const progress = topic.progress || {};
   const isDone = progress.status === 'completed';
   const dk = diffKey(topic.difficulty);
+  const DiffIcon = DIFFICULTY_ICONS[dk] || ClipboardList;
 
   return (
     <button className="sd-topic-card" onClick={() => onSelect(topic.id)} type="button">
       <div className="sd-topic-card-header">
         <span className="sd-topic-difficulty" style={{ background: DIFFICULTY_COLORS[dk] || '#868e96' }}>
-          {DIFFICULTY_ICONS[dk] || '📋'} {topic.difficulty || 'Middle'}
+          <DiffIcon size={12} /> {topic.difficulty || 'Middle'}
         </span>
         {isDone && <span className="sd-topic-badge-done"><CheckCircle size={14} /> {t('sd.done')}</span>}
       </div>
@@ -39,6 +40,7 @@ const TopicDetail = ({ topic, onBack, onEvaluate }) => {
   const [answer, setAnswer] = useState('');
   const tData = topic.topic;
   const dk = diffKey(tData.difficulty);
+  const DiffIcon = DIFFICULTY_ICONS[dk] || ClipboardList;
 
   return (
     <div className="sd-detail">
@@ -46,7 +48,7 @@ const TopicDetail = ({ topic, onBack, onEvaluate }) => {
       <div className="sd-detail-header">
         <h2>{tData.title}</h2>
         <span className="sd-detail-badge" style={{ background: DIFFICULTY_COLORS[dk] }}>
-          {DIFFICULTY_ICONS[dk]} {tData.difficulty}
+          <DiffIcon size={12} /> {tData.difficulty}
         </span>
       </div>
       <p className="sd-detail-desc">{tData.description}</p>
@@ -199,16 +201,19 @@ const SystemDesignMode = () => {
           </div>
 
           <div className="sd-filter-bar">
-            {['', 'Junior', 'Middle', 'Senior'].map(d => (
-              <button
-                key={d}
-                className={`sd-filter-btn ${difficultyFilter === d ? 'active' : ''}`}
-                onClick={() => handleFilterChange(d)}
-                type="button"
-              >
-                {d ? (DIFFICULTY_ICONS[d.toLowerCase()] + ' ' + t(`difficulty.${d}`)) : t('common.all')}
-              </button>
-            ))}
+            {['', 'Junior', 'Middle', 'Senior'].map(d => {
+              const FilterIcon = d ? (DIFFICULTY_ICONS[d.toLowerCase()] || ClipboardList) : null;
+              return (
+                <button
+                  key={d}
+                  className={`sd-filter-btn ${difficultyFilter === d ? 'active' : ''}`}
+                  onClick={() => handleFilterChange(d)}
+                  type="button"
+                >
+                  {d ? <><FilterIcon size={12} /> {t(`difficulty.${d}`)}</> : t('common.all')}
+                </button>
+              );
+            })}
           </div>
 
           {sdError && <p className="sd-error">{sdError}</p>}

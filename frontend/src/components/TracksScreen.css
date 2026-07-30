@@ -14,11 +14,13 @@
 .tracks-header h1 {
   font-size: 22px;
   margin: 0 0 4px;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .tracks-header p {
   font-size: 13px;
-  opacity: 0.6;
+  color: var(--ink-soft);
   margin: 0;
 }
 
@@ -34,7 +36,7 @@
 .tracks-loading {
   text-align: center;
   padding: 40px;
-  opacity: 0.5;
+  color: var(--ink-soft);
 }
 
 .tracks-empty {
@@ -46,19 +48,26 @@
   text-align: center;
 }
 
-.tracks-empty svg { opacity: 0.3; }
-.tracks-empty p { font-size: 14px; opacity: 0.6; margin: 0; }
+.tracks-empty svg { color: var(--ink-soft); }
+.tracks-empty p { font-size: 14px; color: var(--ink-soft); margin: 0; }
 
 .skip-btn {
   margin-top: 12px;
   padding: 12px 24px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--cream);
+  border: 2.5px solid var(--ink);
   border-radius: 12px;
-  color: #fff;
+  color: var(--ink);
   font-size: 14px;
   font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.skip-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
 .track-card {
@@ -66,42 +75,42 @@
   align-items: center;
   gap: 14px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
   border-radius: 16px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.track-card:hover {
-  border-color: rgba(92, 124, 250, 0.4);
-  background: rgba(92, 124, 250, 0.08);
+.track-card:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.98);
 }
 
 .track-card.completed {
-  border-color: rgba(81, 207, 102, 0.3);
-  background: rgba(81, 207, 102, 0.06);
+  background: var(--cream2);
 }
 
 .track-card.started {
-  border-color: rgba(92, 124, 250, 0.3);
+  border-color: var(--blue);
 }
 
 .track-icon {
   width: 48px;
   height: 48px;
   border-radius: 14px;
+  border: 2px solid var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(92, 124, 250, 0.15);
-  color: #5c7cfa;
+  background: var(--cream);
+  color: var(--blue);
   flex-shrink: 0;
 }
 
 .track-card.completed .track-icon {
-  background: rgba(81, 207, 102, 0.15);
-  color: #51cf66;
+  background: var(--green);
+  color: var(--ink);
 }
 
 .track-info {
@@ -112,6 +121,7 @@
 .track-name {
   font-size: 15px;
   font-weight: 700;
+  color: var(--ink);
   margin-bottom: 4px;
 }
 
@@ -119,39 +129,41 @@
   display: flex;
   gap: 10px;
   font-size: 12px;
-  opacity: 0.6;
+  color: var(--ink-soft);
 }
 
 .track-level {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .track-desc {
   font-size: 12px;
-  opacity: 0.5;
+  color: var(--ink-soft);
   margin-top: 4px;
   line-height: 1.3;
 }
 
 .track-progress-bar {
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  height: 8px;
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
   margin-top: 8px;
   overflow: hidden;
 }
 
 .track-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #5c7cfa, #339af0);
-  border-radius: 3px;
+  background: var(--lime);
+  border-radius: 2px;
   transition: width 0.4s;
 }
 
 .track-arrow {
-  opacity: 0.4;
+  color: var(--ink-soft);
   flex-shrink: 0;
 }
 
@@ -162,10 +174,18 @@
 
 .skip-link {
   background: none;
-  border: none;
-  color: #5c7cfa;
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  color: var(--ink);
   font-size: 14px;
   font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
-  opacity: 0.8;
+  padding: 8px 16px;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.skip-link:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }

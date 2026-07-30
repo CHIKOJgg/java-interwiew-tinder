@@ -5,10 +5,11 @@
   display: flex;
   flex-direction: column;
   height: calc(100vh - 180px);
-  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
-  border-radius: 24px;
+  background: var(--cream);
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .interview-chat {
@@ -39,6 +40,7 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
+  border: 2px solid var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,24 +48,23 @@
 }
 
 .interviewer .message-avatar {
-  background: #edf2ff;
-  color: #4c6ef5;
+  background: var(--cream2);
+  color: var(--ink);
 }
 
 .candidate .message-avatar {
-  background: #e3f9e5;
-  color: #2f9e44;
+  background: var(--lime);
+  color: var(--ink);
 }
 
-/* Bug 9 fix: was hardcoded background: white */
 .message-bubble {
-  background: var(--tg-theme-bg-color, #fff);
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
   padding: 14px 16px;
   border-radius: 18px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   font-size: 15px;
   line-height: 1.55;
-  color: var(--tg-theme-text-color, #2d3436);
+  color: var(--ink);
 }
 
 .interviewer .message-bubble {
@@ -72,28 +73,24 @@
 
 .candidate .message-bubble {
   border-top-right-radius: 4px;
-  background: #4c6ef5;
-  color: #fff;
+  background: var(--lime);
+  color: var(--ink);
 }
 
 .message-bubble.loading {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--tg-theme-hint-color, #868e96);
+  color: var(--ink-soft);
 }
 
-/* Bug 8 fix: evaluation-card was inside blue candidate bubble with no background
-   → dark text #2d3436 on blue was illegible.
-   Now it breaks out of the bubble with its own card appearance. */
 .evaluation-card {
   margin-top: 12px;
   padding: 16px;
-  background: var(--tg-theme-bg-color, #fff);
-  border-radius: 16px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  color: var(--tg-theme-text-color, #2d3436);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  color: var(--ink);
 }
 
 .evaluation-header {
@@ -104,287 +101,171 @@
 }
 
 .score-badge {
-  background: linear-gradient(135deg, #fab005, #fd7e14);
-  color: #fff;
+  background: var(--amber);
+  color: var(--ink);
   padding: 4px 12px;
   border-radius: 8px;
+  border: 2px solid var(--ink);
   display: flex;
   align-items: center;
   gap: 4px;
   font-weight: 700;
   font-size: 14px;
-  box-shadow: 0 2px 8px rgba(250, 176, 5, 0.35);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .evaluation-label {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
+  color: var(--ink-soft);
   text-transform: uppercase;
-  color: var(--tg-theme-hint-color, #868e96);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.04em;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .evaluation-feedback {
-  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
-  padding: 12px 14px;
-  border-radius: 12px;
   font-size: 14px;
   line-height: 1.55;
-  margin-bottom: 12px;
-  color: var(--tg-theme-text-color, #2d3436);
+  color: var(--ink);
+  margin: 0;
 }
 
-.correct-version {
-  font-size: 13px;
-  color: var(--tg-theme-text-color, #2d3436);
-  line-height: 1.5;
-}
-
-.correct-version strong {
-  display: block;
-  margin-bottom: 6px;
-  color: #2f9e44;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.next-question-btn {
-  margin-top: 14px;
-  width: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  padding: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(118, 75, 162, 0.3);
-}
-
-.next-question-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-/* Bug 9 fix: was hardcoded background: white */
 .interview-input-area {
-  background: var(--tg-theme-bg-color, #fff);
-  padding: 14px 16px;
   display: flex;
   gap: 10px;
-  border-top: 1px solid rgba(0, 0, 0, 0.07);
+  padding: 14px 16px;
+  border-top: 2.5px solid var(--ink);
+  align-items: flex-end;
 }
 
 .interview-input-area textarea {
   flex: 1;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  padding: 12px 14px;
   border-radius: 12px;
-  padding: 11px 14px;
-  font-size: 15px;
-  resize: none;
-  height: 48px;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
   font-family: inherit;
-  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
-  color: var(--tg-theme-text-color, #2d3436);
-  transition: border-color 0.2s, background 0.2s;
-}
-
-.interview-input-area textarea:focus {
+  resize: none;
   outline: none;
-  border-color: #4c6ef5;
-  background: var(--tg-theme-bg-color, #fff);
+  max-height: 120px;
 }
 
 .send-btn {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  border: none;
+  padding: 12px 20px;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: 2.5px solid var(--ink);
+  background: var(--lime);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 3px 10px rgba(118, 75, 162, 0.3);
-  flex-shrink: 0;
+  transition: transform 0.1s, box-shadow 0.1s;
+  white-space: nowrap;
 }
 
-.send-btn:hover:not(:disabled) {
-  transform: scale(1.06);
+.send-btn:active:not(:disabled) {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
 .send-btn:disabled {
-  background: var(--tg-theme-secondary-bg-color, #e9ecef);
-  color: var(--tg-theme-hint-color, #868e96);
+  opacity: 0.5;
   cursor: not-allowed;
-  box-shadow: none;
+}
+
+.interview-end-btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 2.5px solid var(--coral);
+  background: var(--coral);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.interview-end-btn:active {
+  transform: scale(0.96);
+}
+
+.mock-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 16px;
+  color: var(--ink-soft);
 }
 
 .spinner {
   animation: spin 1s linear infinite;
+  color: var(--blue);
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
+  to { transform: rotate(360deg); }
+}
 
-  to {
-    transform: rotate(360deg);
-  }
+.interview-start-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+  gap: 16px;
+}
+
+.interview-start-screen h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  margin: 0;
+}
+
+.interview-start-screen p {
+  font-size: 14px;
+  color: var(--ink-soft);
+  max-width: 300px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.interview-start-btn {
+  padding: 14px 32px;
+  border-radius: 14px;
+  border: 2.5px solid var(--ink);
+  background: var(--lime);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.interview-start-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
 @media (max-width: 400px) {
-  .interview-chat {
-    padding: 12px;
-    gap: 14px;
-  }
-  .message-group {
-    max-width: 96%;
-  }
-  .message-bubble {
-    padding: 10px 12px;
-    font-size: 14px;
-    border-radius: 14px;
-  }
-  .message-avatar {
-    width: 28px;
-    height: 28px;
-  }
-  .message-avatar svg {
-    width: 14px;
-    height: 14px;
-  }
-  .interview-input-area {
-    padding: 10px 12px;
-  }
-  .interview-input-area textarea {
-    font-size: 14px;
-    height: 40px;
-    padding: 8px 12px;
-  }
-  .send-btn {
-    width: 40px;
-    height: 40px;
-  }
-  .evaluation-card {
-    padding: 12px;
-  }
-  .score-badge {
-    font-size: 12px;
-    padding: 3px 10px;
-  }
-  .evaluation-feedback {
-    padding: 10px 12px;
-    font-size: 13px;
-  }
+  .interview-chat { padding: 12px; gap: 14px; }
+  .message-bubble { padding: 10px 12px; font-size: 14px; }
+  .interview-input-area { padding: 10px 12px; }
+  .interview-input-area textarea { padding: 10px 12px; font-size: 13px; }
+  .send-btn { padding: 10px 16px; font-size: 13px; }
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  .mock-interview-mode {
-    height: calc(100vh - 100px);
-    border-radius: 16px;
-  }
-  .interview-chat {
-    padding: 10px;
-    gap: 10px;
-  }
-  .message-bubble {
-    padding: 8px 12px;
-    font-size: 13px;
-  }
-  .interview-input-area {
-    padding: 8px 12px;
-  }
-  .interview-input-area textarea {
-    height: 36px;
-    font-size: 13px;
-  }
-  .send-btn {
-    width: 36px;
-    height: 36px;
-  }
-}
-
-@media (max-height: 500px) {
-  .mock-interview-mode {
-    height: calc(100vh - 100px);
-  }
-}
-
-/* ── Voice controls ─────────────────────────────────────────── */
-.voice-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 16px 4px;
-}
-
-.voice-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: var(--tg-theme-secondary-bg-color, #e9ecef);
-  color: var(--tg-theme-text-color, #495057);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.voice-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
- .voice-btn.recording {
-   background: #ff6b6b;
-   color: #fff;
-   animation: voice-pulse 1.2s infinite;
- }
-
- .voice-btn.muted {
-   background: #adb5bd;
-   color: #fff;
- }
-
- @keyframes voice-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4); }
-  50% { box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
-}
-
-.recording-indicator {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.recording-pulse {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ff6b6b;
-  animation: rec-blink 1s infinite;
-}
-
-@keyframes rec-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
-.recording-text {
-  font-size: 12px;
-  color: #ff6b6b;
-  font-weight: 600;
+  .mock-interview-mode { height: calc(100vh - 100px); }
+  .interview-chat { padding: 10px; gap: 10px; }
 }

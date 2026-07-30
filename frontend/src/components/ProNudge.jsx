@@ -47,7 +47,7 @@ const ProNudge = ({ onOpenSubscription }) => {
     <div className="pro-nudge">
       <Sparkles size={14} className="pro-nudge-spark" />
       <span className="pro-nudge-text">{t(`nudge.${tipId}`)}</span>
-      <button className="pro-nudge-open" onClick={onOpenSubscription} type="button">⭐ Pro</button>
+      <button className="pro-nudge-open" onClick={onOpenSubscription} type="button"><Sparkles size={14} /> Pro</button>
       <button className="pro-nudge-dismiss" onClick={handleDismiss} type="button" aria-label="dismiss">
         <X size={13} />
       </button>

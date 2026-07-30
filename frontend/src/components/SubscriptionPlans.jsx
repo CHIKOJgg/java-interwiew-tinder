@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import useStore from '../store/useStore';
 import apiClient from '../api/client';
 import { useTranslation } from 'react-i18next';
-import { Check, Star, Shield, Zap, ArrowLeft, X, Clock, ChevronDown, ChevronUp, Users, AlertCircle, Copy, CheckCircle, CreditCard } from 'lucide-react';
+import { Check, Star, Shield, Zap, ArrowLeft, X, Clock, ChevronDown, ChevronUp, Users, AlertCircle, Copy, CheckCircle, CreditCard, XCircle, Crown } from 'lucide-react';
 import './SubscriptionPlans.css';
 
 // ─── Plan config ──────────────────────────────────────────────────────
@@ -43,11 +43,11 @@ const SubscriptionGrantPanel = () => {
     if (!targetId.trim()) return;
     try {
       await apiClient.grantPlan(targetId.trim(), planId, parseInt(months));
-      setGrantMsg(`✅ ${t('admin.plan_granted', { plan: planId, user: targetId, defaultValue: 'Plan {{plan}} granted to {{user}}' })}`);
+      setGrantMsg(<><CheckCircle size={16} /> {t('admin.plan_granted', { plan: planId, user: targetId, defaultValue: 'Plan {{plan}} granted to {{user}}' })}</>);
       setTargetId('');
       fetchUsers();
     } catch (e) {
-      setGrantMsg(`❌ ${t('common.error')}: ${e.message}`);
+      setGrantMsg(<><XCircle size={16} /> {t('common.error')}: {e.message}</>);
     }
   };
 
@@ -122,7 +122,7 @@ const StatusBanner = ({ status, onCancel }) => {
       <div className="status-info">
         {isAdmin ? <Shield size={18} /> : <Star size={18} />}
         <div>
-          <strong>{isAdmin ? `👑 ${t('subscription.admin')} — ${t('subscription.unlimited', 'Unlimited')}` : `⭐ ${t('subscription.pro')} ${t('subscription.active')}`}</strong>
+          <strong>{isAdmin ? <><Crown size={16} /> {t('subscription.admin')} — {t('subscription.unlimited', 'Unlimited')}</> : <><Star size={16} /> {t('subscription.pro')} {t('subscription.active')}</>}</strong>
           {expires && !isAdmin && (
             <span className="expires-at">
               <Clock size={12} /> {isCancelled ? t('subscription.expires') : t('subscription.renewable')} {expires}
@@ -159,7 +159,7 @@ const TonModal = ({ invoice, onCheck, onCancel, polling }) => {
       <div className="ton-modal">
         <button className="ton-modal-close" onClick={onCancel}><X size={20} /></button>
         <div className="ton-modal-header">
-          <div className="ton-icon-large">💎</div>
+          <div className="ton-icon-large"><CreditCard size={48} /></div>
           <h2>{t('subscription.ton_title', 'Payment via TON')}</h2>
           <p>{t('subscription.ton_desc', 'Send exact amount to address below')}</p>
         </div>
@@ -417,7 +417,7 @@ const SubscriptionPlans = ({ onBack }) => {
       <div className="sub-header">
         <button className="back-btn" onClick={onBack}><ArrowLeft size={22} /></button>
         <h1>{t('header.subscription')}</h1>
-        {isAdmin && <span className="admin-crown">👑</span>}
+        {isAdmin && <Shield size={20} className="admin-crown" />}
       </div>
 
       {error && (
@@ -441,7 +441,7 @@ const SubscriptionPlans = ({ onBack }) => {
 
       {showSuccess && (
         <div className="success-celebration">
-          <div className="confetti-wrap">✨ 🎊 💎 🎊 ✨</div>
+          <div className="confetti-wrap"><Star size={24} /> <Check size={24} /> <Star size={24} /></div>
           <h2>{t('subscription.success_title', 'Welcome to Pro!')}</h2>
           <p>{t('subscription.success_desc', 'Your subscription is active. All features unlocked.')}</p>
           <button onClick={() => setShowSuccess(false)}>{t('common.done')}</button>
@@ -565,7 +565,7 @@ const SubscriptionPlans = ({ onBack }) => {
                         disabled={isBuying || polling || tonPolling}
                         onClick={() => handleSubscribeTon(plan.id, 'monthly')}
                       >
-                        💎 {t('subscription.pay_ton', 'Pay via TON')}
+                        <CreditCard size={14} /> {t('subscription.pay_ton', 'Pay via TON')}
                       </button>
 
                       {/* U-Kassa bank card — only when configured server-side */}
@@ -577,14 +577,14 @@ const SubscriptionPlans = ({ onBack }) => {
                             onClick={() => handleSubscribeCard(plan.id, 'monthly')}
                           >
                             <CreditCard size={16} />
-                            {isBuying ? t('common.saving') : polling ? t('subscription.processing') : `💳 ${t('subscription.pay_card_monthly', 'Card / mo')}`}
+                            {isBuying ? t('common.saving') : polling ? t('subscription.processing') : t('subscription.pay_card_monthly', 'Card / mo')}
                           </button>
                           <button
                             className="card-btn yearly"
                             disabled={isBuying || polling || tonPolling}
                             onClick={() => handleSubscribeCard(plan.id, 'yearly')}
                           >
-                            <CreditCard size={14} /> 💳 {t('subscription.pay_card_yearly', 'Card / year')}
+                            <CreditCard size={14} /> {t('subscription.pay_card_yearly', 'Card / year')}
                           </button>
                         </>
                       )}
@@ -619,7 +619,7 @@ const SubscriptionPlans = ({ onBack }) => {
                 <div key={i} className="history-item">
                   <div className="history-main">
                     <span className={`plan-tag ${h.plan_id}`}>{h.plan_name || h.plan_id}</span>
-                    <span className="history-provider">{h.payment_provider === 'stripe' ? `💳 ${t('subscription.card', 'Card')}` : `⭐ ${t('subscription.stars', 'Stars')}`}</span>
+                    <span className="history-provider">{h.payment_provider === 'stripe' ? t('subscription.card', 'Card') : t('subscription.stars', 'Stars')}</span>
                   </div>
                   <div className="history-meta">
                     <span className="history-status">{t(`subscription.status_${h.status}`, h.status)}</span>

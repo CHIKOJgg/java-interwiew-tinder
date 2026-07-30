@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Share2, Trophy, Flame, Target, Users, X } from 'lucide-react';
+import { Share2, Trophy, Flame, Target, Users, X, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../api/client';
 import useStore from '../store/useStore';
@@ -115,7 +115,7 @@ const ShareCard = ({ stats, onBack }) => {
             Share on X
           </button>
           <button className="share-btn secondary" onClick={handleCopy}>
-            {copied ? '✓ Copied!' : 'Copy link'}
+            {copied ? <><Check size={14} /> Copied!</> : 'Copy link'}
           </button>
         </div>
 

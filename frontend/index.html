@@ -4,23 +4,16 @@
 <head>
   <meta charset="UTF-8" />
 
-  <!--
-      FIX 4: Telegram WebView on iOS ignores the viewport unless these are set.
-      - width=device-width: prevents the 980px desktop layout zoom
-      - initial-scale=1.0: no zoom on open
-      - viewport-fit=cover: extends into notch/safe area on iPhone
-      - user-scalable=no: prevents pinch-zoom breaking card swipe gestures
-    -->
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#5c7cfa" />
+  <meta name="theme-color" content="#F7F3E6" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
-  <!-- Google Search Console verification. Replace with real code from Search Console. -->
+  <!-- Google Search Console verification -->
   <meta name="google-site-verification" content="REPLACE_WITH_GSC_VERIFICATION_CODE" />
 
   <!-- SEO -->
@@ -38,14 +31,17 @@
   <meta name="twitter:description" content="Practice the EXACT questions companies ask. AI explanations. Readiness score. Free to start." />
   <meta name="twitter:image" content="/og-image.png" />
 
-  <!-- Telegram WebApp SDK — loaded explicitly because some Telegram clients
-       (especially iOS) do NOT auto-inject it. Without this, window.Telegram
-       is undefined and the app falls back to the landing page. -->
+  <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- GA loaded dynamically only when VITE_GA_MEASUREMENT_ID is set -->
 
-  <title>Stop Losing Job Offers — Interview Trainer for Java, Python & TypeScript | Interview Tinder</title>
+  <title>Prep-It — Interview Trainer for Java, Python & TypeScript</title>
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 
   <!-- FAQ schema.org structured data -->
@@ -85,7 +81,7 @@
   }
   </script>
 
-  <!-- Google Analytics 4 (no-op until VITE_GA_MEASUREMENT_ID is set at build) -->
+  <!-- Google Analytics 4 -->
   <script>
     (function () {
       var id = window.__JIT_GA_ID__ || '%VITE_GA_MEASUREMENT_ID%';

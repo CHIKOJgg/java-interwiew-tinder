@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RotateCcw, Check, X, Trophy, Share2, ArrowRight } from 'lucide-react';
+import { RotateCcw, Check, X, Trophy, Share2, ArrowRight, Flame } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../api/client';
 import { saveGuestAnswer } from '../utils/guestProgress';
@@ -184,8 +184,8 @@ export default function DemoMode({ onSignup, onExit, referralId }) {
         </p>
         {beat != null && (
           <p className="demo-percentile">
-            {t('demo.percentile', {
-              defaultValue: '🔥 Ahead of {{beat}}% of {{language}} candidates this month.',
+            <Flame size={16} /> {t('demo.percentile', {
+              defaultValue: 'Ahead of {{beat}}% of {{language}} candidates this month.',
               beat,
               language,
             })}
@@ -207,7 +207,7 @@ export default function DemoMode({ onSignup, onExit, referralId }) {
             <Share2 size={16} /> {t('demo.share_x', 'Share on X')}
           </button>
           <button className="demo-btn secondary" onClick={handleCopy}>
-            {copied ? t('demo.copied', '✓ Copied!') : t('demo.copy', 'Copy link')}
+            {copied ? <><Check size={14} /> {t('demo.copied', 'Copied!')}</> : t('demo.copy', 'Copy link')}
           </button>
         </div>
 

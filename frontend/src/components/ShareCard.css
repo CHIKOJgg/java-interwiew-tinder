@@ -1,8 +1,7 @@
 .share-card-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(24, 21, 16, 0.85);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -12,32 +11,37 @@
 }
 
 .share-card {
-  background: linear-gradient(145deg, #1e1e1e, #121212);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 28px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 22px;
   width: 100%;
   max-width: 360px;
   padding: 32px 24px;
   position: relative;
   text-align: center;
-  color: white;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  box-shadow: 8px 8px 0 var(--ink);
 }
 
 .close-btn {
   position: absolute;
   top: 16px;
   right: 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
+  background: var(--cream);
+  border: 2.5px solid var(--ink);
   border-radius: 50%;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--ink);
   cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.close-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
 .share-card-header {
@@ -45,20 +49,21 @@
 }
 
 .trophy-icon {
-  color: #fcc419;
+  color: var(--amber);
   margin-bottom: 16px;
-  filter: drop-shadow(0 0 12px rgba(252, 196, 25, 0.4));
 }
 
 .share-card-header h2 {
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
   margin: 0 0 8px 0;
 }
 
 .share-card-header p {
   font-size: 14px;
-  opacity: 0.6;
+  color: var(--ink-soft);
   margin: 0;
 }
 
@@ -70,9 +75,10 @@
 }
 
 .share-stat {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--cream);
+  border: 2.5px solid var(--ink);
   padding: 16px;
-  border-radius: 20px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -86,20 +92,23 @@
   gap: 12px;
 }
 
-.stat-icon.streak { color: #ff922b; }
-.stat-icon.target { color: #51cf66; }
-.stat-icon.users { color: #339af0; }
+.stat-icon.streak { color: var(--amber); }
+.stat-icon.target { color: var(--green); }
+.stat-icon.users { color: var(--blue); }
 
 .stat-val {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .stat-lab {
   font-size: 11px;
-  opacity: 0.5;
+  color: var(--ink-soft);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .share-actions {
@@ -111,39 +120,40 @@
 
 .share-btn {
   padding: 14px;
-  border-radius: 16px;
+  border-radius: 14px;
   font-size: 15px;
   font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: transform 0.1s;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .share-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
   transform: scale(0.96);
 }
 
 .share-btn.primary {
-  background: #339af0;
-  color: white;
-  border: none;
+  background: var(--lime);
+  color: var(--ink);
+  border: 2.5px solid var(--ink);
 }
 
 .share-btn.secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--cream);
+  color: var(--ink);
+  border: 2.5px solid var(--ink);
 }
 
 .referral-hint {
   font-size: 12px;
-  color: #51cf66;
+  color: var(--green);
   font-weight: 600;
   margin: 0;
-  opacity: 0.9;
 }
 
 @keyframes fadeIn {

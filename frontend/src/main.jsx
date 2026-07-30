@@ -4,6 +4,32 @@ import ErrorBoundary from './components/ErrorBoundary';
 import './i18n/config';
 import './index.css';
 
+// ─── Telegram Mini App initialization ──────────────────────────────────
+function applySafeArea() {
+  const wa = window.Telegram?.WebApp;
+  if (!wa) return;
+  const s = wa.safeAreaInset || { top: 0, bottom: 0, left: 0, right: 0 };
+  const c = wa.contentSafeAreaInset || { top: 0, bottom: 0, left: 0, right: 0 };
+  const r = document.documentElement.style;
+  r.setProperty('--safe-top', (s.top + c.top) + 'px');
+  r.setProperty('--safe-bottom', (s.bottom + c.bottom) + 'px');
+}
+
+function initTelegramApp() {
+  const wa = window.Telegram?.WebApp;
+  if (!wa) return;
+  applySafeArea();
+  wa.onEvent('safeAreaChanged', applySafeArea);
+  wa.onEvent('contentSafeAreaChanged', applySafeArea);
+  wa.setBackgroundColor('#F7F3E6');
+  wa.ready();
+  wa.expand();
+  wa.MainButton.setParams({ color: '#D3FF4D', text_color: '#181510' });
+}
+
+initTelegramApp();
+
+// ─── Bootstrap ─────────────────────────────────────────────────────────
 async function bootstrap() {
   try {
     const { default: App } = await import('./App');

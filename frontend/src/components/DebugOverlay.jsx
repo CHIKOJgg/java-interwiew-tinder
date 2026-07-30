@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, Bug } from 'lucide-react';
 import logger from '../utils/logger';
 import './DebugOverlay.css';
 
@@ -42,7 +42,7 @@ const DebugOverlay = ({ visible, onClose }) => {
   return (
     <div className="debug-overlay" onClick={(e) => e.stopPropagation()}>
       <div className="debug-head">
-        <span className="debug-title">🐞 Debug log</span>
+        <span className="debug-title"><Bug size={14} /> Debug log</span>
         <div className="debug-actions">
           <button type="button" className="debug-btn" onClick={copyAll} title="Copy all">Copy</button>
           <button type="button" className="debug-btn" onClick={() => logger.clear()} title="Clear">

@@ -20,66 +20,69 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--tg-theme-secondary-bg-color, #f1f3f5);
+  background: var(--cream);
+  border: 2.5px solid var(--ink);
   padding: 8px 16px;
   border-radius: 12px;
   font-weight: 700;
   font-size: 16px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .blitz-timer {
-  color: #4c6ef5;
+  color: var(--blue);
 }
 
 .blitz-timer.low-time {
-  color: #fa5252;
-  background: #fff5f5;
+  color: var(--coral);
+  background: var(--cream2);
   animation: pulse-scale 0.6s ease-in-out infinite;
 }
 
 .blitz-current-score {
-  color: #fab005;
+  color: var(--amber);
 }
 
 .blitz-card {
-  background: var(--tg-theme-bg-color, #fff);
-  border-radius: 24px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
   padding: 36px 24px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  box-shadow: 4px 4px 0 var(--ink);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 24px;
-  border: 2px solid transparent;
-  transition: border-color 0.2s, background 0.2s;
   flex: 1;
   justify-content: center;
+  transition: background 0.15s;
 }
 
 .blitz-card.correct {
-  border-color: #40c057;
-  background: #f4fef6;
+  background: var(--green);
+  color: var(--ink);
 }
 
 .blitz-card.incorrect {
-  border-color: #fa5252;
-  background: #fff8f8;
+  background: var(--coral);
+  color: var(--ink);
 }
 
 .blitz-topic {
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
-  color: #764ba2;
+  color: var(--ink-soft);
   letter-spacing: 1px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .blitz-statement {
   font-size: 22px;
   font-weight: 700;
   line-height: 1.35;
-  color: var(--tg-theme-text-color, #2d3436);
+  color: var(--ink);
   min-height: 80px;
   display: flex;
   align-items: center;
@@ -93,61 +96,54 @@
 
 .blitz-btn {
   flex: 1;
-  border: none;
-  border-radius: 16px;
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
   padding: 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  transition: all 0.2s;
-  color: #fff;
+  color: var(--ink);
   font-weight: 700;
   font-size: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .false-btn {
-  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
-  box-shadow: 0 4px 14px rgba(245, 87, 108, 0.35);
+  background: var(--coral);
 }
 
 .true-btn {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-  box-shadow: 0 4px 14px rgba(64, 192, 87, 0.35);
+  background: var(--green);
 }
 
-.blitz-btn:hover:not(:disabled) {
-  transform: translateY(-4px);
-  filter: brightness(1.08);
-}
-
-.blitz-btn:active {
+.blitz-btn:active:not(:disabled) {
+  box-shadow: 4px 4px 0 var(--ink);
   transform: scale(0.96);
 }
 
 .blitz-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
 .blitz-progress {
-  height: 8px;
-  background: var(--tg-theme-secondary-bg-color, #e9ecef);
-  border-radius: 4px;
+  height: 10px;
+  background: var(--ink);
+  border-radius: 5px;
   overflow: hidden;
+  border: 2px solid var(--ink);
 }
 
 .blitz-progress-fill {
   height: 100%;
-  background: linear-gradient(to right, #4c6ef5, #764ba2);
+  background: var(--lime);
   transition: width 1s linear;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
-/* Bug 3 fix: start/results cards used hardcoded background: white */
 .blitz-start-screen,
 .blitz-results-screen {
   display: flex;
@@ -159,11 +155,12 @@
 
 .blitz-start-card,
 .blitz-results-card {
-  background: var(--tg-theme-bg-color, #fff);
-  border-radius: 24px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 20px;
   padding: 48px 32px;
   text-align: center;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+  box-shadow: 6px 6px 0 var(--ink);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -175,48 +172,48 @@
 .blitz-start-card h2,
 .blitz-results-card h2 {
   font-size: 26px;
-  font-weight: 800;
-  color: var(--tg-theme-text-color, #2d3436);
+  font-weight: 700;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .blitz-start-card p,
 .blitz-results-card p {
-  color: var(--tg-theme-hint-color, #868e96);
+  color: var(--ink-soft);
   font-size: 15px;
   line-height: 1.5;
 }
 
-/* Bug 4 fix: Zap icon used as spinner but had no animation */
 .zap-icon {
-  color: #fab005;
+  color: var(--amber);
   animation: bounce 2s infinite;
 }
 
 .trophy-icon {
-  color: #fab005;
+  color: var(--amber);
 }
 
 .start-blitz-button,
 .retry-blitz-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  border: none;
-  border-radius: 16px;
+  background: var(--lime);
+  color: var(--ink);
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
   padding: 16px 32px;
   font-size: 17px;
   font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
-  transition: all 0.2s;
-  box-shadow: 0 4px 14px rgba(118, 75, 162, 0.35);
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.start-blitz-button:hover,
-.retry-blitz-button:hover {
-  transform: scale(1.04);
-  box-shadow: 0 6px 18px rgba(118, 75, 162, 0.45);
+.start-blitz-button:active,
+.retry-blitz-button:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
 .final-score {
@@ -229,14 +226,11 @@
 .final-score strong {
   font-size: 72px;
   font-weight: 900;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--ink);
   line-height: 1;
+  font-family: 'JetBrains Mono', monospace;
 }
 
-/* Bug 4 fix: unified spinner */
 .blitz-loading {
   display: flex;
   flex-direction: column;
@@ -244,7 +238,7 @@
   justify-content: center;
   height: 200px;
   gap: 16px;
-  color: #4c6ef5;
+  color: var(--blue);
 }
 
 .spinner {
@@ -252,112 +246,43 @@
 }
 
 @keyframes pulse-scale {
-
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.05);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 @keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-16px); }
+  60% { transform: translateY(-8px); }
+}
 
-  0%,
-  20%,
-  50%,
-  80%,
-  100% {
-    transform: translateY(0);
-  }
-
-  40% {
-    transform: translateY(-16px);
-  }
-
-  60% {
-    transform: translateY(-8px);
-  }
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 400px) {
-  .blitz-mode {
-    padding: 10px;
-    gap: 10px;
-  }
-  .blitz-timer,
-  .blitz-current-score {
-    padding: 6px 12px;
-    font-size: 14px;
-    gap: 6px;
-  }
-  .blitz-card {
-    padding: 20px 16px;
-    gap: 14px;
-    border-radius: 18px;
-  }
-  .blitz-statement {
-    font-size: 18px;
-    min-height: 60px;
-  }
-  .blitz-btn {
-    padding: 14px;
-    font-size: 14px;
-    border-radius: 12px;
-  }
-  .blitz-actions {
-    gap: 10px;
-  }
-  .blitz-start-card,
-  .blitz-results-card {
-    padding: 32px 20px;
-  }
-  .blitz-start-card h2,
-  .blitz-results-card h2 {
-    font-size: 22px;
-  }
-  .final-score strong {
-    font-size: 56px;
-  }
+  .blitz-mode { padding: 10px; gap: 10px; }
+  .blitz-timer, .blitz-current-score { padding: 6px 12px; font-size: 14px; gap: 6px; }
+  .blitz-card { padding: 20px 16px; gap: 14px; border-radius: 16px; }
+  .blitz-statement { font-size: 18px; min-height: 60px; }
+  .blitz-btn { padding: 14px; font-size: 14px; border-radius: 12px; }
+  .blitz-actions { gap: 10px; }
+  .blitz-start-card, .blitz-results-card { padding: 32px 20px; }
+  .blitz-start-card h2, .blitz-results-card h2 { font-size: 22px; }
+  .final-score strong { font-size: 56px; }
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  .blitz-mode {
-    padding: 8px;
-    gap: 8px;
-    height: calc(100vh - 100px);
-  }
-  .blitz-header {
-    margin-bottom: 0;
-  }
-  .blitz-card {
-    padding: 14px 16px;
-    gap: 10px;
-    border-radius: 14px;
-  }
-  .blitz-statement {
-    font-size: 16px;
-    min-height: 40px;
-  }
-  .blitz-btn {
-    padding: 10px;
-    font-size: 13px;
-  }
-  .blitz-timer,
-  .blitz-current-score {
-    padding: 4px 10px;
-    font-size: 12px;
-  }
-  .blitz-start-screen,
-  .blitz-results-screen {
-    height: calc(100vh - 100px);
-  }
+  .blitz-mode { padding: 8px; gap: 8px; height: calc(100vh - 100px); }
+  .blitz-header { margin-bottom: 0; }
+  .blitz-card { padding: 14px 16px; gap: 10px; border-radius: 14px; }
+  .blitz-statement { font-size: 16px; min-height: 40px; }
+  .blitz-btn { padding: 10px; font-size: 13px; }
+  .blitz-timer, .blitz-current-score { padding: 4px 10px; font-size: 12px; }
+  .blitz-start-screen, .blitz-results-screen { height: calc(100vh - 100px); }
 }
 
 @media (max-height: 500px) {
-  .blitz-mode {
-    height: calc(100vh - 100px);
-  }
+  .blitz-mode { height: calc(100vh - 100px); }
 }

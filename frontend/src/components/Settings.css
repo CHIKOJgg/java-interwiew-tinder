@@ -1,0 +1,190 @@
+.settings-screen {
+  min-height: 100vh;
+  background: var(--cream);
+  color: var(--ink);
+  padding-bottom: 80px;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 2.5px solid var(--ink);
+}
+
+.settings-header h1 {
+  flex: 1;
+  font-size: 20px;
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.settings-back-btn {
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  color: var(--ink);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.settings-back-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+.settings-mascot {
+  flex-shrink: 0;
+}
+
+.settings-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ink-soft);
+  font-family: 'JetBrains Mono', monospace;
+  margin: 0 0 10px;
+}
+
+.settings-section {
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+.settings-row + .settings-row {
+  border-top: 1px solid var(--cream2);
+}
+
+.settings-row-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.settings-toggle {
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  color: var(--ink);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.settings-toggle:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+.settings-toggle.on {
+  background: var(--lime);
+}
+
+.settings-info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.settings-link-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 0.1s;
+}
+
+.settings-link-row:active {
+  transform: scale(0.98);
+}
+
+.settings-link-row + .settings-link-row {
+  border-top: 1px solid var(--cream2);
+}
+
+.settings-chevron {
+  margin-left: auto;
+  color: var(--ink-soft);
+}
+
+.settings-faq {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-qa {
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--cream);
+  overflow: hidden;
+}
+
+.settings-qa summary {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-qa summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-qa summary::after {
+  content: "+";
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.settings-qa[open] summary::after {
+  content: "−";
+}
+
+.settings-qa p {
+  font-size: 13px;
+  color: var(--ink-soft);
+  padding: 0 14px 14px;
+  margin: 0;
+  line-height: 1.5;
+}

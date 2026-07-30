@@ -6,7 +6,6 @@
   padding: 16px;
   box-sizing: border-box;
   overflow-y: auto;
-  background: var(--tg-theme-bg-color, #f8f9fa);
 }
 
 .companies-header {
@@ -14,7 +13,7 @@
   align-items: center;
   gap: 12px;
   padding: 8px 0;
-  border-bottom: 1px solid var(--tg-theme-hint-color, #e9ecef);
+  border-bottom: 2px solid var(--ink);
   margin-bottom: 16px;
 }
 
@@ -23,24 +22,28 @@
   font-size: 20px;
   font-weight: 700;
   margin: 0;
-  color: var(--tg-theme-text-color);
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .back-btn {
   background: none;
-  border: 1px solid var(--tg-theme-hint-color, #dee2e6);
-  color: var(--tg-theme-text-color);
-  padding: 8px 12px;
-  border-radius: 8px;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  color: var(--ink);
+  padding: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.back-btn:hover {
-  background: var(--tg-theme-button-color, #667eea);
-  color: #fff;
-  border-color: var(--tg-theme-button-color, #667eea);
+.back-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
 .companies-list {
@@ -50,31 +53,34 @@
 }
 
 .company-chip {
-  background: var(--tg-theme-bg-color, #f8f9fa);
-  border: 1px solid var(--tg-theme-hint-color, #dee2e6);
-  color: var(--tg-theme-text-color);
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  color: var(--ink);
   padding: 10px 16px;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.company-chip:hover {
-  background: var(--tg-theme-button-color, #667eea);
-  color: #fff;
-  border-color: var(--tg-theme-button-color, #667eea);
+.company-chip:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+.company-chip.selected {
+  background: var(--lime);
 }
 
 .companies-empty {
   text-align: center;
   padding: 32px;
-  color: var(--tg-theme-hint-color, #868e96);
+  color: var(--ink-soft);
 }
 
 .companies-loading {
   text-align: center;
   padding: 32px;
-  color: var(--tg-theme-hint-color, #868e96);
+  color: var(--ink-soft);
 }

@@ -113,7 +113,7 @@ const QuestionCard = forwardRef(
                     className="repeat-badge"
                     title={t('card.repeat_title', 'Spaced repetition: you saw this before — great for long-term memory')}
                   >
-                    ↻ {t('card.repeat', 'Repeat')}
+                    <RotateCcw size={13} /> {t('card.repeat', 'Repeat')}
                   </span>
                 )}
               </div>
@@ -189,7 +189,7 @@ const QuestionCard = forwardRef(
                     className="repeat-badge"
                     title={t('card.repeat_title', 'Spaced repetition: you saw this before — great for long-term memory')}
                   >
-                    ↻ {t('card.repeat', 'Repeat')}
+                    <RotateCcw size={13} /> {t('card.repeat', 'Repeat')}
                   </span>
                 )}
               </div>
@@ -257,7 +257,7 @@ const QuestionCard = forwardRef(
 
               {isRepeat && (
                 <p className="sr-note">
-                  {t('card.sr_note', '↻ Spaced repetition: this card came back because it\'s due for review — that\'s how it sticks in memory.')}
+                  <RotateCcw size={13} style={{marginRight: 5, flexShrink: 0}} /> {t('card.sr_note', 'Spaced repetition: this card came back because it\'s due for review — that\'s how it sticks in memory.')}
                 </p>
               )}
             </div>

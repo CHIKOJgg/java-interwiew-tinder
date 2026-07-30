@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
-import { FileText, Search, Target, Sparkles, Loader2, ArrowLeft, ArrowRight, Bookmark, Share2 } from 'lucide-react';
+import { FileText, Search, Target, Sparkles, Loader2, ArrowLeft, ArrowRight, Bookmark, Share2, AlertCircle } from 'lucide-react';
 import './VacancyPrep.css';
 
 export default function VacancyPrep({ onBack }) {
@@ -76,7 +76,7 @@ export default function VacancyPrep({ onBack }) {
 
             {error && (
               <div className="analyze-error">
-                ⚠️ {error}
+                <AlertCircle size={16} /> {error}
               </div>
             )}
           </div>

@@ -1,8 +1,7 @@
 .paywall-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 17, 26, 0.72);
-  backdrop-filter: blur(6px);
+  background: rgba(24, 21, 16, 0.72);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -20,11 +19,11 @@
   position: relative;
   width: 100%;
   max-width: 380px;
-  background: linear-gradient(180deg, #1c2030 0%, #161a26 100%);
-  border: 1px solid rgba(255, 212, 59, 0.25);
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
   border-radius: 22px;
   padding: 26px 22px 22px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 8px 8px 0 var(--ink);
   animation: pw-pop 0.26s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
 
@@ -37,9 +36,9 @@
   position: absolute;
   top: 14px;
   right: 14px;
-  background: rgba(255, 255, 255, 0.06);
-  border: none;
-  color: #c5cad6;
+  background: var(--cream);
+  border: 2.5px solid var(--ink);
+  color: var(--ink);
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -47,8 +46,13 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
-.paywall-close:hover { background: rgba(255, 255, 255, 0.12); }
+
+.paywall-close:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
 
 .paywall-hero {
   display: flex;
@@ -62,25 +66,26 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ffd43b, #f59f00);
+  background: var(--lime);
+  border: 2.5px solid var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1a1d29;
-  box-shadow: 0 8px 24px rgba(245, 159, 0, 0.4);
+  color: var(--ink);
 }
 
 .paywall-mode-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #e9ecf3;
+  background: var(--cream);
+  border: 2.5px solid var(--ink);
+  color: var(--ink);
   padding: 5px 12px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .paywall-title {
@@ -88,95 +93,34 @@
   margin: 0 0 6px;
   font-size: 21px;
   font-weight: 700;
-  color: #fff;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .paywall-subtitle {
   text-align: center;
   margin: 0 0 4px;
   font-size: 14px;
-  color: #c5cad6;
+  color: var(--ink-soft);
   line-height: 1.4;
 }
-.paywall-subtitle.muted { color: #8b93a7; font-size: 13px; margin-bottom: 16px; }
 
-.paywall-why {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-bottom: 18px;
-}
-.paywall-why-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #ffd43b;
-  margin-bottom: 10px;
-}
-.paywall-bullets {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-.paywall-bullets li {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  font-size: 13.5px;
-  color: #e3e6ee;
-  line-height: 1.35;
-}
-.paywall-check {
-  color: #51cf66;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.paywall-cta {
-  width: 100%;
-  border: none;
-  border-radius: 14px;
-  padding: 14px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #1a1d29;
-  background: linear-gradient(135deg, #ffe066, #f59f00);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 10px 24px rgba(245, 159, 0, 0.35);
-}
-.paywall-cta:active { transform: scale(0.98); }
-
-.paywall-later {
-  width: 100%;
-  background: none;
-  border: none;
-  color: #8b93a7;
-  margin-top: 12px;
+.paywall-subtitle.muted {
+  color: var(--ink-soft);
   font-size: 13px;
-  cursor: pointer;
-  padding: 6px;
+  margin-bottom: 16px;
 }
-.paywall-later:hover { color: #c5cad6; }
 
-/* ── Comparison table ───────────────────────────────────────────── */
+/* ── Comparison table ─────────────────────────── */
 .paywall-compare {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--cream);
+  border: 2.5px solid var(--ink);
   border-radius: 14px;
   padding: 4px 0;
   margin-bottom: 18px;
   overflow: hidden;
 }
+
 .paywall-compare-row {
   display: grid;
   grid-template-columns: 1fr 60px 60px;
@@ -185,25 +129,85 @@
   font-size: 13px;
   align-items: center;
 }
+
 .paywall-compare-row.header {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #8b93a7;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--ink-soft);
+  border-bottom: 2px solid var(--ink);
   padding-bottom: 10px;
+  font-family: 'JetBrains Mono', monospace;
 }
-.paywall-compare-label { color: #e3e6ee; text-align: left; }
-.paywall-compare-free { text-align: center; color: #8b93a7; }
-.paywall-compare-pro { text-align: center; color: #ffd43b; font-weight: 600; }
 
+.paywall-compare-label {
+  color: var(--ink);
+  text-align: left;
+}
+
+.paywall-compare-free {
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.paywall-compare-pro {
+  text-align: center;
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* ── CTA button ───────────────────────────────── */
+.paywall-cta {
+  width: 100%;
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--lime);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.paywall-cta:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+/* ── Later link ───────────────────────────────── */
+.paywall-later {
+  width: 100%;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  color: var(--ink);
+  margin-top: 12px;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.paywall-later:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+/* ── Trial note ───────────────────────────────── */
 .paywall-trial-note {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   font-size: 12px;
-  color: #8b93a7;
+  color: var(--ink-soft);
   margin: 8px 0 0;
 }

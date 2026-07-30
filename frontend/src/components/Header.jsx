@@ -9,7 +9,7 @@ import useStore, { readinessFromStats } from '../store/useStore';
 import ThemeToggle from './ThemeToggle';
 import './Header.css';
 
-const LANG_LABELS = { Java: '☕ Java', Python: '🐍 Python', TypeScript: '🔷 TS', Go: '🐹 Go', Rust: '🦀 Rust', React: '⚛️ React', Kotlin: '🅰️ Kotlin' };
+const LANG_LABELS = { Java: 'Java', Python: 'Python', TypeScript: 'TS', Go: 'Go', Rust: 'Rust', React: 'React', Kotlin: 'Kotlin' };
 const MODES = [
   { id: 'swipe', icon: GraduationCap, titleKey: 'modes.swipe', shortKey: 'modes.swipe' },
   { id: 'test', icon: GraduationCap, titleKey: 'modes.test', shortKey: 'modes.test' },
@@ -135,7 +135,7 @@ const Header = ({ onSettingsClick, onResumeClick, onVacancyClick, onTrendsClick,
             <div className="stats-mini">
               <span className="readiness-mini"><strong>{readiness}%</strong></span>
               {stats.streak > 0 && (
-                <span className="streak-mini" title={`Longest: ${stats.longestStreak} days`}>🔥 {stats.streak}</span>
+                <span className="streak-mini" title={`Longest: ${stats.longestStreak} days`}>{stats.streak}</span>
               )}
               <span className={`daily-mini ${dailyDone ? 'done' : ''}`}>
                 {dailyDone ? t('header.daily_done') : t('header.daily', { done: todaySeen, goal: dailyGoal })}

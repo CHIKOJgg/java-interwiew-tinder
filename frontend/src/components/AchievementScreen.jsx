@@ -1,22 +1,22 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
-import { Award, TrendingUp, Flame, Zap, ShieldCheck, BookOpen, Bug, Target, Star, RotateCcw } from 'lucide-react';
+import { Target, Award, Trophy, Crown, Flame, Gem, Bug, Zap, Calendar, Hand, Check, RotateCcw } from 'lucide-react';
 import './AchievementScreen.css';
 
 const BADGE_MAP = {
-  'first_question': { icon: '🎯', nameKey: 'badges.first_question', color: '#5c7cfa' },
-  'known_10': { icon: '🏅', nameKey: 'badges.known_10', color: '#69db7c' },
-  'known_50': { icon: '🏆', nameKey: 'badges.known_50', color: '#ffd43b' },
-  'known_100': { icon: '🏆', nameKey: 'badges.known_100', color: '#ff922b' },
-  'known_500': { icon: '👑', nameKey: 'badges.known_500', color: '#e64980' },
-  'streak_3': { icon: '🔥', nameKey: 'badges.streak_3', color: '#ff6b6b' },
-  'streak_7': { icon: '🔥', nameKey: 'badges.streak_7', color: '#ff922b' },
-  'streak_30': { icon: '💎', nameKey: 'badges.streak_30', color: '#7950f2' },
-  'bug_hunter': { icon: '🐛', nameKey: 'badges.bug_hunter', color: '#20c997' },
-  'blitz_master': { icon: '⚡', nameKey: 'badges.blitz_master', color: '#fcc419' },
-  'daily_login': { icon: '📅', nameKey: 'badges.daily_login', color: '#a5d8ff' },
-  'refer_friend': { icon: '🤝', nameKey: 'badges.refer_friend', color: '#d6336c' },
+  'first_question': { icon: Target, nameKey: 'badges.first_question', color: '#5c7cfa' },
+  'known_10': { icon: Award, nameKey: 'badges.known_10', color: '#69db7c' },
+  'known_50': { icon: Trophy, nameKey: 'badges.known_50', color: '#ffd43b' },
+  'known_100': { icon: Trophy, nameKey: 'badges.known_100', color: '#ff922b' },
+  'known_500': { icon: Crown, nameKey: 'badges.known_500', color: '#e64980' },
+  'streak_3': { icon: Flame, nameKey: 'badges.streak_3', color: '#ff6b6b' },
+  'streak_7': { icon: Flame, nameKey: 'badges.streak_7', color: '#ff922b' },
+  'streak_30': { icon: Gem, nameKey: 'badges.streak_30', color: '#7950f2' },
+  'bug_hunter': { icon: Bug, nameKey: 'badges.bug_hunter', color: '#20c997' },
+  'blitz_master': { icon: Zap, nameKey: 'badges.blitz_master', color: '#fcc419' },
+  'daily_login': { icon: Calendar, nameKey: 'badges.daily_login', color: '#a5d8ff' },
+  'refer_friend': { icon: Hand, nameKey: 'badges.refer_friend', color: '#d6336c' },
 };
 
 function AchievementScreen({ onBack }) {
@@ -62,7 +62,7 @@ function AchievementScreen({ onBack }) {
               className={`badge-card ${unlocked ? 'unlocked' : 'locked'}`}
               style={{ '--badge-color': badge.color }}
             >
-              <div className="badge-icon">{badge.icon}</div>
+              <div className="badge-icon"><badge.icon size={22} /></div>
               <div className="badge-name">
                 {unlocked
                   ? t(`badges.${key}`, badge.nameKey)
@@ -70,7 +70,7 @@ function AchievementScreen({ onBack }) {
                 }
               </div>
               {unlocked && (
-                <div className="badge-check">✓</div>
+                <div className="badge-check"><Check size={14} /></div>
               )}
             </div>
           );

@@ -1,8 +1,8 @@
 .admin-panel {
   padding: 20px;
-  background: var(--bg-color, #f8f9fa);
+  background: var(--cream);
   min-height: 100vh;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .admin-header {
@@ -14,16 +14,29 @@
 
 .back-button {
   background: none;
-  border: none;
-  color: #5c7cfa;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  color: var(--ink);
   font-weight: 600;
   cursor: pointer;
   padding: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.back-button:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
 .admin-header h1 {
   font-size: 20px;
   margin: 0;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .metrics-grid {
@@ -34,34 +47,34 @@
 }
 
 .metric-card {
-  background: white;
+  background: var(--paper);
   padding: 16px;
-  border-radius: 16px;
+  border-radius: 14px;
+  border: 2.5px solid var(--ink);
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .metric-card.highlight {
-  background: linear-gradient(135deg, #4c6ef5 0%, #3b5bdb 100%);
-  color: white;
+  background: var(--lime);
 }
 
 .metric-card.highlight .metric-icon {
-  background: rgba(255,255,255,0.2);
-  color: white;
+  background: var(--cream);
 }
 
 .metric-icon {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: #f1f3f5;
+  background: var(--cream);
+  border: 2px solid var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4c6ef5;
+  color: var(--ink);
 }
 
 .metric-info {
@@ -71,28 +84,34 @@
 
 .metric-label {
   font-size: 11px;
-  opacity: 0.7;
+  color: var(--ink-soft);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .metric-value {
   font-size: 18px;
   font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .admin-section {
-  background: white;
+  background: var(--paper);
   padding: 20px;
-  border-radius: 20px;
+  border-radius: 16px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 2.5px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .admin-section h3 {
   font-size: 14px;
   margin-bottom: 16px;
-  color: #868e96;
+  color: var(--ink-soft);
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .activity-stats {
@@ -109,13 +128,16 @@
 .stat-value {
   font-size: 24px;
   font-weight: 800;
-  color: #4c6ef5;
+  color: var(--blue);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .stat-label {
   font-size: 10px;
-  color: #adb5bd;
+  color: var(--ink-soft);
   margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .questions-list {
@@ -129,14 +151,16 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #f8f9fa;
+  background: var(--cream);
+  border: 2px solid var(--ink);
   border-radius: 12px;
 }
 
 .q-rank {
   font-weight: 800;
-  color: #dee2e6;
+  color: var(--ink-soft);
   font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .q-text {
@@ -152,10 +176,12 @@
 .q-count {
   font-size: 12px;
   font-weight: 600;
-  color: #fa5252;
-  background: #fff5f5;
+  color: var(--coral);
+  background: var(--cream);
+  border: 2px solid var(--coral);
   padding: 4px 8px;
   border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .jobs-status {
@@ -166,20 +192,22 @@
 
 .job-pill {
   padding: 6px 12px;
-  background: #f1f3f5;
+  background: var(--cream);
+  border: 2px solid var(--ink);
   border-radius: 100px;
   font-size: 12px;
   font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .job-pill.active {
-  background: #e7f5ff;
-  color: #228be6;
+  background: var(--lime);
+  color: var(--ink);
 }
 
 .job-pill.error {
-  background: #fff5f5;
-  color: #fa5252;
+  background: var(--coral);
+  color: var(--ink);
 }
 
 .admin-loading {
@@ -189,7 +217,7 @@
   justify-content: center;
   height: 100vh;
   gap: 12px;
-  color: #868e96;
+  color: var(--ink-soft);
 }
 
 .spinner {

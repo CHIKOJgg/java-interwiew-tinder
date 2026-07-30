@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import apiClient from '../api/client';
-import { TrendingUp, Users, Briefcase, Clock, ArrowLeft, RefreshCw, DollarSign } from 'lucide-react';
+import { TrendingUp, Users, Briefcase, Clock, ArrowLeft, RefreshCw, DollarSign, AlertCircle } from 'lucide-react';
 import './MarketTrends.css';
 
 export default function MarketTrends({ onBack }) {
@@ -48,7 +48,7 @@ export default function MarketTrends({ onBack }) {
         )}
 
         {error && (
-          <div className="analyze-error">⚠️ {error}</div>
+          <div className="analyze-error"><AlertCircle size={16} /> {error}</div>
         )}
 
         {trends && (

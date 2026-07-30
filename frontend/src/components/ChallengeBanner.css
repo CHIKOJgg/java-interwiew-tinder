@@ -3,27 +3,28 @@
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: linear-gradient(135deg, rgba(255, 212, 59, 0.15), rgba(255, 146, 43, 0.08));
-  border: 1px solid rgba(255, 212, 59, 0.3);
+  background: var(--cream);
+  border: 2.5px solid var(--amber);
   border-radius: 14px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.challenge-banner:hover {
-  border-color: rgba(255, 212, 59, 0.5);
-  background: linear-gradient(135deg, rgba(255, 212, 59, 0.2), rgba(255, 146, 43, 0.12));
+.challenge-banner:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
 .challenge-banner-icon {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: rgba(255, 212, 59, 0.2);
+  background: var(--amber);
+  border: 2px solid var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffd43b;
+  color: var(--ink);
   flex-shrink: 0;
 }
 
@@ -34,11 +35,13 @@
 .challenge-banner-title {
   font-size: 14px;
   font-weight: 700;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .challenge-banner-meta {
   font-size: 12px;
-  opacity: 0.6;
+  color: var(--ink-soft);
   display: flex;
   align-items: center;
   gap: 4px;

@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: linear-gradient(160deg, #1a1d29 0%, #252a3a 100%);
+  background: var(--cream);
   animation: onb-fade 0.25s ease;
 }
 
@@ -32,21 +32,20 @@
 
 .onb-head h1 {
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 700;
   margin: 0;
-  color: #fff;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
   line-height: 1.2;
 }
 
 .onboarding-sub {
   font-size: 14px;
   line-height: 1.5;
-  opacity: 0.7;
+  color: var(--ink-soft);
   margin: 8px 0 0;
-  color: #fff;
 }
 
-/* ─── Checklist ─────────────────────────────────────────── */
 .onb-checklist {
   list-style: none;
   margin: 0;
@@ -62,9 +61,9 @@
   gap: 12px;
   padding: 11px 14px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.55);
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  color: var(--ink-soft);
   font-size: 14px;
   font-weight: 600;
   cursor: default;
@@ -72,194 +71,100 @@
 }
 
 .onb-check.active {
-  background: rgba(92, 124, 250, 0.15);
-  border-color: rgba(92, 124, 250, 0.5);
-  color: #fff;
+  background: var(--cream2);
+  border-color: var(--blue);
+  color: var(--ink);
 }
 
 .onb-check.done {
-  color: rgba(255, 255, 255, 0.8);
-  cursor: pointer;
+  background: var(--green);
+  border-color: var(--ink);
+  color: var(--ink);
 }
 
-.onb-check-mark {
-  flex: 0 0 auto;
+.onb-check-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: 2px solid var(--ink);
   font-size: 12px;
-  font-weight: 800;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+  color: var(--ink-soft);
 }
 
-.onb-check.active .onb-check-mark {
-  background: #5c7cfa;
-  color: #fff;
+.onb-check.active .onb-check-num {
+  background: var(--blue);
+  color: var(--ink);
 }
 
-.onb-check.done .onb-check-mark {
-  background: #51cf66;
-  color: #fff;
+.onb-check.done .onb-check-num {
+  background: var(--ink);
+  color: var(--ink);
 }
 
-/* ─── Current step detail ──────────────────────────────── */
-.onb-stage {
+.onb-action-area {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 12px;
-  text-align: center;
-  padding: 8px 0 4px;
-  animation: onb-slide-in 0.3s ease;
+  margin-top: 8px;
 }
 
-@keyframes onb-slide-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.onb-hero-emoji {
-  width: 84px;
-  height: 84px;
-  border-radius: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  background: linear-gradient(135deg, #5c7cfa, #3b5bdb);
-  box-shadow: 0 10px 30px rgba(59, 91, 219, 0.4);
-}
-
-.onb-hero-emoji.setup { background: linear-gradient(135deg, #868e96, #495057); box-shadow: 0 10px 30px rgba(73, 80, 87, 0.4); }
-.onb-hero-emoji.know  { background: linear-gradient(135deg, #51cf66, #2f9e44); box-shadow: 0 10px 30px rgba(47, 158, 68, 0.4); }
-.onb-hero-emoji.dont  { background: linear-gradient(135deg, #ff6b6b, #e03131); box-shadow: 0 10px 30px rgba(224, 49, 49, 0.4); }
-.onb-hero-emoji.tap   { background: linear-gradient(135deg, #ffd43b, #f08c00); box-shadow: 0 10px 30px rgba(240, 140, 0, 0.4); }
-.onb-hero-emoji.pro   { background: linear-gradient(135deg, #cc5de8, #9c36b5); box-shadow: 0 10px 30px rgba(156, 54, 181, 0.4); }
-
-.onb-stage h2 {
-  font-size: 20px;
-  font-weight: 800;
-  margin: 0;
-  color: #fff;
-  line-height: 1.25;
-}
-
-.onb-stage .onboarding-sub { max-width: 320px; }
-
-.onb-swipe-demo {
-  display: flex;
-  gap: 12px;
-  margin-top: 4px;
-}
-
-.onb-swipe-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 18px;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.onb-swipe-chip.know { background: linear-gradient(135deg, #51cf66, #2f9e44); }
-.onb-swipe-chip.dont { background: linear-gradient(135deg, #ff6b6b, #e03131); }
-
-.onb-pro-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: #fff;
-  background: linear-gradient(135deg, #cc5de8, #9c36b5);
-}
-
-/* ─── Progress ─────────────────────────────────────────── */
-.onb-progress {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.onb-progress-bar {
-  flex: 1;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  overflow: hidden;
-}
-
-.onb-progress-bar span {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #5c7cfa, #3b5bdb);
-  transition: width 0.3s ease;
-}
-
-.onb-progress-text {
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-/* ─── Nav ──────────────────────────────────────────────── */
-.onb-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.onboarding-start {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+.onb-btn {
+  width: 100%;
   padding: 15px;
-  border: none;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #5c7cfa, #3b5bdb);
-  color: #fff;
+  border-radius: 14px;
+  border: 2.5px solid var(--ink);
+  background: var(--lime);
+  color: var(--ink);
   font-size: 16px;
   font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(59, 91, 219, 0.4);
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.onboarding-start:active { transform: scale(0.98); }
+.onb-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
 
-.onboarding-back {
-  padding: 15px 18px;
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 15px;
-  font-weight: 600;
+.onb-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.onb-btn-outline {
+  background: var(--cream);
+  color: var(--ink);
+}
+
+.onb-progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.onb-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--cream);
   cursor: pointer;
 }
 
-.onboarding-back:active { opacity: 0.7; }
-
-.onboarding-skip {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
-  cursor: pointer;
-  padding: 4px 8px;
+.onb-dot.active {
+  background: var(--lime);
 }
 
-.onboarding-skip:active { color: rgba(255, 255, 255, 0.8); }
+@media (max-width: 400px) {
+  .onboarding { padding: 14px; }
+  .onb-head h1 { font-size: 20px; }
+  .onb-check { padding: 10px 12px; font-size: 13px; }
+  .onb-btn { padding: 13px; font-size: 15px; }
+}

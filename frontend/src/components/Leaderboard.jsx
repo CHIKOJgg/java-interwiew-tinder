@@ -29,7 +29,7 @@ const Leaderboard = ({ onBack }) => {
     }
   };
 
-  const medals = ['🥇', '🥈', '🥉'];
+  const medalColors = ['#ffd43b', '#adb5bd', '#cd7f32'];
 
   return (
     <div className="leaderboard-screen">
@@ -56,7 +56,7 @@ const Leaderboard = ({ onBack }) => {
               className={`leaderboard-row ${entry.user_id === user?.telegram_id ? 'is-me' : ''}`}
             >
               <div className="leaderboard-rank">
-                {i < 3 ? medals[i] : <span>{i + 1}</span>}
+                {i < 3 ? <Medal size={18} color={medalColors[i]} /> : <span>{i + 1}</span>}
               </div>
               <div className="leaderboard-user">
                 <div className="leaderboard-name">{entry.first_name || `User ${entry.user_id}`}</div>

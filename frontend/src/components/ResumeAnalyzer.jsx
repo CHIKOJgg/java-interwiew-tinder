@@ -167,7 +167,7 @@ const ResumeAnalyzer = ({ onBack, onStartPractice }) => {
               )}
             </div>
 
-            {fileError && <div className="analyze-error">⚠️ {fileError}</div>}
+            {fileError && <div className="analyze-error"><AlertCircle size={16} /> {fileError}</div>}
 
             <div className="textarea-divider">
               <span className="divider-label">{t('resume.or_paste', 'or paste text')}</span>
@@ -210,7 +210,7 @@ const ResumeAnalyzer = ({ onBack, onStartPractice }) => {
 
             {analyzeError && (
               <div className="analyze-error">
-                ⚠️ {analyzeError}
+                <AlertCircle size={16} /> {analyzeError}
               </div>
             )}
           </div>

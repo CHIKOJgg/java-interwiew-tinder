@@ -14,11 +14,13 @@
 .track-detail-header h1 {
   font-size: 22px;
   margin: 0 0 4px;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .track-detail-header p {
   font-size: 13px;
-  opacity: 0.6;
+  color: var(--ink-soft);
   margin: 0 0 8px;
 }
 
@@ -27,32 +29,35 @@
   justify-content: center;
   gap: 12px;
   font-size: 13px;
-  opacity: 0.7;
+  color: var(--ink-soft);
   margin-bottom: 12px;
 }
 
 .track-level-badge {
-  background: rgba(92, 124, 250, 0.2);
-  color: #5c7cfa;
+  background: var(--cream);
+  border: 2px solid var(--blue);
+  color: var(--blue);
   padding: 2px 10px;
   border-radius: 8px;
   font-weight: 700;
   font-size: 11px;
   text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .track-detail-progress {
-  height: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  height: 10px;
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 5px;
   margin: 0 16px;
   overflow: hidden;
 }
 
 .track-detail-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #5c7cfa, #339af0);
-  border-radius: 4px;
+  background: var(--lime);
+  border-radius: 3px;
   transition: width 0.4s;
 }
 
@@ -65,97 +70,76 @@
   gap: 8px;
 }
 
-.track-step {
+.track-step-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
-  padding: 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.track-step.current {
-  background: rgba(92, 124, 250, 0.1);
-  border-color: rgba(92, 124, 250, 0.3);
+.track-step-item:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.98);
 }
 
-.track-step.completed {
-  opacity: 0.6;
+.track-step-item.completed {
+  background: var(--cream2);
 }
 
-.step-number {
+.track-step-num {
   width: 28px;
   height: 28px;
   border-radius: 50%;
+  border: 2.5px solid var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
   font-size: 12px;
   font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
   flex-shrink: 0;
+  color: var(--ink-soft);
 }
 
-.track-step.completed .step-number {
-  background: rgba(81, 207, 102, 0.2);
-  color: #51cf66;
+.track-step-item.completed .track-step-num {
+  background: var(--green);
+  color: var(--ink);
 }
 
-.track-step.current .step-number {
-  background: rgba(92, 124, 250, 0.2);
-  color: #5c7cfa;
+.track-step-info {
+  flex: 1;
 }
 
-.step-info { flex: 1; }
-
-.step-question {
+.track-step-title {
   font-size: 14px;
   font-weight: 600;
-  line-height: 1.4;
-  margin-bottom: 4px;
+  color: var(--ink);
 }
 
-.step-meta {
+.track-step-desc {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.track-step-status {
   font-size: 11px;
-  opacity: 0.5;
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-family: 'JetBrains Mono', monospace;
 }
 
-.track-detail-footer {
-  padding: 12px 16px 24px;
+.track-step-item.completed .track-step-status {
+  color: var(--green);
 }
 
-.start-track-btn {
-  width: 100%;
-  padding: 15px;
-  background: linear-gradient(135deg, #5c7cfa, #339af0);
-  border: none;
-  border-radius: 14px;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.track-completed-banner {
-  text-align: center;
-  padding: 16px;
-  background: rgba(81, 207, 102, 0.1);
-  border: 1px solid rgba(81, 207, 102, 0.3);
-  border-radius: 14px;
-  color: #51cf66;
-  font-weight: 700;
-  font-size: 15px;
-}
-
-.track-detail-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  opacity: 0.5;
+@media (max-width: 400px) {
+  .track-detail-header h1 { font-size: 18px; }
+  .track-step-item { padding: 10px 12px; }
+  .track-step-title { font-size: 13px; }
 }

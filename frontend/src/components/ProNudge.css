@@ -5,50 +5,57 @@
   margin: 8px 12px 0;
   padding: 8px 10px;
   border-radius: 12px;
-  background: linear-gradient(90deg, rgba(255, 212, 59, 0.10), rgba(255, 212, 59, 0.03));
-  border: 1px solid rgba(255, 212, 59, 0.18);
-  animation: nudge-in 0.3s ease;
-}
-
-@keyframes nudge-in {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
+  background: var(--cream);
+  border: 2px solid var(--amber);
 }
 
 .pro-nudge-spark {
-  color: #ffd43b;
+  color: var(--amber);
   flex-shrink: 0;
 }
 
 .pro-nudge-text {
   flex: 1;
   font-size: 12.5px;
-  color: #e3e6ee;
+  color: var(--ink);
   line-height: 1.3;
 }
 
 .pro-nudge-open {
   flex-shrink: 0;
-  background: rgba(255, 212, 59, 0.16);
-  border: 1px solid rgba(255, 212, 59, 0.35);
-  color: #ffd43b;
+  background: var(--amber);
+  border: 2px solid var(--ink);
+  color: var(--ink);
   font-size: 12px;
   font-weight: 600;
   padding: 5px 10px;
   border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace;
+  transition: transform 0.1s;
 }
-.pro-nudge-open:hover { background: rgba(255, 212, 59, 0.26); }
+
+.pro-nudge-open:active {
+  transform: scale(0.96);
+}
 
 .pro-nudge-dismiss {
   flex-shrink: 0;
   background: none;
-  border: none;
-  color: #8b93a7;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  color: var(--ink-soft);
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 2px;
+  width: 24px;
+  height: 24px;
+  transition: transform 0.1s;
 }
-.pro-nudge-dismiss:hover { color: #c5cad6; }
+
+.pro-nudge-dismiss:active {
+  transform: scale(0.96);
+}

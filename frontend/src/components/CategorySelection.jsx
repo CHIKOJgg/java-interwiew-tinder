@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, ArrowLeft } from 'lucide-react';
+import { Check, ArrowLeft, Inbox } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonGrid } from './Skeleton';
 import api from '../api/client';
@@ -142,7 +142,7 @@ const CategorySelection = ({ onComplete, onBack }) => {
   if (!loading && categories.length === 0) {
     return (
       <div className="category-selection" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16, padding: 24 }}>
-        <div style={{ fontSize: 48 }}>📭</div>
+        <Inbox size={48} />
         <h2 style={{ textAlign: 'center' }}>{t('category.empty_title', 'No questions for this language yet')}</h2>
         <p style={{ textAlign: 'center', opacity: 0.6 }}>{t('category.empty_desc', 'Please choose another language or check back later.')}</p>
         <button

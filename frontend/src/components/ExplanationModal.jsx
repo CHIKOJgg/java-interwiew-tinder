@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
-import { X, BookOpen, MapPin, Code2, Lightbulb, ChevronRight } from 'lucide-react';
+import { X, BookOpen, MapPin, Code2, Lightbulb, ChevronRight, Lock, Sparkles } from 'lucide-react';
 import { SkeletonExplanation } from './Skeleton';
 import { highlight } from '../utils/highlight';
 import '../utils/highlight.css';
@@ -197,7 +197,7 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose, onUpgrade }
         onClick={e => e.stopPropagation()}
       >
         <div className="modal-header">
-          <h2>🎓 {t('explanation.title', 'Explanation')}</h2>
+          <h2><Lightbulb size={20} style={{marginRight: 6}} /> {t('explanation.title', 'Explanation')}</h2>
           <button className="close-button" onClick={onClose}><X size={22} /></button>
         </div>
 
@@ -211,14 +211,14 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose, onUpgrade }
                   {t('explanation.limit_light', 'Daily free AI limit reached ({{used}}/{{limit}}). Upgrade to Pro for unlimited breakdowns.',
                     { used: aiLimitReached.used, limit: aiLimitReached.limit })}
                 </p>
-                <button className="ai-limit-upgrade small" onClick={onUpgrade} type="button">⭐ Pro</button>
+                <button className="ai-limit-upgrade small" onClick={onUpgrade} type="button"><Sparkles size={14} /> Pro</button>
                 <button className="action-button ghost" onClick={closeExplanation} type="button">
                   {t('explanation.limit_close', 'Got it')}
                 </button>
               </div>
             ) : (
               <div className="ai-limit-upsell">
-                <div className="ai-limit-lock">🔒</div>
+                <div className="ai-limit-lock"><Lock size={40} /></div>
                 <h3>{t('explanation.limit_title', 'Daily AI limit reached')}</h3>
                 <p>
                   {t('explanation.limit_desc', 'You used {{used}} of {{limit}} free breakdowns today.',

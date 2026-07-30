@@ -1,32 +1,23 @@
-/* ── Tinder card wrapper (positioned by the library) ──────────────── */
+/* ── Tinder card wrapper ──────────────────────── */
 .swipe-card {
   position: absolute;
   width: 100%;
   height: 100%;
-  /* Let the library handle touch for swiping, our handlers detect taps */
 }
 
-/* ── Outer card shell ─────────────────────────────────────────────── */
+/* ── Outer card shell ─────────────────────────── */
 .card {
   width: 100%;
   height: 100%;
   cursor: pointer;
-
-  /* 3-D perspective for the flip */
   perspective: 1200px;
-
-  /* Prevent text selection / callout on long-press */
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-
-  /* Allow vertical scrolling of long answers (e.g. .answer-content pan-y).
-     "pan-y" lets the browser handle vertical panning while react-tinder-card
-     still captures horizontal swipe gestures via JS events. */
   touch-action: pan-y;
 }
 
-/* ── 3-D flip container ───────────────────────────────────────────── */
+/* ── 3D flip container ────────────────────────── */
 .card-inner {
   position: relative;
   width: 100%;
@@ -40,40 +31,33 @@
   transform: rotateY(180deg);
 }
 
-/* ── Both faces share this base ───────────────────────────────────── */
+/* ── Both card faces ──────────────────────────── */
 .card-face {
   position: absolute;
   inset: 0;
-  /* width + height = 100% */
   border-radius: 22px;
   padding: 22px 20px 18px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-
-  /* Hide the face when it is rotated away */
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.12),
-    0 1px 4px rgba(0, 0, 0, 0.18);
+  border: 2.5px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
-/* ── Front face ───────────────────────────────────────────────────── */
 .card-front {
-  background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
+  background: var(--paper);
+  color: var(--ink);
 }
 
-/* ── Back face — rotated 180° so it appears on flip ──────────────── */
 .card-back {
   transform: rotateY(180deg);
-  background: linear-gradient(145deg, #f093fb 0%, #f5576c 100%);
-  color: #fff;
+  background: var(--cream2);
+  color: var(--ink);
 }
 
-/* ── Badges ───────────────────────────────────────────────────────── */
+/* ── Badges ───────────────────────────────────── */
 .badges-container {
   display: flex;
   gap: 7px;
@@ -91,13 +75,25 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(8px);
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  font-family: 'JetBrains Mono', monospace;
 }
 
-/* ── Front: question text ─────────────────────────────────────────── */
+.repeat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--amber);
+  background: rgba(232, 167, 34, 0.14);
+  border: 1.5px solid var(--amber);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Front: question text ─────────────────────── */
 .question-content {
   flex: 1;
   display: flex;
@@ -111,10 +107,10 @@
   font-size: clamp(17px, 4.5vw, 24px);
   line-height: 1.45;
   font-weight: 700;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  font-family: 'Inter', sans-serif;
 }
 
-/* ── Flip hint button ─────────────────────────────────────────────── */
+/* ── Flip hint ────────────────────────────────── */
 .flip-hint {
   display: flex;
   align-items: center;
@@ -123,30 +119,30 @@
   padding: 13px 16px;
   border-radius: 14px;
   font-size: 13px;
-  font-weight: 600;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(10px);
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--cream);
+  border: 2.5px solid var(--ink);
   cursor: pointer;
-  /* Explicit tap area for mobile */
   min-height: 46px;
   touch-action: manipulation;
-  transition: background 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .flip-hint:active {
-  background: rgba(255, 255, 255, 0.28);
-  transform: scale(0.97);
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
+/* ── Report flag ──────────────────────────────── */
 .report-flag {
   position: absolute;
   bottom: 24px;
   right: 24px;
-  background: rgba(0, 0, 0, 0.2);
-  color: #fff;
-  border: none;
+  background: var(--paper);
+  color: var(--ink-soft);
+  border: 2.5px solid var(--ink);
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -154,29 +150,25 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
-  backdrop-filter: blur(5px);
   z-index: 10;
   opacity: 0.5;
+  transition: transform 0.1s, box-shadow 0.1s, opacity 0.2s;
 }
 
-.report-flag:hover,
 .report-flag:active {
   opacity: 1;
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
-.report-flag:active {
-  transform: scale(0.9);
-}
-
-/* ── Bookmark (save) button: top-right ────────────────────────────── */
+/* ── Bookmark ─────────────────────────────────── */
 .bookmark-btn {
   position: absolute;
   bottom: 24px;
   left: 24px;
-  background: rgba(0, 0, 0, 0.2);
-  color: #fff;
-  border: none;
+  background: var(--paper);
+  color: var(--ink-soft);
+  border: 2.5px solid var(--ink);
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -184,24 +176,23 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
-  backdrop-filter: blur(5px);
   z-index: 10;
   opacity: 0.5;
+  transition: transform 0.1s, box-shadow 0.1s, opacity 0.2s;
 }
 
-.bookmark-btn:hover,
 .bookmark-btn:active {
   opacity: 1;
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
+
 .bookmark-btn.saved {
-  background: rgba(255, 212, 59, 0.85);
-  color: #1a1a1a;
+  background: var(--lime);
+  color: var(--ink);
+  opacity: 1;
 }
-.bookmark-btn:active {
-  transform: scale(0.9);
-}
-/* Back-face bookmark: inline button with a label (not floating) */
+
 .bookmark-btn.back {
   position: static;
   width: auto;
@@ -211,40 +202,18 @@
   gap: 6px;
   font-size: 13px;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.1);
-  color: inherit;
+  background: var(--cream);
+  color: var(--ink);
+  opacity: 1;
   margin-top: 12px;
 }
+
 .bookmark-btn.back.saved {
-  background: rgba(255, 212, 59, 0.85);
-  color: #1a1a1a;
+  background: var(--lime);
+  color: var(--ink);
 }
 
-/* ── "Repeat" spaced-repetition badge ─────────────────────────────── */
-.repeat-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #ffd43b;
-  background: rgba(255, 212, 59, 0.14);
-  border: 1px solid rgba(255, 212, 59, 0.35);
-}
-
-.sr-note {
-  margin-top: 14px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-
-/* ── Back: answer text ────────────────────────────────────────────── */
+/* ── Answer content ───────────────────────────── */
 .answer-content {
   flex: 1;
   display: flex;
@@ -252,7 +221,6 @@
   justify-content: center;
   gap: 12px;
   overflow-y: auto;
-  /* Allow vertical scroll of long answers, but keep horizontal swipe for the lib */
   touch-action: pan-y;
 }
 
@@ -262,39 +230,42 @@
   letter-spacing: 1.2px;
   opacity: 0.75;
   font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .answer-content p {
   font-size: clamp(15px, 4vw, 19px);
   line-height: 1.6;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin: 0;
+  font-family: 'Inter', sans-serif;
 }
 
-/* ── Swipe hints at bottom of back ───────────────────────────────── */
+/* ── Swipe instructions ───────────────────────── */
 .swipe-instructions {
   display: flex;
   justify-content: space-between;
   padding: 13px 16px;
   margin-top: 14px;
-  background: rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(10px);
+  background: var(--cream);
+  border: 2.5px solid var(--ink);
   border-radius: 12px;
 }
 
 .swipe-hint {
   font-size: 13px;
   font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .swipe-hint.left {
-  color: #ff8787;
+  color: var(--coral);
 }
 
 .swipe-hint.right {
-  color: #8ce99a;
+  color: var(--green);
 }
 
+/* ── Explain AI button ────────────────────────── */
 .explain-ai-btn {
   display: flex;
   align-items: center;
@@ -303,16 +274,23 @@
   width: 100%;
   margin-top: 12px;
   padding: 12px;
-  border: none;
+  border: 2.5px solid var(--ink);
   border-radius: 12px;
-  background: linear-gradient(135deg, #7048e8, #5c7cfa);
-  color: #fff;
+  background: var(--lime);
+  color: var(--ink);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(112, 72, 232, 0.35);
+  font-family: 'JetBrains Mono', monospace;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
+.explain-ai-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+/* ── Discuss button ───────────────────────────── */
 .discuss-btn {
   display: flex;
   align-items: center;
@@ -321,32 +299,39 @@
   width: 100%;
   margin-top: 12px;
   padding: 12px;
-  border: none;
+  border: 2.5px solid var(--ink);
   border-radius: 12px;
-  background: var(--bg-tertiary, #2a2a3e);
-  color: var(--text-primary, #e0e0e0);
+  background: var(--paper);
+  color: var(--ink);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background .15s;
-}
-.discuss-btn:hover { background: var(--border-color, #3a3a4e); }
-
-.explain-ai-btn:active {
-  transform: scale(0.98);
+  font-family: 'JetBrains Mono', monospace;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-/* ── Card appear animation ────────────────────────────────────────── */
+.discuss-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+/* ── SR note ──────────────────────────────────── */
+.sr-note {
+  margin-top: 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── Card appear animation ────────────────────── */
 @keyframes cardAppear {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .swipe-card {

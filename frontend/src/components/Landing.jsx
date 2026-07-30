@@ -1,377 +1,537 @@
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { Target, Check, X, AlertTriangle, Users, Tag, Lightbulb, Brain, MessageSquare } from 'lucide-react';
+import Mascot from './Mascot';
 import './Landing.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const LANGS = ['Java', 'Python', 'TypeScript'];
+const NEED = { junior: 150, middle: 320, senior: 520 };
+
+function emailOk(v) {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+}
+
+function getRegion() {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    return { region: tz === 'Europe/Minsk' ? 'BY' : '', timezone: tz };
+  } catch { return { region: '', timezone: '' }; }
+}
 
 export default function Landing({ onStart, onLogin }) {
-  const { t } = useTranslation();
-
   const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'prep_interview_bot';
   const miniAppUrl = import.meta.env.VITE_TELEGRAM_MINIAPP_URL || `https://t.me/${botUsername}`;
+  const RB = useRef(getRegion());
 
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [installed, setInstalled] = useState(false);
-  const [publicStats, setPublicStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [scrolledPast, setScrolledPast] = useState(false);
+  /* ── live widget ── */
+  const [liveQ, setLiveQ] = useState(null);
+  const [liveLang, setLiveLang] = useState('Java');
+  const [ansShown, setAnsShown] = useState(false);
+  const langIdx = useRef(0);
 
-  useEffect(() => {
-    const onScroll = () => setScrolledPast(window.scrollY > window.innerHeight * 0.6);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+  const fetchLive = useCallback(() => {
+    const lang = LANGS[langIdx.current % LANGS.length];
+    langIdx.current++;
+    fetch(`${API_BASE}/api/demo/questions?language=${encodeURIComponent(lang)}&limit=1&seed=${Math.random().toString(36).slice(2)}`)
+      .then(r => r.json())
+      .then(d => { const qs = (d && d.questions) || []; if (qs.length) { setLiveQ(qs[0]); setLiveLang(lang); } else { setLiveQ(null); } })
+      .catch(() => setLiveQ(null));
   }, []);
 
+  useEffect(() => { fetchLive(); const id = setInterval(fetchLive, 20000); return () => clearInterval(id); }, [fetchLive]);
+
+  /* ── subnav scroll-spy ── */
   useEffect(() => {
-    setStatsLoading(true);
-    const fetchStats = async (retries = 1) => {
-      for (let i = 0; i <= retries; i++) {
-        try {
-          const r = await fetch(`${API_BASE}/public/stats`);
-          if (r.ok) {
-            const d = await r.json();
-            setPublicStats(d);
-            setStatsLoading(false);
-            return;
-          }
-          if (i < retries) await new Promise(res => setTimeout(res, 300));
-        } catch {
-          if (i < retries) await new Promise(res => setTimeout(res, 300));
+    const links = document.querySelectorAll('#subnav a');
+    if (!links.length) return;
+    const map = {};
+    links.forEach(a => { const id = a.getAttribute('href').slice(1); const el = document.getElementById(id); if (el) map[id] = a; });
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        const a = map[e.target.id]; if (!a) return;
+        if (e.isIntersecting) {
+          links.forEach(x => x.classList.remove('active'));
+          a.classList.add('active');
+          a.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
         }
-      }
-      setStatsLoading(false);
-    };
-    fetchStats();
+      });
+    }, { rootMargin: '-40% 0px -55% 0px' });
+    Object.keys(map).forEach(id => io.observe(document.getElementById(id)));
+    return () => io.disconnect();
   }, []);
 
+  /* ── who tabs ── */
+  const [whoTab, setWhoTab] = useState(0);
+
+  /* ── calculator ── */
+  const [calcLevel, setCalcLevel] = useState('junior');
+  const [calcTime, setCalcTime] = useState(30);
+  const calcData = (() => {
+    const need = NEED[calcLevel];
+    const hours = need / 15;
+    const days = Math.max(1, Math.round(hours / (calcTime / 60)));
+    return { days, questions: need, hours: Math.round(hours), weeks: days / 7 };
+  })();
+
+  /* ── billing toggle ── */
+  const [billing, setBilling] = useState('monthly');
+
+  /* ── lead form ── */
+  const [leadEmail, setLeadEmail] = useState('');
+  const [leadConsent, setLeadConsent] = useState(false);
+  const [leadInterest, setLeadInterest] = useState('passive');
+  const [leadMsg, setLeadMsg] = useState(null);
+  const [leadLoading, setLeadLoading] = useState(false);
+
+  const submitLead = useCallback(async () => {
+    if (!leadConsent) { setLeadMsg({ type: 'err', text: 'Please agree to the privacy policy.' }); return; }
+    if (!emailOk(leadEmail)) { setLeadMsg({ type: 'err', text: 'Enter a valid email.' }); return; }
+    setLeadLoading(true);
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const r = await fetch(`${API_BASE}/api/waitlist`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: leadEmail, lang: 'en', source: params.get('utm_source') || 'landing', consent: true,
+          interest: leadInterest, region: RB.current.region, timezone: RB.current.timezone
+        })
+      });
+      const j = await r.json();
+      if (r.status === 451) { setLeadMsg({ type: 'err', text: j.message }); return; }
+      setLeadMsg({ type: 'ok', text: "You're in! The PDF + digest are on their way." });
+      setLeadEmail(''); setLeadConsent(false);
+    } catch { setLeadMsg({ type: 'err', text: 'Network error. Try again later.' }); }
+    finally { setLeadLoading(false); }
+  }, [leadEmail, leadConsent, leadInterest]);
+
+  /* ── b2b form ── */
+  const [b2bName, setB2bName] = useState('');
+  const [b2bProduct, setB2bProduct] = useState('b2b-team');
+  const [b2bEmail, setB2bEmail] = useState('');
+  const [b2bTg, setB2bTg] = useState('');
+  const [b2bMsg, setB2bMsg] = useState('');
+  const [b2bConsent, setB2bConsent] = useState(false);
+  const [b2bMsgOut, setB2bMsgOut] = useState(null);
+  const [b2bLoading, setB2bLoading] = useState(false);
+
+  const submitB2b = useCallback(async () => {
+    if (!b2bConsent) { setB2bMsgOut({ type: 'err', text: 'Please agree to the privacy policy.' }); return; }
+    if (!b2bEmail && !b2bTg) { setB2bMsgOut({ type: 'err', text: 'Add an email or Telegram handle so we can reply.' }); return; }
+    if (b2bEmail && !emailOk(b2bEmail)) { setB2bMsgOut({ type: 'err', text: 'Enter a valid email.' }); return; }
+    setB2bLoading(true);
+    try {
+      const packed = (b2bTg ? b2bTg + ' ' : '') + '| ' + b2bProduct + (b2bName ? ' | ' + b2bName : '') + (b2bMsg ? ' | ' + b2bMsg : '');
+      const r = await fetch(`${API_BASE}/api/waitlist`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: b2bEmail || undefined, lang: 'en', source: b2bProduct, consent: true,
+          telegram: packed, interest: 'arbitrage', region: RB.current.region, timezone: RB.current.timezone
+        })
+      });
+      const j = await r.json();
+      if (r.status === 451) { setB2bMsgOut({ type: 'err', text: j.message }); return; }
+      setB2bMsgOut({ type: 'ok', text: "Thanks! We'll reach out within 1 business day." });
+      setB2bName(''); setB2bEmail(''); setB2bTg(''); setB2bMsg(''); setB2bConsent(false);
+    } catch { setB2bMsgOut({ type: 'err', text: 'Network error. Ping us on Telegram instead.' }); }
+    finally { setB2bLoading(false); }
+  }, [b2bName, b2bProduct, b2bEmail, b2bTg, b2bMsg, b2bConsent]);
+
+  /* ── exit popup ── */
+  const [exitShown, setExitShown] = useState(false);
   useEffect(() => {
-    const onPrompt = (e) => { e.preventDefault(); setDeferredPrompt(e); };
-    const onInstalled = () => setInstalled(true);
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    window.addEventListener('appinstalled', onInstalled);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', onPrompt);
-      window.removeEventListener('appinstalled', onInstalled);
-    };
+    if (localStorage.getItem('exit_popup_dismissed')) return;
+    let shown = false;
+    const onMouseOut = (e) => { if (!shown && e.clientY < 4) { shown = true; setExitShown(true); } };
+    document.addEventListener('mouseout', onMouseOut);
+    if (window.matchMedia && window.matchMedia('(hover: none)').matches) {
+      history.pushState({ exitGuard: true }, '');
+      const onPop = () => { if (!shown) { shown = true; setExitShown(true); history.pushState({ exitGuard: true }, ''); } };
+      window.addEventListener('popstate', onPop);
+      return () => { window.removeEventListener('popstate', onPop); document.removeEventListener('mouseout', onMouseOut); };
+    }
+    return () => document.removeEventListener('mouseout', onMouseOut);
   }, []);
 
-  const installPwa = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-  };
+  const dismissExit = () => { setExitShown(false); localStorage.setItem('exit_popup_dismissed', '1'); };
 
-  const painPoints = [
-    { icon: '😰', title: t('landing.pain1', 'You studied the wrong things'), desc: t('landing.pain1_d', 'Endless LeetCode and random lists. Then they ask about garbage collection or volatile and you freeze.') },
-    { icon: '🤫', title: t('landing.pain2', 'You get zero feedback'), desc: t('landing.pain2_d', 'Reading an answer isn\'t understanding it. Without a plain explanation, you repeat the same mistake.') },
-    { icon: '🎯', title: t('landing.pain3', 'You never know when you\'re ready'), desc: t('landing.pain3_d', 'Cramming forever isn\'t a plan. You need to know confidently that you\'re ready to book the interview.') },
-    { icon: '💸', title: t('landing.pain4', 'Each failed interview costs you'), desc: t('landing.pain4_d', 'Wasted prep time, lost confidence, delayed career moves, and sometimes the offer goes to someone who prepared smarter.') },
-  ];
-
-  const features = [
-    { icon: '💞', title: t('landing.f_swipe', 'Know exactly what they\'ll ask'), text: t('landing.f_swipe_d', 'Real questions from real Java, Python, TypeScript, Go, Rust, React & Kotlin interviews — not random trivia.') },
-    { icon: '🤖', title: t('landing.f_modes', 'Never get stuck on a blank'), text: t('landing.f_modes_d', 'Swipe left on anything you don\'t know and get an instant, plain-language AI breakdown.') },
-    { icon: '🔁', title: t('landing.f_streak', 'Remember it on interview day'), text: t('landing.f_streak_d', 'Spaced repetition brings weak topics back right before you\'d forget — so it\'s there when it counts.') },
-    { icon: '📊', title: t('landing.f_percentile', 'Know when you\'re ready'), text: t('landing.f_percentile_d', 'A readiness score vs other candidates tells you if you\'re good to go.') },
-    { icon: '🎤', title: t('landing.f_mock', 'Rehearse the real thing'), text: t('landing.f_mock_d', 'Timed, AI-graded Mock Interview. Kill the panic before the real one.') },
-    { icon: '🐞', title: t('landing.f_modes2', 'Train every angle'), text: t('landing.f_modes2_d', '7 modes — Swipe, Test, Bug Hunting, Blitz, Code Completion, Concept Linker, Mock.') },
-  ];
-
-  const mathItems = [
-    { icon: '☕', num: '$0.33/day', label: t('landing.math1', 'Less than a coffee — PRO plan') },
-    { icon: '💰', num: '$5k-$30k', label: t('landing.math2', 'Avg salary jump after the offer') },
-    { icon: '⏱️', num: '10 min/day', label: t('landing.math3', 'Less time than your morning scroll') },
-    { icon: '📈', num: '2-3 weeks', label: t('landing.math4', 'Average time to interview-ready') },
-  ];
-
-  const plans = [
-    { id: 'free', name: t('landing.plan_free', 'Free'), price: '$0', period: '', features: [
-      t('landing.free_f1', 'Swipe & Test modes'),
-      t('landing.free_f2', '40 questions / day'),
-      t('landing.free_f3', '3 AI explanations / day'),
-    ] },
-    { id: 'pro', name: t('landing.plan_pro', 'Pro'), price: '$9.99', period: t('landing.per_month', '/mo'), highlight: true, features: [
-      t('landing.pro_f1', 'Every practice mode unlocked'),
-      t('landing.pro_f2', 'Unlimited AI breakdowns'),
-      t('landing.pro_f3', 'Mock interview & resume review'),
-      t('landing.pro_f4', 'Readiness score & daily streak'),
-    ] },
-  ];
-
-  const faqs = [
-    { q: t('landing.faq1_q', 'Do I need to install anything?'), a: t('landing.faq1_a', 'No. You can open Interview Tinder right inside Telegram, or play on the web — no download required.') },
-    { q: t('landing.faq2_q', 'Is it really free?'), a: t('landing.faq2_a', 'Yes — the Free plan gives you 40 questions a day and 3 AI explanations, forever. Pro unlocks every mode and unlimited AI breakdowns.') },
-    { q: t('landing.faq3_q', 'Which languages are covered?'), a: t('landing.faq3_a', 'Java, Python, TypeScript, Go, Rust, React and Kotlin — with questions spanning core syntax, data structures, concurrency, system design and framework internals.') },
-    { q: t('landing.faq4_q', 'Will my progress sync?'), a: t('landing.faq4_a', 'Yes. Sign in with Telegram or email and your streak, readiness score and saved questions follow you across the Mini App and the web/PWA.') },
-  ];
+  const liveQuestion = liveQ || { language: 'Java', category: 'Core', question: 'What is the difference between == and equals()?', shortAnswer: '== compares references; equals() compares object content.' };
 
   return (
-    <div className="landing">
-      <nav className="landing-nav">
-        <div className="landing-nav-brand">
-          <img className="landing-logo-sm" src="/icon.svg" alt="Interview Tinder" width="32" height="32" />
-          <span>Interview Tinder</span>
-        </div>
-        <a className="landing-nav-tg" href={miniAppUrl} target="_blank" rel="noopener noreferrer">
-          {t('landing.open_tg', 'Open in Telegram')}
-        </a>
-      </nav>
+    <div className="landing-wrap">
+      <div className="announce">Interview Tinder is now <b>Prep-It</b> — same swipe engine, new name. <a href="#faq">Why we renamed →</a></div>
 
-      <header className="landing-hero" role="banner">
-        <span className="landing-pill">🔥 {t('landing.pill', 'Real questions from real interviews · 3 languages · no fluff')}</span>
-        <h1>{t('landing.title', 'You know how to code.')}&nbsp;<span className="landing-hl">{t('landing.title_hl', 'One forgotten question')}<br/>{t('landing.title_hl2', 'shouldn\'t cost you the offer.')}</span></h1>
-        <p className="landing-tagline">
-          {t('landing.tagline', 'Interview Tinder drills you on the exact questions companies ask, explains every gap instantly with AI, and shows your real readiness score. 10 minutes a day — free.')}
-        </p>
-        <div className="landing-hero-cta">
-          <button className="landing-cta landing-cta--green" onClick={onStart}>
-            {t('landing.cta', 'Try a real question free')} →
-          </button>
-          {onLogin && (
-            <button className="landing-cta landing-cta--ghost" onClick={onLogin}>
-              {t('landing.login', 'Log in')} →
-            </button>
-          )}
-          <a className="landing-cta landing-cta--ghost" href={miniAppUrl} target="_blank" rel="noopener noreferrer">
-            {t('landing.open_tg', 'Open in Telegram')}
-          </a>
+      <header className="land-header">
+        <div className="wrap">
+          <div className="logo">
+            <Mascot size={32} className="mark" />
+            Prep-It
+          </div>
+          <nav className="nav">
+            <a className="hide-m" href="#cost">Why you fail</a>
+            <a className="hide-m" href="#how">How it works</a>
+            <a className="hide-m" href="#calc">Calculator</a>
+            <a className="hide-m" href="#pricing">Pricing</a>
+            <a className="hide-m" href="#faq">FAQ</a>
+            <a className="hide-m" href="#b2b">B2B</a>
+            <a className="btn sm lime" href={miniAppUrl} target="_blank" rel="noopener">Start free</a>
+          </nav>
         </div>
-        <div className="landing-trust">
-          <span>✓ <b>{t('landing.trust1', 'No card')}</b></span>
-          <span>✓ <b>7-day</b> {t('landing.trust2', 'PRO trial')}</span>
-          <span>✓ <b>{t('landing.trust3', 'Real')}</b> {t('landing.trust4', 'questions, not trivia')}</span>
+        <div className="subnav" id="subnav">
+          <a href="#cost">Why you fail</a>
+          <a href="#who">Who it's for</a>
+          <a href="#how">How it works</a>
+          <a href="#calc">Calculator</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#faq">FAQ</a>
+          <a href="#b2b">B2B</a>
         </div>
       </header>
 
-      <div className="landing-stats">
-        {statsLoading ? (
-          <>
-            <div className="landing-stat"><strong>—</strong><span>candidates practicing</span></div>
-            <div className="landing-stat"><strong>—</strong><span>real interview questions</span></div>
-            <div className="landing-stat"><strong>3</strong><span>languages: Java · Python · TS</span></div>
-          </>
-        ) : (
-          <>
-            <div className="landing-stat">
-              <strong>{publicStats?.users?.toLocaleString() ?? '?'}+</strong>
-              <span>{t('landing.stat_candidates', 'candidates practicing')}</span>
+      {/* HERO */}
+      <div className="hero">
+        <div className="wrap hero-grid">
+          <div>
+            <span className="eyebrow">🔥 real questions · {LANGS.length} languages · no fluff</span>
+            <h1>One forgotten question<br />shouldn't cost you <span className="hl">the offer.</span></h1>
+            <p className="lead">Prep-It drills you on the exact questions companies ask, explains every gap instantly with AI, and shows your real readiness score — so you walk in knowing, not hoping. 10 minutes a day, free to start.</p>
+            <div className="actions">
+              <a className="btn lime" href={miniAppUrl} target="_blank" rel="noopener" id="ctaHero">🚀 Try a real question free</a>
+              <a className="btn" href={`https://t.me/${botUsername}`} target="_blank" rel="noopener">Open in Telegram</a>
             </div>
-            <div className="landing-stat">
-              <strong>{publicStats?.questions?.toLocaleString() ?? '?'}+</strong>
-              <span>{t('landing.stat_questions', 'real interview questions')}</span>
+            <div className="trust-row">
+              <span>✓ <b>No card</b></span>
+              <span>✓ <b>7-day</b> PRO trial</span>
+              <span>✓ <b>PWA</b> + Telegram Mini App</span>
             </div>
-            <div className="landing-stat">
-              <strong>3</strong>
-              <span>{t('landing.stat_langs', 'languages: Java · Python · TS')}</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="landing-companies">
-        <span className="landing-companies-label">{t('landing.used_by', 'Used by developers at')}</span>
-        <div className="landing-companies-logos">
-          {['Google', 'Amazon', 'Meta', 'Microsoft', 'Apple'].map(name => (
-            <span key={name} className="landing-company-logo">{name}</span>
-          ))}
-        </div>
-        <p className="landing-companies-note">{t('landing.companies_note', 'These companies publish Java, Python & TypeScript interview questions that appear in our decks.')}</p>
-      </div>
-
-      <section className="landing-cost">
-        <h2>{t('landing.cost_title', 'The real cost of "I\'ll prepare later"')}</h2>
-        <p className="landing-cost-sub">{t('landing.cost_sub', 'It\'s not about being a bad developer. It\'s about what happens when preparation meets luck — and luck runs out.')}</p>
-        <div className="landing-cost-grid">
-          <div className="landing-cost-visual">
-            <div className="landing-cost-big">73%</div>
-            <div className="landing-cost-big-lbl">{t('landing.cost_stat', 'of developers say they\'ve failed an interview despite knowing the material')}</div>
           </div>
-          <div className="landing-cost-list">
-            {painPoints.map((p, i) => (
-              <div className="landing-cost-item" key={i}>
-                <span className="landing-cost-icon">{p.icon}</span>
-                <div>
-                  <b>{p.title}</b>
-                  <p>{p.desc}</p>
-                </div>
+
+          <div className="mascot-wrap">
+            <div className="swipe-frame" id="liveWidget">
+              <div className="fh"><span><span className="dot"></span>live from the question bank</span><span id="liveUpdated">{liveQ ? 'from the ' + liveLang + ' bank' : 'loading…'}</span></div>
+              <div id="liveBody">
+                {liveQ ? (
+                  <div className="qcard">
+                    <span className="tag">{liveQuestion.language} · {liveQuestion.category}</span>
+                    <div className="q">{liveQuestion.question}</div>
+                    <div className={'a' + (ansShown ? ' show' : '')} id="ans">{liveQuestion.shortAnswer || 'Swipe left in the app for the full AI breakdown.'}</div>
+                  </div>
+                ) : <div className="skeleton"></div>}
+              </div>
+              <div className="swipe-foot">
+                <button className="btn sm" type="button" onClick={() => setAnsShown(v => !v)}>Reveal answer</button>
+                <a className="btn sm lime" href={miniAppUrl} target="_blank" rel="noopener">Practice this →</a>
+              </div>
+              <p className="live-note">↑ not a demo — pulled live from the real bank</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* STATS */}
+      <section className="padtop-20">
+        <div className="wrap">
+          <div className="stats-strip">
+            <div className="stat-box"><div className="n">1000+</div><div className="l">real questions</div></div>
+            <div className="stat-box"><div className="n">7</div><div className="l">training modes</div></div>
+            <div className="stat-box"><div className="n">3</div><div className="l">languages</div></div>
+            <div className="stat-box"><div className="n">&lt;10s</div><div className="l">to first answer</div></div>
+          </div>
+        </div>
+      </section>
+
+      {/* WHY YOU FAIL */}
+      <section id="cost">
+        <div className="wrap">
+          <h2>The real cost of "I'll prepare later"</h2>
+          <p className="sub">It's not about being a bad developer — it's about what happens when preparation meets luck, and luck runs out.</p>
+          <div className="steps">
+            <div className="step"><div className="n"><Brain size={24} /></div><h3>You study the wrong things</h3><p>Endless LeetCode and random blog lists. Then they ask about GC or <code>volatile</code> and you freeze. Prep should mirror the real interview.</p></div>
+            <div className="step"><div className="n"><MessageSquare size={24} /></div><h3>You get zero feedback</h3><p>Reading an answer isn't understanding it. Without a plain explanation of your gap, you repeat the same mistake — and it shows.</p></div>
+            <div className="step"><div className="n"><Target size={24} /></div><h3>You never know you're ready</h3><p>Cramming forever isn't a plan. You need to know, confidently, that you're ready to book the interview.</p></div>
+          </div>
+        </div>
+      </section>
+
+      {/* BUILT FOR */}
+      <section id="who">
+        <div className="wrap">
+          <h2>Built for the interview you're facing</h2>
+          <p className="sub">Different goal, same fix: walk in confident.</p>
+          <div className="tabs" id="whoTabs">
+            {['Junior', 'Middle', 'Senior', 'Bootcamp grad'].map((label, i) => (
+              <button key={i} className={'tab-btn' + (whoTab === i ? ' active' : '')} data-tab={i} onClick={() => setWhoTab(i)}>{label}</button>
+            ))}
+          </div>
+          <div className="tab-panels">
+            {[
+              { h: 'First job', p: 'Break in without a CS degree. Learn the questions that actually come up — and prove you belong.' },
+              { h: 'Switching jobs', p: 'You know the job — now prove it fast. Target your gaps in 10 minutes a day around your current role.' },
+              { h: 'Brushing up', p: 'Refresh the internals — GC, concurrency, system design — you haven\'t touched in years.' },
+              { h: 'Career switcher', p: 'Turn a thin résumé into real confidence with structured reps and a measurable score.' },
+            ].map((panel, i) => (
+              <div key={i} className={'tab-panel' + (whoTab === i ? ' active' : '')} data-panel={i}>
+                <h3>{panel.h}</h3><p>{panel.p}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="landing-features-section">
-        <h2>{t('landing.features_title', 'Everything you need to get the offer')}</h2>
-        <p className="landing-features-sub">{t('landing.features_sub', 'Every feature exists to make the answer stick — and to prove you\'re ready.')}</p>
-        <div className="landing-features">
-          {features.map((f) => (
-            <div className="landing-feature" key={f.title}>
-              <div className="landing-feature-icon">{f.icon}</div>
-              <h3>{f.title}</h3>
-              <p>{f.text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="landing-how">
-        <h2>{t('landing.how_title', 'From "I hope they don\'t ask that" to "bring it on"')}</h2>
-        <div className="landing-steps">
-          <div className="landing-step">
-            <div className="landing-step-num">1</div>
-            <h3>{t('landing.how_1_title', 'See')}</h3>
-            <p>{t('landing.how_1', 'Land on a real interview question instantly — no signup wall.')}</p>
-          </div>
-          <div className="landing-step">
-            <div className="landing-step-num">2</div>
-            <h3>{t('landing.how_2_title', 'Try')}</h3>
-            <p>{t('landing.how_2', 'Swipe a deck, get instant AI help, watch your readiness score climb.')}</p>
-          </div>
-          <div className="landing-step">
-            <div className="landing-step-num">3</div>
-            <h3>{t('landing.how_3_title', 'Know')}</h3>
-            <p>{t('landing.how_3', 'Hit your readiness target — or unlock Mock Interview when you\'re ready.')}</p>
+      {/* CTA BANNER */}
+      <section className="padtop-0">
+        <div className="wrap">
+          <div className="cta-banner">
+            <h3>Stop cramming. Start swiping.</h3>
+            <p>Less than a coffee a week — PRO is $0.33/day. The average salary jump after landing an offer is $5k–$30k.</p>
+            <a className="btn lime" href={miniAppUrl} target="_blank" rel="noopener">Build my prep plan free →</a>
           </div>
         </div>
       </section>
 
-      <section className="landing-math">
-        <h2>{t('landing.math_title', 'The math of getting the offer')}</h2>
-        <p className="landing-math-sub">{t('landing.math_sub', 'Interview Tinder isn\'t a cost — it\'s the highest-ROI investment in your career this year.')}</p>
-        <div className="landing-math-grid">
-          {mathItems.map((m, i) => (
-            <div className="landing-math-item" key={i}>
-              <div className="landing-math-icon">{m.icon}</div>
-              <div className="landing-math-num">{m.num}</div>
-              <div className="landing-math-label">{m.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="landing-getapp">
-        <h2>{t('landing.getapp_title', 'Get Interview Tinder your way')}</h2>
-        <p className="landing-getapp-sub">
-          {t('landing.getapp_sub', 'Telegram Mini App or installable PWA — same account, your progress follows you.')}
-        </p>
-        <div className="landing-apps">
-          <div className="landing-app-card">
-            <div className="landing-app-icon">✈️</div>
-            <h3>{t('landing.app_tg_title', 'Telegram Mini App')}</h3>
-            <p>{t('landing.app_tg_desc', 'Opens instantly inside Telegram — desktop or mobile, no install needed.')}</p>
-            <a className="landing-app-btn" href={miniAppUrl} target="_blank" rel="noopener noreferrer">
-              {t('landing.app_tg_btn', 'Open in Telegram')}
-            </a>
-          </div>
-          <div className="landing-app-card">
-            <div className="landing-app-icon">📲</div>
-            <h3>{t('landing.app_pwa_title', 'Install as app (PWA)')}</h3>
-            <p>{t('landing.app_pwa_desc', 'Add to your home screen. Works offline, feels native.')}</p>
-            {installed ? (
-              <button className="landing-app-btn" disabled>✓ {t('landing.app_pwa_installed', 'App installed')}</button>
-            ) : deferredPrompt ? (
-              <button className="landing-app-btn" onClick={installPwa}>
-                {t('landing.app_pwa_btn', 'Install app')}
-              </button>
-            ) : (
-              <span className="landing-app-hint">{t('landing.app_pwa_hint', 'Tap your browser menu → "Add to Home Screen"')}</span>
-            )}
+      {/* HOW IT WORKS */}
+      <section id="how">
+        <div className="wrap">
+          <h2>From panic to "bring it on"</h2>
+          <p className="sub">No friction, no form before the fun part.</p>
+          <div className="steps">
+            <div className="step"><div className="n">1</div><h3>See</h3><p>Land on a real interview question instantly — no signup wall.</p></div>
+            <div className="step"><div className="n">2</div><h3>Try</h3><p>Swipe a deck, get instant AI help, watch your readiness score climb.</p></div>
+            <div className="step"><div className="n">3</div><h3>Know</h3><p>Hit your readiness target — or unlock PRO's Mock Interview to rehearse for real.</p></div>
           </div>
         </div>
       </section>
 
-      <section className="landing-pricing">
-        <h2>{t('landing.pricing_title', 'Less than a coffee a week to stop losing offers')}</h2>
-        <p className="landing-pricing-sub">{t('landing.pricing_sub', 'Free core forever · PRO unlocks unlimited AI & Mock · 7-day trial, cancel anytime.')}</p>
-        <div className="landing-plans">
-          {plans.map((plan) => (
-            <div className={`landing-plan${plan.highlight ? ' landing-plan--pro' : ''}`} key={plan.id}>
-              {plan.highlight && <div className="landing-plan-badge">{t('landing.most_popular', 'Most popular')}</div>}
-              <h3>{plan.name}</h3>
-              <div className="landing-plan-price">
-                <span className="landing-plan-amount">{plan.price}</span>
-                <span className="landing-plan-period">{plan.period}</span>
+      {/* CALCULATOR */}
+      <section id="calc">
+        <div className="wrap">
+          <h2>How long until you're actually ready?</h2>
+          <p className="sub">Pick your target and pace — we estimate the plan, you just swipe through it.</p>
+          <div className="calc">
+            <div className="calc-grid">
+              <div className="calc-controls">
+                <label>Target level</label>
+                <div className="seg" id="calcSeg">
+                  {['junior', 'middle', 'senior'].map(lvl => (
+                    <button key={lvl} className={calcLevel === lvl ? 'active' : ''} data-level={lvl} onClick={() => setCalcLevel(lvl)}>
+                      {lvl.charAt(0).toUpperCase() + lvl.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <label>Time per day: <span id="calcTimeLabel">{calcTime} min</span></label>
+                <input type="range" id="calcTime" min="10" max="120" step="5" value={calcTime} onChange={e => setCalcTime(parseInt(e.target.value, 10))} />
               </div>
-              <ul>
-                {plan.features.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-              <button className="landing-cta" onClick={onStart}>
-                {t('landing.choose', 'Choose {plan}', { plan: plan.name })} →
-              </button>
+              <div className="calc-out">
+                <div className="big" id="calcDays">{calcData.days} {calcData.days === 1 ? 'day' : 'days'}</div>
+                <div className="big-lbl">estimated days to prep</div>
+                <div className="row2">
+                  <div><div className="n" id="calcQs">{calcData.questions}</div><div className="l">questions</div></div>
+                  <div><div className="n" id="calcHrs">{calcData.hours}h</div><div className="l">total hours</div></div>
+                  <div><div className="n" id="calcWk">{calcData.weeks.toFixed(1)}</div><div className="l">weeks</div></div>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-        <p className="landing-pricing-note">
-          {t('landing.pricing_note', 'Cancel anytime · also available for 450 Telegram Stars / month.')}
-        </p>
-      </section>
-
-      <section className="landing-testimonials">
-        <h2>{t('landing.testimonial_title', 'What developers say')}</h2>
-        <div className="landing-testimonial-grid">
-          <div className="landing-testimonial">
-            <div className="landing-testimonial-stars">⭐⭐⭐⭐⭐</div>
-            <p className="landing-testimonial-text">"{t('landing.testimonial_1')}"</p>
-            <span className="landing-testimonial-author">— {t('landing.testimonial_1_author')}</span>
-          </div>
-          <div className="landing-testimonial">
-            <div className="landing-testimonial-stars">⭐⭐⭐⭐⭐</div>
-            <p className="landing-testimonial-text">"{t('landing.testimonial_2')}"</p>
-            <span className="landing-testimonial-author">— {t('landing.testimonial_2_author')}</span>
-          </div>
-          <div className="landing-testimonial">
-            <div className="landing-testimonial-stars">⭐⭐⭐⭐⭐</div>
-            <p className="landing-testimonial-text">"{t('landing.testimonial_3')}"</p>
-            <span className="landing-testimonial-author">— {t('landing.testimonial_3_author')}</span>
+            <div className="calc-note">Assumes ~15 questions/hour of focused practice. Spaced repetition adds review cycles.</div>
+            <div className="center mgt-18"><a className="btn lime" href={miniAppUrl} target="_blank" rel="noopener">Build my plan free →</a></div>
           </div>
         </div>
       </section>
 
-      <section className="landing-faq" aria-labelledby="faq-heading">
-        <h2 id="faq-heading">{t('landing.faq_title', 'Questions developers ask before starting')}</h2>
-        <div className="landing-faq-list">
-          {faqs.map((item, i) => (
-            <details className="landing-faq-item" key={i}>
-              <summary>{item.q}</summary>
-              <p>{item.a}</p>
-            </details>
-          ))}
+      {/* COMPARISON */}
+      <section>
+        <div className="wrap">
+          <h2>Why swipe beats every other method</h2>
+          <p className="sub">A static question list doesn't make you remember. Repetition and feedback do.</p>
+          <div className="compare-wrap">
+            <table className="compare">
+              <thead><tr><th>Capability</th><th className="hl">Prep-It</th><th>Question list</th><th>LeetCode grind</th></tr></thead>
+              <tbody>
+                <tr><td>Real interview questions (not algorithms only)</td><td className="yes"><Check size={16} /></td><td className="no"><X size={16} /></td><td className="part">partial</td></tr>
+                <tr><td>Instant AI explanation of your gap</td><td className="yes"><Check size={16} /></td><td className="no"><X size={16} /></td><td className="no"><X size={16} /></td></tr>
+                <tr><td>Spaced repetition</td><td className="yes"><Check size={16} /></td><td className="no"><X size={16} /></td><td className="no"><X size={16} /></td></tr>
+                <tr><td>Readiness score</td><td className="yes"><Check size={16} /></td><td className="no"><X size={16} /></td><td className="part">partial</td></tr>
+                <tr><td>Mock interview w/ AI feedback</td><td className="yes"><Check size={16} /></td><td className="no"><X size={16} /></td><td className="no"><X size={16} /></td></tr>
+                <tr><td>Free to start</td><td className="yes"><Check size={16} /></td><td className="yes"><Check size={16} /></td><td className="yes"><Check size={16} /></td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
-      <section className="landing-final">
-        <h2>{t('landing.final_title', 'Your next interview is closer than you think.')}</h2>
-        <p>{t('landing.final_sub', 'Be the candidate who\'s actually ready. Swipe your first real questions now — free, no card.')}</p>
-        <div className="landing-hero-cta">
-          <button className="landing-cta landing-cta--green" onClick={onStart}>
-            {t('landing.cta', 'Try a real question free')} →
-          </button>
-          {onLogin && (
-            <button className="landing-cta landing-cta--ghost" onClick={onLogin}>
-              {t('landing.login', 'Log in')} →
-            </button>
-          )}
-          <a className="landing-cta landing-cta--ghost" href={miniAppUrl} target="_blank" rel="noopener noreferrer">
-            {t('landing.open_tg', 'Open in Telegram')}
-          </a>
+      {/* PRICING */}
+      <section id="pricing">
+        <div className="wrap">
+          <h2>Less than a coffee a week</h2>
+          <p className="sub">Free core forever. PRO unlocks unlimited AI &amp; Mock. 7-day trial, cancel anytime.</p>
+          <div className="center">
+            <div className="billing-toggle" role="group" aria-label="Billing period">
+              <button type="button" className={billing === 'monthly' ? 'active' : ''} onClick={() => setBilling('monthly')}>Monthly</button>
+              <button type="button" className={billing === 'annual' ? 'active' : ''} onClick={() => setBilling('annual')}>Annual <span className="save">−20%</span></button>
+            </div>
+          </div>
+          <div className="pricing">
+            <div className="plan">
+              <div className="name">Free</div>
+              <div className="price">$0</div>
+              <div className="price-note">forever</div>
+              <ul><li>Swipe &amp; Test modes</li><li>Daily AI quota</li><li>Progress &amp; streaks</li><li>Java · Python · TypeScript</li></ul>
+              <a className="btn block" href={miniAppUrl} target="_blank" rel="noopener">Start free</a>
+            </div>
+            <div className="plan featured">
+              <div className="badge">MOST POPULAR</div>
+              <div className="name">PRO</div>
+              <div className="price">{billing === 'annual' ? '$96<small>/yr</small>' : '$9.99<small>/mo</small>'}</div>
+              <div className="price-note" id="proNote">{billing === 'annual' ? 'billed yearly · save 20%' : 'billed monthly'}</div>
+              <ul><li>Unlimited AI explanations</li><li>Mock Interview + feedback</li><li>Resume Analyzer</li><li>All 7 modes &amp; categories</li></ul>
+              <a className="btn lime block" href={`https://t.me/${botUsername}?start=pro`} target="_blank" rel="noopener">Start 7-day PRO trial</a>
+            </div>
+          </div>
         </div>
       </section>
 
-      <footer className="landing-footer">
-        <p className="landing-copy">© {new Date().getFullYear()} Interview Tinder</p>
-      </footer>
+      {/* FOUNDER NOTE */}
+      <section className="padtop-0">
+        <div className="wrap">
+          <div className="founder">
+            <p>We're early — Prep-It just launched under its new name, so there's no wall of testimonials here yet. What's real: 1000+ interview questions, an AI explanation engine, and a readiness score, all built from what actually gets asked in Java, Python and TypeScript interviews. Try a question above and judge for yourself.</p>
+            <div className="sig">— the Prep-It team</div>
+          </div>
+        </div>
+      </section>
 
-      <div className={`landing-sticky-cta ${scrolledPast ? 'visible' : ''}`}>
-        <div className="landing-sticky-content">
-          <span className="landing-sticky-text">10 min/day • Free • No card</span>
-          <button className="landing-cta landing-cta--green" onClick={onStart}>
-            {t('landing.cta', 'Try a real question free')} →
-          </button>
+      {/* FAQ */}
+      <section id="faq">
+        <div className="wrap">
+          <h2>Questions developers ask before starting</h2>
+          <div className="faq">
+            {[
+              { q: 'Why the rename from Interview Tinder to Prep-It?', a: 'Same product, same swipe mechanic — the name just describes what it does more clearly. Nothing about your progress or account changes.' },
+              { q: 'Is it really free?', a: 'Yes. Swipe and Test modes are free, including a daily quota of AI explanations. PRO lifts the limits and unlocks Mock Interview.' },
+              { q: 'Do I need to sign up?', a: 'To try — no. A real question deck opens immediately. To save progress, one click via Telegram or email is enough.' },
+              { q: 'How long does it take to prepare for a Java interview?', a: 'Roughly 150 questions for junior, 320 for middle, 520 for senior at ~15 questions/hour. Most people feel confident in 2–3 weeks of 20 minutes a day.' },
+              { q: 'Is this better than LeetCode for interviews?', a: 'Different job. LeetCode trains algorithms; Prep-It trains the language and system-design questions real interviews actually ask — with instant explanations and a readiness score.' },
+              { q: 'Which languages are supported?', a: 'Java, Python and TypeScript — each with its own independent question bank.' },
+              { q: 'Does it work on my phone?', a: 'Yes — as a Telegram Mini App and as an installable PWA on iOS and Android.' },
+            ].map((item, i) => (
+              <details key={i} className="qa">
+                <summary>{item.q}</summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* B2B */}
+      <section id="b2b">
+        <div className="wrap">
+          <div className="b2b">
+            <h2>For bootcamps, schools &amp; HR</h2>
+            <p className="sub">The same trainer, packaged for teams. Turn candidate prep into a measurable metric.</p>
+            <div className="b2b-cards">
+              <div className="b2b-card"><span><Users size={24} /></span><h3>Team subscriptions</h3><p>5–20 seats, one bill, a readiness dashboard.</p><div className="from">from $5/seat/mo</div></div>
+              <div className="b2b-card"><span><Tag size={24} /></span><h3>White-label Mini App</h3><p>Your brand, our engine, revenue share.</p><div className="from">setup + rev-share</div></div>
+              <div className="b2b-card"><span><Target size={24} /></span><h3>Company question banks</h3><p>Prep candidates against a target employer's loop.</p><div className="from">custom quote</div></div>
+            </div>
+            <div className="b2b-form">
+              <h3>Request B2B access</h3>
+              <p className="sub mg-6-16">Tell us what you're building. We reply within 1 business day.</p>
+              <form onSubmit={e => { e.preventDefault(); submitB2b(); }}>
+                <div className="b2b-fields">
+                  <input type="text" id="b2bName" placeholder="Name / Organization" autoComplete="organization" value={b2bName} onChange={e => setB2bName(e.target.value)} />
+                  <select id="b2bProduct" value={b2bProduct} onChange={e => setB2bProduct(e.target.value)}>
+                    <option value="b2b-team">Team subscription</option>
+                    <option value="b2b-whitelabel">White-label Mini App</option>
+                    <option value="b2b-bank">Company question bank</option>
+                    <option value="b2b-other">Other / not sure</option>
+                  </select>
+                  <input type="email" id="b2bEmail" placeholder="Work email" autoComplete="email" value={b2bEmail} onChange={e => setB2bEmail(e.target.value)} />
+                  <input type="text" id="b2bTg" placeholder="Telegram @handle (optional)" value={b2bTg} onChange={e => setB2bTg(e.target.value)} />
+                  <textarea className="full" id="b2bMsg" placeholder="What are you building? Expected headcount?" value={b2bMsg} onChange={e => setB2bMsg(e.target.value)}></textarea>
+                </div>
+                <label className="consent"><input type="checkbox" id="b2bConsent" checked={b2bConsent} onChange={e => setB2bConsent(e.target.checked)} /><span>I agree to the processing of my data per the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
+                {RB.current.region === 'BY' && <div className="rbnotice show"><AlertTriangle size={14} /> You appear to be in Belarus. Under RB law your data must be stored on RB-located servers, which isn't set up yet — so B2B requests from RB can't be saved here. <a href={`https://t.me/${botUsername}`} target="_blank" rel="noopener">Contact us on Telegram</a> instead.</div>}
+                <button className="btn lime block" id="b2bSubmit" type="submit" disabled={b2bLoading}>{b2bLoading ? '…' : 'Request access →'}</button>
+                {b2bMsgOut && <div className={'b2b-msg ' + b2bMsgOut.type}>{b2bMsgOut.text}</div>}
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* REFERRAL */}
+      <section>
+        <div className="wrap center">
+          <h2>Invite friends, both get PRO</h2>
+          <p className="sub">Share your link — your friend gets 7 days PRO free, and so do you.</p>
+          <a className="btn lime" href={`https://t.me/${botUsername}`} target="_blank" rel="noopener">Get your referral link</a>
+        </div>
+      </section>
+
+      {/* LEAD MAGNET */}
+      <section>
+        <div className="wrap">
+          <div className="lead">
+            <h2>📩 The 5 questions that decide most Java offers</h2>
+            <p className="sub mgb-0">Free PDF + weekly digest — the questions people actually get asked, with AI breakdowns. No spam.</p>
+            <form className="lead-form" id="leadForm" onSubmit={e => { e.preventDefault(); submitLead(); }}>
+              <input type="email" id="leadEmail" placeholder="Your email" autoComplete="email" value={leadEmail} onChange={e => setLeadEmail(e.target.value)} />
+              <button className="btn lime" id="leadSubmit" type="submit" disabled={leadLoading}>{leadLoading ? '…' : 'Get the PDF'}</button>
+            </form>
+            <label className="lead-consent"><input type="checkbox" id="leadConsent" checked={leadConsent} onChange={e => setLeadConsent(e.target.checked)} /><span>I agree to the processing of my email per the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
+            <div className="lead-seg">
+              <label><input type="radio" name="interest" value="passive" checked={leadInterest === 'passive'} onChange={e => e.target.checked && setLeadInterest('passive')} /><span><Lightbulb size={14} /> Brush up</span></label>
+              <label><input type="radio" name="interest" value="arbitrage" checked={leadInterest === 'arbitrage'} onChange={e => e.target.checked && setLeadInterest('arbitrage')} /><span><Target size={14} /> Targeting a company</span></label>
+            </div>
+            {RB.current.region === 'BY' && <div className="rbnotice show"><AlertTriangle size={14} /> You appear to be in Belarus. Under RB law, your data must be stored on RB-located servers — so we can't collect your email right now. <a href={`https://t.me/${botUsername}`} target="_blank" rel="noopener">Message us on Telegram</a> instead.</div>}
+            {leadMsg && <div className={'lead-msg ' + leadMsg.type}>{leadMsg.text}</div>}
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section>
+        <div className="wrap">
+          <div className="final">
+            <h2>Your next interview is closer than you think.</h2>
+            <p>Be the candidate who's actually ready. Swipe your first real questions now — free, no card, no download.</p>
+            <div className="actions flex-center">
+              <a className="btn ink" href={miniAppUrl} target="_blank" rel="noopener">🚀 Start free</a>
+              <a className="btn" href={`https://t.me/${botUsername}`} target="_blank" rel="noopener">Open in Telegram</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="padtop-0">
+        <div className="wrap"><p className="disclaimer">Practice tool, not a job guarantee. Results depend on consistency and the specific interview. Always verify answers against primary sources.</p></div>
+      </section>
+
+      {/* STICKY CTA */}
+      <div className="sticky-cta">
+        <a className="btn lime" href={`https://t.me/${botUsername}`} target="_blank" rel="noopener">🚀 Telegram</a>
+        <a className="btn" href={miniAppUrl} target="_blank" rel="noopener">📲 App</a>
+      </div>
+
+      {/* EXIT POPUP */}
+      <div className={'exit-popup' + (exitShown ? ' show' : '')} id="exitPopup">
+        <div className="exit-box">
+          <button className="exit-x" id="exitClose" aria-label="Close" onClick={dismissExit}>&times;</button>
+          <div className="fz-36"><Target size={36} /></div>
+          <h3>Wait — try 3 questions before you go</h3>
+          <p>No signup. No card. Just real interview questions with AI breakdowns.</p>
+          <a className="btn lime" href={miniAppUrl} target="_blank" rel="noopener" id="exitCta">Try 3 free questions →</a>
+          <button className="exit-skip" id="exitSkip" onClick={dismissExit}>No thanks</button>
         </div>
       </div>
+
+      <footer>
+        <div className="wrap">
+          <Mascot size={26} className="foot-logo" /><br />
+          Prep-It • <a href={`https://t.me/${botUsername}`}>Telegram</a>
+          <div className="langs"><a href="/landing.html">EN</a><a href="/landing.ru.html">RU</a></div>
+          <div className="foot-links"><a href="/privacy.html">Privacy</a> · <a href="#b2b">B2B</a></div>
+        </div>
+      </footer>
     </div>
   );
 }

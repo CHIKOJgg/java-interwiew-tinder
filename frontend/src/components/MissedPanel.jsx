@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, X, ArrowRight } from 'lucide-react';
+import { Sparkles, X, ArrowRight, Hand } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useModalA11y } from '../utils/useModalA11y';
 import './MissedPanel.css';
@@ -38,7 +38,7 @@ const MissedPanel = () => {
         </button>
 
         <div className="missed-head">
-          <span className="missed-emoji">🙌</span>
+          <span className="missed-emoji"><Hand size={28} /></span>
           <h2>{t('missed.title')}</h2>
           <p>{t('missed.desc')}</p>
         </div>

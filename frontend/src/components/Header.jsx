@@ -12,7 +12,7 @@ import './Header.css';
 const LANG_LABELS = { Java: '☕ Java', Python: '🐍 Python', TypeScript: '🔷 TS', Go: '🐹 Go', Rust: '🦀 Rust', React: '⚛️ React', Kotlin: '🅰️ Kotlin' };
 const MODES = [
   { id: 'swipe', icon: GraduationCap, titleKey: 'modes.swipe', shortKey: 'modes.swipe' },
-  { id: 'test', icon: Target, titleKey: 'modes.test', shortKey: 'modes.test' },
+  { id: 'test', icon: GraduationCap, titleKey: 'modes.test', shortKey: 'modes.test' },
   { id: 'system-design', icon: TrendingUp, titleKey: 'modes.system_design', shortKey: 'modes.system_design' },
   { id: 'bug-hunting', icon: Bug, titleKey: 'modes.bug_hunting', shortKey: 'modes.bug_hunting' },
   { id: 'blitz', icon: Zap, titleKey: 'modes.blitz', shortKey: 'modes.blitz' },

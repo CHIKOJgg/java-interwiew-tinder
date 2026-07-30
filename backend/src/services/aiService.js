@@ -316,7 +316,7 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
 export function generateExplanation(questionText, shortAnswer, _userId, language = 'Java') {
   const { prompts } = getLanguage(language);
   const { system, user } = prompts.explanation(questionText, shortAnswer);
-  return callAI({ questionText, mode: 'explanation', language, isJson: false, maxTokens: 900, temperature: 0.4, systemPrompt: system, userPrompt: user });
+  return callAI({ questionText, mode: 'explanation', language, isJson: true, maxTokens: 1800, temperature: 0.4, systemPrompt: system, userPrompt: user });
 }
 
 export function generateTestOptions(questionText, correctAnswer, _userId, language = 'Java') {

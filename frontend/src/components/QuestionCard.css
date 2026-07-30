@@ -20,10 +20,10 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 
-  /* Allow vertical scrolling of long answers (e.g. .answer-content pan-y).
-     "pan-y" lets the browser handle vertical panning while react-tinder-card
-     still captures horizontal swipe gestures via JS events. */
-  touch-action: pan-y;
+  /* Block browser default touch gestures so Telegram WebView / mobile browsers
+     don't intercept touches before react-tinder-card can detect swipes.
+     All scrolling inside the card is handled by the answer-content area. */
+  touch-action: none;
 }
 
 /* ── 3-D flip container ───────────────────────────────────────────── */

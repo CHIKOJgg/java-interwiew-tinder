@@ -522,7 +522,7 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
          onPeerInterviewClick={() => setScreen('peer-interview')}
          onCompaniesClick={() => setScreen('companies')}
          />
-      <div className="card-container">
+      <div className={`card-container${learningMode !== 'swipe' ? ' scrollable' : ''}`}>
         <Suspense fallback={<SkeletonCard />}>
           {renderMode()}
         </Suspense>

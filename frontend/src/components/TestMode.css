@@ -272,7 +272,7 @@
   }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 430px) {
   .test-card {
     padding: 14px 12px;
     gap: 10px;

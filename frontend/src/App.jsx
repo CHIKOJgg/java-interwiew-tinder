@@ -43,6 +43,33 @@ import useStore from './store/useStore';
 import { useTranslation } from 'react-i18next';
 import i18n from './i18n/config';
 import logger from './utils/logger';
+
+const TracksScreenWrapper = ({ onStartTrack, onBack, onSkipToCategories }) => {
+  const { tracks, loadTracks, language, setSelectedCategories, loadQuestions, setLearningMode } = useStore();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (tracks && tracks.length > 0) {
+      setReady(true);
+      return;
+    }
+    loadTracks().then(() => setReady(true)).catch(() => setReady(true));
+  }, [language]);
+
+  if (!ready) return <div className="app-loading"><SkeletonCard /></div>;
+
+  if (tracks.length === 0) {
+    setSelectedCategories([]);
+    setLearningMode('swipe');
+    onSkipToCategories();
+    return null;
+  }
+
+  return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}>
+    <TracksScreen onStartTrack={onStartTrack} onBack={onBack} onSkipToCategories={onSkipToCategories} />
+  </Suspense>;
+};
+
 import DebugOverlay from './components/DebugOverlay';
 import WebLogin from './components/WebLogin';
 const Landing = lazy(() => import('./components/Landing'));
@@ -348,7 +375,11 @@ if (initState === 'landing') {
 
   if (screen === 'onboarding') return <Onboarding onStart={handleOnboardingDone} />;
   if (screen === 'language') return <LanguageSelection onSelect={() => setScreen('tracks')} />;
-  if (screen === 'tracks') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TracksScreen onStartTrack={(id) => { setCurrentTrackId(id); setScreen('track-detail'); }} onBack={() => setScreen('language')} onSkipToCategories={() => setScreen('category')} /></Suspense>;
+  if (screen === 'tracks') return <TracksScreenWrapper
+    onStartTrack={(id) => { setCurrentTrackId(id); setScreen('track-detail'); }}
+    onBack={() => setScreen('language')}
+    onSkipToCategories={() => { setScreen('main'); setLearningMode('swipe'); loadQuestions({ mode: 'swipe' }); }}
+  />;
 if (screen === 'track-detail') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TrackDetail trackId={currentTrackId} onStart={() => { useStore.getState().startTrack(currentTrackId); setScreen('main'); }} onBack={() => setScreen('tracks')} /></Suspense>;
    if (screen === 'companies') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><CompaniesScreen onBack={() => setScreen('main')} /></Suspense>;
    if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('language')} />;

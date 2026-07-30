@@ -24,7 +24,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "vercel-build": "echo 'Build completed'",
-    "setup-db": "npm run init-db && npm run migrate && npm run migrate-stars && npm run migrate-ton && npm run migrate-ukassa && npm run seed-db && node src/scripts/seed-java-2.js && node src/scripts/seed-python.js"
+    "setup-db": "npm run init-db && npm run migrate && npm run migrate-stars && npm run migrate-ton && npm run migrate-ukassa && npm run seed-db && node src/scripts/seed-java-2.js && node src/scripts/seed-python.js && node src/scripts/run-seed.mjs"
   },
   "keywords": [
     "telegram",

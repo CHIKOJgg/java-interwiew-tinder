@@ -201,6 +201,16 @@ app.get('/health', async (req, res) => {
 app.get('/debug-sentry', authMiddleware, requireAdmin, (_req, _res) => {
   throw new Error('Sentry backend test error');
 });
+// ─── Debug: question counts per language ──────────────────────────────
+app.get('/api/debug/question-counts', async (_req, res) => {
+  try {
+    const result = await pool.query('SELECT language, COUNT(*) as count FROM questions GROUP BY language ORDER BY language');
+    const total = await pool.query('SELECT COUNT(*) as total FROM questions');
+    res.json({ languages: result.rows, total: total.rows[0].total });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 // ─── Languages ───────────────────────────────────────────────────────
 app.get('/api/languages', (req, res) => res.json({ languages: getAvailableLanguages() }));
 
@@ -460,6 +470,7 @@ app.use('/api', (req, res, next) => {
     req.path === '/auth/login' ||
     req.path.startsWith('/auth/email/') ||
     req.path === '/languages' ||
+    req.path.startsWith('/debug/') ||
     req.path.startsWith('/demo/') ||
     req.path.startsWith('/bot/webhook') ||
     req.path.startsWith('/webhook/telegram') ||

@@ -378,7 +378,7 @@ if (initState === 'landing') {
   if (screen === 'tracks') return <TracksScreenWrapper
     onStartTrack={(id) => { setCurrentTrackId(id); setScreen('track-detail'); }}
     onBack={() => setScreen('language')}
-    onSkipToCategories={() => { setScreen('main'); setLearningMode('swipe'); loadQuestions({ mode: 'swipe' }); }}
+    onSkipToCategories={() => { setScreen('main'); setLearningMode('swipe'); loadQuestions(); }}
   />;
 if (screen === 'track-detail') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TrackDetail trackId={currentTrackId} onStart={() => { useStore.getState().startTrack(currentTrackId); setScreen('main'); }} onBack={() => setScreen('tracks')} /></Suspense>;
    if (screen === 'companies') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><CompaniesScreen onBack={() => setScreen('main')} /></Suspense>;

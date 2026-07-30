@@ -72,7 +72,7 @@ const TracksScreenWrapper = ({ onStartTrack, onBack, onSkipToCategories }) => {
   </Suspense>;
 };
 
-import DebugOverlay from './components/DebugOverlay';
+import DebugScreen from './components/DebugScreen';
 import WebLogin from './components/WebLogin';
 const Landing = lazy(() => import('./components/Landing'));
 import DemoMode from './components/DemoMode';
@@ -382,7 +382,7 @@ if (initState === 'landing') {
   if (screen === 'tracks') return <TracksScreenWrapper
     onStartTrack={(id) => { setCurrentTrackId(id); setScreen('track-detail'); }}
     onBack={() => setScreen('language')}
-    onSkipToCategories={() => { setScreen('main'); setLearningMode('swipe'); loadQuestions(); }}
+    onSkipToCategories={() => { setScreen('main'); loadQuestions(); }}
   />;
 if (screen === 'track-detail') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TrackDetail trackId={currentTrackId} onStart={() => { useStore.getState().startTrack(currentTrackId); setScreen('main'); }} onBack={() => setScreen('tracks')} /></Suspense>;
    if (screen === 'companies') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><CompaniesScreen onBack={() => setScreen('main')} /></Suspense>;
@@ -571,7 +571,8 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
         />
       </Suspense>
       <MissedPanel />
-      <DebugOverlay visible={debugOpen} onClose={() => setDebugOpen(false)} />
+      <button type="button" className="debug-fab" onClick={() => setDebugOpen(true)} title="Debug">Debug</button>
+      {debugOpen && <DebugScreen onClose={() => setDebugOpen(false)} />}
     </div>
   );
 }

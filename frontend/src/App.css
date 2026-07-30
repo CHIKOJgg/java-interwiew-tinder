@@ -63,14 +63,6 @@
   justify-content: center;
 }
 
-/* Non-swipe modes need scrollable content */
-.card-container.scrollable {
-  overflow-y: auto;
-  display: block;
-  align-items: initial;
-  justify-content: initial;
-}
-
 /* ── Swipe card stack ────────────────────────────────────────────────── */
 .card-stack {
   position: relative;
@@ -241,7 +233,7 @@
   }
 }
 
-@media (max-width: 430px) {
+@media (max-width: 400px) {
   .card-container {
     padding: 6px 10px 0;
   }

@@ -191,5 +191,21 @@ CREATE INDEX IF NOT EXISTS idx_user_progress_updated ON user_progress(updated_at
 CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
 CREATE INDEX IF NOT EXISTS idx_daily_challenges_date ON daily_challenges(challenge_date, language);
 
+-- ── Performance indexes for frequent queries (added in optimization pass) ──
+-- Questions feed: filters by language + is_active, joins on user_progress + question_mastery
+CREATE INDEX IF NOT EXISTS idx_questions_lang_active ON questions(language, is_active) WHERE is_active = TRUE;
+-- Track steps by track_id for progress calculation
+CREATE INDEX IF NOT EXISTS idx_track_steps_track_order ON track_steps(track_id, step_order);
+-- User track progress lookup
+CREATE INDEX IF NOT EXISTS idx_user_track_progress_lookup ON user_track_progress(user_id, track_id);
+-- Learning tracks by language
+CREATE INDEX IF NOT EXISTS idx_learning_tracks_lang_active ON learning_tracks(language, is_active) WHERE is_active = TRUE;
+-- Question mastery for spaced repetition feed
+CREATE INDEX IF NOT EXISTS idx_question_mastery_user_q ON question_mastery(user_id, question_id);
+-- Waitlist unique email (already has partial index, add full index for admin queries)
+CREATE INDEX IF NOT EXISTS idx_waitlist_created ON waitlist(created_at DESC);
+-- User preferences lookup
+CREATE INDEX IF NOT EXISTS idx_user_preferences_lookup ON user_preferences(telegram_id);
+
 -- ── Confirm ────────────────────────────────────────────────────
-SELECT 'Constraint + cache patch applied!' AS status;
+SELECT 'Performance indexes applied!' AS status;

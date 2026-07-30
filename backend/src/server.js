@@ -358,6 +358,60 @@ app.post('/api/auth/login', emailSendLimiter, async (req, res) => {
       }
     }
 
+    // Load tracks and stats in parallel so the client gets everything in one response
+    const [tracksResult, statsResult, totalResult, userStreak] = await Promise.all([
+      pool.query(
+        'SELECT * FROM learning_tracks WHERE language = $1 AND is_active = TRUE ORDER BY sort_order',
+        [user.language || 'Java']
+      ),
+      pool.query(
+        `SELECT
+           COUNT(*) FILTER (WHERE up.status = 'known')   AS known_count,
+           COUNT(*) FILTER (WHERE up.status = 'unknown') AS unknown_count,
+           COUNT(*)                                       AS total_seen
+         FROM user_progress up
+         JOIN questions q ON q.id = up.question_id
+         WHERE up.user_id = $1 AND q.language = $2`,
+        [user.telegram_id, user.language || 'Java']
+      ),
+      pool.query(
+        'SELECT COUNT(*) as total FROM questions WHERE language = $1',
+        [user.language || 'Java']
+      ),
+      pool.query(
+        'SELECT current_streak, longest_streak FROM users WHERE telegram_id = $1',
+        [user.telegram_id]
+      ),
+    ]);
+
+    const rawTracks = tracksResult.rows;
+    let tracks = [];
+    if (rawTracks.length > 0) {
+      const trackIds = rawTracks.map(t => t.id);
+      const placeholders = trackIds.map((_, i) => `$${i + 1}`).join(',');
+      const [{ rows: progressRows }, { rows: stepCounts }] = await Promise.all([
+        pool.query(
+          `SELECT track_id, current_step, completed FROM user_track_progress
+           WHERE user_id = $1 AND track_id IN (${placeholders})`,
+          [user.telegram_id, ...trackIds]
+        ),
+        pool.query(
+          `SELECT track_id, COUNT(*) as total FROM track_steps
+           WHERE track_id IN (${placeholders})
+           GROUP BY track_id`,
+          trackIds
+        ),
+      ]);
+      const progressMap = Object.fromEntries(progressRows.map(r => [r.track_id, r]));
+      const stepsMap = Object.fromEntries(stepCounts.map(r => [r.track_id, parseInt(r.total)]));
+      tracks = rawTracks.map(t => ({
+        ...t,
+        totalSteps: stepsMap[t.id] || 0,
+        currentStep: progressMap[t.id]?.current_step || 0,
+        completed: progressMap[t.id]?.completed || false,
+      }));
+    }
+
     res.json({
       success: true,
       token,
@@ -376,6 +430,15 @@ app.post('/api/auth/login', emailSendLimiter, async (req, res) => {
         // Security checks MUST be performed server-side using requireAdmin middleware.
         is_admin: ADMIN_IDS.has(String(user.telegram_id)),
         auth_provider: user.auth_provider || 'telegram',
+      },
+      tracks,
+      stats: {
+        known: parseInt(statsResult.rows[0].known_count || 0),
+        unknown: parseInt(statsResult.rows[0].unknown_count || 0),
+        totalSeen: parseInt(statsResult.rows[0].total_seen || 0),
+        totalQuestions: parseInt(totalResult.rows[0].total || 0),
+        streak: userStreak.rows[0]?.current_streak || 0,
+        longestStreak: userStreak.rows[0]?.longest_streak || 0,
       },
     });
 
@@ -614,7 +677,69 @@ app.post('/api/auth/email/verify', emailSendLimiter, async (req, res) => {
     const { user, token } = await upsertUser(userData, referralId, (payload) =>
       jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' })
     );
-    res.json({ success: true, token, user: { telegram_id: user.telegram_id, email: user.email, plan: user.subscription_plan } });
+
+    // Load tracks and stats in parallel
+    const [tracksResult, statsResult, totalResult, userStreak] = await Promise.all([
+      pool.query(
+        'SELECT * FROM learning_tracks WHERE language = $1 AND is_active = TRUE ORDER BY sort_order',
+        [user.language || 'Java']
+      ),
+      pool.query(
+        `SELECT
+           COUNT(*) FILTER (WHERE up.status = 'known')   AS known_count,
+           COUNT(*) FILTER (WHERE up.status = 'unknown') AS unknown_count,
+           COUNT(*)                                       AS total_seen
+         FROM user_progress up
+         JOIN questions q ON q.id = up.question_id
+         WHERE up.user_id = $1 AND q.language = $2`,
+        [user.telegram_id, user.language || 'Java']
+      ),
+      pool.query('SELECT COUNT(*) as total FROM questions WHERE language = $1', [user.language || 'Java']),
+      pool.query('SELECT current_streak, longest_streak FROM users WHERE telegram_id = $1', [user.telegram_id]),
+    ]);
+
+    const rawTracks = tracksResult.rows;
+    let tracks = [];
+    if (rawTracks.length > 0) {
+      const trackIds = rawTracks.map(t => t.id);
+      const placeholders = trackIds.map((_, i) => `$${i + 1}`).join(',');
+      const [{ rows: progressRows }, { rows: stepCounts }] = await Promise.all([
+        pool.query(
+          `SELECT track_id, current_step, completed FROM user_track_progress
+           WHERE user_id = $1 AND track_id IN (${placeholders})`,
+          [user.telegram_id, ...trackIds]
+        ),
+        pool.query(
+          `SELECT track_id, COUNT(*) as total FROM track_steps
+           WHERE track_id IN (${placeholders})
+           GROUP BY track_id`,
+          trackIds
+        ),
+      ]);
+      const progressMap = Object.fromEntries(progressRows.map(r => [r.track_id, r]));
+      const stepsMap = Object.fromEntries(stepCounts.map(r => [r.track_id, parseInt(r.total)]));
+      tracks = rawTracks.map(t => ({
+        ...t,
+        totalSteps: stepsMap[t.id] || 0,
+        currentStep: progressMap[t.id]?.current_step || 0,
+        completed: progressMap[t.id]?.completed || false,
+      }));
+    }
+
+    res.json({
+      success: true,
+      token,
+      user: { telegram_id: user.telegram_id, email: user.email, plan: user.subscription_plan },
+      tracks,
+      stats: {
+        known: parseInt(statsResult.rows[0].known_count || 0),
+        unknown: parseInt(statsResult.rows[0].unknown_count || 0),
+        totalSeen: parseInt(statsResult.rows[0].total_seen || 0),
+        totalQuestions: parseInt(totalResult.rows[0].total || 0),
+        streak: userStreak.rows[0]?.current_streak || 0,
+        longestStreak: userStreak.rows[0]?.longest_streak || 0,
+      },
+    });
   } catch (err) {
     logger.error({ err }, 'Email verify failed');
     res.status(401).json({ error: 'Invalid code' });
@@ -2390,9 +2515,22 @@ app.get('/api/debug/tracks', async (req, res) => {
 app.get('/api/tracks', async (req, res) => {
   try {
     const language = req.query.language || 'Java';
+    const userId = req.userId;
+    const cacheKey = `tracks:${language}:${userId}`;
+
+    // Check Redis cache first (30s TTL — tracks metadata rarely changes but user progress does)
+    if (redis) {
+      try {
+        const cached = await redis.get(cacheKey);
+        if (cached) return res.json(JSON.parse(cached));
+      } catch { /* cache miss */ }
+    }
+
     const tracks = await trackService.getTracks(language);
     if (tracks.length === 0) {
-      return res.json({ tracks: [] });
+      const result = { tracks: [] };
+      if (redis) redis.set(cacheKey, JSON.stringify(result), 'EX', 30).catch(() => {});
+      return res.json(result);
     }
     const trackIds = tracks.map(t => t.id);
     const placeholders = trackIds.map((_, i) => `$${i + 1}`).join(',');
@@ -2400,7 +2538,7 @@ app.get('/api/tracks', async (req, res) => {
       pool.query(
         `SELECT track_id, current_step, completed FROM user_track_progress
          WHERE user_id = $1 AND track_id IN (${placeholders})`,
-        [req.userId, ...trackIds]
+        [userId, ...trackIds]
       ),
       pool.query(
         `SELECT track_id, COUNT(*) as total FROM track_steps
@@ -2417,7 +2555,9 @@ app.get('/api/tracks', async (req, res) => {
       currentStep: progressMap[t.id]?.current_step || 0,
       completed: progressMap[t.id]?.completed || false,
     }));
-    res.json({ tracks: withProgress });
+    const result = { tracks: withProgress };
+    if (redis) redis.set(cacheKey, JSON.stringify(result), 'EX', 30).catch(() => {});
+    res.json(result);
   } catch (err) {
     logger.error({ err }, 'Tracks error');
     res.status(500).json({ error: 'Internal server error' });

@@ -37,21 +37,31 @@ const CategorySelection = ({ onComplete, onBack }) => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadData();
+    const cached = loadCategoriesCache();
+    if (cached) {
+      setCategories(cached.categories || []);
+      if (cached.companies) setCompanies(cached.companies);
+      if (cached.prefs?.selectedCategories?.length) setLocalSelected(cached.prefs.selectedCategories);
+      if (cached.prefs?.selectedCompany) setLocalCompany(cached.prefs.selectedCompany);
+      setLoading(false);
+      // Refresh cache in background — don't block UI
+      Promise.all([
+        api.getCategories(),
+        api.getCompanies().catch(() => null),
+        api.getPreferences().catch(() => null),
+      ]).then(([categoriesData, companiesData, prefsData]) => {
+        const cats = categoriesData?.categories || [];
+        setCategories(cats);
+        saveCategoriesCache({ categories: cats, companies: companiesData?.companies || [], prefs: prefsData || {} });
+      }).catch(() => {});
+    } else {
+      loadData();
+    }
   }, []);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const cached = loadCategoriesCache();
-      if (cached) {
-        setCategories(cached.categories || []);
-        if (cached.companies) setCompanies(cached.companies);
-        if (cached.prefs?.selectedCategories?.length) setLocalSelected(cached.prefs.selectedCategories);
-        if (cached.prefs?.selectedCompany) setLocalCompany(cached.prefs.selectedCompany);
-        setLoading(false);
-      }
-
       const [categoriesData, companiesData, prefsData] = await Promise.all([
         api.getCategories(),
         api.getCompanies().catch(() => null),
@@ -60,11 +70,9 @@ const CategorySelection = ({ onComplete, onBack }) => {
 
       const cats = categoriesData?.categories || [];
       setCategories(cats);
-      if (!cached) {
-        if (companiesData?.companies) setCompanies(companiesData.companies);
-        if (prefsData?.selectedCategories?.length) setLocalSelected(prefsData.selectedCategories);
-        if (prefsData?.selectedCompany) setLocalCompany(prefsData.selectedCompany);
-      }
+      if (companiesData?.companies) setCompanies(companiesData.companies);
+      if (prefsData?.selectedCategories?.length) setLocalSelected(prefsData.selectedCategories);
+      if (prefsData?.selectedCompany) setLocalCompany(prefsData.selectedCompany);
       saveCategoriesCache({ categories: cats, companies: companiesData?.companies || [], prefs: prefsData || {} });
     } catch (error) {
       console.error('Error loading categories:', error);

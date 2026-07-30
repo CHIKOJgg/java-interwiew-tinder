@@ -7,19 +7,15 @@ import './TracksScreen.css';
 const TracksScreen = ({ onStartTrack, onBack, onSkipToCategories }) => {
   const { t } = useTranslation();
   const { language, tracks, loadTracks } = useStore();
-  const [loading, setLoading] = useState(!tracks || tracks.length === 0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (tracks && tracks.length > 0) {
       setLoading(false);
       return;
     }
-    const load = async () => {
-      setLoading(true);
-      await loadTracks();
-      setLoading(false);
-    };
-    load();
+    setLoading(true);
+    loadTracks().then(() => setLoading(false)).catch(() => setLoading(false));
   }, [language]);
 
   return (

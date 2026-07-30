@@ -47,7 +47,7 @@ export default function WebLogin({ referralId, onAuthenticated, onBack }) {
     setLoading(true);
     try {
       const res = await apiClient.verifyEmailCode(email, code, referralId);
-      onAuthenticated(res.user, res.token);
+      onAuthenticated(res.user, res.token, res);
     } catch (err) {
       setError(err.message || 'Invalid code');
     } finally {

@@ -121,11 +121,12 @@ const useStore = create((set, get) => ({
       logger.info('Store: login start', referralId ? `referral=${referralId}` : '');
       set({ isLoading: true });
       const response = await apiClient.login(initData, referralId);
-      const { user, token } = response;
+      const { user, token, tracks: initTracks, stats: initStats } = response;
       const lang = user.language || 'Java';
       apiClient.setLanguage(lang);
 
         saveToSession('token', token);
+        const tracksCacheKey = `tracks_${lang}`;
         set({
           user,
           token,
@@ -134,15 +135,16 @@ const useStore = create((set, get) => ({
           language: lang,
           availableModes: user.available_modes || ['swipe', 'test'],
           availableLanguages: user.available_languages || ['Java', 'Python', 'TypeScript'],
+          tracks: initTracks || [],
+          tracksCache: { [tracksCacheKey]: { tracks: initTracks || [], timestamp: Date.now() } },
+          stats: initStats || { known: 0, unknown: 0, totalSeen: 0, totalQuestions: 0, streak: 0, longestStreak: 0 },
         });
          logger.info('Store: login ok', `plan=${user.plan || 'free'}`, `modes=${(user.available_modes || []).join(',')}`);
 
-        // Preload data in background — don't block login response.
+        // Background: load questions + saved + daily — stats + tracks already bundled in login
         get().loadQuestions().catch(() => {});
-        get().loadStats().catch(() => {});
         get().initDaily();
         get().loadSaved().catch(() => {});
-        get().loadTracks().catch(() => {});
 
         // Migrate zero-login demo answers (if any) into the new account.
         import('../utils/guestProgress').then(({ takeGuestProgress }) => {
@@ -160,11 +162,15 @@ const useStore = create((set, get) => ({
   },
 
   // Web providers (Google / email): the API already returned user+token.
-  loginWithToken: (user, token) => {
+  // Also accepts optional full response with tracks/stats bundled.
+  loginWithToken: (user, token, extras) => {
     const lang = user.language || 'Java';
     apiClient.setLanguage(lang);
     apiClient.setUserId(user.telegram_id);
     saveToSession('token', token);
+    const initTracks = extras?.tracks || [];
+    const initStats = extras?.stats || null;
+    const tracksCacheKey = `tracks_${lang}`;
     set({
       user,
       token,
@@ -173,9 +179,12 @@ const useStore = create((set, get) => ({
       language: lang,
       availableModes: user.available_modes || ['swipe', 'test'],
       availableLanguages: user.available_languages || ['Java', 'Python', 'TypeScript'],
+      tracks: initTracks,
+      tracksCache: { [tracksCacheKey]: { tracks: initTracks, timestamp: Date.now() } },
+      ...(initStats ? { stats: initStats } : {}),
     });
     get().loadQuestions().catch(console.error);
-    get().loadStats();
+    if (!initStats) get().loadStats();
     get().initDaily();
     get().loadSaved();
 
@@ -280,6 +289,11 @@ const useStore = create((set, get) => ({
       apiClient.switchLanguage(language).catch((err) => {
         console.error('Language preference save failed:', err);
       });
+    }
+
+    // Eagerly load tracks for the new language if not already cached
+    if (!cachedTracks.length) {
+      get().loadTracks().catch(() => {});
     }
     return 'category';
   },

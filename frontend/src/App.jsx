@@ -50,19 +50,11 @@ import DemoMode from './components/DemoMode';
 import './App.css';
 
 function getTelegramInitData() {
-  return new Promise((resolve, reject) => {
-    const raw = window.Telegram?.WebApp?.initData;
-    if (raw) { resolve(raw); return; }
-    const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
-    if (user) { resolve(`user=${JSON.stringify(user)}`); return; }
-    const failSafe = setTimeout(() => reject(new Error(i18n.t('app.initdata_empty'))), 8000);
-    const interval = setInterval(() => {
-      const r = window.Telegram?.WebApp?.initData;
-      if (r) { clearInterval(interval); clearTimeout(failSafe); resolve(r); return; }
-      const u = window.Telegram?.WebApp?.initDataUnsafe?.user;
-      if (u) { clearInterval(interval); clearTimeout(failSafe); resolve(`user=${JSON.stringify(u)}`); return; }
-    }, 100);
-  });
+  const raw = window.Telegram?.WebApp?.initData;
+  if (raw) return raw;
+  const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  if (user) return `user=${JSON.stringify(user)}`;
+  throw new Error(i18n.t('app.initdata_empty'));
 }
 
 function App() {
@@ -314,8 +306,8 @@ if (initState === 'landing') {
     return (
       <WebLogin
         referralId={referralId}
-        onAuthenticated={(user, token) => {
-          loginWithToken(user, token);
+        onAuthenticated={(user, token, res) => {
+          loginWithToken(user, token, res);
           if (localStorage.getItem(ONBOARD_KEY)) setScreen('tracks');
           else setScreen('onboarding');
           setInitState('ready');

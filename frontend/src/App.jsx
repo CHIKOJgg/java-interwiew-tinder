@@ -49,13 +49,14 @@ const Landing = lazy(() => import('./components/Landing'));
 import DemoMode from './components/DemoMode';
 import './App.css';
 
-// Detect Telegram Mini App context via URL params (reliable, synchronous) or Telegram SDK
-// Telegram injects tgWebAppData/tgWebAppPlatform/tgWebAppVersion in the URL — these are
-// available immediately, unlike window.Telegram.WebApp which may load asynchronously.
+// Detect Telegram Mini App context.
+// Check 1: initData from the Telegram SDK (most reliable — requires the SDK to have loaded)
+// Check 2: URL params that Telegram injects synchronously (fallback for edge cases)
 function detectContext() {
+  const tg = window.Telegram?.WebApp;
+  if (tg?.initData || tg?.initDataUnsafe?.user) return 'telegram';
   const params = new URLSearchParams(window.location.search);
   if (params.has('tgWebAppData') || params.has('tgWebAppPlatform') || params.has('tgWebAppVersion')) return 'telegram';
-  if (window.Telegram?.WebApp) return 'telegram';
   return 'web';
 }
 
@@ -67,14 +68,17 @@ function getTelegramInitData() {
   throw new Error(i18n.t('app.initdata_empty'));
 }
 
-// Poll briefly for Telegram SDK to become available (max 1s)
+// Wait for Telegram initData (max 1s). The SDK script is loaded in index.html,
+// but initData may take a brief moment to populate in some Telegram clients.
 async function waitForTelegramSdk() {
-  if (window.Telegram?.WebApp?.initData) return window.Telegram.WebApp.initData;
-  if (window.Telegram?.WebApp?.initDataUnsafe?.user) return `user=${JSON.stringify(window.Telegram.WebApp.initDataUnsafe.user)}`;
+  const tg = window.Telegram?.WebApp;
+  if (tg?.initData) return tg.initData;
+  if (tg?.initDataUnsafe?.user) return `user=${JSON.stringify(tg.initDataUnsafe.user)}`;
   for (let i = 0; i < 10; i++) {
     await new Promise(r => setTimeout(r, 100));
-    if (window.Telegram?.WebApp?.initData) return window.Telegram.WebApp.initData;
-    if (window.Telegram?.WebApp?.initDataUnsafe?.user) return `user=${JSON.stringify(window.Telegram.WebApp.initDataUnsafe.user)}`;
+    const t = window.Telegram?.WebApp;
+    if (t?.initData) return t.initData;
+    if (t?.initDataUnsafe?.user) return `user=${JSON.stringify(t.initDataUnsafe.user)}`;
   }
   throw new Error(i18n.t('app.initdata_empty'));
 }

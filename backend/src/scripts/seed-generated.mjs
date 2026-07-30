@@ -9025,7 +9025,7 @@ async function seedDB() {
       let p = 1;
       for (const q of batch) {
         placeholders.push(`($${p++}, $${p++}, $${p++}, $${p++}, $${p++}, $${p++})`);
-        values.push(q.category, q.question, q.short_answer, JSON.stringify(q.options), q.difficulty, q.language);
+        values.push(q.category, q.question, q.short_answer, q.options, q.difficulty, q.language);
       }
       const res = await client.query(
         `INSERT INTO questions (category, question_text, short_answer, options, difficulty, language)

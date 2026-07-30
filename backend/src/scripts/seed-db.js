@@ -2532,21 +2532,23 @@ const seedDatabase = async () => {
 
     // Insert questions
     let insertedCount = 0;
-    for (const q of questions) {
+    const batchSize = 500;
+    for (let i = 0; i < questions.length; i += batchSize) {
+      const batch = questions.slice(i, i + batchSize);
+      const placeholders = [];
+      const values = [];
+      let p = 1;
+      for (const q of batch) {
+        placeholders.push(`($${p++}, $${p++}, $${p++}, $${p++}, $${p++}, $${p++})`);
+        values.push(q.category, q.difficulty || 'Junior', q.question, q.short_answer, q.options || null, 'Java');
+      }
       const result = await client.query(
-        `INSERT INTO questions (category, difficulty, question_text, short_answer, options, language) 
-     VALUES ($1, $2, $3, $4, $5, $6) 
-     ON CONFLICT (question_text, language) DO NOTHING`,
-        [
-          q.category,
-          q.difficulty || 'Junior',
-          q.question,
-          q.short_answer,
-          q.options || null,
-          'Java'
-        ],
+        `INSERT INTO questions (category, difficulty, question_text, short_answer, options, language)
+         VALUES ${placeholders.join(', ')}
+         ON CONFLICT (question_text, language) DO NOTHING`,
+        values
       );
-      if (result.rowCount > 0) insertedCount++;
+      insertedCount += result.rowCount || 0;
     }
     console.log(`✅ Inserted ${insertedCount} out of ${questions.length} questions (skipped duplicates)`);
 

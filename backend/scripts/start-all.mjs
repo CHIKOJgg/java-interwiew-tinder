@@ -8,7 +8,7 @@ let exitCode = 0;
 function launch(label, args) {
   const child = spawn(process.execPath, args, {
     stdio: 'inherit',
-    env: { ...process.env },
+    env: { ...process.env, POOL_MAX: label === 'worker' ? '5' : '8' },
   });
   child._label = label;
   child.on('exit', (code, signal) => {

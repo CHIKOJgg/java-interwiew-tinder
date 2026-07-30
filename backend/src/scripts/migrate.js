@@ -1002,6 +1002,17 @@ const migrations = [
       CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Design Patterns in TypeScript' AND language = 'TypeScript' LIMIT 1) lt
       WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
     `
+  },
+
+  // ── 041: Admin plan ────────────────────────────────────────────────
+  {
+    id: '041_admin_plan',
+    sql: `
+      INSERT INTO subscription_plans (id, name, price_monthly, requests_per_day, ai_generations_per_month, available_languages, available_modes, resume_analysis_limit, interview_eval_limit, model_priority, stars_monthly, stars_yearly)
+      VALUES
+        ('admin', 'Admin', 0, 999999, 999999, '{Java,Python,TypeScript}', '{swipe,test,bug-hunting,blitz,code-completion,mock-interview,concept-linker,review,system-design}', 999, 999, 'quality', 0, 0)
+      ON CONFLICT (id) DO NOTHING;
+    `
   }
 ];
 

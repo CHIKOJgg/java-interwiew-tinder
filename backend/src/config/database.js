@@ -25,11 +25,13 @@ if (dbUrl) {
 const pool = new Pool({
   connectionString: dbUrl,
   ssl: process.env.NODE_ENV !== 'development' ? { rejectUnauthorized: false } : false,
-  // Keep pool small — Supabase session pooler (port 6543) caps at 15 connections total
-  // With backend (max:5) + worker (max:3) = 8 connections max, well under the limit
-  max: 5,
-  idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 5000,
+  // Supabase session pooler (port 6543) caps at 15 connections total.
+  // API server + background worker are separate Node processes, each
+  // creating their own pool. Set POOL_MAX per-process via env (e.g.
+  // POOL_MAX=8 for API, POOL_MAX=5 for worker).
+  max: parseInt(process.env.POOL_MAX, 10) || 8,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 });
 
 import logger from './logger.js';

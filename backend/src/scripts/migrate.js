@@ -1013,6 +1013,122 @@ const migrations = [
         ('admin', 'Admin', 0, 999999, 999999, '{Java,Python,TypeScript}', '{swipe,test,bug-hunting,blitz,code-completion,mock-interview,concept-linker,review,system-design}', 999, 999, 'quality', 0, 0)
       ON CONFLICT (id) DO NOTHING;
     `
+  },
+
+  // ── 042: Re-seed track steps for Python and TypeScript ─────────────
+  // Migration 040 ran before Python/TypeScript questions existed, so
+  // track_steps were never populated. This migration fills them now.
+  {
+    id: '042_reseed_steps_python_ts',
+    sql: `
+      -- Python Track 1: Core Fundamentals
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Python' AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Python Core Fundamentals' AND language = 'Python' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Python Track 2: Async & Concurrency
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Python' AND (category ILIKE '%async%' OR category ILIKE '%concurr%' OR category ILIKE '%thread%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Python Async & Concurrency' AND language = 'Python' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Python Track 3: Data Structures & Algorithms
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Python' AND (category ILIKE '%data struct%' OR category ILIKE '%algorithm%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Data Structures & Algorithms' AND language = 'Python' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Python Track 4: FastAPI / Django
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Python' AND (category ILIKE '%fastapi%' OR category ILIKE '%django%' OR category ILIKE '%flask%' OR category ILIKE '%web%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'FastAPI / Django' AND language = 'Python' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Python Track 5: Python Internals
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Python' AND (category ILIKE '%intern%' OR category ILIKE '%memory%' OR category ILIKE '%performance%' OR category ILIKE '%optim%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Python Internals' AND language = 'Python' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Python Track 6: Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Python' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Design Patterns in Python' AND language = 'Python' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- TypeScript Track 1: Core Fundamentals
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'TypeScript' AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'TypeScript Core Fundamentals' AND language = 'TypeScript' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- TypeScript Track 2: Advanced TypeScript
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'TypeScript' AND (category ILIKE '%advanced%' OR category ILIKE '%generic%' OR category ILIKE '%type%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Advanced TypeScript' AND language = 'TypeScript' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- TypeScript Track 3: Type-Safe Data Structures
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'TypeScript' AND (category ILIKE '%data struct%' OR category ILIKE '%algorithm%' OR category ILIKE '%type%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Type-Safe Data Structures' AND language = 'TypeScript' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- TypeScript Track 4: Full-Stack TypeScript
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'TypeScript' AND (category ILIKE '%react%' OR category ILIKE '%node%' OR category ILIKE '%express%' OR category ILIKE '%next%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'TypeScript + React / Node' AND language = 'TypeScript' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- TypeScript Track 5: Compiler Deep Dive
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'TypeScript' AND (category ILIKE '%compil%' OR category ILIKE '%intern%' OR category ILIKE '%declaration%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'TypeScript Compiler Deep Dive' AND language = 'TypeScript' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- TypeScript Track 6: Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'TypeScript' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Design Patterns in TypeScript' AND language = 'TypeScript' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+    `
   }
 ];
 

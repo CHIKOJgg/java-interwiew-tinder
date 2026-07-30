@@ -33,10 +33,14 @@ function saveTheme(theme) {
   try { localStorage.setItem(`${CACHE_KEY}_theme`, theme); } catch { /* ignore */ }
 }
 
+// Restore persisted token to apiClient on module load
+const _savedToken = loadFromSession('token');
+if (_savedToken) apiClient.setToken(_savedToken);
+
 const useStore = create((set, get) => ({
   user: null,
-  token: loadFromSession('token'),
-  isAuthenticated: !!loadFromSession('token'),
+  token: _savedToken,
+  isAuthenticated: !!_savedToken,
   isLoading: true,
   language: 'Java',
   theme: getTheme(),
@@ -123,7 +127,9 @@ const useStore = create((set, get) => ({
       const response = await apiClient.login(initData, referralId);
       const { user, token, tracks: initTracks, stats: initStats } = response;
       const lang = user.language || 'Java';
+      apiClient.setToken(token);
       apiClient.setLanguage(lang);
+      if (initData) apiClient.setInitData(initData);
 
         saveToSession('token', token);
         const tracksCacheKey = `tracks_${lang}`;
@@ -165,6 +171,7 @@ const useStore = create((set, get) => ({
   // Also accepts optional full response with tracks/stats bundled.
   loginWithToken: (user, token, extras) => {
     const lang = user.language || 'Java';
+    apiClient.setToken(token);
     apiClient.setLanguage(lang);
     apiClient.setUserId(user.telegram_id);
     saveToSession('token', token);
@@ -202,6 +209,7 @@ const useStore = create((set, get) => ({
   },
 
   logout: () => {
+    apiClient.clearAuth();
     sessionStorage.removeItem(`${CACHE_KEY}_token`);
     // Only clear our own keys from localStorage to avoid nuking other app data
     Object.keys(localStorage).forEach(key => {
@@ -1007,5 +1015,8 @@ if (typeof window !== 'undefined') {
     logger.error('unhandledrejection:', r instanceof Error ? r.message : String(r));
   });
 }
+
+// Register 401 handler on apiClient (clean, no circular dynamic imports)
+apiClient.onUnauthorized = () => { useStore.getState().logout(); };
 
 export default useStore;

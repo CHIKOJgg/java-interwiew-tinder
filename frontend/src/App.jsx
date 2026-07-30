@@ -56,14 +56,16 @@ const TracksScreenWrapper = ({ onStartTrack, onBack, onSkipToCategories }) => {
     loadTracks().then(() => setReady(true)).catch(() => setReady(true));
   }, [language]);
 
-  if (!ready) return <div className="app-loading"><SkeletonCard /></div>;
+  useEffect(() => {
+    if (ready && tracks.length === 0) {
+      setSelectedCategories([]);
+      setLearningMode('swipe');
+      onSkipToCategories();
+    }
+  }, [ready, tracks]);
 
-  if (tracks.length === 0) {
-    setSelectedCategories([]);
-    setLearningMode('swipe');
-    onSkipToCategories();
-    return null;
-  }
+  if (!ready) return <div className="app-loading"><SkeletonCard /></div>;
+  if (tracks.length === 0) return null;
 
   return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}>
     <TracksScreen onStartTrack={onStartTrack} onBack={onBack} onSkipToCategories={onSkipToCategories} />
@@ -82,8 +84,10 @@ import './App.css';
 function detectContext() {
   const tg = window.Telegram?.WebApp;
   if (tg?.initData || tg?.initDataUnsafe?.user) return 'telegram';
+  if (tg) return 'telegram';
   const params = new URLSearchParams(window.location.search);
   if (params.has('tgWebAppData') || params.has('tgWebAppPlatform') || params.has('tgWebAppVersion')) return 'telegram';
+  if (window.location.hash.includes('tgWebAppData')) return 'telegram';
   return 'web';
 }
 

@@ -8,18 +8,22 @@ class ApiClient {
     this.baseUrl = API_BASE_URL.replace(/\/$/, '');
     this.userId = null;
     this.language = 'Java';
+    this.initData = null;
+    this.token = null;
+    this.onUnauthorized = null;
   }
 
   setUserId(userId) { this.userId = String(userId); }
   setLanguage(language) { this.language = language; }
+  setInitData(data) { this.initData = data; }
+  setToken(token) { this.token = token; }
+  clearAuth() { this.token = null; this.initData = null; }
 
-  async getAuthHeaders() {
-    if (!this._store) {
-      const { default: useStore } = await import('../store/useStore');
-      this._store = useStore;
-    }
-    const token = this._store.getState().token;
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  getAuthHeaders() {
+    const headers = {};
+    if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
+    if (this.initData) headers['x-telegram-init-data'] = this.initData;
+    return headers;
   }
 
 
@@ -182,8 +186,7 @@ class ApiClient {
          clearTimeout(timeout);
 
         if (response.status === 401 && endpoint !== '/auth/login') {
-          const { default: useStore } = await import('../store/useStore');
-          useStore.getState().logout();
+          if (this.onUnauthorized) this.onUnauthorized();
           logger.warn(`API 401 Session expired [${endpoint}]`);
           throw new Error('Session expired. Please log in again.');
         }

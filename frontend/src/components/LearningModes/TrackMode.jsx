@@ -31,16 +31,10 @@ const TrackMode = ({ onBack }) => {
       await apiClient.recordSwipe(question.id, status).catch(() => {});
     }
 
-    const result = await apiClient.advanceTrack(currentTrack).catch(() => ({ completed: false }));
-
     setTimeout(() => {
       setSwiped(false);
       setSwipedDirection(null);
-      if (result.completed) {
-        useStore.getState().set({ trackComplete: true });
-      } else {
-        useStore.getState().advanceTrack?.();
-      }
+      useStore.getState().advanceTrack();
     }, 300);
   };
 

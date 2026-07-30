@@ -25,33 +25,9 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // API responses: cache-first with TTL
+  // API responses: pass through without SW interception
+  // The API client already has retry logic and error handling.
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      caches.open(API_CACHE).then(async (cache) => {
-        const cached = await cache.match(request);
-        if (cached) {
-          const date = cached.headers.get('x-sw-cached-at');
-          if (date && Date.now() - parseInt(date) < API_CACHE_MAX_AGE) {
-            return cached;
-          }
-        }
-        try {
-          const response = await fetch(request);
-          if (response.ok) {
-            const clone = response.clone();
-            clone.headers.set('x-sw-cached-at', String(Date.now()));
-            cache.put(request, clone);
-          }
-          return response;
-        } catch {
-          return cached || new Response(JSON.stringify({ error: 'Offline' }), {
-            status: 503,
-            headers: { 'Content-Type': 'application/json' },
-          });
-        }
-      })
-    );
     return;
   }
 

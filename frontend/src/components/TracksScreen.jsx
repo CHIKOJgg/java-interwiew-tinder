@@ -70,7 +70,7 @@ const TrackCard = ({ track, onClick }) => {
         <div className="track-name">{track.name}</div>
         <div className="track-meta">
           <span className="track-level">{track.level}</span>
-          <span className="track-count">{track.currentStep}/{track.totalSteps} {t('tracks.steps', 'steps')}</span>
+          <span className="track-count">{t('tracks.steps', { completed: track.currentStep, total: track.totalSteps })}</span>
         </div>
         {track.description && <div className="track-desc">{track.description}</div>}
         {isStarted && (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, X, Check } from 'lucide-react';
 import useStore from '../../store/useStore';
 import apiClient from '../../api/client';
 import './TrackMode.css';
@@ -68,16 +68,17 @@ const TrackMode = ({ onBack }) => {
         <div className={`track-question-card ${swiped ? `swiped-${swipedDirection}` : ''}`} ref={cardRef}>
           <div className="track-q-category">{question.category}</div>
           <div className="track-q-text">{question.question}</div>
+          <div className="track-swipe-actions">
+            <button className="track-swipe-btn track-swipe-btn-left" onClick={() => handleSwipe('left')}>
+              <X size={20} />
+              <span>{t('swipe.dont_know')}</span>
+            </button>
+            <button className="track-swipe-btn track-swipe-btn-right" onClick={() => handleSwipe('right')}>
+              <Check size={20} />
+              <span>{t('swipe.know')}</span>
+            </button>
+          </div>
         </div>
-      </div>
-
-      <div className="track-swipe-buttons">
-        <button className="track-btn track-btn-left" onClick={() => handleSwipe('left')}>
-          <XCircle size={28} />
-        </button>
-        <button className="track-btn track-btn-right" onClick={() => handleSwipe('right')}>
-          <CheckCircle size={28} />
-        </button>
       </div>
     </div>
   );

@@ -67,12 +67,14 @@
   background: var(--paper);
   border: 2.5px solid var(--ink);
   border-radius: 18px;
-  padding: 32px 24px;
+  padding: 32px 24px 20px;
   width: 100%;
   max-width: 400px;
   text-align: center;
   box-shadow: 4px 4px 0 var(--ink);
   transition: transform 0.3s, opacity 0.3s;
+  display: flex;
+  flex-direction: column;
 }
 
 .track-question-card.swiped-left {
@@ -100,40 +102,47 @@
   font-weight: 600;
   line-height: 1.5;
   color: var(--ink);
+  flex: 1;
 }
 
-.track-swipe-buttons {
+/* ── Embedded swipe action buttons ── */
+.track-swipe-actions {
   display: flex;
-  justify-content: center;
-  gap: 40px;
-  padding: 20px 16px 32px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
-.track-btn {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  border: 2.5px solid var(--ink);
+.track-swipe-btn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  height: 48px;
+  border-radius: 14px;
+  border: 2.5px solid var(--ink);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.track-btn:active {
-  box-shadow: 4px 4px 0 var(--ink);
-  transform: scale(0.9);
+.track-swipe-btn:active {
+  box-shadow: 3px 3px 0 var(--ink);
+  transform: scale(0.96);
 }
 
-.track-btn-left {
+.track-swipe-btn-left {
   background: var(--coral);
-  color: var(--ink);
 }
 
-.track-btn-right {
+.track-swipe-btn-right {
   background: var(--green);
-  color: var(--ink);
 }
 
 .track-btn-back {

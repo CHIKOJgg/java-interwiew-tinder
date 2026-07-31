@@ -40,7 +40,7 @@ const TrackDetail = ({ trackId, onStart, onBack }) => {
         {track.description && <p>{track.description}</p>}
         <div className="track-detail-meta">
           <span className="track-level-badge">{track.level}</span>
-          <span>{track.currentStep}/{track.totalSteps} {t('tracks.steps', 'steps')}</span>
+          <span>{t('tracks.steps', { completed: track.currentStep, total: track.totalSteps })}</span>
         </div>
         <div className="track-detail-progress">
           <div className="track-detail-progress-fill" style={{ width: `${progress}%` }} />

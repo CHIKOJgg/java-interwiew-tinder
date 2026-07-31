@@ -11,12 +11,6 @@
   padding-bottom: calc(56px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 8px);
 }
 
-/* Swipe mode: the deck fills the space and its bottom goes behind the
-   floating action buttons and the bottom nav (invisible wall). */
-.app.swipe-mode {
-  padding-bottom: calc(56px + 8px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
-}
-
 /* ── Loading/error screens ───────────────────────────────────────────── */
 .app-loading {
   width: 100%;
@@ -52,10 +46,10 @@
    could collapse the stack and leave a blank area where the card should be). */
 .card-stack {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 2vh;
+  left: 2vh;
+  right: 2vh;
+  bottom: 2vh;
   max-width: 420px;
   margin-left: auto;
   margin-right: auto;

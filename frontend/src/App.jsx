@@ -22,7 +22,6 @@ import ReportSheet from './components/ReportSheet';
 import Header from './components/Header';
 import { SkeletonCard } from './components/Skeleton';
 import QuestionCard from './components/QuestionCard';
-import SwipeButtons from './components/SwipeButtons';
 import ExplanationModal from './components/ExplanationModal';
 import ShareCard from './components/ShareCard';
 import TestMode from './components/TestMode';
@@ -462,6 +461,9 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
                     question={q}
                     onSwipe={handleSwipe}
                     canSwipe={true}
+                    onSwipeLeft={() => handleButtonSwipe('left')}
+                    onSwipeRight={() => handleButtonSwipe('right')}
+                    swipeDisabled={!hasMoreQuestions() || isLoadingQuestions}
                   />
                 ) : (
                   <div className="card-peek-shell" />
@@ -532,13 +534,6 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
 
       <ProNudge onOpenSubscription={() => setScreen('subscriptions')} />
 
-      {learningMode === 'swipe' && (
-        <SwipeButtons
-          onSwipeLeft={() => handleButtonSwipe('left')}
-          onSwipeRight={() => handleButtonSwipe('right')}
-          disabled={!hasMoreQuestions() || isLoadingQuestions}
-        />
-      )}
       {undoInfo && (
         <div className="undo-bar">
           <button className="undo-btn" onClick={handleUndo} type="button">

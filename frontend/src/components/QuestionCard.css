@@ -315,6 +315,51 @@
   font-family: 'Inter', sans-serif;
 }
 
+/* ── Embedded swipe action buttons ──────────────── */
+.card-swipe-actions {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0 2px;
+}
+
+.card-swipe-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 48px;
+  border-radius: 14px;
+  border: 2.5px solid var(--ink);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.card-swipe-btn:active:not(:disabled) {
+  box-shadow: 3px 3px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+.card-swipe-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.card-swipe-btn-left {
+  background: var(--coral);
+}
+
+.card-swipe-btn-right {
+  background: var(--green);
+}
+
 /* ── Card appear animation ────────────────────── */
 @keyframes cardAppear {
   from { opacity: 0; transform: scale(0.92); }

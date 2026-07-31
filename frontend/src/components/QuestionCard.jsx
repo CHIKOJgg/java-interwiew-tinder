@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from 'react';
 import TinderCard from 'react-tinder-card';
-import { RotateCcw, Flag, Sparkles, Bookmark, BookmarkCheck, MessageSquare } from 'lucide-react';
+import { RotateCcw, Flag, Sparkles, Bookmark, BookmarkCheck, MessageSquare, X, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import DiscussionSheet from './DiscussionSheet';
@@ -33,7 +33,7 @@ const difficultyColors = {
 };
 
 const QuestionCard = forwardRef(
-  ({ question, onSwipe, canSwipe = true }, ref) => {
+  ({ question, onSwipe, canSwipe = true, onSwipeLeft, onSwipeRight, swipeDisabled }, ref) => {
   const { t } = useTranslation();
   const { learningMode, loadExplanation, savedIds, toggleSave } = useStore();
   const [isFlipped, setIsFlipped] = useState(false);
@@ -173,6 +173,30 @@ const QuestionCard = forwardRef(
                   <Flag size={16} />
                 </button>
               </div>
+
+              {/* Swipe action buttons — embedded in the card */}
+              {onSwipeLeft && onSwipeRight && (
+                <div className="card-swipe-actions">
+                  <button
+                    className="card-swipe-btn card-swipe-btn-left"
+                    onClick={(e) => { e.stopPropagation(); try { navigator.vibrate(10); } catch {} onSwipeLeft(); }}
+                    disabled={swipeDisabled}
+                    type="button"
+                  >
+                    <X size={22} />
+                    <span>{t('swipe.dont_know')}</span>
+                  </button>
+                  <button
+                    className="card-swipe-btn card-swipe-btn-right"
+                    onClick={(e) => { e.stopPropagation(); try { navigator.vibrate(10); } catch {} onSwipeRight(); }}
+                    disabled={swipeDisabled}
+                    type="button"
+                  >
+                    <Check size={22} />
+                    <span>{t('swipe.know')}</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* ── Back ──────────────────────────────────────────── */}

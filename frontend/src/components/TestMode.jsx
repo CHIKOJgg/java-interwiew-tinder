@@ -125,9 +125,9 @@ const TestMode = () => {
 
   if (genError) {
     return (
-      <div className="test-mode-loading">
-        <AlertCircle size={44} color="#ff6b6b" />
-        <p style={{ color: '#ff6b6b', marginTop: 12, textAlign: 'center' }}>{genError.message || t('test.generating_options', 'Answer options are still being generated')}</p>
+      <div className="test-mode-loading error">
+        <AlertCircle size={44} />
+        <p>{genError.message || t('test.generating_options', 'Answer options are still being generated')}</p>
         <button className="retry-btn" onClick={retryGeneration}>
           {t('common.retry', 'Try again')}
         </button>

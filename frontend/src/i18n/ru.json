@@ -15,7 +15,9 @@
     "none": "Снять все",
     "selected": "Выбрано",
     "questions": "вопросов",
-    "clear": "Очистить"
+    "clear": "Очистить",
+    "on": "Вкл",
+    "off": "Выкл"
   },
   "header": {
     "studied": "Изучено",
@@ -23,6 +25,8 @@
     "settings": "Настройки",
     "resume": "Резюме",
     "subscription": "Подписка",
+    "vacancy": "Подготовка к вакансии",
+    "trends": "Тренды рынка",
     "study_lang": "Язык обучения",
     "interface_lang": "Язык интерфейса",
     "admin": "Админ",
@@ -34,7 +38,20 @@
     "readiness": "Готовность",
     "help": "Как это работает",
     "saved": "Сохранённые",
-    "diff_filter": "Фильтр сложности"
+    "diff_filter": "Фильтр сложности",
+    "export": "Экспорт",
+    "achievements": "Достижения",
+    "companies": "Компании",
+    "profile": "Профиль",
+    "peer_interview": "Пировое интервью"
+  },
+  "settings": {
+    "preferences": "Настройки",
+    "notifications": "Уведомления",
+    "menu": "Меню",
+    "about": "О приложении",
+    "platform": "Платформа",
+    "support": "Поддержка"
   },
   "category": {
     "difficulty": "Сложность",

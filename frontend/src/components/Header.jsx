@@ -1,15 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  TrendingUp, Settings, GraduationCap, Bug,
-  Zap, Mic, Link, Braces, FileText, Target, Star, ChevronUp, X, ShieldCheck, HelpCircle,
-  MoreVertical, Globe, Languages, Lock, Moon, Sun, Download, Award, User, Video,
+  TrendingUp, Menu, GraduationCap, Bug,
+  Zap, Mic, Link, Braces, X, ChevronUp, Lock,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore, { readinessFromStats } from '../store/useStore';
-import ThemeToggle from './ThemeToggle';
 import './Header.css';
 
-const LANG_LABELS = { Java: 'Java', Python: 'Python', TypeScript: 'TS', Go: 'Go', Rust: 'Rust', React: 'React', Kotlin: 'Kotlin' };
 const MODES = [
   { id: 'swipe', icon: GraduationCap, titleKey: 'modes.swipe', shortKey: 'modes.swipe' },
   { id: 'test', icon: GraduationCap, titleKey: 'modes.test', shortKey: 'modes.test' },
@@ -22,52 +19,15 @@ const MODES = [
 ];
 const BOTTOM_VISIBLE = 4;
 
-const Header = ({ onSettingsClick, onResumeClick, onVacancyClick, onTrendsClick, onSubscriptionClick, onLanguageChange, onAdminClick, onProgressClick, onHelpClick, onExportClick, onAchievementsClick, onProfileClick, onPeerInterviewClick, onCompaniesClick }) => {
-  const { t, i18n } = useTranslation();
-  const { stats, learningMode, setLearningMode, language, user, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone } = useStore();
+const Header = ({ onSettingsClick, onProgressClick }) => {
+  const { t } = useTranslation();
+  const { stats, learningMode, setLearningMode, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
 
   const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
   const { readiness } = readinessFromStats(stats);
-  const isPremium = user?.plan && user.plan !== 'free';
-
-  const handleLang = useCallback((lng) => {
-    if (lng !== language) onLanguageChange?.(lng);
-    setMenuOpen(false);
-  }, [language, onLanguageChange]);
-
-  const toggleAppLanguage = (lng) => {
-    if (lng !== i18n.language) i18n.changeLanguage(lng);
-  };
-
-  const closeMenu = () => setMenuOpen(false);
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onDocClick = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
-    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
-    document.addEventListener('mousedown', onDocClick);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDocClick);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [menuOpen]);
 
   const extraActive = MODES.slice(BOTTOM_VISIBLE).some(m => m.id === learningMode);
-
-  const menuItem = (label, Icon, onClick, opts = {}) => (
-    <button
-      type="button"
-      className={`menu-item ${opts.highlight ? 'highlight' : ''}`}
-      onClick={() => { setMenuOpen(false); onClick(); }}
-    >
-      <Icon size={18} />
-      <span>{label}</span>
-      {opts.tag && <span className="menu-item-tag">{opts.tag}</span>}
-    </button>
-  );
 
   return (
     <>
@@ -75,57 +35,19 @@ const Header = ({ onSettingsClick, onResumeClick, onVacancyClick, onTrendsClick,
         <div className="header-content">
           <div className="header-top">
             <div className="header-title">
-              <TrendingUp size={18} className="header-logo" />
+              <TrendingUp size={20} className="header-logo" />
+              <span className="header-brand">Prep-It</span>
             </div>
             <div className="header-actions">
-              <div className="more-wrap" ref={menuRef}>
-                <button
-                  className={`action-btn ${menuOpen ? 'active' : ''}`}
-                  onClick={() => setMenuOpen(o => !o)}
-                  type="button"
-                  aria-label={t('header.more')}
-                >
-                  <MoreVertical size={20} />
-                </button>
-                {menuOpen && (
-                  <div className="more-menu">
-                    <div className="menu-section">
-                      <div className="menu-section-title"><Globe size={14} /> {t('header.study_lang')}</div>
-                      <div className="menu-row">
-                        {Object.entries(LANG_LABELS).map(([id, lbl]) => (
-                          <button
-                            key={id}
-                            type="button"
-                            className={`menu-chip ${language === id ? 'active' : ''}`}
-                            onClick={() => handleLang(id)}
-                          >{lbl}</button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="menu-section">
-                      <div className="menu-section-title"><Languages size={14} /> {t('header.interface_lang')}</div>
-                      <div className="menu-row">
-                        <button type="button" className={`menu-chip ${i18n.language === 'ru' ? 'active' : ''}`} onClick={() => toggleAppLanguage('ru')}>RU</button>
-                        <button type="button" className={`menu-chip ${i18n.language === 'en' ? 'active' : ''}`} onClick={() => toggleAppLanguage('en')}>EN</button>
-                      </div>
-                    </div>
-                    <div className="menu-list">
-                      {menuItem(t('header.subscription'), Star, onSubscriptionClick, { highlight: !isPremium, tag: isPremium ? 'PRO' : null })}
-                      {menuItem(t('header.resume'), FileText, onResumeClick)}
-                      {menuItem(t('header.vacancy'), Target, onVacancyClick)}
-                      {menuItem(t('header.trends'), TrendingUp, onTrendsClick)}
-                       {menuItem(t('header.help'), HelpCircle, onHelpClick)}
-                       {menuItem(t('header.companies'), Globe, () => onCompaniesClick?.())}
-{menuItem(t('header.achievements'), Award, onAchievementsClick)}
-{menuItem(t('header.export'), Download, onExportClick)}
-{menuItem(t('header.profile'), User, onProfileClick)}
-{menuItem(t('header.peer_interview'), Video, onPeerInterviewClick)}
-{menuItem(t('header.settings'), Settings, onSettingsClick)}
-{user?.plan === 'admin' && menuItem(t('header.admin'), ShieldCheck, onAdminClick)}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <button
+                className="action-btn"
+                onClick={onSettingsClick}
+                type="button"
+                aria-label={t('header.settings')}
+                title={t('header.settings')}
+              >
+                <Menu size={26} />
+              </button>
             </div>
           </div>
 

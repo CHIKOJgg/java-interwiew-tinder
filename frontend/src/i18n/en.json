@@ -16,7 +16,9 @@
     "selected": "Selected",
     "questions": "questions",
     "clear": "Clear",
-    "no_companies": "No companies tagged yet"
+    "no_companies": "No companies tagged yet",
+    "on": "On",
+    "off": "Off"
   },
   "companies": {
     "title": "Companies",
@@ -47,6 +49,14 @@
     "companies": "Companies",
     "profile": "Profile",
     "peer_interview": "Peer Interview"
+  },
+  "settings": {
+    "preferences": "Preferences",
+    "notifications": "Notifications",
+    "menu": "Menu",
+    "about": "About",
+    "platform": "Platform",
+    "support": "Support"
   },
   "category": {
     "difficulty": "Difficulty",

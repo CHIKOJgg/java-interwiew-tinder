@@ -118,52 +118,61 @@ const QuestionCard = forwardRef(
                 )}
               </div>
 
-              <button
-                className={`bookmark-btn ${isSaved ? 'saved' : ''}`}
-                onClick={handleSave}
-                type="button"
-                title={t('card.bookmark', 'Save to review later')}
-                disabled={saving}
-              >
-                {isSaved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
-              </button>
-
               <div className="question-content">
                 <h2>{question.question}</h2>
               </div>
 
               {/* Explicit tap target — gives users a clear affordance on mobile */}
-              <button
-                className="flip-hint"
-                onTouchEnd={(e) => {
-                  // Prevent the synthesized click so the card doesn't flip twice
-                  // on touch devices (touchEnd + click would cancel out).
-                  e.preventDefault();
-                  e.stopPropagation();
-                  flip();
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  flip();
-                }}
-                type="button"
-              >
-                <RotateCcw size={15} />
-                <span>{t('card.flip_hint', 'Tap for answer')}</span>
-              </button>
-              <button
-                className="report-flag"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.dispatchEvent(
-                    new CustomEvent('report-question', { detail: question.id }),
-                  );
-                }}
-                type="button"
-                title={t('card.report_error', 'Report error')}
-              >
-                <Flag size={16} />
-              </button>
+              <div className="flip-hint">
+                <button
+                  className={`bookmark-btn ${isSaved ? 'saved' : ''}`}
+                  onClick={handleSave}
+                  type="button"
+                  title={t('card.bookmark', 'Save to review later')}
+                  disabled={saving}
+                >
+                  {isSaved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+                </button>
+                <span
+                  className="flip-hint-label"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={t('card.flip_hint', 'Tap for answer')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      flip();
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    // Prevent the synthesized click so the card doesn't flip twice
+                    // on touch devices (touchEnd + click would cancel out).
+                    e.preventDefault();
+                    e.stopPropagation();
+                    flip();
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    flip();
+                  }}
+                >
+                  <RotateCcw size={15} />
+                  <span>{t('card.flip_hint', 'Tap for answer')}</span>
+                </span>
+                <button
+                  className="report-flag"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.dispatchEvent(
+                      new CustomEvent('report-question', { detail: question.id }),
+                    );
+                  }}
+                  type="button"
+                  title={t('card.report_error', 'Report error')}
+                >
+                  <Flag size={16} />
+                </button>
+              </div>
             </div>
 
             {/* ── Back ──────────────────────────────────────────── */}

@@ -48,11 +48,7 @@ const TracksScreenWrapper = ({ onStartTrack, onBack, onSkipToCategories }) => {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (tracks && tracks.length > 0) {
-      setReady(true);
-      return;
-    }
-    loadTracks().then(() => setReady(true)).catch(() => setReady(true));
+    loadTracks(true).then(() => setReady(true)).catch(() => setReady(true));
   }, [language]);
 
   useEffect(() => {
@@ -64,7 +60,6 @@ const TracksScreenWrapper = ({ onStartTrack, onBack, onSkipToCategories }) => {
       onSkipToCategories();
     }
   }, [ready, tracks]);
-
   if (!ready) return <div className="app-loading"><SkeletonCard /></div>;
   if (tracks.length === 0) return <div className="app-loading"><div className="empty-deck"><p style={{ fontSize: 18, fontWeight: 600 }}>No tracks available yet.</p><p style={{ textAlign: 'center', opacity: 0.6, maxWidth: 320, marginTop: 8 }}>Select a different language or try again later.</p><button className="start-button" onClick={onBack} style={{ marginTop: 16 }}>Choose Language</button></div></div>;
 
@@ -127,6 +122,7 @@ function App() {
     closePaywall,
     feedRefresher, dismissRefresher,
     playgroundQuestion, setPlaygroundQuestion,
+    trackComplete, currentCertificate,
   } = useStore();
   const { t } = useTranslation();
 
@@ -217,6 +213,14 @@ function App() {
     };
    }, []);
 
+  // Open the report sheet when a card's report flag is tapped. The flag
+  // dispatches a CustomEvent because the card is deep in the component tree.
+  useEffect(() => {
+    const onReport = (e) => setReportingQuestionId(e.detail);
+    window.addEventListener('report-question', onReport);
+    return () => window.removeEventListener('report-question', onReport);
+  }, []);
+
   // ─── Initialization ────────────────────────────────────────────────
   // Runs once on mount. In Telegram context: wait for SDK + login, then go
   // to tracks/onboarding.  In web context: stay on landing — never touch
@@ -251,6 +255,7 @@ function App() {
   }, []);
 
   const handleCategoryDone = () => {
+    useStore.getState().setLearningMode('swipe');
     loadQuestions();
     setScreen('main');
   };
@@ -354,6 +359,7 @@ if (initState === 'landing') {
     return (
       <WebLogin
         referralId={referralId}
+        onBack={() => setInitState('landing')}
         onAuthenticated={(user, token, res) => {
           loginWithToken(user, token, res);
           if (localStorage.getItem(ONBOARD_KEY)) setScreen('tracks');
@@ -383,7 +389,7 @@ if (initState === 'landing') {
   if (screen === 'tracks') return <TracksScreenWrapper
     onStartTrack={(id) => { setCurrentTrackId(id); setScreen('track-detail'); }}
     onBack={() => setScreen('language')}
-    onSkipToCategories={() => { setScreen('main'); loadQuestions(); }}
+    onSkipToCategories={() => { useStore.getState().setLearningMode('swipe'); setScreen('main'); loadQuestions(); }}
   />;
 if (screen === 'track-detail') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TrackDetail trackId={currentTrackId} onStart={() => { useStore.getState().startTrack(currentTrackId); setScreen('main'); }} onBack={() => setScreen('tracks')} /></Suspense>;
    if (screen === 'companies') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><CompaniesScreen onBack={() => setScreen('main')} /></Suspense>;
@@ -512,6 +518,7 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
       <PwaInstallPrompt show={isWeb && (stats?.totalSeen || 0) >= 10} />
 <Header
           onSettingsClick={() => setScreen('settings')}
+          onTrackClick={() => setScreen('tracks')}
           onResumeClick={() => setScreen('resume')}
           onVacancyClick={() => setScreen('vacancy')}
           onTrendsClick={() => setScreen('trends')}
@@ -563,9 +570,9 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
       <PaywallModal onUpgrade={handleUpgrade} />
       <Suspense fallback={null}>
         <CertificateModal
-          isOpen={useStore.getState().trackComplete}
+          isOpen={trackComplete}
           onClose={() => useStore.setState({ trackComplete: false, currentCertificate: null })}
-          certificate={useStore.getState().currentCertificate}
+          certificate={currentCertificate}
         />
       </Suspense>
       <MissedPanel />

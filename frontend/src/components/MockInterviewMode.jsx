@@ -55,12 +55,14 @@ const MockInterviewMode = () => {
   useEffect(() => {
     const interviewerMessages = interviewHistory.filter(m => m.role === 'interviewer');
     if (interviewerMessages.length > prevInterviewerLenRef.current && !isMuted) {
+      stopSpeaking();
       const latest = interviewerMessages[interviewerMessages.length - 1];
       speak(latest.content);
     }
     prevInterviewerLenRef.current = interviewerMessages.length;
-    return () => { stopSpeaking(); };
   }, [interviewHistory, isMuted]);
+
+  useEffect(() => () => { stopSpeaking(); }, []);
 
   const toggleRecording = useCallback(() => {
     if (isRecording) {
@@ -116,7 +118,12 @@ const MockInterviewMode = () => {
     setAnswer('');
     setTranscript('');
 
-    await submitInterviewAnswer(currentQuestion, textToSend);
+    try {
+      await submitInterviewAnswer(currentQuestion, textToSend);
+    } catch (err) {
+      console.error('Failed to submit interview answer:', err);
+      setAnswer(textToSend);
+    }
   };
 
   const lastMessage = interviewHistory[interviewHistory.length - 1];

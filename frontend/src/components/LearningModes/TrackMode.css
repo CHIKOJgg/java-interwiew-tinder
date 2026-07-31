@@ -132,9 +132,14 @@
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.track-swipe-btn:active {
+.track-swipe-btn:active:not(:disabled) {
   box-shadow: 3px 3px 0 var(--ink);
   transform: scale(0.96);
+}
+
+.track-swipe-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .track-swipe-btn-left {

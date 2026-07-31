@@ -17,7 +17,8 @@
     "questions": "вопросов",
     "clear": "Очистить",
     "on": "Вкл",
-    "off": "Выкл"
+    "off": "Выкл",
+    "no_companies": "Компаний пока нет"
   },
   "header": {
     "studied": "Изучено",
@@ -76,7 +77,7 @@
     "track_mode": "Трек",
     "playground": "Песочница",
     "challenge": "Челлендж",
-    "system_design": "System Design"
+    "system_design": "Проектирование систем"
   },
   "referral": {
     "title": "Приглашайте друзей",
@@ -166,7 +167,12 @@
     "card_redirect": "Оплатите картой в открывшемся окне. После успешной оплаты Pro активируется автоматически.",
     "junior": "Джун",
     "middle": "Мидл",
-    "senior": "Сеньор"
+    "senior": "Сеньор",
+    "error_stars": "Ошибка Stars: {{message}}",
+    "error_ton": "Ошибка TON: {{message}}",
+    "error_check": "Ошибка проверки: {{message}}",
+    "error_ukassa": "Ошибка U-Kassa: {{message}}",
+    "error_cancel": "Ошибка отмены: {{message}}"
   },
   "paywall": {
     "title": "Этот режим — в Pro",
@@ -182,10 +188,10 @@
     "comp_modes": "Режимы тренировок",
     "comp_questions": "Вопросы",
     "comp_ai": "AI объяснения",
-    "comp_mock": "Mock interview",
+    "comp_mock": "Mock-интервью",
     "comp_review": "Разбор ошибок",
     "comp_resume": "Анализ резюме",
-    "trial_note": "7 дней бесплатно · Отмена в любой момент · Без карты"
+    "trial_note": "Cancel anytime · No card needed"
   },
   "nudge": {
     "title": "Совет",
@@ -370,14 +376,11 @@
     "next": "Следующий вопрос",
     "analyzing": "Интервьюер анализирует ваш ответ...",
     "placeholder_answer": "Ваш технический ответ...",
-    "placeholder_wait": "Нажмите «Следующий вопрос»"
-  },
-  "subscription": {
-    "error_stars": "Ошибка Stars: {{message}}",
-    "error_ton": "Ошибка TON: {{message}}",
-    "error_check": "Ошибка проверки: {{message}}",
-    "error_ukassa": "Ошибка U-Kassa: {{message}}",
-    "error_cancel": "Ошибка отмены: {{message}}"
+    "placeholder_wait": "Нажмите «Следующий вопрос»",
+    "voice_not_supported": "Голосовой ввод не поддерживается в вашем браузере",
+    "speaking": "Озвучка читает вопрос...",
+    "mute": "Выключить озвучку",
+    "unmute": "Включить озвучку"
   },
   "admin": {
     "back": "Назад",
@@ -465,7 +468,17 @@
     "faq4_a": "Да. Войди через Telegram или почту — серия, оценка готовности и сохранённые вопросы доступны и в Mini App, и в веб/PWA.",
     "final_title": "Готов прийти уверенным?",
     "final_sub": "Всего 10 бесплатных минут в день — и готово.",
-    "used_by": "Подготовься к собеседованиям в"
+    "used_by": "Подготовься к собеседованиям в",
+    "testimonial_title": "Что говорят разработчики",
+    "testimonial_1": "Неделями не мог разобраться с многопоточностью. Пара сессий в режиме свайпов с объяснениями ИИ — и всё щёлкнуло. Получил оффер.",
+    "testimonial_1_author": "Алексей К., Senior Java-разработчик",
+    "testimonial_2": "Интервальное повторение вытащило то, что я забыл, прямо перед интервью в Google. Просто спасло.",
+    "testimonial_2_author": "Мария С., Backend-инженер",
+    "testimonial_3": "Режим mock-интервью дал мне уверенность. Получила работу мечты.",
+    "testimonial_3_author": "Дмитрий В., Разработчик ПО",
+    "stats_practicing": "Кандидатов тренируются прямо сейчас",
+    "stats_live": "{{count}} онлайн сейчас",
+    "sticky_cta": "Хватит терять офферы из-за забытых вопросов"
   },
   "pwa": {
     "install_title": "Установите Interview Tinder",
@@ -562,7 +575,7 @@
     "close": "Закрыть"
   },
   "sd": {
-    "title": "System Design",
+    "title": "Проектирование систем",
     "subtitle": "Практикуйте проектирование крупных систем как на собеседованиях в FAANG",
     "requirements": "Функциональные требования",
     "constraints": "Ограничения и масштаб",
@@ -583,5 +596,74 @@
     "no_feedback": "Нет конкретных замечаний",
     "limit_reached": "Дневной лимит: {{used}}/{{limit}}. Перейдите на Pro для безлимитных оценок.",
     "score": "Оценка"
+  },
+  "companies": {
+    "title": "Компании",
+    "filter_by_company": "Фильтр по компании"
+  },
+  "vacancy": {
+    "back": "Назад",
+    "title": "Подготовка к вакансии",
+    "subtitle": "Вставьте описание вакансии и получите вопросы для интервью от ИИ",
+    "label": "Описание вакансии",
+    "placeholder": "Вставьте полный текст вакансии сюда...",
+    "preparing": "Готовим...",
+    "prepare": "Подготовиться к вакансии",
+    "error_generic": "Не удалось проанализировать вакансию. Проверьте соединение и попробуйте снова.",
+    "top_topics": "На что обратить внимание",
+    "questions": "Вопросы для интервью",
+    "save": "Сохранить вопрос",
+    "new_vacancy": "Анализировать другую вакансию",
+    "share": "Поделиться результатами"
+  },
+  "trends": {
+    "back": "Назад",
+    "title": "Рынок труда",
+    "subtitle": "Актуальные данные рынка для {{language}}",
+    "loading": "Загружаем данные рынка...",
+    "error_generic": "Не удалось загрузить данные рынка",
+    "vacancies": "вакансий найдено",
+    "avg_salary": "средняя зарплата",
+    "language": "язык",
+    "top_skills": "Востребованные навыки",
+    "top_companies": "Компании, которые нанимают",
+    "refresh": "Обновить"
+  },
+  "badges": {
+    "title": "Достижения",
+    "first_question": "Первые шаги",
+    "known_10": "Новичок",
+    "known_50": "Средний уровень",
+    "known_100": "Эксперт",
+    "known_500": "Мастер",
+    "streak_3": "Разогрев",
+    "streak_7": "В огне",
+    "streak_30": "Неудержимый",
+    "bug_hunter": "Охотник за багами",
+    "blitz_master": "Мастер блица",
+    "daily_login": "Постоянство",
+    "refer_friend": "Социальный",
+    "first_question_locked": "???",
+    "known_10_locked": "???",
+    "known_50_locked": "???",
+    "known_100_locked": "???",
+    "known_500_locked": "???",
+    "streak_3_locked": "???",
+    "streak_7_locked": "???",
+    "streak_30_locked": "???",
+    "bug_hunter_locked": "???",
+    "blitz_master_locked": "???",
+    "daily_login_locked": "???",
+    "refer_friend_locked": "???"
+  },
+  "profile": {
+    "title": "Профиль",
+    "known": "Знаю",
+    "streak": "Стрик дней",
+    "accuracy": "Точность",
+    "total": "Всего",
+    "readiness": "Готовность",
+    "saved": "Сохранено!",
+    "save_error": "Не удалось сохранить"
   }
 }

@@ -16,10 +16,11 @@ const MODES = [
   { id: 'mock-interview', icon: Mic, titleKey: 'modes.mock_interview', shortKey: 'modes.mock_interview' },
   { id: 'concept-linker', icon: Link, titleKey: 'modes.concept_linker', shortKey: 'modes.concept_linker' },
   { id: 'code-completion', icon: Braces, titleKey: 'modes.code_completion', shortKey: 'modes.code_completion' },
+  { id: 'track', icon: GraduationCap, titleKey: 'modes.track_mode', shortKey: 'modes.track_mode' },
 ];
 const BOTTOM_VISIBLE = 4;
 
-const Header = ({ onSettingsClick, onProgressClick }) => {
+const Header = ({ onSettingsClick, onProgressClick, onTrackClick }) => {
   const { t } = useTranslation();
   const { stats, learningMode, setLearningMode, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -84,6 +85,7 @@ const Header = ({ onSettingsClick, onProgressClick }) => {
             return (
               <button key={id} className={`drawer-mode-btn ${learningMode === id ? 'active' : ''} ${locked ? 'locked' : ''}`}
                 onClick={() => {
+                  if (id === 'track') { setDrawerOpen(false); onTrackClick?.(); return; }
                   if (locked) { requestPaywall(id); setDrawerOpen(false); }
                   else { setLearningMode(id); setDrawerOpen(false); }
                 }} type="button">

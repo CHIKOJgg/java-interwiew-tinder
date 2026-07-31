@@ -171,7 +171,12 @@
     "card_redirect": "Pay with your card in the opened window. Your Pro plan activates automatically after a successful payment.",
     "junior": "Junior",
     "middle": "Middle",
-    "senior": "Senior"
+    "senior": "Senior",
+    "error_stars": "Stars error: {{message}}",
+    "error_ton": "TON error: {{message}}",
+    "error_check": "Check error: {{message}}",
+    "error_ukassa": "U-Kassa error: {{message}}",
+    "error_cancel": "Cancel error: {{message}}"
   },
   "paywall": {
     "title": "This mode is Pro-only",
@@ -190,7 +195,7 @@
     "comp_mock": "Mock interview",
     "comp_review": "Mistakes review",
     "comp_resume": "Resume analysis",
-    "trial_note": "7-day free trial · Cancel anytime · No card needed"
+    "trial_note": "Cancel anytime · No card needed"
   },
   "nudge": {
     "title": "Tip",
@@ -408,13 +413,6 @@
     "speaking": "TTS is reading the question...",
     "mute": "Mute TTS",
     "unmute": "Unmute TTS"
-  },
-  "subscription": {
-    "error_stars": "Stars error: {{message}}",
-    "error_ton": "TON error: {{message}}",
-    "error_check": "Check error: {{message}}",
-    "error_ukassa": "U-Kassa error: {{message}}",
-    "error_cancel": "Cancel error: {{message}}"
   },
   "admin": {
     "back": "Back",

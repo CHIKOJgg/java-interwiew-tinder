@@ -443,10 +443,10 @@ const useStore = create((set, get) => ({
      }
 
      if (direction === 'left' && get().learningMode === 'swipe' && q) {
-       get().openMissed(q);
-     }
-     get().bumpDaily();
-     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+        get().openMissed(q);
+      }
+      get().bumpDaily();
+      if (get().learningMode === 'swipe' && get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
    },
 
   undoSwipe: async (questionId, direction) => {
@@ -568,6 +568,7 @@ const useStore = create((set, get) => ({
     get().loadQuestions();
   },
   stopBlitz: () => set({ isBlitzActive: false }),
+  endBlitzEarly: () => set({ isBlitzActive: false, blitzTimeLeft: 0 }),
   decrementBlitzTime: () => set(s => {
     const t = s.blitzTimeLeft - 1;
     return t <= 0 ? { blitzTimeLeft: 0, isBlitzActive: false } : { blitzTimeLeft: t };
@@ -578,14 +579,51 @@ const useStore = create((set, get) => ({
   canAccessMode: (mode) => {
     const { user } = get();
     if (!user) return true; // not loaded yet — don't block the default flow
-    if (user.plan === 'admin' || user.plan === 'pro') return true;
+    if (user.plan === 'admin' || user.plan === 'pro' || user.plan === 'annual_pro') return true;
     const modes = get().availableModes || user.available_modes || ['swipe', 'test'];
     return modes.includes(mode);
   },
 
   isPro: () => {
     const { user } = get();
-    return !!user && (user.plan === 'pro' || user.plan === 'admin');
+    return !!user && (user.plan === 'pro' || user.plan === 'annual_pro' || user.plan === 'admin');
+  },
+
+  // Re-read billing state after a payment or cancellation and sync the store
+  // in-session (works for Telegram AND web auth — no initData required).
+  refreshSubscription: async () => {
+    try {
+      const info = await apiClient.getBillingInfo();
+      const plan = info?.plan || 'free';
+      const { user } = get();
+      if (!user) return info;
+      const isPaid = plan === 'pro' || plan === 'annual_pro' || plan === 'admin';
+      const current = user?.plan;
+      const normalized = plan === 'annual_pro' ? 'pro' : plan;
+      if (current === normalized) return info;
+      if (isPaid) {
+        const proModes = ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'system-design', 'review'];
+        const proLangs = ['Java', 'Python', 'TypeScript', 'Go', 'Rust', 'React', 'Kotlin'];
+        set({
+          user: { ...user, plan: normalized },
+          availableModes: proModes,
+          availableLanguages: proLangs,
+        });
+      } else {
+        const freeModes = ['swipe', 'test', 'system-design'];
+        const freeLangs = ['Java', 'Python', 'TypeScript', 'Go', 'Rust', 'React', 'Kotlin'];
+        set({
+          user: { ...user, plan: 'free' },
+          availableModes: freeModes,
+          availableLanguages: freeLangs,
+        });
+      }
+      logger.info('Store: subscription refreshed', `plan=${plan}`);
+      return info;
+    } catch (err) {
+      logger.error('Store: refreshSubscription failed', err.message);
+      return null;
+    }
   },
 
   // Open the paywall for a locked feature instead of switching to it.
@@ -904,11 +942,11 @@ const useStore = create((set, get) => ({
   playgroundQuestion: null,
   setPlaygroundQuestion: (q) => set({ playgroundQuestion: q }),
 
-  loadTracks: async () => {
+  loadTracks: async (force = false) => {
     const { language, tracksCache } = get();
     const cacheKey = `tracks_${language}`;
     const cached = tracksCache[cacheKey];
-    if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
+    if (!force && cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
       set({ tracks: cached.tracks });
       return;
     }
@@ -928,7 +966,18 @@ const useStore = create((set, get) => ({
     set({ currentTrack: trackId, learningMode: 'track', trackComplete: false, currentIndex: 0, questions: [] });
     try {
       const { question } = await apiClient.getNextTrackQuestion(trackId);
-      if (question) set({ questions: [question] });
+      if (question) {
+        set({ questions: [question] });
+        return;
+      }
+      // No question: either the track is already completed or it has no steps
+      // (questions for this language not seeded yet). A 0-step track would be
+      // a dead end — mark it complete so it's never stuck.
+      const track = await apiClient.getTrack(trackId);
+      if (track?.completed) return;
+      if (track && (track.totalSteps || 0) === 0) {
+        await get().advanceTrack();
+      }
     } catch (err) {
       logger.error('Failed to start track:', err.message);
     }

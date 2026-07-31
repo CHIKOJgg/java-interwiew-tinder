@@ -27,9 +27,19 @@ const ShareCard = ({ stats, onBack }) => {
   const [copied, setCopied] = useState(false);
 
   const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'prep_interview_bot';
-  const shareUrl = window.Telegram?.WebApp
-    ? `https://t.me/${botUsername}?start=${user?.telegram_id}`
-    : `${window.location.origin}/?ref=${user?.telegram_id}`;
+  const refId = user?.telegram_id || user?.id;
+  const shareUrl = refId
+    ? (window.Telegram?.WebApp
+        ? `https://t.me/${botUsername}/app?startapp=${refId}`
+        : `${window.location.origin}/?ref=${refId}`)
+    : `${window.location.origin}`;
+
+  const shareText = t('share.text', {
+    language,
+    streak: stats.streak,
+    known: stats.known,
+    rank: percentile || 0
+  });
 
   const handleCopy = async () => {
     try {
@@ -45,13 +55,6 @@ const ShareCard = ({ stats, onBack }) => {
     const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
     window.open(url, '_blank');
   };
-
-  const shareText = t('share.text', {
-    language,
-    streak: stats.streak,
-    known: stats.known,
-    rank: 100 - (percentile || 0)
-  });
 
   const handleShareStory = () => {
     const tg = window.Telegram?.WebApp;

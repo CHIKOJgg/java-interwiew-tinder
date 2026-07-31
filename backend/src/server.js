@@ -2066,7 +2066,13 @@ app.post('/api/billing/ton/invoice',
 app.get('/api/billing/ton/check', async (req, res) => {
   try {
     const invoice = await getUserPendingInvoice(req.userId);
-    if (!invoice) return res.json({ fulfilled: true });
+    if (!invoice) {
+      // No pending invoice. Only report "fulfilled" if the user is actually
+      // already Pro (e.g. re-check after success) — never fake a success.
+      const info = await billingService.getBillingInfo(req.userId);
+      if (info.plan && info.plan !== 'free') return res.json({ fulfilled: true });
+      return res.json({ fulfilled: false, invoiceId: null });
+    }
     res.json({
       fulfilled: false,
       invoiceId: invoice.invoice_id,

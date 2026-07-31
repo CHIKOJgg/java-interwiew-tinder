@@ -136,6 +136,7 @@ describe('Billing Integration Tests', () => {
       const mockClient = {
         query: vi.fn()
           .mockResolvedValueOnce({}) // BEGIN
+          .mockResolvedValueOnce({ rows: [{ expires_at: null, plan_id: 'pro' }] }) // SELECT active sub
           .mockResolvedValueOnce({ rowCount: 1 }) // UPDATE sub
           .mockResolvedValueOnce({}) // UPDATE user
           .mockResolvedValueOnce({}), // COMMIT

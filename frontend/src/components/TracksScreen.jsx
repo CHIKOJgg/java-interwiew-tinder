@@ -10,12 +10,8 @@ const TracksScreen = ({ onStartTrack, onBack, onSkipToCategories }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (tracks && tracks.length > 0) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
-    loadTracks().then(() => setLoading(false)).catch(() => setLoading(false));
+    loadTracks(true).then(() => setLoading(false)).catch(() => setLoading(false));
   }, [language]);
 
   return (

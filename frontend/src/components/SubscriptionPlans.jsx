@@ -211,7 +211,7 @@ const TonModal = ({ invoice, onCheck, onCancel, polling }) => {
 // ─── Main component ───────────────────────────────────────────────────
 const SubscriptionPlans = ({ onBack }) => {
   const { t } = useTranslation();
-  const { user, login } = useStore();
+  const { user, login, refreshSubscription } = useStore();
   const [plans, setPlans] = useState([]);
   const [status, setStatus] = useState(null);
   const [history, setHistory] = useState([]);
@@ -280,6 +280,7 @@ const SubscriptionPlans = ({ onBack }) => {
           setPolling(false);
           setStatus(info);
           setShowSuccess(true);
+          refreshSubscription().catch(err => console.error('Refresh subscription after payment failed:', err));
           if (window.Telegram?.WebApp?.initData) {
             login(window.Telegram.WebApp.initData).catch(err => console.error('Re-login after payment failed:', err));
           }
@@ -338,6 +339,7 @@ const SubscriptionPlans = ({ onBack }) => {
         setTonInvoice(null);
         setShowSuccess(true);
         await fetchAll();
+        await refreshSubscription().catch(() => { });
         if (window.Telegram?.WebApp?.initData) {
           login(window.Telegram.WebApp.initData).catch(() => { });
         }
@@ -382,6 +384,7 @@ const SubscriptionPlans = ({ onBack }) => {
       await apiClient.deleteSubscription();
       setCancelConfirm(false);
       await fetchAll();
+      await refreshSubscription().catch(() => { });
       if (window.Telegram?.WebApp?.initData) {
         await login(window.Telegram.WebApp.initData).catch(() => { });
       }
@@ -619,7 +622,7 @@ const SubscriptionPlans = ({ onBack }) => {
                 <div key={i} className="history-item">
                   <div className="history-main">
                     <span className={`plan-tag ${h.plan_id}`}>{h.plan_name || h.plan_id}</span>
-                    <span className="history-provider">{h.payment_provider === 'stripe' ? t('subscription.card', 'Card') : t('subscription.stars', 'Stars')}</span>
+                    <span className="history-provider">{h.payment_provider === 'stripe' ? t('subscription.card', 'Card') : h.payment_provider === 'ton' ? t('subscription.ton_label', 'TON') : t('subscription.stars', 'Stars')}</span>
                   </div>
                   <div className="history-meta">
                     <span className="history-status">{t(`subscription.status_${h.status}`, h.status)}</span>

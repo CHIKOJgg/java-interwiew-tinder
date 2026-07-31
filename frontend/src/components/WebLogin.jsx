@@ -65,7 +65,7 @@ export default function WebLogin({ referralId, onAuthenticated, onBack }) {
 
   return (
     <div className="web-login">
-      <h1>{t('auth.connecting', 'Interview Tinder')}</h1>
+      <h1>{t('auth.web_title', 'Sign in')}</h1>
       <p className="web-login-sub">{t('auth.web_subtitle', 'Sign in to practice interview questions')}</p>
 
       {error && <div className="web-login-error">{error}</div>}

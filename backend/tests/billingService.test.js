@@ -62,6 +62,7 @@ describe('billingService', () => {
 
     it('rolls back and returns "No active subscription found" when rowCount === 0', async () => {
       client.query.mockResolvedValueOnce({ rows: [] }); // BEGIN
+      client.query.mockResolvedValueOnce({ rows: [] }); // SELECT active subscription
       client.query.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // UPDATE user_subscriptions
       const result = await billingService.cancelSubscription(1);
       expect(client.query).toHaveBeenCalledWith('ROLLBACK');
@@ -71,8 +72,9 @@ describe('billingService', () => {
 
     it('updates users, commits and returns success when rowCount > 0', async () => {
       client.query.mockResolvedValueOnce({ rows: [] }); // BEGIN
+      client.query.mockResolvedValueOnce({ rows: [{ expires_at: null, plan_id: 'pro' }] }); // SELECT active subscription
       client.query.mockResolvedValueOnce({ rows: [], rowCount: 1 }); // UPDATE user_subscriptions
-      client.query.mockResolvedValueOnce({ rows: [] }); // UPDATE users
+      client.query.mockResolvedValueOnce({ rows: [] }); // UPDATE users (downgrade)
       const result = await billingService.cancelSubscription(1);
       expect(client.query).toHaveBeenCalledWith('COMMIT');
       expect(logger.info).toHaveBeenCalled();
@@ -80,9 +82,21 @@ describe('billingService', () => {
       expect(client.release).toHaveBeenCalled();
     });
 
+    it('keeps the plan until expires_at when the paid period is still running', async () => {
+      client.query.mockResolvedValueOnce({ rows: [] }); // BEGIN
+      const future = new Date(Date.now() + 30 * 86400000);
+      client.query.mockResolvedValueOnce({ rows: [{ expires_at: future, plan_id: 'pro' }] }); // SELECT active subscription
+      client.query.mockResolvedValueOnce({ rows: [], rowCount: 1 }); // UPDATE user_subscriptions
+      client.query.mockResolvedValueOnce({ rows: [] }); // UPDATE users (expires_at only)
+      await billingService.cancelSubscription(1);
+      expect(client.query).toHaveBeenCalledWith('COMMIT');
+      expect(client.query.mock.calls[3][1][0]).toBe(future);
+      expect(client.query.mock.calls[3][1][1]).toBe(1);
+    });
+
     it('rolls back, logs error and throws on failure', async () => {
       client.query.mockResolvedValueOnce({ rows: [] }); // BEGIN
-      client.query.mockRejectedValueOnce(new Error('db down')); // UPDATE user_subscriptions fails
+      client.query.mockRejectedValueOnce(new Error('db down')); // SELECT fails
       await expect(billingService.cancelSubscription(1)).rejects.toThrow('db down');
       expect(client.query).toHaveBeenCalledWith('ROLLBACK');
       expect(logger.error).toHaveBeenCalled();
@@ -143,14 +157,23 @@ describe('billingService', () => {
       pool.query.mockResolvedValueOnce({ rows: [] });
       pool.query.mockResolvedValueOnce({ rows: [{ subscription_plan: 'free' }] });
       const result = await billingService.getBillingInfo(1);
-      expect(result).toEqual({ plan: 'free', plan_name: 'Free', status: 'active' });
+      expect(result).toEqual({ plan: 'free', plan_name: 'Free', status: 'active', is_cancelled: false });
     });
 
     it('uses plan name from users when plan !== free', async () => {
       pool.query.mockResolvedValueOnce({ rows: [] });
       pool.query.mockResolvedValueOnce({ rows: [{ subscription_plan: 'pro' }] });
+      pool.query.mockResolvedValueOnce({ rows: [] }); // cancelled check
       const result = await billingService.getBillingInfo(1);
-      expect(result).toEqual({ plan: 'pro', plan_name: 'pro', status: 'active' });
+      expect(result).toEqual({ plan: 'pro', plan_name: 'pro', status: 'active', is_cancelled: false });
+    });
+
+    it('marks cancelled when a cancelled subscription still has paid period left', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] }); // active query
+      pool.query.mockResolvedValueOnce({ rows: [{ subscription_plan: 'pro' }] }); // users fallback
+      pool.query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // cancelled row with future expiry
+      const result = await billingService.getBillingInfo(1);
+      expect(result).toEqual({ plan: 'pro', plan_name: 'pro', status: 'active', is_cancelled: true });
     });
 
     it('returns free/active on failure', async () => {

@@ -27,6 +27,14 @@ export const billingService = {
     try {
       await client.query('BEGIN');
 
+      const { rows: [sub] } = await client.query(
+        `SELECT expires_at, plan_id
+         FROM user_subscriptions
+         WHERE user_id = $1 AND status = 'active'
+         ORDER BY created_at DESC LIMIT 1`,
+        [userId]
+      );
+
       const { rowCount } = await client.query(
         `UPDATE user_subscriptions
            SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP
@@ -39,12 +47,25 @@ export const billingService = {
         return { success: true, message: 'No active subscription found' };
       }
 
-      await client.query(
-        `UPDATE users
-           SET subscription_plan = 'free', subscription_expires_at = NULL
-         WHERE telegram_id = $1`,
-        [userId]
-      );
+      // Keep Pro until the end of the paid period: cancel-at-end semantics.
+      // Only downgrade immediately when nothing was paid for (no expiry).
+      const expiresAt = sub?.expires_at;
+      const paidPeriodLeft = expiresAt && new Date(expiresAt) > new Date();
+      if (paidPeriodLeft) {
+        await client.query(
+          `UPDATE users
+             SET subscription_expires_at = $1
+           WHERE telegram_id = $2`,
+          [expiresAt, userId]
+        );
+      } else {
+        await client.query(
+          `UPDATE users
+             SET subscription_plan = 'free', subscription_expires_at = NULL
+           WHERE telegram_id = $1`,
+          [userId]
+        );
+      }
 
       await client.query('COMMIT');
       logger.info({ userId }, '✅ Subscription cancelled');
@@ -102,7 +123,20 @@ export const billingService = {
           [userId]
         );
         const plan = u[0]?.subscription_plan || 'free';
-        return { plan, plan_name: plan === 'free' ? 'Free' : plan, status: 'active' };
+        // Cancelled subscription that still has paid period left keeps the
+        // plan on users — surface that it was cancelled (cancel-at-end).
+        let isCancelled = false;
+        if (plan !== 'free') {
+          const { rows: c } = await pool.query(
+            `SELECT 1 FROM user_subscriptions
+             WHERE user_id = $1 AND status = 'cancelled'
+               AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+             LIMIT 1`,
+            [userId]
+          );
+          isCancelled = c.length > 0;
+        }
+        return { plan, plan_name: plan === 'free' ? 'Free' : plan, status: 'active', is_cancelled: isCancelled };
       }
       const r = rows[0];
       return {

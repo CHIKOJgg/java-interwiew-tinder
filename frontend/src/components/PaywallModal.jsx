@@ -15,7 +15,7 @@ const MODE_META = {
 };
 
 const COMPARE_ROWS = [
-  { labelKey: 'paywall.comp_modes', free: '2', pro: '8' },
+  { labelKey: 'paywall.comp_modes', free: '3', pro: '9' },
   { labelKey: 'paywall.comp_questions', free: '40/day', pro: 'Unlimited' },
   { labelKey: 'paywall.comp_ai', free: '3/day', pro: 'Unlimited' },
   { labelKey: 'paywall.comp_mock', free: <X size={14} />, pro: <Check size={14} /> },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useStore from '../store/useStore';
 import { useTranslation } from 'react-i18next';
 import { Sparkles, X } from 'lucide-react';
@@ -13,9 +13,11 @@ const ProNudge = ({ onOpenSubscription }) => {
   const { isPro, dismissedNudges, dismissNudge } = useStore();
   const [visible, setVisible] = useState(false);
   const [index, setIndex] = useState(0);
+  const stoppedRef = useRef(false);
   const tipId = TIPS[index];
 
   useEffect(() => {
+    if (stoppedRef.current) return;
     // Pick a stable tip for this session, but only if not already dismissed
     // (per session) and not already shown earlier today (once-per-day gate).
     const seed = Math.floor(Math.random() * TIPS.length);
@@ -33,6 +35,7 @@ const ProNudge = ({ onOpenSubscription }) => {
   }, [isPro, dismissedNudges]);
 
   const handleDismiss = () => {
+    stoppedRef.current = true;
     dismissNudge(tipId);
     try {
       const dayKey = new Date().toISOString().slice(0, 10);

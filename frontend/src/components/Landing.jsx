@@ -32,7 +32,7 @@ export default function Landing({ onStart, onLogin }) {
   const fetchLive = useCallback(() => {
     const lang = LANGS[langIdx.current % LANGS.length];
     langIdx.current++;
-    fetch(`${API_BASE}/api/demo/questions?language=${encodeURIComponent(lang)}&limit=1&seed=${Math.random().toString(36).slice(2)}`)
+    fetch(`${API_BASE}/demo/questions?language=${encodeURIComponent(lang)}&limit=1&seed=${Math.random().toString(36).slice(2)}`)
       .then(r => r.json())
       .then(d => { const qs = (d && d.questions) || []; if (qs.length) { setLiveQ(qs[0]); setLiveLang(lang); } else { setLiveQ(null); } })
       .catch(() => setLiveQ(null));
@@ -89,11 +89,10 @@ export default function Landing({ onStart, onLogin }) {
     setLeadLoading(true);
     try {
       const params = new URLSearchParams(window.location.search);
-      const r = await fetch(`${API_BASE}/api/waitlist`, {
+      const r = await fetch(`${API_BASE}/waitlist`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: leadEmail, lang: 'en', source: params.get('utm_source') || 'landing', consent: true,
-          interest: leadInterest, region: RB.current.region, timezone: RB.current.timezone
+          email: leadEmail, lang: 'en', source: params.get('utm_source') || 'landing', consent: true,          interest: leadInterest, region: RB.current.region, timezone: RB.current.timezone
         })
       });
       const j = await r.json();
@@ -121,7 +120,7 @@ export default function Landing({ onStart, onLogin }) {
     setB2bLoading(true);
     try {
       const packed = (b2bTg ? b2bTg + ' ' : '') + '| ' + b2bProduct + (b2bName ? ' | ' + b2bName : '') + (b2bMsg ? ' | ' + b2bMsg : '');
-      const r = await fetch(`${API_BASE}/api/waitlist`, {
+      const r = await fetch(`${API_BASE}/waitlist`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: b2bEmail || undefined, lang: 'en', source: b2bProduct, consent: true,

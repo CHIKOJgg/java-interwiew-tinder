@@ -7,9 +7,10 @@ import './TrackMode.css';
 
 const TrackMode = ({ onBack }) => {
   const { t } = useTranslation();
-  const { currentTrack, questions, currentIndex } = useStore();
+  const { currentTrack, questions, currentIndex, swipeCard, advanceTrack } = useStore();
   const [trackInfo, setTrackInfo] = useState(null);
   const [swiped, setSwiped] = useState(false);
+  const [pending, setPending] = useState(false);
   const [swipedDirection, setSwipedDirection] = useState(null);
   const cardRef = useRef(null);
 
@@ -22,20 +23,25 @@ const TrackMode = ({ onBack }) => {
   }, [currentTrack]);
 
   const handleSwipe = async (direction) => {
-    if (swiped) return;
+    if (swiped || pending) return;
     setSwiped(true);
     setSwipedDirection(direction);
 
     const status = direction === 'right' ? 'known' : 'unknown';
     if (question) {
-      await apiClient.recordSwipe(question.id, status).catch(() => {});
+      swipeCard(question.id, direction).catch(() => {});
     }
 
-    setTimeout(() => {
-      setSwiped(false);
-      setSwipedDirection(null);
-      useStore.getState().advanceTrack();
-    }, 300);
+    setPending(true);
+    try {
+      await advanceTrack();
+    } finally {
+      setTimeout(() => {
+        setSwiped(false);
+        setSwipedDirection(null);
+        setPending(false);
+      }, 300);
+    }
   };
 
   if (!question) {
@@ -54,12 +60,12 @@ const TrackMode = ({ onBack }) => {
           <ArrowLeft size={20} />
         </button>
         <div className="track-progress-text">
-          {trackInfo && `${currentIndex + 1} / ${trackInfo.totalSteps}`}
+          {trackInfo && `${Math.min(trackInfo.currentStep + 1, trackInfo.totalSteps)} / ${trackInfo.totalSteps}`}
         </div>
         <div className="track-mode-progress">
           <div
             className="track-mode-progress-fill"
-            style={{ width: trackInfo ? `${((currentIndex + 1) / trackInfo.totalSteps) * 100}%` : '0%' }}
+            style={{ width: trackInfo ? `${Math.min(100, ((trackInfo.currentStep + 1) / trackInfo.totalSteps) * 100)}%` : '0%' }}
           />
         </div>
       </div>
@@ -69,11 +75,11 @@ const TrackMode = ({ onBack }) => {
           <div className="track-q-category">{question.category}</div>
           <div className="track-q-text">{question.question}</div>
           <div className="track-swipe-actions">
-            <button className="track-swipe-btn track-swipe-btn-left" onClick={() => handleSwipe('left')}>
+            <button className="track-swipe-btn track-swipe-btn-left" onClick={() => handleSwipe('left')} disabled={pending}>
               <X size={20} />
               <span>{t('swipe.dont_know')}</span>
             </button>
-            <button className="track-swipe-btn track-swipe-btn-right" onClick={() => handleSwipe('right')}>
+            <button className="track-swipe-btn track-swipe-btn-right" onClick={() => handleSwipe('right')} disabled={pending}>
               <Check size={20} />
               <span>{t('swipe.know')}</span>
             </button>

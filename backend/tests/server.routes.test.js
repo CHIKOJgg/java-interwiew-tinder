@@ -1109,9 +1109,22 @@ describe('Billing', () => {
     delete process.env.TON_WALLET_ADDRESS;
   });
 
-  it('GET ton/check no invoice -> fulfilled true', async () => {
+  it('GET ton/check no invoice -> fulfilled false unless already paid', async () => {
     const { getUserPendingInvoice } = await import('../src/services/billing/tonService.js');
+    const { billingService } = await import('../src/services/billingService.js');
     vi.mocked(getUserPendingInvoice).mockResolvedValueOnce(null);
+    // User is free (no active plan) -> no fake success
+    vi.mocked(billingService.getBillingInfo).mockResolvedValueOnce({ plan: 'free', status: 'active' });
+    const res = await request(app).get('/api/billing/ton/check').set('Authorization', `Bearer ${userToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.fulfilled).toBe(false);
+  });
+
+  it('GET ton/check no invoice -> fulfilled true when user is already Pro', async () => {
+    const { getUserPendingInvoice } = await import('../src/services/billing/tonService.js');
+    const { billingService } = await import('../src/services/billingService.js');
+    vi.mocked(getUserPendingInvoice).mockResolvedValueOnce(null);
+    vi.mocked(billingService.getBillingInfo).mockResolvedValueOnce({ plan: 'pro', status: 'active' });
     const res = await request(app).get('/api/billing/ton/check').set('Authorization', `Bearer ${userToken}`);
     expect(res.status).toBe(200);
     expect(res.body.fulfilled).toBe(true);

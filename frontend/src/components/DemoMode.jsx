@@ -166,7 +166,7 @@ export default function DemoMode({ onSignup, onExit, referralId }) {
 
   // ─── Render: result ─────────────────────────────────────────────────
   if (finished) {
-    const beat = percentile == null ? null : Math.max(0, 100 - percentile);
+    const beat = percentile == null ? null : Math.min(100, percentile);
     return (
       <div className="demo demo-result">
         <Trophy className="demo-trophy" size={44} />

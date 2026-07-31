@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Link, CheckCircle2, RefreshCw, Loader2, Sparkles } from 'lucide-react';
@@ -24,35 +24,44 @@ const ConceptLinker = () => {
   const [matches, setMatches] = useState([]); // Array of { termId, defId }
   const [wrongMatch, setWrongMatch] = useState(null); // { termId, defId }
   const [isLevelComplete, setIsLevelComplete] = useState(false);
+  const levelStartRef = useRef(null);
 
-  // Initialize a "level" with 5 questions
+  // Initialize a "level" with 5 questions. Guarded by levelStartRef so an
+  // async append (loadQuestions(true) growing `questions`) can NEVER reshuffle
+  // the board mid-level or blank it out.
   useEffect(() => {
-    if (questions.length > 0) {
-      const levelQuestions = questions.slice(
-        currentIndex,
-        currentIndex + LEVEL_SIZE,
-      );
+    if (questions.length === 0) return;
+    if (levelStartRef.current === currentIndex) return; // already built this level
+    levelStartRef.current = currentIndex;
 
-      const newTerms = levelQuestions.map((q) => ({
-        id: q.id,
-        text:
-          q.question.length > 50
-            ? q.question.substring(0, 50) + '...'
-            : q.question,
-      }));
-
-      const newDefs = levelQuestions
-        .map((q) => ({
-          id: q.id,
-          text: q.shortAnswer,
-        }))
-        .sort(() => Math.random() - 0.5);
-
-      setTerms(newTerms);
-      setDefinitions(newDefs);
-      setMatches([]);
-      setIsLevelComplete(false);
+    const levelQuestions = questions.slice(
+      currentIndex,
+      currentIndex + LEVEL_SIZE,
+    );
+    if (levelQuestions.length === 0) {
+      levelStartRef.current = null; // deck exhausted — App.renderMode shows DeckComplete
+      return;
     }
+
+    const newTerms = levelQuestions.map((q) => ({
+      id: q.id,
+      text:
+        q.question.length > 50
+          ? q.question.substring(0, 50) + '...'
+          : q.question,
+    }));
+
+    const newDefs = levelQuestions
+      .map((q) => ({
+        id: q.id,
+        text: q.shortAnswer,
+      }))
+      .sort(() => Math.random() - 0.5);
+
+    setTerms(newTerms);
+    setDefinitions(newDefs);
+    setMatches([]);
+    setIsLevelComplete(false);
   }, [questions, currentIndex]);
 
   const handleTermClick = (termId) => {

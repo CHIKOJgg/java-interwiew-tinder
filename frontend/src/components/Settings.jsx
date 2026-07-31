@@ -12,10 +12,10 @@ import './Settings.css';
 const STUDY_LANGS = { Java: 'Java', Python: 'Python', TypeScript: 'TS', Go: 'Go', Rust: 'Rust', React: 'React', Kotlin: 'Kotlin' };
 
 const FAQ_ITEMS = [
-  { qKey: 'faq.faq1_q', aKey: 'faq.faq1_a' },
-  { qKey: 'faq.faq2_q', aKey: 'faq.faq2_a' },
-  { qKey: 'faq.faq3_q', aKey: 'faq.faq3_a' },
-  { qKey: 'faq.faq4_q', aKey: 'faq.faq4_a' },
+  { qKey: 'landing.faq1_q', aKey: 'landing.faq1_a' },
+  { qKey: 'landing.faq2_q', aKey: 'landing.faq2_a' },
+  { qKey: 'landing.faq3_q', aKey: 'landing.faq3_a' },
+  { qKey: 'landing.faq4_q', aKey: 'landing.faq4_a' },
 ];
 
 function Settings({ onBack, onNavigate, onExport, onHelp }) {

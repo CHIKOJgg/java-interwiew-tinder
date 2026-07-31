@@ -52,6 +52,13 @@ const BlitzMode = () => {
   // Use AI data if valid, otherwise use locally-generated fallback
   const blitzData = (aiBlitzData && !hasError) ? aiBlitzData : localBlitzData;
 
+  // Feed exhausted — end the round early instead of hanging on a loading card
+  useEffect(() => {
+    if (isBlitzActive && !currentQuestion && !isLoadingQuestions) {
+      useStore.getState().endBlitzEarly();
+    }
+  }, [isBlitzActive, currentQuestion, isLoadingQuestions]);
+
   useEffect(() => {
     if (!isBlitzActive || !currentQuestion) return;
     // Generate fallback data immediately (no loading state)

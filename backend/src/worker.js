@@ -145,11 +145,13 @@ async function notifyExpiring() {
 
 async function processExpired() {
   try {
-    // 1. Find subscriptions that just expired
+    // 1. Find subscriptions that just expired (active AND cancelled ones —
+    //    cancellation keeps access until the paid period ends, so cancelled
+    //    subscriptions must also be downgraded when expires_at passes).
     const { rows } = await pool.query(`
       SELECT user_id, plan_id 
       FROM user_subscriptions 
-      WHERE status='active' AND expires_at < NOW()
+      WHERE status IN ('active','cancelled') AND expires_at < NOW()
     `);
 
     if (rows.length === 0) return;
@@ -163,7 +165,7 @@ async function processExpired() {
 
         // Update subscription status
         await client.query(
-          "UPDATE user_subscriptions SET status='expired', updated_at=NOW() WHERE user_id=$1 AND status='active'",
+          "UPDATE user_subscriptions SET status='expired', updated_at=NOW() WHERE user_id=$1 AND status IN ('active','cancelled')",
           [sub.user_id]
         );
 

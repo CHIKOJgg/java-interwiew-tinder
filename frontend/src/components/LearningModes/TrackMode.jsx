@@ -42,7 +42,7 @@ const TrackMode = ({ onBack }) => {
     return (
       <div className="track-mode-empty">
         <p>{t('tracks.no_questions', 'No more questions in this track.')}</p>
-        <button onClick={onBack}>{t('common.back', 'Back')}</button>
+        <button className="track-btn-back" onClick={onBack}>{t('common.back', 'Back')}</button>
       </div>
     );
   }

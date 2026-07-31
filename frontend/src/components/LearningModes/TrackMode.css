@@ -136,6 +136,24 @@
   color: var(--ink);
 }
 
+.track-btn-back {
+  padding: 11px 22px;
+  border-radius: 12px;
+  border: 2.5px solid var(--ink);
+  background: var(--lime);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.track-btn-back:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
 .track-mode-empty {
   display: flex;
   flex-direction: column;

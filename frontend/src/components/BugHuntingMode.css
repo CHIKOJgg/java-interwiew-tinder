@@ -47,6 +47,13 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
+.bug-category {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-family: 'JetBrains Mono', monospace;
+}
+
 .code-container {
   background: var(--ink);
   border-radius: 14px;
@@ -245,6 +252,12 @@
   height: 300px;
   gap: 16px;
   color: var(--coral);
+}
+
+.bug-mode-loading.error p {
+  margin-top: 12px;
+  text-align: center;
+  max-width: 320px;
 }
 
 .spinner {

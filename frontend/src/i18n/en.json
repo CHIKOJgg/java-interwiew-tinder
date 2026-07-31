@@ -310,7 +310,8 @@
     "submit": "Answer",
     "correct": "Correct!",
     "incorrect": "Incorrect",
-    "next_question": "Next question →"
+    "next_question": "Next question →",
+    "skip": "Skip question"
   },
   "bug": {
     "find_bug": "Find the bug in this code:",

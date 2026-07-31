@@ -55,7 +55,7 @@ const AdminPanel = ({ onBack }) => {
       <div className="admin-error">
         <AlertCircle size={48} />
         <p>{error}</p>
-        <button onClick={fetchMetrics}>{t('admin.retry')}</button>
+        <button className="admin-retry-btn" onClick={fetchMetrics}>{t('admin.retry')}</button>
       </div>
     );
   }
@@ -132,7 +132,7 @@ const AdminPanel = ({ onBack }) => {
                     <textarea id={`edit-q-${q.id}`} defaultValue={q.question_text} rows={3} />
                     <textarea id={`edit-a-${q.id}`} defaultValue={q.short_answer} rows={3} />
                     <div className="report-actions">
-                      <button onClick={async () => {
+                      <button className="btn-success" onClick={async () => {
                         const newQ = document.getElementById(`edit-q-${q.id}`).value;
                         const newA = document.getElementById(`edit-a-${q.id}`).value;
                         await apiClient.updateQuestion(q.id, newQ, newA);

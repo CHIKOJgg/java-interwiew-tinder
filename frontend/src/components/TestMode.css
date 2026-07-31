@@ -229,6 +229,24 @@
   transform: scale(0.96);
 }
 
+.skip-btn {
+  border: 2.5px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink-soft);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 28px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.skip-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
 .spinner {
   animation: spin 1s linear infinite;
   color: var(--blue);

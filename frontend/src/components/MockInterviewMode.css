@@ -84,6 +84,11 @@
   color: var(--ink-soft);
 }
 
+.message-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .evaluation-card {
   margin-top: 12px;
   padding: 16px;
@@ -91,6 +96,133 @@
   border: 2.5px solid var(--ink);
   border-radius: 14px;
   color: var(--ink);
+}
+
+.correct-version {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.correct-version strong {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 6px;
+}
+
+.correct-version p {
+  margin: 0;
+}
+
+.next-question-btn {
+  margin-top: 14px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 2.5px solid var(--ink);
+  background: var(--lime);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.next-question-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+/* ─── Voice controls ─────────────────────────────────────────────── */
+.voice-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 0;
+}
+
+.voice-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+}
+
+.voice-btn:active:not(:disabled) {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.92);
+}
+
+.voice-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.voice-btn.recording {
+  background: var(--coral);
+  animation: voice-pulse 1.2s ease-in-out infinite;
+}
+
+.voice-btn.muted {
+  background: var(--cream2);
+  color: var(--ink-soft);
+}
+
+@keyframes voice-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 87, 0.45); }
+  50% { box-shadow: 0 0 0 8px rgba(255, 107, 87, 0); }
+}
+
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--coral);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.recording-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink);
+  animation: rec-blink 1s steps(2, start) infinite;
+}
+
+@keyframes rec-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.recording-text {
+  white-space: nowrap;
 }
 
 .evaluation-header {

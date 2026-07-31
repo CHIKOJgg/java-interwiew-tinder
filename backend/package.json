@@ -8,7 +8,7 @@
     "start": "node src/server.js",
     "start:worker": "node src/worker.js",
     "start:all": "node scripts/start-all.mjs",
-    "dev": "node --watch src/server.js",
+    "dev": "node scripts/start-all.mjs",
     "init-db": "node src/scripts/init-db.js",
     "seed-db": "node src/scripts/seed-db.js",
     "migrate": "node src/scripts/migrate.js",

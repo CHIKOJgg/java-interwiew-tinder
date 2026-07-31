@@ -7,6 +7,7 @@
   align-items: center;
   min-height: 100vh;
   box-sizing: border-box;
+  gap: 14px;
 }
 
 .demo-topbar {
@@ -15,7 +16,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 4px;
 }
 
 .demo-badge {
@@ -66,103 +67,315 @@
   transition: width 0.25s ease;
 }
 
-.demo-card-area {
-  flex: 1;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 16px;
+.demo-counter {
+  align-self: flex-end;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-family: 'JetBrains Mono', monospace;
 }
 
-.demo-label {
-  font-size: 13px;
+/* ─── Flip card ───────────────────────────────────────────────────── */
+.demo-card-shell {
+  width: 100%;
+  height: 380px;
+  max-height: 52vh;
+  perspective: 1200px;
+  cursor: pointer;
+  position: relative;
+}
+
+.demo-card-shell.flipped .demo-card-inner {
+  transform: rotateY(180deg);
+}
+
+.demo-card-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.demo-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 22px;
+  border: 2.5px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 22px;
+  box-sizing: border-box;
+}
+
+.demo-front {
+  background: var(--paper);
+  justify-content: space-between;
+}
+
+.demo-back {
+  background: var(--cream2);
+  transform: rotateY(180deg);
+  justify-content: center;
+  gap: 12px;
+}
+
+.demo-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.demo-cat,
+.demo-diff {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--cream);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.demo-diff {
+  background: var(--amber);
+}
+
+.demo-face h2 {
+  font-size: clamp(19px, 4.6vw, 26px);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink);
+  margin: 16px 0 0;
+}
+
+.demo-flip-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 16px;
+}
+
+.demo-answer-label {
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--ink-soft);
-  text-align: center;
   font-family: 'JetBrains Mono', monospace;
-}
-
-.demo-question {
-  font-size: 24px;
-  font-weight: 700;
   text-align: center;
-  line-height: 1.3;
+}
+
+.demo-back p {
+  font-size: clamp(14px, 3.6vw, 18px);
+  line-height: 1.55;
   color: var(--ink);
-}
-
-.demo-cta {
-  padding: 18px;
-  border-radius: 14px;
-  border: 2.5px solid var(--ink);
-  background: var(--lime);
-  color: var(--ink);
-  font-size: 17px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.1s;
-}
-
-.demo-cta:active {
-  box-shadow: 4px 4px 0 var(--ink);
-  transform: scale(0.96);
-}
-
-.demo-note {
-  font-size: 12px;
-  color: var(--ink-soft);
+  margin: 0;
   text-align: center;
-  margin-top: 8px;
 }
 
-.demo-options {
-  display: flex;
-  gap: 14px;
+/* ─── Actions ─────────────────────────────────────────────────────── */
+.demo-actions {
   width: 100%;
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
 }
 
-.demo-opt-btn {
+.demo-swipe {
   flex: 1;
-  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 15px;
   border-radius: 14px;
   border: 2.5px solid var(--ink);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.demo-opt-btn:active {
+.demo-swipe:active {
   box-shadow: 4px 4px 0 var(--ink);
   transform: scale(0.96);
 }
 
-.demo-opt-btn.true-btn {
-  background: var(--green);
-  color: var(--ink);
-}
+.demo-swipe.know { background: var(--green); color: var(--ink); }
+.demo-swipe.dont-know { background: var(--coral); color: var(--ink); }
 
-.demo-opt-btn.false-btn {
-  background: var(--coral);
-  color: var(--ink);
-}
-
-.demo-skip {
+.demo-link {
+  background: none;
+  border: none;
+  color: var(--blue);
   font-size: 13px;
-  color: var(--ink-soft);
-  text-align: center;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
   text-decoration: underline;
-  margin-top: 8px;
+  padding: 6px;
+}
+
+/* ─── Loading / skeleton ──────────────────────────────────────────── */
+.demo-loading {
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.demo-card-shell.demo-skeleton {
+  background: var(--cream2);
+  animation: demo-pulse 1.4s ease-in-out infinite;
+  cursor: default;
+}
+
+@keyframes demo-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────── */
+.demo-btn {
+  padding: 14px 24px;
+  border-radius: 14px;
+  border: 2.5px solid var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.demo-btn:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+.demo-btn.primary { background: var(--lime); color: var(--ink); }
+.demo-btn.secondary { background: var(--cream); color: var(--ink); }
+.demo-btn.big { width: 100%; padding: 16px 24px; font-size: 16px; }
+
+/* ─── Result screen ───────────────────────────────────────────────── */
+.demo.demo-result {
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+}
+
+.demo-trophy {
+  color: var(--amber);
+  filter: drop-shadow(2px 2px 0 var(--ink));
+}
+
+.demo.demo-result h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  margin: 4px 0 0;
+}
+
+.demo-score-ring {
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  border: 4px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 6px 6px 0 var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin: 6px 0;
+}
+
+.demo-score-val {
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--blue);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.demo-score-lab {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ink-soft);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.demo-result-sub {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  max-width: 320px;
+  margin: 0;
+}
+
+.demo-percentile {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--cream2);
+  color: var(--coral);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  margin: 0;
+}
+
+.demo-cta-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.demo-cta-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.demo-share {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.demo-share .demo-btn {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 13px;
 }
 
 @media (max-width: 400px) {
-  .demo { padding: 12px 12px 24px; }
-  .demo-question { font-size: 20px; }
-  .demo-opt-btn { padding: 14px; font-size: 14px; }
-  .demo-cta { padding: 14px; font-size: 15px; }
+  .demo { padding: 12px 12px 24px; gap: 12px; }
+  .demo-card-shell { height: 340px; }
+  .demo-face { padding: 16px; }
+  .demo-btn.big { padding: 14px 18px; font-size: 15px; }
+  .demo-swipe { padding: 13px; font-size: 14px; }
 }

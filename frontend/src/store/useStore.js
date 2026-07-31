@@ -657,7 +657,8 @@ const useStore = create((set, get) => ({
 
   // ─── AI generation ─────────────────────────────────────────────────
   fetchGeneration: async (type, questionId, _attempt = 0) => {
-    const MAX_ATTEMPTS = 10;
+    // Generous budget: OpenRouter free tier + queue can take 30-60s per job.
+    const MAX_ATTEMPTS = 25;
     const POLL_INTERVAL_MS = 2000;
     const pollId = ++get()._pollRequestId;
 

@@ -82,7 +82,7 @@
   color: var(--ink);
 }
 
-.onb-check-num {
+.onb-check-mark {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,74 +97,173 @@
   color: var(--ink-soft);
 }
 
-.onb-check.active .onb-check-num {
+.onb-check.active .onb-check-mark {
   background: var(--blue);
   color: var(--ink);
 }
 
-.onb-check.done .onb-check-num {
-  background: var(--ink);
+.onb-check.done .onb-check-mark {
+  background: var(--green);
   color: var(--ink);
 }
 
-.onb-action-area {
+/* ─── Current stage detail ─────────────────────────────────────────── */
+.onb-stage {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 18px 14px;
+  border-radius: 18px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
-.onb-btn {
-  width: 100%;
-  padding: 15px;
+.onb-stage h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  margin: 0;
+}
+
+.onb-hero-emoji {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  border: 2.5px solid var(--ink);
+  background: var(--cream2);
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.onb-hero-emoji.know { background: var(--green); color: var(--ink); }
+.onb-hero-emoji.dont { background: var(--coral); color: var(--ink); }
+.onb-hero-emoji.tap { background: var(--cream2); color: var(--ink); }
+.onb-hero-emoji.pro { background: var(--amber); color: var(--ink); }
+
+.onb-swipe-demo {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.onb-swipe-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 2.5px solid var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.onb-swipe-chip.know { background: var(--green); color: var(--ink); }
+.onb-swipe-chip.dont { background: var(--coral); color: var(--ink); }
+
+.onb-pro-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 2.5px solid var(--ink);
+  background: var(--amber);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ─── Progress ─────────────────────────────────────────────────────── */
+.onb-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.onb-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.onb-progress-bar span {
+  display: block;
+  height: 100%;
+  background: var(--lime);
+  border-radius: 2px;
+  transition: width 0.25s ease;
+}
+
+.onb-progress-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ─── Navigation ───────────────────────────────────────────────────── */
+.onb-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.onboarding-back,
+.onboarding-skip,
+.onboarding-start {
+  padding: 14px 22px;
   border-radius: 14px;
   border: 2.5px solid var(--ink);
   background: var(--lime);
   color: var(--ink);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
   transition: transform 0.1s, box-shadow 0.1s;
-}
-
-.onb-btn:active {
-  box-shadow: 4px 4px 0 var(--ink);
-  transform: scale(0.96);
-}
-
-.onb-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.onb-btn-outline {
-  background: var(--cream);
-  color: var(--ink);
-}
-
-.onb-progress-dots {
-  display: flex;
-  justify-content: center;
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
 }
 
-.onb-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 2px solid var(--ink);
+.onboarding-back,
+.onboarding-skip {
   background: var(--cream);
-  cursor: pointer;
+  color: var(--ink-soft);
+  flex: 1;
 }
 
-.onb-dot.active {
+.onboarding-start {
+  flex: 2;
   background: var(--lime);
+}
+
+.onboarding-back:active,
+.onboarding-skip:active,
+.onboarding-start:active {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
 }
 
 @media (max-width: 400px) {
   .onboarding { padding: 14px; }
   .onb-head h1 { font-size: 20px; }
   .onb-check { padding: 10px 12px; font-size: 13px; }
-  .onb-btn { padding: 13px; font-size: 15px; }
+  .onboarding-back,
+  .onboarding-skip,
+  .onboarding-start { padding: 12px 16px; font-size: 14px; }
+  .onb-hero-emoji { width: 60px; height: 60px; }
 }

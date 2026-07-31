@@ -383,6 +383,35 @@
   transform: scale(0.96);
 }
 
+/* Light variant: inline strip inside the question card (no lock icon, no heading) */
+.ai-limit-upsell.light {
+  flex-direction: row;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--cream2);
+  margin-top: 10px;
+}
+
+.ai-limit-upsell.light p {
+  font-size: 12.5px;
+  max-width: none;
+  text-align: left;
+}
+
+.ai-limit-upgrade.small {
+  width: auto;
+  max-width: none;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  white-space: nowrap;
+  margin: 0;
+  flex-shrink: 0;
+}
+
 .ai-limit-upsell .action-button.ghost {
   background: var(--cream);
   color: var(--ink-soft);

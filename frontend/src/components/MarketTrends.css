@@ -84,27 +84,49 @@
 }
 
 /* Continue with remaining styles... */
-.trend-stat-label {
-  font-size: 12px;
-  color: var(--ink-soft);
-  margin-bottom: 4px;
-  font-family: 'JetBrains Mono', monospace;
+.trends-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.trend-stat-value {
+.stat-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 10px;
+  border-radius: 12px;
+  background: var(--cream2);
+  border: 2px solid var(--ink);
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-value {
   font-size: 24px;
   font-weight: 700;
   color: var(--blue);
   font-family: 'JetBrains Mono', monospace;
 }
 
-.trend-section {
+.stat-label {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.trends-section {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.trend-section h3 {
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 16px;
   font-weight: 700;
   color: var(--ink);
@@ -112,47 +134,65 @@
   margin: 0;
 }
 
-.trend-item {
-  background: var(--cream);
-  border: 2.5px solid var(--ink);
-  border-radius: 12px;
-  padding: 14px;
-  font-size: 14px;
-  color: var(--ink);
-  line-height: 1.5;
-}
-
-.trend-item-header {
+.skills-list,
+.companies-list {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.trend-tag {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--blue);
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.trend-change {
+.skill-tag,
+.company-tag {
+  padding: 8px 14px;
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
+  color: var(--ink);
   font-family: 'JetBrains Mono', monospace;
 }
 
-.trend-change.positive {
-  color: var(--green);
+.company-tag {
+  background: var(--cream2);
+  border-color: var(--blue);
+  color: var(--blue);
 }
 
-.trend-change.negative {
-  color: var(--coral);
+.refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: center;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: 2.5px solid var(--ink);
+  background: var(--lime);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.trend-error {
-  padding: 16px;
+.refresh-btn:active:not(:disabled) {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: scale(0.96);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.analyze-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
   background: var(--cream);
   border: 2.5px solid var(--coral);
   border-radius: 12px;
@@ -167,8 +207,8 @@
   .trends-header h2 { font-size: 20px; }
   .subtitle { font-size: 13px; }
   .trend-stat { padding: 12px; }
-  .trend-stat-value { font-size: 20px; }
-  .trend-item { padding: 12px; font-size: 13px; }
+  .stat-value { font-size: 20px; }
+  .skill-tag, .company-tag { padding: 6px 12px; font-size: 12px; }
 }
 
 @media (orientation: landscape) and (max-height: 500px) {

@@ -64,9 +64,9 @@ const BugHuntingMode = () => {
   if (!currentQuestion) return <LoadingCard text={t('common.loading_questions', 'Loading questions...')} />;
 
   if (hasError) return (
-    <div className="bug-mode-loading">
-      <AlertTriangle size={40} color="#ff6b6b" />
-      <p style={{ color: '#ff6b6b', marginTop: 12, textAlign: 'center' }}>{bugData.message}</p>
+    <div className="bug-mode-loading error">
+      <AlertTriangle size={40} />
+      <p>{bugData.message}</p>
       <button className="retry-btn" onClick={() => fetchGeneration('bug', currentQuestion.id, 0)}>
         {t('common.retry', 'Try again')}
       </button>

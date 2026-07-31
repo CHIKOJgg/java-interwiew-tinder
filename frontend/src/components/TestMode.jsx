@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Check, X, Loader2, AlertCircle } from 'lucide-react';
+import { hasRealDistractors, realDistractors } from '../utils/stubOptions';
 import './TestMode.css';
 
 // Shuffle an array without mutating it
@@ -33,14 +34,13 @@ const TestMode = () => {
 
   // Build the 4 shuffled options once per question.
   // The correct answer is always shortAnswer. The 3 distractors come from options[] in DB.
-  // We memo by questionId so the shuffle doesn't change on every render.
+  // Stub placeholders ("Common misconception" etc.) are filtered out — they make
+  // the correct answer obvious, so such questions wait for real generated options.
   const displayOptions = useMemo(() => {
     if (!currentQuestion) return [];
     const correct = currentQuestion.shortAnswer || '';
-    const wrongs = (currentQuestion.options || [])
-      .filter(o => (o || '').trim().toLowerCase() !== correct.trim().toLowerCase())
-      .slice(0, 3);
-    if (!wrongs.length) return [];        // no distractors → not a test question
+    const wrongs = realDistractors(currentQuestion.options, correct).slice(0, 3);
+    if (wrongs.length < 3) return [];        // no real distractors → not a test question yet
     return shuffle([correct, ...wrongs]);
   }, [currentQuestion?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -56,12 +56,13 @@ const TestMode = () => {
 
   // Test options are generated on demand (the backend doesn't pre-fill them).
   // Trigger generation for the current question, but only once per question.
+  // Stub-only option sets count as "not ready" too.
   const requestedRef = useRef(new Set());
   const genError = currentQuestion?.options?.__error;
   useEffect(() => {
     if (!currentQuestion) return;
     const opts = currentQuestion.options;
-    if (Array.isArray(opts) && opts.length > 0) return; // already ready
+    if (Array.isArray(opts) && opts.length > 0 && hasRealDistractors(opts, currentQuestion.shortAnswer)) return; // already ready
     if (opts && opts.__error) return;                   // errored — wait for retry
     if (requestedRef.current.has(currentQuestion.id)) return;
     requestedRef.current.add(currentQuestion.id);
@@ -130,6 +131,9 @@ const TestMode = () => {
         <p>{genError.message || t('test.generating_options', 'Answer options are still being generated')}</p>
         <button className="retry-btn" onClick={retryGeneration}>
           {t('common.retry', 'Try again')}
+        </button>
+        <button className="skip-btn" onClick={handleNext} type="button">
+          {t('test.skip', 'Skip question')}
         </button>
       </div>
     );

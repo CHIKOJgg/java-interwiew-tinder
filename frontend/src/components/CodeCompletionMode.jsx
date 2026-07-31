@@ -84,9 +84,9 @@ const CodeCompletionMode = () => {
   if (!hasMoreQuestions()) return null;
 
   if (hasError) return (
-    <div className="completion-mode-loading">
-      <AlertTriangle size={40} color="#ff6b6b" />
-      <p style={{ color: '#ff6b6b', marginTop: 12, textAlign: 'center' }}>{completionData.message}</p>
+    <div className="completion-loading error">
+      <AlertTriangle size={40} />
+      <p>{completionData.message}</p>
       <button className="retry-btn" onClick={() => fetchGeneration('code', currentQuestion.id, 0)}>
         {t('common.retry', 'Try again')}
       </button>
@@ -133,20 +133,20 @@ const CodeCompletionMode = () => {
         </div>
 
         {!result ? (
-          <button className="submit-completion-button"
+          <button className="submit-completion-btn"
             disabled={!selectedOption || isSubmitting} onClick={handleSubmit}>
             {isSubmitting ? <Loader2 className="spinner" size={18} /> : t('code_completion.submit', 'Finish')}
           </button>
         ) : (
           <div className="completion-result-feedback">
             {result.isCorrect
-              ? <div className="feedback-correct"><Check size={18} /><span>{t('code_completion.correct', 'Perfect!')}</span></div>
-              : <div className="feedback-incorrect"><X size={18} />
+              ? <div className="completion-feedback correct"><Check size={18} /><span>{t('code_completion.correct', 'Perfect!')}</span></div>
+              : <div className="completion-feedback incorrect"><X size={18} />
                 <span>{t('code_completion.incorrect', 'Incorrect. Correct:')} <code>{result.correctAnswer}</code></span>
               </div>
             }
             {/* §12 — next button always appears */}
-            <button className="next-completion-button" onClick={handleNext}>
+            <button className="next-completion-btn" onClick={handleNext}>
               {t('code_completion.next', 'Next fragment →')}
             </button>
           </div>
@@ -157,7 +157,7 @@ const CodeCompletionMode = () => {
 };
 
 const LoadingCard = ({ text }) => (
-  <div className="completion-mode-loading">
+  <div className="completion-loading">
     <Loader2 className="spinner" size={48} />
     <p>{text}</p>
   </div>

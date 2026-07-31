@@ -26,6 +26,9 @@ const Header = ({ onSettingsClick, onProgressClick }) => {
 
   const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
   const { readiness } = readinessFromStats(stats);
+  // The slim bar tracks today's goal (answers today vs dailyGoal), not overall
+  // readiness — otherwise it looks "empty" at the start of every day.
+  const dailyProgress = dailyGoal > 0 ? Math.min(100, (todaySeen / dailyGoal) * 100) : 0;
 
   const extraActive = MODES.slice(BOTTOM_VISIBLE).some(m => m.id === learningMode);
 
@@ -53,7 +56,7 @@ const Header = ({ onSettingsClick, onProgressClick }) => {
 
           {/* Calm, minimal stats: one slim progress line + a tiny info row */}
           <div className="stats-container" onClick={onProgressClick} title={t('header.open_progress', 'Open progress')} style={{ cursor: 'pointer' }}>
-            <div className="progress-bar slim"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
+            <div className="progress-bar slim"><div className="progress-fill" style={{ width: `${dailyProgress}%` }} /></div>
             <div className="stats-mini">
               <span className="readiness-mini"><strong>{readiness}%</strong></span>
               {stats.streak > 0 && (

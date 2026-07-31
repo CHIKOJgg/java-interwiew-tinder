@@ -67,7 +67,7 @@ const TracksScreenWrapper = ({ onStartTrack, onBack, onSkipToCategories }) => {
   }, [ready, tracks]);
 
   if (!ready) return <div className="app-loading"><SkeletonCard /></div>;
-  if (tracks.length === 0) return <div className="app-loading"><div className="empty-deck"><p style={{ fontSize: 18, fontWeight: 600 }}>No tracks available yet.</p><p style={{ textAlign: 'center', opacity: 0.6, maxWidth: 320, marginTop: 8 }}>Select a different language or try again later.</p><button className="start-button" onClick={() => setScreen('language')} style={{ marginTop: 16 }}>Choose Language</button></div></div>;
+  if (tracks.length === 0) return <div className="app-loading"><div className="empty-deck"><p style={{ fontSize: 18, fontWeight: 600 }}>No tracks available yet.</p><p style={{ textAlign: 'center', opacity: 0.6, maxWidth: 320, marginTop: 8 }}>Select a different language or try again later.</p><button className="start-button" onClick={onBack} style={{ marginTop: 16 }}>Choose Language</button></div></div>;
 
   return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}>
     <TracksScreen onStartTrack={onStartTrack} onBack={onBack} onSkipToCategories={onSkipToCategories} />

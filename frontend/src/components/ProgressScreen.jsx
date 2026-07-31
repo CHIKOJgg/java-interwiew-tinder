@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Flame, Target, TrendingUp, RotateCcw, Star, Award, Bookmark } from 'lucide-react';
+import { Flame, Target, TrendingUp, RotateCcw, Star, Award, Bookmark, Trophy } from 'lucide-react';
 import useStore, { readinessFromStats } from '../store/useStore';
 import apiClient from '../api/client';
 import './ProgressScreen.css';

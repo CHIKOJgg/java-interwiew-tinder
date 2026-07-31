@@ -58,6 +58,7 @@ body {
   background: var(--cream);
   color: var(--ink);
   width: 100%;
+  height: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   min-height: -webkit-fill-available;
@@ -67,6 +68,8 @@ body {
 
 #root {
   width: 100%;
+  height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
   min-height: 100dvh;
   min-height: -webkit-fill-available;

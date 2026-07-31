@@ -174,12 +174,15 @@ const ConceptLinker = () => {
                 {t('linker.complete_desc', "You've mastered these concepts.")}
               </p>
               <button className="next-level-btn" onClick={() => {
-                // Advance by the level size; load more questions if running low
                 const nextIndex = currentIndex + LEVEL_SIZE;
                 useStore.setState({ currentIndex: nextIndex });
-                if (questions.length - nextIndex <= LEVEL_SIZE) {
+                if (questions.length - nextIndex < LEVEL_SIZE) {
                   loadQuestions(true);
                 }
+                setIsLevelComplete(false);
+                setSelectedTerm(null);
+                setSelectedDef(null);
+                setMatches([]);
               }}>
                 <span>{t('linker.next_set', 'Next set')}</span>
                 <RefreshCw size={18} />

@@ -50,7 +50,7 @@ const MockInterviewMode = () => {
     if (interviewHistory.length === 0 && !isLoadingQuestions) {
       startInterview();
     }
-  }, [interviewHistory.length, isLoadingQuestions, startInterview]);
+  }, [interviewHistory.length, isLoadingQuestions]);
 
   useEffect(() => {
     const interviewerMessages = interviewHistory.filter(m => m.role === 'interviewer');

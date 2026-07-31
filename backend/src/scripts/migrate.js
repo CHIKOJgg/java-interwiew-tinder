@@ -1129,6 +1129,285 @@ const migrations = [
       CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Design Patterns in TypeScript' AND language = 'TypeScript' LIMIT 1) lt
       WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
     `
+  },
+
+  // ── 043: Seed learning tracks for Go, Rust, React, Kotlin ──
+  {
+    id: '043_seed_tracks_go_rust_react_kotlin',
+    sql: `
+      -- ── Go tracks ──
+      INSERT INTO learning_tracks (language, name, description, level, icon, sort_order, is_active)
+      SELECT v.language, v.name, v.description, v.level, v.icon, v.sort_order, TRUE
+      FROM (VALUES
+        ('Go', 'Go Core Fundamentals', 'Syntax, types, interfaces, and error handling', 'Junior', '🐹', 1),
+        ('Go', 'Concurrency in Go', 'Goroutines, channels, select, and sync primitives', 'Middle', '⚡', 2),
+        ('Go', 'Go Data Structures', 'Slices, maps, and standard library algorithms', 'Junior', '📦', 3),
+        ('Go', 'Go Web & APIs', 'net/http, middleware, REST, and microservices', 'Middle', '🌐', 4),
+        ('Go', 'Go Runtime Deep Dive', 'Garbage collector, scheduler, and CGo', 'Senior', '🔧', 5),
+        ('Go', 'Design Patterns in Go', 'Idiomatic Go patterns and anti-patterns', 'Middle', '🏗️', 6)
+      ) AS v(language, name, description, level, icon, sort_order)
+      WHERE NOT EXISTS (SELECT 1 FROM learning_tracks WHERE language = 'Go');
+
+      -- Go Track 1: Core Fundamentals
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Go' AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Go Core Fundamentals' AND language = 'Go' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Go Track 2: Concurrency
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Go' AND (category ILIKE '%concurr%' OR category ILIKE '%goroutine%' OR category ILIKE '%channel%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Concurrency in Go' AND language = 'Go' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Go Track 3: Data Structures
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Go' AND (category ILIKE '%data struct%' OR category ILIKE '%slice%' OR category ILIKE '%map%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Go Data Structures' AND language = 'Go' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Go Track 4: Web & APIs
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Go' AND (category ILIKE '%web%' OR category ILIKE '%http%' OR category ILIKE '%api%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Go Web & APIs' AND language = 'Go' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Go Track 5: Runtime Deep Dive
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Go' AND (category ILIKE '%runtime%' OR category ILIKE '%gc%' OR category ILIKE '%memory%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Go Runtime Deep Dive' AND language = 'Go' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Go Track 6: Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Go' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Design Patterns in Go' AND language = 'Go' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- ── Rust tracks ──
+      INSERT INTO learning_tracks (language, name, description, level, icon, sort_order, is_active)
+      SELECT v.language, v.name, v.description, v.level, v.icon, v.sort_order, TRUE
+      FROM (VALUES
+        ('Rust', 'Rust Core Fundamentals', 'Ownership, borrowing, lifetimes, and pattern matching', 'Junior', '🦀', 1),
+        ('Rust', 'Rust Ownership & Memory', 'Ownership model, references, smart pointers, and memory safety', 'Middle', '🧠', 2),
+        ('Rust', 'Rust Data Structures', 'Vec, HashMap, iterators, and collections', 'Junior', '📦', 3),
+        ('Rust', 'Async Rust', 'async/await, Pin, Future, and Tokio runtime', 'Middle', '⚡', 4),
+        ('Rust', 'Rust Unsafe & FFI', 'Unsafe blocks, FFI, and low-level Rust', 'Senior', '🔥', 5),
+        ('Rust', 'Rust Design Patterns', 'Idiomatic patterns and trait-based design', 'Middle', '🏗️', 6)
+      ) AS v(language, name, description, level, icon, sort_order)
+      WHERE NOT EXISTS (SELECT 1 FROM learning_tracks WHERE language = 'Rust');
+
+      -- Rust Track 1: Core Fundamentals
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Rust' AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Rust Core Fundamentals' AND language = 'Rust' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Rust Track 2: Ownership & Memory
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Rust' AND (category ILIKE '%ownership%' OR category ILIKE '%borrow%' OR category ILIKE '%lifetime%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Rust Ownership & Memory' AND language = 'Rust' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Rust Track 3: Data Structures
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Rust' AND (category ILIKE '%data struct%' OR category ILIKE '%collection%' OR category ILIKE '%iterator%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Rust Data Structures' AND language = 'Rust' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Rust Track 4: Async Rust
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Rust' AND (category ILIKE '%async%' OR category ILIKE '%await%' OR category ILIKE '%future%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Async Rust' AND language = 'Rust' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Rust Track 5: Unsafe & FFI
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Rust' AND (category ILIKE '%unsafe%' OR category ILIKE '%ffi%' OR category ILIKE '%raw pointer%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Rust Unsafe & FFI' AND language = 'Rust' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Rust Track 6: Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Rust' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Rust Design Patterns' AND language = 'Rust' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- ── React tracks ──
+      INSERT INTO learning_tracks (language, name, description, level, icon, sort_order, is_active)
+      SELECT v.language, v.name, v.description, v.level, v.icon, v.sort_order, TRUE
+      FROM (VALUES
+        ('React', 'React Core Fundamentals', 'Components, JSX, props, state, and lifecycle', 'Junior', '⚛️', 1),
+        ('React', 'React Hooks Deep Dive', 'useState, useEffect, useRef, custom hooks, and rules', 'Middle', '🪝', 2),
+        ('React', 'React State Management', 'Context, Redux, Zustand, and state patterns', 'Middle', '📊', 3),
+        ('React', 'React Performance', 'Memoization, code splitting, lazy loading, and profiling', 'Middle', '⚡', 4),
+        ('React', 'React Server Components', 'RSC, streaming, SSR, and Next.js patterns', 'Senior', '🖥️', 5),
+        ('React', 'React Design Patterns', 'Compound, render props, HOC, and hooks patterns', 'Middle', '🏗️', 6)
+      ) AS v(language, name, description, level, icon, sort_order)
+      WHERE NOT EXISTS (SELECT 1 FROM learning_tracks WHERE language = 'React');
+
+      -- React Track 1: Core Fundamentals
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'React' AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'React Core Fundamentals' AND language = 'React' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- React Track 2: Hooks Deep Dive
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'React' AND (category ILIKE '%hook%' OR category ILIKE '%useState%' OR category ILIKE '%useEffect%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'React Hooks Deep Dive' AND language = 'React' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- React Track 3: State Management
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'React' AND (category ILIKE '%state%' OR category ILIKE '%context%' OR category ILIKE '%redux%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'React State Management' AND language = 'React' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- React Track 4: Performance
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'React' AND (category ILIKE '%performance%' OR category ILIKE '%memo%' OR category ILIKE '%lazy%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'React Performance' AND language = 'React' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- React Track 5: Server Components
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'React' AND (category ILIKE '%server%' OR category ILIKE '%ssr%' OR category ILIKE '%next%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'React Server Components' AND language = 'React' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- React Track 6: Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'React' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%' OR category ILIKE '%hoc%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'React Design Patterns' AND language = 'React' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- ── Kotlin tracks ──
+      INSERT INTO learning_tracks (language, name, description, level, icon, sort_order, is_active)
+      SELECT v.language, v.name, v.description, v.level, v.icon, v.sort_order, TRUE
+      FROM (VALUES
+        ('Kotlin', 'Kotlin Core Fundamentals', 'Null safety, data classes, sealed classes, and scope functions', 'Junior', '🟣', 1),
+        ('Kotlin', 'Kotlin Coroutines', 'Structured concurrency, flows, and channels', 'Middle', '⚡', 2),
+        ('Kotlin', 'Kotlin Data Structures', 'Collections, sequences, and extension functions', 'Junior', '📦', 3),
+        ('Kotlin', 'Kotlin for Android', 'Jetpack Compose, lifecycle, and ViewModel patterns', 'Middle', '🤖', 4),
+        ('Kotlin', 'Kotlin Multiplatform', 'KMP, expect/actual, and shared business logic', 'Senior', '🔀', 5),
+        ('Kotlin', 'Kotlin Design Patterns', 'Idiomatic Kotlin patterns and DSL builders', 'Middle', '🏗️', 6)
+      ) AS v(language, name, description, level, icon, sort_order)
+      WHERE NOT EXISTS (SELECT 1 FROM learning_tracks WHERE language = 'Kotlin');
+
+      -- Kotlin Track 1: Core Fundamentals
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Kotlin' AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Kotlin Core Fundamentals' AND language = 'Kotlin' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Kotlin Track 2: Coroutines
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Kotlin' AND (category ILIKE '%coroutine%' OR category ILIKE '%flow%' OR category ILIKE '%concurr%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Kotlin Coroutines' AND language = 'Kotlin' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Kotlin Track 3: Data Structures
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Kotlin' AND (category ILIKE '%collection%' OR category ILIKE '%data struct%' OR category ILIKE '%sequence%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Kotlin Data Structures' AND language = 'Kotlin' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Kotlin Track 4: Kotlin for Android
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Kotlin' AND (category ILIKE '%android%' OR category ILIKE '%compose%' OR category ILIKE '%viewmodel%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Kotlin for Android' AND language = 'Kotlin' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Kotlin Track 5: Multiplatform
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Kotlin' AND (category ILIKE '%multiplatform%' OR category ILIKE '%kmp%' OR category ILIKE '%expect%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Kotlin Multiplatform' AND language = 'Kotlin' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Kotlin Track 6: Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Kotlin' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%' OR category ILIKE '%dsl%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Kotlin Design Patterns' AND language = 'Kotlin' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Update subscription plans to include new languages
+      UPDATE subscription_plans
+      SET available_languages = ARRAY['Java', 'Python', 'TypeScript', 'Go', 'Rust', 'React', 'Kotlin']
+      WHERE id IN ('free', 'pro', 'annual_pro');
+    `
   }
 ];
 

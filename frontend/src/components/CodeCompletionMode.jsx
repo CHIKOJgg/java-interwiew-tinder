@@ -81,7 +81,14 @@ const CodeCompletionMode = () => {
   };
 
   if (isLoadingQuestions) return <LoadingCard text={t('common.loading_questions', 'Loading questions...')} />;
-  if (!hasMoreQuestions()) return null;
+  if (!hasMoreQuestions()) {
+    return (
+      <div className="completion-loading">
+        <Code2 size={40} />
+        <p>{t('code_completion.empty', 'No more code challenges available.')}</p>
+      </div>
+    );
+  }
 
   if (hasError) return (
     <div className="completion-loading error">

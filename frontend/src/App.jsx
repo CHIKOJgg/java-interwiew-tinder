@@ -158,7 +158,9 @@ function App() {
   // Toggle the on-screen debug overlay. In Telegram WebApp there is no F12, so
   // we open it via a long-press (Telegram fires `contextmenu` on long-press) or
   // 5 quick taps anywhere on the app shell (ignoring interactive controls).
+  // Dev-only: the debug UI exposes auth internals and must never ship to prod.
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
     let pressTimer = null;
     const taps = [];
 
@@ -592,8 +594,10 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
         />
       </Suspense>
       <MissedPanel />
-      <button type="button" className="debug-fab" onClick={() => setDebugOpen(true)} title="Debug">Debug</button>
-      {debugOpen && <DebugScreen onClose={() => setDebugOpen(false)} />}
+      {import.meta.env.DEV && (
+        <button type="button" className="debug-fab" onClick={() => setDebugOpen(true)} title="Debug">Debug</button>
+      )}
+      {import.meta.env.DEV && debugOpen && <DebugScreen onClose={() => setDebugOpen(false)} />}
     </div>
   );
 }

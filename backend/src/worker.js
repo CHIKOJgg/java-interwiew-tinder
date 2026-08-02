@@ -61,9 +61,22 @@ const BACKFILL = {
 // ─── Job processor ────────────────────────────────────────────────────
 const processJob = async (job) => {
   const { id, task_type, payload } = job;
-  const p = typeof payload === 'string' ? JSON.parse(payload) : payload;
-  const lang = p.language || 'Java';
-  const qId = p.questionId || null;  // may be absent for warm-up jobs
+  let p;
+  try {
+    p = typeof payload === 'string' ? JSON.parse(payload) : payload;
+  } catch (err) {
+    logger.error({ err, jobId: id, task_type }, 'Invalid job payload — marking failed');
+    await pool.query(
+      `UPDATE ai_jobs
+       SET status='failed', attempts=attempts+1, error_message=$2,
+           updated_at=CURRENT_TIMESTAMP
+       WHERE id=$1`,
+      [id, 'Invalid job payload']
+    ).catch((dbErr) => logger.error({ err: dbErr, jobId: id }, 'Failed to mark job as failed'));
+    return;
+  }
+  const lang = p?.language || 'Java';
+  const qId = p?.questionId || null;  // may be absent for warm-up jobs
 
   logger.info({ jobId: id, task_type, lang, qId }, '👷 Processing job');
 
@@ -337,10 +350,12 @@ const runWorker = async () => {
 
       if (rows.length > 0) {
         activeJobs++;
-        processJob(rows[0]).finally(() => {
-          activeJobs--;
-          pollAndProcess();
-        });
+        processJob(rows[0])
+          .catch((err) => logger.error({ err, jobId: rows[0].id }, 'Unhandled job error'))
+          .finally(() => {
+            activeJobs--;
+            pollAndProcess();
+          });
         pollAndProcess(); // fill concurrency slots
       }
     } catch (err) {

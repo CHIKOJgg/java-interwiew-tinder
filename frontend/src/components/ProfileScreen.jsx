@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
+import apiClient from '../api/client';
 import { User, CheckCircle2, Download, Trophy, Flame, Settings, ArrowLeft, Edit2, Save, X, Mail, Phone, Globe } from 'lucide-react';
 import './ProfileScreen.css';
 
 function ProfileScreen({ onBack, onSettingsClick }) {
   const { t } = useTranslation();
-  const { user, stats, token, isPremium, streak, language, plan } = useStore();
+  const { user, stats } = useStore();
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.first_name || '');
   const [username, setUsername] = useState(user?.username || '');
@@ -19,12 +20,10 @@ function ProfileScreen({ onBack, onSettingsClick }) {
 
   const handleSave = async () => {
     try {
-      const res = await fetch('/api/me', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ first_name: displayName, username }),
-      });
-      if (!res.ok) throw new Error('Save failed');
+      const res = await apiClient.updateProfile({ first_name: displayName, username });
+      if (res?.user?.first_name) {
+        useStore.setState({ user: { ...useStore.getState().user, first_name: res.user.first_name, username: res.user.username } });
+      }
       setSaveStatus('saved');
       setEditing(false);
       setTimeout(() => setSaveStatus(''), 2000);
@@ -33,6 +32,8 @@ function ProfileScreen({ onBack, onSettingsClick }) {
     }
   };
 
+  const plan = user?.plan;
+  const streak = stats?.streak;
   const progress = stats?.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
   const planLabel = plan === 'pro' ? 'Pro' : plan === 'annual_pro' ? 'Annual Pro' : 'Free';
   const planColor = plan === 'pro' || plan === 'annual_pro' ? 'var(--amber)' : 'var(--ink-soft)';

@@ -462,6 +462,10 @@ app.use('/api', (req, res, next) => {
     req.path.startsWith('/auth/email/') ||
     req.path === '/languages' ||
     req.path.startsWith('/demo/') ||
+    req.path === '/waitlist' ||
+    req.path === '/waitlist/unsubscribe' ||
+    req.path === '/email/subscribe' ||
+    req.path === '/email/unsubscribe' ||
     req.path.startsWith('/bot/webhook') ||
     req.path.startsWith('/webhook/telegram') ||
     req.path.startsWith('/billing/ukassa/webhook')
@@ -752,7 +756,9 @@ app.post('/api/auth/email/verify', emailSendLimiter, async (req, res) => {
 // в”Ђв”Ђв”Ђ Admin Routes (requireAdmin required) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.use('/api/admin', requireAdmin);
 
-// Admin-only diagnostics (were public вЂ” leaked schema details via err.message).
+// Admin-only diagnostics (were public — leaked schema details via err.message).
+app.use('/api/debug', requireAdmin);
+
 app.get('/api/debug/question-counts', async (_req, res) => {
   try {
     const result = await pool.query('SELECT language, COUNT(*) as count FROM questions GROUP BY language ORDER BY language');
@@ -3434,25 +3440,25 @@ app.get('/api/email/daily-challenge', async (req, res) => {
 app.get('/api/me', authMiddleware, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, telegram_id, first_name, username, language, subscription_plan AS plan,
-              current_streak, longest_streak, known_count, total_answered, avatar_url, created_at
-       FROM users WHERE id = $1`,
+      `SELECT telegram_id, first_name, last_name, username, language, subscription_plan AS plan,
+              current_streak, longest_streak, avatar_url, auth_provider, email, created_at
+       FROM users WHERE telegram_id = $1`,
       [req.userId]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
     const u = rows[0];
     res.json({
-      id: u.id,
       telegram_id: u.telegram_id,
       first_name: u.first_name,
+      last_name: u.last_name,
       username: u.username,
       language: u.language,
       plan: u.plan,
       current_streak: u.current_streak,
       longest_streak: u.longest_streak,
-      known_count: u.known_count,
-      total_answered: u.total_answered,
       avatar_url: u.avatar_url,
+      auth_provider: u.auth_provider,
+      email: u.email,
       created_at: u.created_at,
     });
   } catch (err) {
@@ -3488,7 +3494,7 @@ app.put('/api/me', authMiddleware, validateBody({}), async (req, res) => {
 
     values.push(req.userId);
     const { rows } = await pool.query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${idx} RETURNING id, telegram_id, first_name, username, language, subscription_plan AS plan`,
+      `UPDATE users SET ${updates.join(', ')} WHERE telegram_id = $${idx} RETURNING telegram_id, first_name, last_name, username, language, subscription_plan AS plan, avatar_url`,
       values
     );
     res.json({ user: rows[0] });
@@ -3559,7 +3565,15 @@ app.use(errorHandler(isDev, ALLOWED_ORIGINS));
 let peerSignaling = null;
 if (process.env.NODE_ENV !== 'test') {
   const { WebSocketServer } = await import('ws');
-  const wss = new WebSocketServer({ server });
+  const wss = new WebSocketServer({
+    server,
+    // Echo the client's subprotocol (the JWT is carried as the subprotocol
+    // so it never lands in proxy/access logs via the query string).
+    handleProtocols: (protocols) => {
+      if (!protocols || !protocols.length) return false;
+      return Array.isArray(protocols) ? protocols[0] : protocols;
+    },
+  });
   peerSignaling = new PeerToPeerSignaling(wss);
   wss.on('connection', (ws, req) => {
     const url = new URL(req.url, `http://${req.headers.host}`);

@@ -1424,6 +1424,12 @@ const migrations = [
       CREATE INDEX IF NOT EXISTS idx_questions_test_ready
         ON questions(language, test_ready) WHERE is_active = TRUE;
     `
+  },
+  {
+    id: '045_me_profile_fields',
+    sql: `
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500);
+    `
   }
 ];
 

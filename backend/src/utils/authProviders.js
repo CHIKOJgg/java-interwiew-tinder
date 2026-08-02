@@ -38,6 +38,9 @@ export async function verifyGoogle(idToken) {
   if (process.env.ENABLE_GOOGLE_AUTH !== 'true') {
     throw new Error('Google auth is not enabled');
   }
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    throw new Error('Google auth requires GOOGLE_CLIENT_ID');
+  }
   if (!idToken) return null;
 
   const res = await fetch(
@@ -46,8 +49,10 @@ export async function verifyGoogle(idToken) {
   if (!res.ok) throw new Error('Google token validation failed');
   const payload = await res.json();
 
-  // aud must match our client id
-  if (process.env.GOOGLE_CLIENT_ID && payload.aud !== process.env.GOOGLE_CLIENT_ID) {
+  // aud MUST match our client id — the audience check is mandatory now
+  // (previously it was skipped when GOOGLE_CLIENT_ID was unset, which
+  // allowed accepting tokens minted for any other Google app).
+  if (payload.aud !== process.env.GOOGLE_CLIENT_ID) {
     throw new Error('Google token audience mismatch');
   }
   if (payload.exp * 1000 < Date.now()) throw new Error('Google token expired');

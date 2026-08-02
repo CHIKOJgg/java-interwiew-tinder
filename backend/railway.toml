@@ -4,6 +4,10 @@
 [deploy]
   restart_policy_type = "ON_FAILURE"
   restart_policy_max_retries = 5
+  # Apply DB migrations before the new release starts serving traffic.
+  # Idempotent (schema_migrations tracks applied ids). Seeds are NOT run here:
+  # the DB already has content, and setup-db would duplicate it.
+  preDeployCommand = "npm run migrate && npm run migrate-stars && npm run migrate-ton && npm run migrate-ukassa"
 
 [env]
   NODE_ENV = "production"

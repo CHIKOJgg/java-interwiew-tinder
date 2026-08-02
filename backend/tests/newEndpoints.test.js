@@ -68,7 +68,7 @@ vi.mock('../src/services/billing/ukassaService.js', () => ({
 }));
 
 vi.mock('../src/services/metricsService.js', () => ({
-  default: { trackEvent: vi.fn(), increment: vi.fn(), gauge: vi.fn() },
+  metricsService: { trackEvent: vi.fn(), increment: vi.fn(), gauge: vi.fn(), getSystemOverview: vi.fn() },
 }));
 
 vi.mock('../src/services/referralService.js', () => ({
@@ -136,7 +136,7 @@ describe('GET /api/me', () => {
 
   it('returns user profile with valid token', async () => {
     mockPoolQuery.mockResolvedValueOnce({
-      rows: [{ id: 1, telegram_id: '123456', first_name: 'Test', username: 'testuser', language: 'Java', plan: 'pro', current_streak: 5, longest_streak: 10, known_count: 42, total_answered: 50, avatar_url: null, created_at: new Date().toISOString() }],
+      rows: [{ telegram_id: '123456', first_name: 'Test', username: 'testuser', language: 'Java', plan: 'pro', current_streak: 5, longest_streak: 10, avatar_url: null, auth_provider: 'telegram', email: null, created_at: new Date().toISOString() }],
     });
 
     const res = await request(app)
@@ -145,6 +145,7 @@ describe('GET /api/me', () => {
     expect(res.status).toBe(200);
     expect(res.body.first_name).toBe('Test');
     expect(res.body.username).toBe('testuser');
+    expect(res.body.telegram_id).toBe('123456');
   });
 });
 
@@ -166,7 +167,7 @@ describe('PUT /api/me', () => {
 
   it('updates first_name when valid', async () => {
     mockPoolQuery.mockResolvedValue({
-      rows: [{ id: 1, first_name: 'NewName', username: 'testuser', language: 'Java', plan: 'pro' }],
+      rows: [{ telegram_id: '123456', first_name: 'NewName', username: 'testuser', language: 'Java', plan: 'pro' }],
     });
 
     const res = await request(app)
@@ -175,6 +176,40 @@ describe('PUT /api/me', () => {
       .send({ first_name: 'NewName' });
     expect(res.status).toBe(200);
     expect(res.body.user.first_name).toBe('NewName');
+  });
+});
+
+describe('Public lead-capture endpoints (auth whitelist)', () => {
+  it('POST /api/waitlist passes the auth gate without a token', async () => {
+    mockPoolQuery.mockResolvedValue({ rows: [], rowCount: 0 });
+    const res = await request(app)
+      .post('/api/waitlist')
+      .send({ email: 'lead@example.com', lang: 'en', consent: true });
+    expect(res.status).not.toBe(401);
+  });
+
+  it('POST /api/email/subscribe passes the auth gate without a token', async () => {
+    mockPoolQuery.mockResolvedValue({ rows: [], rowCount: 0 });
+    const res = await request(app)
+      .post('/api/email/subscribe')
+      .send({ email: 'lead@example.com' });
+    expect(res.status).not.toBe(401);
+  });
+
+  it('POST /api/email/unsubscribe passes the auth gate without a token', async () => {
+    mockPoolQuery.mockResolvedValue({ rows: [], rowCount: 0 });
+    const res = await request(app)
+      .post('/api/email/unsubscribe')
+      .send({ email: 'lead@example.com' });
+    expect(res.status).not.toBe(401);
+  });
+
+  it('POST /api/waitlist/unsubscribe passes the auth gate without a token', async () => {
+    mockPoolQuery.mockResolvedValue({ rows: [], rowCount: 0 });
+    const res = await request(app)
+      .post('/api/waitlist/unsubscribe')
+      .send({ email: 'lead@example.com' });
+    expect(res.status).not.toBe(401);
   });
 });
 

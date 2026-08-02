@@ -103,8 +103,13 @@ export default function Landing({ onStart, onLogin }) {
           email: leadEmail, lang: 'en', source: params.get('utm_source') || 'landing', consent: true,          interest: leadInterest, region: RB.current.region, timezone: RB.current.timezone
         })
       });
-      const j = await r.json();
-      if (r.status === 451) { setLeadMsg({ type: 'err', text: j.message }); return; }
+      let j = null;
+      try { j = await r.json(); } catch { /* non-JSON error body */ }
+      if (!r.ok) {
+        if (r.status === 451) { setLeadMsg({ type: 'err', text: j?.message || 'Subscription unavailable in your region.' }); return; }
+        setLeadMsg({ type: 'err', text: j?.error || 'Something went wrong. Try again later.' });
+        return;
+      }
       setLeadMsg({ type: 'ok', text: "You're in! The PDF + digest are on their way." });
       setLeadEmail(''); setLeadConsent(false);
     } catch { setLeadMsg({ type: 'err', text: 'Network error. Try again later.' }); }
@@ -135,8 +140,13 @@ export default function Landing({ onStart, onLogin }) {
           telegram: packed, interest: 'arbitrage', region: RB.current.region, timezone: RB.current.timezone
         })
       });
-      const j = await r.json();
-      if (r.status === 451) { setB2bMsgOut({ type: 'err', text: j.message }); return; }
+      let j = null;
+      try { j = await r.json(); } catch { /* non-JSON error body */ }
+      if (!r.ok) {
+        if (r.status === 451) { setB2bMsgOut({ type: 'err', text: j?.message || 'Subscription unavailable in your region.' }); return; }
+        setB2bMsgOut({ type: 'err', text: j?.error || 'Something went wrong. Try again later.' });
+        return;
+      }
       setB2bMsgOut({ type: 'ok', text: "Thanks! We'll reach out within 1 business day." });
       setB2bName(''); setB2bEmail(''); setB2bTg(''); setB2bMsg(''); setB2bConsent(false);
     } catch { setB2bMsgOut({ type: 'err', text: 'Network error. Ping us on Telegram instead.' }); }

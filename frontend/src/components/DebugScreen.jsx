@@ -31,7 +31,7 @@ export default function DebugScreen({ onClose }) {
         const s = m.default.getState();
         setStoreSnap({
           isAuthenticated: s.isAuthenticated,
-          token: s.token ? 'set (' + s.token.slice(0, 12) + '...)' : 'null',
+          token: s.token ? 'set' : 'null',
           language: s.language,
           selectedCategories: s.selectedCategories,
           selectedDifficulties: s.selectedDifficulties,
@@ -181,11 +181,11 @@ export default function DebugScreen({ onClose }) {
             <div><b>Version:</b> {window.Telegram?.WebApp?.version || 'N/A'}</div>
             <div><b>initData length:</b> {window.Telegram?.WebApp?.initData?.length || 0}</div>
             <div className="small">
-              <b>initData preview:</b> {(window.Telegram?.WebApp?.initData || '').slice(0, 300)}
+              <b>initData preview:</b> {'redacted (dev-only debug UI)'}
             </div>
             <hr />
             <div><b>Store isAuthenticated:</b> {storeSnap?.isAuthenticated ? 'true' : 'false'}</div>
-            <div><b>Store token:</b> {storeSnap?.token || 'null'}</div>
+            <div><b>Store token:</b> {storeSnap?.token === 'set' ? 'set' : 'null'}</div>
             <div><b>Store user:</b> {storeSnap?.user || 'null'}</div>
             <div><b>Store _loadingLock:</b> {String(storeSnap?._loadingLock)}</div>
           </div>

@@ -12,7 +12,6 @@ class PeerToPeerSignaling {
     this.wss = wss;
     this.rooms = new Map();
     this.peers = new Map();
-    wss.on('connection', (ws, req) => this.handleConnection(ws, req));
   }
 
   handleConnection(ws, req) {
@@ -28,9 +27,10 @@ class PeerToPeerSignaling {
     }
 
     // Authenticate before joining any room: the token is a normal JWT
-    // (same one used for API requests). Rejected connections never enter
-    // the signaling mesh, so no eavesdropping on foreign rooms.
-    const token = url.searchParams.get('token');
+    // (same one used for API requests). It is passed as the WebSocket
+    // subprotocol so it never appears in the URL / proxy access logs.
+    // The ?token= query param remains as a fallback for legacy clients.
+    const token = ws.protocol || url.searchParams.get('token');
     let userId = null;
     try {
       const decoded = jwt.verify(token || '', process.env.JWT_SECRET);

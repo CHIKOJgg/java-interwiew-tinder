@@ -845,8 +845,9 @@
         fetch(WAITLIST_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
           email:email, lang:'ru', source:params.get('utm_source')||'landing', consent:true,
           interest: interest?interest.value:'passive', region:RB.region, timezone:RB.timezone
-        })}).then(function(r){ return r.json().then(function(j){ j.__status=r.status; return j; }); }).then(function(j){
+        })}).then(function(r){ return r.json().then(function(j){ j.__status=r.status; return j; }).catch(function(){ return {__status:r.status}; }); }).then(function(j){
           if(j.__status===451){ msg.className='lead-msg err'; msg.textContent=j.message; return; }
+          if(!(j.__status>=200 && j.__status<300)){ msg.className='lead-msg err'; msg.textContent=j.error||'Что-то пошло не так. Попробуй позже.'; return; }
           msg.className='lead-msg ok'; msg.textContent='Готово! PDF + рассылка уже в пути.'; emailEl.value=''; consent.checked=false;
         }).catch(function(){ msg.className='lead-msg err'; msg.textContent='Ошибка сети. Попробуй позже.'; })
           .finally(function(){ btn.disabled=false; btn.textContent='Получить PDF + рассылку'; });
@@ -871,8 +872,9 @@
         fetch(WAITLIST_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
           email: email||undefined, lang:'ru', source:product, consent:true, telegram:packed, interest:'arbitrage',
           region:RB.region, timezone:RB.timezone
-        })}).then(function(r){ return r.json().then(function(j){ j.__status=r.status; return j; }); }).then(function(j){
+        })}).then(function(r){ return r.json().then(function(j){ j.__status=r.status; return j; }).catch(function(){ return {__status:r.status}; }); }).then(function(j){
           if(j.__status===451){ out.className='b2b-msg err'; out.textContent=j.message; return; }
+          if(!(j.__status>=200 && j.__status<300)){ out.className='b2b-msg err'; out.textContent=j.error||'Что-то пошло не так. Попробуй позже.'; return; }
           out.className='b2b-msg ok'; out.textContent='Спасибо! Ответим в течение 1 рабочего дня.'; form.reset();
         }).catch(function(){ out.className='b2b-msg err'; out.textContent='Ошибка сети. Напиши нам в Telegram.'; })
            .finally(function(){ btn.disabled=false; btn.textContent='Запросить доступ \u2192'; });

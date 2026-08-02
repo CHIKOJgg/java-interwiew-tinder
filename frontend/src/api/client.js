@@ -309,6 +309,18 @@ class ApiClient {
     return this.request('/trends/market?language=' + encodeURIComponent(language || this.language));
   }
 
+  // ─── Profile ────────────────────────────────────────────────────────
+  async getProfile() {
+    return this.request('/me');
+  }
+
+  async updateProfile(fields) {
+    return this.request('/me', {
+      method: 'PUT',
+      body: JSON.stringify(fields),
+    });
+  }
+
   // ─── Subscription ──────────────────────────────────────────────────
   async getPlans() {
     return this.request('/subscription/plans');

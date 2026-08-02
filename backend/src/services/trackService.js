@@ -79,26 +79,45 @@ export async function getNextTrackQuestion(trackId, userId) {
 
 export async function advanceTrack(trackId, userId) {
   try {
-    const progress = await pool.query(
-      `SELECT current_step FROM user_track_progress WHERE user_id = $1 AND track_id = $2`,
-      [userId, trackId]
-    );
-
-    const currentStep = progress.rows[0]?.current_step || 0;
-    const nextStep = currentStep + 1;
+    // Reject unknown tracks — previously a bogus id marked the track "completed".
+    const track = await pool.query('SELECT id FROM learning_tracks WHERE id = $1', [trackId]);
+    if (!track.rows[0]) {
+      const err = new Error('Track not found');
+      err.status = 404;
+      throw err;
+    }
 
     const { rows: [last] } = await pool.query(
       'SELECT MAX(step_order) as max FROM track_steps WHERE track_id = $1',
       [trackId]
     );
+    if (!last || last.max == null) {
+      const err = new Error('Track has no steps');
+      err.status = 400;
+      throw err;
+    }
+    const maxStep = last.max;
 
-    const completed = nextStep >= (last?.max || 0);
+    const progress = await pool.query(
+      `SELECT current_step, completed FROM user_track_progress WHERE user_id = $1 AND track_id = $2`,
+      [userId, trackId]
+    );
+
+    if (progress.rows[0]?.completed) {
+      return { currentStep: progress.rows[0].current_step, completed: true };
+    }
+
+    const currentStep = Math.min(progress.rows[0]?.current_step || 0, maxStep);
+    const nextStep = currentStep + 1;
+    const completed = nextStep >= maxStep;
 
     await pool.query(
       `INSERT INTO user_track_progress (user_id, track_id, current_step, completed, completed_at)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (user_id, track_id) DO UPDATE SET
-         current_step = $3, completed = $4, completed_at = COALESCE($5, user_track_progress.completed_at)`,
+         current_step = GREATEST(user_track_progress.current_step, $3),
+         completed = user_track_progress.completed OR $4,
+         completed_at = CASE WHEN $4 THEN COALESCE(user_track_progress.completed_at, NOW()) ELSE user_track_progress.completed_at END`,
       [userId, trackId, nextStep, completed, completed ? new Date() : null]
     );
 

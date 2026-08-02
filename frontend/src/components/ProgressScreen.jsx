@@ -53,7 +53,7 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade, onSavedClick }) => {
           </div>
           <div className="readiness-meta">
             <div className="readiness-title">{t('header.readiness', 'Readiness')}</div>
-            <div className={`readiness-tier-badge tier-${readinessTier}`}>{t(`readiness.tier_${readinessTier}`)}</div>
+            <div className={`readiness-tier-badge tier-${readinessTier}`}>{t(`progress.readiness_tier_${readinessTier}`)}</div>
             <p className="readiness-sub">
               {t('progress.readiness_sub', 'Mix of your accuracy ({{accuracy}}%) and how much you\'ve learned ({{known}} questions). Keep going — it grows as you practice.',
                 { accuracy, known: stats.known })}

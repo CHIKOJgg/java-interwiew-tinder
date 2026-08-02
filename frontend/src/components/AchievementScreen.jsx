@@ -21,18 +21,18 @@ const BADGE_MAP = {
 
 function AchievementScreen({ onBack }) {
   const { t } = useTranslation();
-  const { badges } = useStore();
-
-  const [unlockedBadges, setUnlockedBadges] = React.useState([]);
-  const [allBadges, setAllBadges] = React.useState(Object.entries(BADGE_MAP));
+  const { badges, isLoadingBadges, loadBadges } = useStore();
 
   React.useEffect(() => {
-    if (badges) {
-      setUnlockedBadges(badges);
-    }
-  }, [badges]);
+    if (!badges) loadBadges();
+  }, [badges, loadBadges]);
 
-  const unlockedSet = new Set(unlockedBadges.map(b => b.badge_key));
+  const allBadges = badges && badges.length > 0
+    ? badges
+    : Object.entries(BADGE_MAP).map(([key, badge]) => ({ key, nameKey: badge.nameKey, unlocked: false }));
+
+  const unlockedSet = new Set(allBadges.filter(b => b.unlocked).map(b => b.key));
+  const totalCount = Math.max(allBadges.length, Object.keys(BADGE_MAP).length);
 
   return (
     <div className="achievement-screen">
@@ -42,30 +42,32 @@ function AchievementScreen({ onBack }) {
         </button>
         <h1>{t('achievements.title', 'Achievements')}</h1>
         <div className="achievement-count">
-          {unlockedSet.size} / {allBadges.length}
+          {unlockedSet.size} / {totalCount}
         </div>
       </div>
 
       <div className="progress-bar-container">
         <div
           className="progress-fill"
-          style={{ width: `${(unlockedSet.size / allBadges.length) * 100}%` }}
+          style={{ width: `${totalCount > 0 ? (unlockedSet.size / totalCount) * 100 : 0}%` }}
         />
       </div>
 
       <div className="badges-grid">
-        {allBadges.map(([key, badge]) => {
-          const unlocked = unlockedSet.has(key);
+        {allBadges.map((badge) => {
+          const key = badge.key;
+          const meta = BADGE_MAP[key];
+          const unlocked = !!badge.unlocked;
           return (
             <div
               key={key}
               className={`badge-card ${unlocked ? 'unlocked' : 'locked'}`}
-              style={{ '--badge-color': badge.color }}
+              style={{ '--badge-color': meta?.color || '#5c7cfa' }}
             >
-              <div className="badge-icon"><badge.icon size={22} /></div>
+              <div className="badge-icon">{meta ? <meta.icon size={22} /> : <Award size={22} />}</div>
               <div className="badge-name">
                 {unlocked
-                  ? t(`badges.${key}`, badge.nameKey)
+                  ? t(`badges.${key}`, badge.name || meta?.nameKey || key)
                   : t(`badges.${key}_locked`, `???`)
                 }
               </div>
@@ -75,6 +77,9 @@ function AchievementScreen({ onBack }) {
             </div>
           );
         })}
+        {isLoadingBadges && allBadges.length === 0 && (
+          <div className="badge-name">{t('achievements.loading', 'Loading...')}</div>
+        )}
       </div>
     </div>
   );

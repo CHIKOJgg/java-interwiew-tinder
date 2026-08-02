@@ -1,10 +1,10 @@
 {
   "framework": "vite",
   "buildCommand": "npm run build",
-  "installCommand": "npm install",
+  "installCommand": "npm ci",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://java-interview-tinder-production.up.railway.app/api/$1" },
+    { "source": "/api/(.*)", "destination": "https://java-interwiew-tinder-production.up.railway.app/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

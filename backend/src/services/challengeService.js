@@ -24,14 +24,15 @@ export async function getLeaderboard(challengeId, limit = 20) {
        FROM challenge_results cr
        JOIN users u ON u.telegram_id = cr.user_id
        WHERE cr.challenge_id = $1
-       ORDER BY cr.score DESC, cr.accuracy DESC, u.current_streak DESC
+       ORDER BY (cr.score + LEAST(u.current_streak * 2, 100)) DESC, cr.accuracy DESC
        LIMIT $2`,
       [challengeId, limit]
     );
     return rows.map((r, i) => ({
       ...r,
       rank: i + 1,
-      score: parseInt(r.score) + (parseInt(r.streak) || 0) * 2,
+      // Mirrors submitChallengeResult: streak bonus capped at 100.
+      score: parseInt(r.score) + Math.min((parseInt(r.streak) || 0) * 2, 100),
     }));
   } catch (err) {
     logger.error({ err, challengeId }, 'getLeaderboard failed');

@@ -32,10 +32,11 @@ function getAuthHeader() {
 }
 
 function getPriceRub(planId, interval) {
-  if (planId !== 'pro') throw new Error(`Unknown plan: ${planId}`);
+  if (planId !== 'pro' && planId !== 'annual_pro') throw new Error(`Unknown plan: ${planId}`);
+  const isYearly = interval === 'yearly' || planId === 'annual_pro';
   const monthly = parseFloat(process.env.UKASSA_PRO_MONTHLY_AMOUNT ?? '590');
   const yearly = parseFloat(process.env.UKASSA_PRO_YEARLY_AMOUNT ?? '5900');
-  return interval === 'yearly' ? yearly : monthly;
+  return isYearly ? yearly : monthly;
 }
 
 // ─── Create a card payment (redirect to YooKassa) ──────────────────
@@ -81,26 +82,45 @@ export async function createUkassaPayment(userId, planId, interval, returnUrl) {
 
 // ─── Activate subscription after confirmed card payment ────────────
 export async function activateUkassaSubscription(userId, planId, interval, paymentId) {
+  if (!paymentId) throw new Error('Missing paymentId — cannot activate subscription');
   const client = await pool.connect();
   try {
+    // Replay guard: this payment has already been processed.
+    const existingPayment = await client.query(
+      `SELECT id FROM user_subscriptions WHERE ukassa_payment_id = $1 OR payment_id = $1 LIMIT 1`,
+      [paymentId]
+    );
+    if (existingPayment.rows.length > 0) {
+      logger.warn({ paymentId }, '⚠️ U-Kassa webhook replay ignored (payment already processed)');
+      return { success: true, duplicate: true };
+    }
+
     await client.query('BEGIN');
 
-    const isYearly = interval === 'yearly';
-    const expiresAt = new Date();
+    const isYearly = interval === 'yearly' || planId === 'annual_pro';
+    // Extend from the current expiry so a re-purchase stacks on top.
+    const activeSub = await client.query(
+      `SELECT expires_at FROM user_subscriptions
+       WHERE user_id = $1 AND status = 'active' AND plan_id = $2
+       ORDER BY expires_at DESC NULLS LAST LIMIT 1`,
+      [userId, planId]
+    );
+    const base = new Date(activeSub.rows[0]?.expires_at || Date.now());
+    if (base.getTime() < Date.now()) base.setTime(Date.now());
+    const expiresAt = new Date(base);
     isYearly
       ? expiresAt.setFullYear(expiresAt.getFullYear() + 1)
       : expiresAt.setDate(expiresAt.getDate() + 30);
 
-    // Idempotent upsert — ukassa_payment_id unique index prevents duplicates
+    // Upsert subscription row — conflict only fires on a genuine re-purchase.
     await client.query(
       `INSERT INTO user_subscriptions
          (user_id, plan_id, status, expires_at, payment_provider, payment_id, ukassa_payment_id)
        VALUES ($1, $2, 'active', $3, 'ukassa', $4, $4)
        ON CONFLICT (user_id, plan_id, status) DO UPDATE
-         SET expires_at       = EXCLUDED.expires_at,
+         SET expires_at       = GREATEST(user_subscriptions.expires_at, EXCLUDED.expires_at),
              payment_id       = EXCLUDED.payment_id,
-             ukassa_payment_id = EXCLUDED.ukassa_payment_id,
-             started_at       = CURRENT_TIMESTAMP`,
+             ukassa_payment_id = EXCLUDED.ukassa_payment_id`,
       [userId, planId, expiresAt, paymentId]
     );
 
@@ -154,11 +174,26 @@ export async function handleUkassaEvent(event) {
   const obj = event?.object;
   if (!obj) return { ignored: true };
 
-  // We capture automatically (capture: true), so success arrives as
-  // 'payment.succeeded'. Also handle the rare waiting_for_capture case.
-  if (event.event === 'payment.succeeded' || event.event === 'payment.waiting_for_capture') {
+  // Subscription activates ONLY after funds are actually captured.
+  // payment.waiting_for_capture means money is NOT yet taken — granting Pro
+  // there would give away free subscriptions on 3-DS/cancelled payments.
+  if (event.event === 'payment.succeeded') {
     const { userId, planId, interval } = obj.metadata || {};
     if (!userId) return { ignored: true };
+
+    // Verify the charged amount matches the plan price before activating.
+    try {
+      const expected = getPriceRub(planId || 'pro', interval || 'monthly');
+      const charged = parseFloat(obj.amount?.value);
+      if (!Number.isFinite(charged) || charged < expected) {
+        logger.error({ paymentId: obj.id, charged, expected }, '💳 U-Kassa amount mismatch — NOT activating');
+        return { ignored: true, reason: 'amount mismatch' };
+      }
+    } catch (err) {
+      logger.error({ err, paymentId: obj.id }, '💳 U-Kassa price lookup failed — NOT activating');
+      return { ignored: true, reason: 'price lookup failed' };
+    }
+
     await activateUkassaSubscription(
       userId,
       planId || 'pro',
@@ -166,6 +201,10 @@ export async function handleUkassaEvent(event) {
       obj.id
     );
     return { activated: true, paymentId: obj.id };
+  }
+
+  if (event.event === 'payment.waiting_for_capture') {
+    logger.info({ paymentId: obj.id }, '💳 U-Kassa payment awaiting capture — subscription NOT activated');
   }
 
   if (event.event === 'payment.canceled') {

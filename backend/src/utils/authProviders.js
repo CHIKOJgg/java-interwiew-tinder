@@ -26,7 +26,7 @@ function verifyTelegram(initData, isDev) {
   } else {
     logger.warn({ hasBotToken: !!process.env.BOT_TOKEN, hasInitData: !!initData }, 'Telegram login missing BOT_TOKEN or initData');
   }
-  if (isDev) return mockValidation();
+  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') return mockValidation();
   return null;
 }
 

@@ -127,7 +127,7 @@ const { default: redis } = await import('../src/config/redis.js');
 const { isConnected } = await import('../src/config/redis.js');
 const { checkCache } = await import('../src/services/aiService.js');
 const { updateMastery, getDueCount } = await import('../src/services/questionService.js');
-const { verifyUkassaSignature, isUkassaEnabled } = await import('../src/services/billing/ukassaService.js');
+const { verifyUkassaSignature, isUkassaEnabled, handleUkassaEvent } = await import('../src/services/billing/ukassaService.js');
 
 const JWT_SECRET = 'test_secret';
 const ADMIN_ID = '123456789';
@@ -1175,6 +1175,7 @@ describe('Billing', () => {
 
   it('POST ukassa/webhook valid signature -> ok', async () => {
     vi.mocked(verifyUkassaSignature).mockReturnValueOnce(true);
+    vi.mocked(handleUkassaEvent).mockResolvedValueOnce({ activated: true, paymentId: 'pay_x' });
     const res = await request(app).post('/api/billing/ukassa/webhook').set('x-request-signature', 'ok').send({ type: 'notification' });
     expect(res.status).toBe(200);
   });

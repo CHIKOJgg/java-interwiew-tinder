@@ -80,6 +80,11 @@ const useStore = create((set, get) => ({
   savedIds: {},          // { [questionId]: true }
   savedQuestions: [],
 
+  // ─── Achievements ─────────────────────────────────────────────────
+  // Fetched from GET /api/badges; array of { key, name, icon, description, unlocked }.
+  badges: null,
+  isLoadingBadges: false,
+
   // ─── Daily goal ────────────────────────────────────────────────────
   // A reason to come back every day. Counts questions answered today
   // (resets at local midnight) and compares against a small daily goal.
@@ -258,6 +263,17 @@ const useStore = create((set, get) => ({
       });
     } catch {
       // Non-critical — bookmarks just won't show as saved.
+    }
+  },
+
+  // ─── Achievements / badges ────────────────────────────────────────
+  loadBadges: async () => {
+    set({ isLoadingBadges: true });
+    try {
+      const data = await apiClient.getBadges();
+      set({ badges: data?.badges || [], isLoadingBadges: false });
+    } catch {
+      set({ badges: [], isLoadingBadges: false });
     }
   },
   toggleSave: async (questionId, question) => {
@@ -618,7 +634,8 @@ const useStore = create((set, get) => ({
         });
       } else {
         const freeModes = ['swipe', 'test', 'system-design'];
-        const freeLangs = ['Java', 'Python', 'TypeScript', 'Go', 'Rust', 'React', 'Kotlin'];
+        // Free plan: 3 core languages (matches the subscription_plans row).
+        const freeLangs = ['Java', 'Python', 'TypeScript'];
         set({
           user: { ...user, plan: 'free' },
           availableModes: freeModes,

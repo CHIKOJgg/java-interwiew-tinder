@@ -555,6 +555,11 @@ class ApiClient {
     return this.request('/certificates');
   }
 
+  // ─── Badges / achievements ────────────────────────────────────────
+  async getBadges() {
+    return this.request('/badges');
+  }
+
   // ─── System Design ──────────────────────────────────────────────
   async getSDTopics(language, difficulty) {
     const params = new URLSearchParams({ language: language || this.language });

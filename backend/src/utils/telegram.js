@@ -49,6 +49,18 @@ export const validateTelegramWebAppData = (initData, botToken) => {
       return null;
     }
 
+    // Reject stale initData: a signed hash is valid forever, so without a
+    // freshness check a captured initData could authenticate indefinitely.
+    const authDate = parseInt(urlParams.get('auth_date'), 10);
+    if (!Number.isFinite(authDate)) {
+      logger.warn('No auth_date in initData — rejecting');
+      return null;
+    }
+    if (Date.now() / 1000 - authDate > 24 * 60 * 60) {
+      logger.warn('initData is older than 24h — rejecting');
+      return null;
+    }
+
     // Parse user data
     const userParam = urlParams.get('user');
     if (!userParam) {
@@ -80,10 +92,9 @@ export const validateTelegramWebAppData = (initData, botToken) => {
  * user in development and, if misconfigured, in production.
  */
 export const mockValidation = () => {
-  if (process.env.NODE_ENV === 'production' && !process.env.BOT_TOKEN) {
-    throw new Error(
-      'Production guard: BOT_TOKEN is missing. Mock validation is blocked in production.',
-    );
+  const env = process.env.NODE_ENV || 'development';
+  if (env !== 'development' && env !== 'test') {
+    throw new Error(`Mock validation is blocked in environment: ${env}`);
   }
   return {
     telegram_id: 123456789,

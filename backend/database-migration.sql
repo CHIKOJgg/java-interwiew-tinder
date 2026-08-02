@@ -72,7 +72,7 @@ VALUES
      ARRAY['Java','Python','TypeScript'],
      ARRAY['swipe','test'],
      'standard'),
-    ('pro',  'Pro',  9, 1000, 1000, 10, 100,
+    ('pro',  'Pro',  9.99, 1000, 1000, 10, 100,
      ARRAY['Java','Python','TypeScript'],
      ARRAY['swipe','test','bug-hunting','blitz','mock-interview','concept-linker','code-completion'],
      'quality'),
@@ -92,6 +92,8 @@ ON CONFLICT (id) DO UPDATE SET
     model_priority           = EXCLUDED.model_priority;
 
 -- ─── 6. User subscriptions ────────────────────────────────────────
+-- NOTE: the UNIQUE constraint MUST stay (user_id, plan_id, status):
+-- payment/referral code relies on `ON CONFLICT (user_id, plan_id, status)`.
 CREATE TABLE IF NOT EXISTS user_subscriptions (
     id               SERIAL PRIMARY KEY,
     user_id          BIGINT      NOT NULL REFERENCES users(telegram_id) ON DELETE CASCADE,
@@ -102,7 +104,7 @@ CREATE TABLE IF NOT EXISTS user_subscriptions (
     payment_provider VARCHAR(50),
     cancelled_at     TIMESTAMP,
     created_at       TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, plan_id, payment_id)
+    UNIQUE(user_id, plan_id, status)
 );
 CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user ON user_subscriptions(user_id, status);
 
@@ -117,6 +119,12 @@ CREATE TABLE IF NOT EXISTS user_rate_limits (
     monthly_reset_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_request_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Columns the running code depends on (kept in sync with migrate.js).
+ALTER TABLE user_rate_limits ADD COLUMN IF NOT EXISTS ai_explanations_today INTEGER DEFAULT 0;
+ALTER TABLE user_rate_limits ADD COLUMN IF NOT EXISTS ai_explain_date DATE;
+ALTER TABLE user_rate_limits ADD COLUMN IF NOT EXISTS code_executions_today INTEGER DEFAULT 0;
+ALTER TABLE user_rate_limits ADD COLUMN IF NOT EXISTS sd_evaluations_today INTEGER DEFAULT 0;
 
 -- ─── 8. Analytics events ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS analytics_events (
@@ -163,28 +171,20 @@ SELECT 'Migration complete!' as status;
 SELECT language, COUNT(*) as total FROM questions GROUP BY language ORDER BY language;
 
 -- ══════════════════════════════════════════════════════════════════
---  PATCH: Fix subscription UNIQUE constraint + clear bad AI cache
+--  NOTE TO FUTURE SELF
 -- ══════════════════════════════════════════════════════════════════
+-- This file is the historical "complete migration" reference. The
+-- CANONICAL migration path is `src/scripts/migrate.js` (run by
+-- `npm run setup-db`), which creates `user_subscriptions` with
+-- UNIQUE(user_id, plan_id, status) and adds the billing columns via
+-- migrate-stars.js / migrate-ton.js / migrate-ukassa.js.
+--
+-- DO NOT re-introduce a partial unique index on user_subscriptions
+-- (e.g. idx_user_subs_one_active) — every payment/referral upsert uses
+-- `ON CONFLICT (user_id, plan_id, status)` and would break with
+-- error 42P10 if the constraint is missing.
 
--- ── Fix user_subscriptions UNIQUE constraint ───────────────────────────
--- The old UNIQUE(user_id, plan_id, status) prevents having more than one
--- cancelled subscription per plan per user, which breaks re-subscribing.
--- Replace it with a partial unique index that only enforces uniqueness
--- for ACTIVE subscriptions (one active subscription per user at a time).
-
-ALTER TABLE user_subscriptions DROP CONSTRAINT IF EXISTS user_subscriptions_user_id_plan_id_status_key;
-DROP INDEX IF EXISTS idx_user_subs_user;
-
--- Only one active subscription per user at a time
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_subs_one_active
-  ON user_subscriptions(user_id)
-  WHERE status = 'active';
-
--- Fast lookup by user + status
-CREATE INDEX IF NOT EXISTS idx_user_subs_user_status
-  ON user_subscriptions(user_id, status);
-
--- ── Additional performance indexes (added post-migration) ──
+-- ── Performance indexes (added post-migration) ──
 CREATE INDEX IF NOT EXISTS idx_user_progress_user_status ON user_progress(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_user_progress_question ON user_progress(question_id);
 CREATE INDEX IF NOT EXISTS idx_user_progress_updated ON user_progress(updated_at);

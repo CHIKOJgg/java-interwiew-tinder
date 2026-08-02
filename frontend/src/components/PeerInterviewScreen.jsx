@@ -22,7 +22,11 @@ function PeerInterviewScreen({ onBack }) {
 
   const connect = useCallback((room) => {
     if (wsRef.current) wsRef.current.close();
-    const ws = new WebSocket(`ws://${window.location.host}/ws/peer?room=${encodeURIComponent(room)}&role=${role}&token=${token}`);
+    // wss:// on HTTPS (ws:// would be blocked as mixed content), and the
+    // token travels in the query string because the browser WebSocket API
+    // cannot set custom headers.
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${proto}//${window.location.host}/ws/peer?room=${encodeURIComponent(room)}&role=${role}&token=${encodeURIComponent(token)}`);
     wsRef.current = ws;
 
     ws.onopen = () => setStatus('connected');

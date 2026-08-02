@@ -6,9 +6,9 @@ import { createHmac } from 'crypto';
 // 1. Mocks BEFORE importing app
 vi.mock('../src/config/database.js', () => ({
   default: {
-    query: vi.fn(),
+    query: vi.fn().mockResolvedValue({ rows: [] }),
     on: vi.fn(),
-    connect: vi.fn().mockReturnValue({ query: vi.fn(), release: vi.fn() }),
+    connect: vi.fn().mockResolvedValue({ query: vi.fn().mockResolvedValue({ rows: [] }), release: vi.fn() }),
   }
 }));
 
@@ -123,7 +123,11 @@ describe('U-Kassa (bank card) provider', () => {
     it('activates subscription on a valid signed payment.succeeded event', async () => {
       const event = {
         event: 'payment.succeeded',
-        object: { id: 'pay_webhook', metadata: { userId: USER_ID, planId: 'pro', interval: 'monthly' } },
+        object: {
+          id: 'pay_webhook',
+          amount: { value: '590.00', currency: 'RUB' },
+          metadata: { userId: USER_ID, planId: 'pro', interval: 'monthly' },
+        },
       };
       const raw = JSON.stringify(event);
       const sig = createHmac('sha256', process.env.UKASSA_TOKEN).update(raw).digest('hex');

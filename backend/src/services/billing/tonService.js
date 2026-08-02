@@ -16,10 +16,10 @@ const API_KEY = process.env.TON_CENTER_API_KEY ?? '';     // optional, raises ra
 const INVOICE_TTL = 15 * 60 * 1_000;                         // 15 minutes
 
 function getPriceTon(planId, interval) {
-  if (planId === 'pro') {
+  if (planId === 'pro' || planId === 'annual_pro') {
     const monthly = parseFloat(process.env.TON_PRO_MONTHLY_AMOUNT ?? '2.0');
     const yearly = parseFloat(process.env.TON_PRO_YEARLY_AMOUNT ?? '13.0');
-    return interval === 'yearly' ? yearly : monthly;
+    return interval === 'yearly' || planId === 'annual_pro' ? yearly : monthly;
   }
   throw new Error(`Unknown plan: ${planId}`);
 }
@@ -127,27 +127,46 @@ async function tryFulfillInvoice(invoice, transactions) {
 
 // ─── Activate subscription after confirmed TON payment ─────────────────
 export async function activateTonSubscription(userId, planId, interval, txHash, invoiceId) {
+  if (!txHash) throw new Error('Missing txHash — cannot activate subscription');
   const client = await pool.connect();
   try {
+    // Replay guard: this transaction has already been processed.
+    const existingTx = await client.query(
+      `SELECT id FROM user_subscriptions WHERE ton_tx_hash = $1 OR payment_id = $1 LIMIT 1`,
+      [txHash]
+    );
+    if (existingTx.rows.length > 0) {
+      logger.warn({ txHash }, '⚠️ TON tx already processed (duplicate ignored)');
+      return { success: true, duplicate: true };
+    }
+
     await client.query('BEGIN');
 
-    const isYearly = interval === 'yearly';
-    const expiresAt = new Date();
+    const isYearly = interval === 'yearly' || planId === 'annual_pro';
+    // Extend from the current expiry so a re-purchase stacks on top.
+    const activeSub = await client.query(
+      `SELECT expires_at FROM user_subscriptions
+       WHERE user_id = $1 AND status = 'active' AND plan_id = $2
+       ORDER BY expires_at DESC NULLS LAST LIMIT 1`,
+      [userId, planId]
+    );
+    const base = new Date(activeSub.rows[0]?.expires_at || Date.now());
+    if (base.getTime() < Date.now()) base.setTime(Date.now());
+    const expiresAt = new Date(base);
     isYearly
       ? expiresAt.setFullYear(expiresAt.getFullYear() + 1)
       : expiresAt.setDate(expiresAt.getDate() + 30);
 
-    // Idempotent upsert — ton_tx_hash unique index prevents duplicates
+    // Upsert subscription row — conflict only fires on a genuine re-purchase.
     await client.query(
       `INSERT INTO user_subscriptions
          (user_id, plan_id, status, expires_at, payment_provider, payment_id, ton_tx_hash, ton_invoice_id)
        VALUES ($1, $2, 'active', $3, 'ton', $4, $4, $5)
        ON CONFLICT (user_id, plan_id, status) DO UPDATE
-         SET expires_at      = EXCLUDED.expires_at,
+         SET expires_at      = GREATEST(user_subscriptions.expires_at, EXCLUDED.expires_at),
              payment_id      = EXCLUDED.payment_id,
              ton_tx_hash     = EXCLUDED.ton_tx_hash,
-             ton_invoice_id  = EXCLUDED.ton_invoice_id,
-             started_at      = CURRENT_TIMESTAMP`,
+             ton_invoice_id  = EXCLUDED.ton_invoice_id`,
       [userId, planId, expiresAt, txHash, invoiceId]
     );
 

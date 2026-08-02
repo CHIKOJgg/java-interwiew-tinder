@@ -106,9 +106,10 @@ describe('trackService', () => {
   describe('advanceTrack', () => {
     it('advances to next step when not completed', async () => {
       pool.query
-        .mockResolvedValueOnce({ rows: [{ current_step: 1 }] })
-        .mockResolvedValueOnce({ rows: [{ max: 5 }] })
-        .mockResolvedValueOnce({ rows: [] });
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] })            // track exists
+        .mockResolvedValueOnce({ rows: [{ max: 5 }] })           // MAX step_order
+        .mockResolvedValueOnce({ rows: [{ current_step: 1 }] })  // progress
+        .mockResolvedValueOnce({ rows: [] });                    // upsert
       const result = await svc.advanceTrack(1, 42);
       expect(result.currentStep).toBe(2);
       expect(result.completed).toBe(false);
@@ -116,8 +117,9 @@ describe('trackService', () => {
 
     it('marks completed when reaching final step', async () => {
       pool.query
-        .mockResolvedValueOnce({ rows: [{ current_step: 4 }] })
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] })
         .mockResolvedValueOnce({ rows: [{ max: 5 }] })
+        .mockResolvedValueOnce({ rows: [{ current_step: 4 }] })
         .mockResolvedValueOnce({ rows: [] });
       const result = await svc.advanceTrack(1, 42);
       expect(result.currentStep).toBe(5);
@@ -126,11 +128,28 @@ describe('trackService', () => {
 
     it('handles first-time progress (no row)', async () => {
       pool.query
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] })
         .mockResolvedValueOnce({ rows: [{ max: 3 }] })
+        .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [] });
       const result = await svc.advanceTrack(1, 42);
       expect(result.currentStep).toBe(1);
+      expect(result.completed).toBe(false);
+    });
+
+    it('returns completed state without re-inserting when already completed', async () => {
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] })
+        .mockResolvedValueOnce({ rows: [{ max: 3 }] })
+        .mockResolvedValueOnce({ rows: [{ current_step: 3, completed: true }] });
+      const result = await svc.advanceTrack(1, 42);
+      expect(result.completed).toBe(true);
+      expect(pool.query).toHaveBeenCalledTimes(3);
+    });
+
+    it('rejects when track does not exist', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+      await expect(svc.advanceTrack(999, 42)).rejects.toMatchObject({ status: 404 });
     });
 
     it('logs error on DB failure', async () => {

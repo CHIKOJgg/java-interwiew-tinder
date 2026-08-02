@@ -7,8 +7,9 @@ export const metricsService = {
    */
   async trackEvent(userId, eventType, properties = {}, latencyMs = null) {
     try {
+      // analytics_events stores arbitrary props in the `metadata` JSONB column.
       await pool.query(
-        `INSERT INTO analytics_events (user_id, event_type, properties, latency_ms)
+        `INSERT INTO analytics_events (user_id, event_type, metadata, latency_ms)
          VALUES ($1, $2, $3, $4)`,
         [userId, eventType, JSON.stringify(properties), latencyMs]
       );

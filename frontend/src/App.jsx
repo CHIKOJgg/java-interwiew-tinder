@@ -39,6 +39,7 @@ import ProNudge from './components/ProNudge';
 import Onboarding, { ONBOARD_KEY } from './components/Onboarding';
 import MissedPanel from './components/MissedPanel';
 import useStore from './store/useStore';
+import apiClient from './api/client';
 import { useTranslation } from 'react-i18next';
 import i18n from './i18n/config';
 import logger from './utils/logger';
@@ -275,11 +276,26 @@ function App() {
     onboardingReopen.current = true;
     setScreen('achievements');
   };
-  // Export progress as JSON/CSV
+  // Export progress as JSON/CSV. window.open cannot carry the Authorization
+  // header, so download via an authenticated fetch + blob instead.
   const exportProgress = async () => {
     try {
       const language = useStore.getState().language;
-      window.open(`/api/progress/export?language=${language}&format=json`, '_blank');
+      const format = 'json';
+      const res = await fetch(
+        `${apiClient.baseUrl}/progress/export?language=${encodeURIComponent(language)}&format=${format}`,
+        { headers: apiClient.getAuthHeaders() }
+      );
+      if (!res.ok) throw new Error(`Export failed (${res.status})`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `progress-${language}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Export failed:', err);
     }

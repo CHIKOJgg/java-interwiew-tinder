@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/node";
+﻿import * as Sentry from "@sentry/node";
 import crypto from 'crypto';
 import express from 'express';
 import helmet from 'helmet';
@@ -46,21 +46,21 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.JWT_SECRET || process.env.J
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// ─── Production pre-flight checks ─────────────────────────────────────
+// в”Ђв”Ђв”Ђ Production pre-flight checks в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 // Fail-fast on missing critical configuration so mis-deploys are obvious
 // instead of silently serving broken auth/payments.
 if (process.env.NODE_ENV === 'production') {
   const critical = ['DATABASE_URL', 'BOT_TOKEN', 'JWT_SECRET', 'TELEGRAM_WEBHOOK_SECRET', 'OPENROUTER_API_KEY'];
   const missing = critical.filter(k => !process.env[k]);
   if (missing.length) {
-    logger.error({ missing }, '⚠️ Production environment is missing critical variables');
+    logger.error({ missing }, 'вљ пёЏ Production environment is missing critical variables');
     process.exit(1);
   }
   if (!process.env.ALLOWED_ORIGINS) {
-    logger.warn('ALLOWED_ORIGINS is not set — using defaults which include vercel.app domains');
+    logger.warn('ALLOWED_ORIGINS is not set вЂ” using defaults which include vercel.app domains');
   }
   if (process.env.NODE_ENV === 'production' && process.env.OPENROUTER_API_KEY) {
-    logger.info('✅ Production secrets present');
+    logger.info('вњ… Production secrets present');
   }
 }
 
@@ -74,36 +74,35 @@ const app = express();
 app.use(helmet());
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
-// Test and local development may use the fixed mock identity, but production
-// must always require a real provider signature.
-const isDev = process.env.NODE_ENV !== 'production';
+// Test and local development may use the fixed mock identity, but any
+// non-development environment (staging, previews, production) must always
+// require a real provider signature.
+const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
 
   const defaultAllowedOrigins = [
     'http://localhost:3000',
     'http://localhost:5173',
     'http://localhost:8080',
     'https://solve-it-rho.vercel.app',
+    'https://web.telegram.org',
   ];
 
   const ALLOWED_ORIGINS = new Set(
     (process.env.ALLOWED_ORIGINS || defaultAllowedOrigins.join(',')).split(',').map(s => s.trim()).filter(Boolean)
   );
 
-  const DEFAULT_ALLOWED_SUFFIXES = ['.vercel.app'];
-
 // Snapshot of the consent terms shown at signup. Stored alongside each lead so
 // we can later prove *what* the subject agreed to (Belarus data-protection:
 // the fact and content of consent must be demonstrable). Bump the version when
 // the privacy policy changes.
-const WAITLIST_CONSENT_TEXT = 'Согласие на обработку email для рассылок по Закону РБ «Об информации…» (Политика: /privacy.html, v1, 2026).';
+const WAITLIST_CONSENT_TEXT = 'РЎРѕРіР»Р°СЃРёРµ РЅР° РѕР±СЂР°Р±РѕС‚РєСѓ email РґР»СЏ СЂР°СЃСЃС‹Р»РѕРє РїРѕ Р—Р°РєРѕРЅСѓ Р Р‘ В«РћР± РёРЅС„РѕСЂРјР°С†РёРёвЂ¦В» (РџРѕР»РёС‚РёРєР°: /privacy.html, v1, 2026).';
 
 
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || isDev) return cb(null, true);
     const isExactMatch = ALLOWED_ORIGINS.has(origin);
-    const isSuffixMatch = DEFAULT_ALLOWED_SUFFIXES.some(suffix => origin.endsWith(suffix));
-    if (isExactMatch || isSuffixMatch) return cb(null, true);
+    if (isExactMatch) return cb(null, true);
     logger.warn({ origin }, 'CORS blocked');
     cb(new Error('CORS not allowed'));
   },
@@ -138,14 +137,42 @@ const reportLimiter = expressRateLimit({
   message: { error: 'Too many reports. Please slow down.' }
 });
 
+// Demo endpoints are unauthenticated and leak short answers вЂ” keep per-IP
+// usage tight so the answer bank cannot be mass-exfiltrated.
+const demoLimiter = expressRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many demo requests, please try again later.' }
+});
+
+// Waitlist / email digest endpoints accept arbitrary third-party emails вЂ”
+// without a limiter they become a spam/abuse vector.
+const waitlistLimiter = expressRateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+const discussionLimiter = expressRateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many discussion posts, please slow down.' }
+});
+
 // Apply the rate limiting middleware to all requests
 app.use(globalLimiter);
-// ─── Stripe Webhook (MUST be before express.json) ─────────────────────
+// в”Ђв”Ђв”Ђ Stripe Webhook (MUST be before express.json) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 // NOTE: Stripe is not the active payment provider (Stars is).
 // This endpoint is a placeholder. If Stripe is enabled, import the SDK:
 // Capture the RAW body for the YooKassa webhook so we can verify its
 // HMAC-SHA256 signature. This MUST be registered before the global
-// express.json() below — otherwise the global parser sets req._body and
+// express.json() below вЂ” otherwise the global parser sets req._body and
 // the webhook's own `verify` callback never fires.
 app.use('/api/billing/ukassa/webhook', express.json({
   type: ['application/json', 'application/*+json'],
@@ -156,7 +183,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(sanitizeBody);
 app.use(requestLogger);
 
-// ─── Public Stats (no auth) ──────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Public Stats (no auth) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/public/stats', async (req, res) => {
   try {
     const cacheKey = 'public:stats';
@@ -182,7 +209,7 @@ app.get('/api/public/stats', async (req, res) => {
   }
 });
 
-// ─── Health ──────────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Health в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/health', async (req, res) => {
   let dbOk = false;
   try {
@@ -201,37 +228,14 @@ app.get('/health', async (req, res) => {
   });
 });
 
-// ─── Sentry Debug ────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Sentry Debug в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/debug-sentry', authMiddleware, requireAdmin, (_req, _res) => {
   throw new Error('Sentry backend test error');
 });
-// ─── Debug: question counts per language ──────────────────────────────
-app.get('/api/debug/question-counts', async (_req, res) => {
-  try {
-    const result = await pool.query('SELECT language, COUNT(*) as count FROM questions GROUP BY language ORDER BY language');
-    const total = await pool.query('SELECT COUNT(*) as total FROM questions');
-    res.json({ languages: result.rows, total: total.rows[0].total });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-// ─── Languages ───────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Languages в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/languages', (req, res) => res.json({ languages: getAvailableLanguages() }));
 
-// ─── Debug: track counts (temporary) ─────────────────────────────────
-app.get('/api/debug/track-counts', async (_req, res) => {
-  try {
-    const { rows: tracks } = await pool.query('SELECT id, language, name, is_active FROM learning_tracks ORDER BY id');
-    const { rows: steps } = await pool.query('SELECT track_id, COUNT(*) as steps FROM track_steps GROUP BY track_id');
-    const stepMap = {};
-    for (const s of steps) stepMap[s.track_id] = parseInt(s.steps);
-    res.json({ tracks: tracks.map(t => ({ ...t, steps: stepMap[t.id] || 0 })) });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─── Categories (language-aware) ─────────────────────────────────────
+// в”Ђв”Ђв”Ђ Categories (language-aware) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/categories', async (req, res) => {
   try {
     const language = req.query.language || 'Java';
@@ -246,7 +250,7 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
-// ─── Companies ──────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Companies в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/companies', async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -259,7 +263,7 @@ app.get('/api/companies', async (req, res) => {
   }
 });
 
-// ─── Auth ────────────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Auth в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/auth/login', emailSendLimiter, async (req, res) => {
   try {
     const { provider, initData, idToken, email, code, referralId } = req.body;
@@ -448,7 +452,7 @@ app.post('/api/auth/login', emailSendLimiter, async (req, res) => {
   }
 });
 
-// ─── Protected Routes (JWT required) ──────────────────────────────────
+// в”Ђв”Ђв”Ђ Protected Routes (JWT required) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.use('/api', (req, res, next) => {
   // Exclude auth login and languages from global auth.
   // Also exclude inbound webhooks: they are authenticated by their own
@@ -457,7 +461,6 @@ app.use('/api', (req, res, next) => {
     req.path === '/auth/login' ||
     req.path.startsWith('/auth/email/') ||
     req.path === '/languages' ||
-    req.path.startsWith('/debug/') ||
     req.path.startsWith('/demo/') ||
     req.path.startsWith('/bot/webhook') ||
     req.path.startsWith('/webhook/telegram') ||
@@ -468,11 +471,11 @@ app.use('/api', (req, res, next) => {
   authMiddleware(req, res, next);
 });
 
-// ─── Public demo (zero-login) ─────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Public demo (zero-login) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 // Top of the funnel: let a visitor try 10 real questions before signing up.
-// No auth, no progress tracking, no rate-limit tied to a user — just a taste
+// No auth, no progress tracking, no rate-limit tied to a user вЂ” just a taste
 // of the product so the "Start free" click leads straight into the game.
-app.get('/api/demo/questions', async (req, res) => {
+app.get('/api/demo/questions', demoLimiter, async (req, res) => {
   try {
     const language = String(req.query.language || 'Java');
     const limit = Math.min(parseInt(req.query.limit) || 10, 15);
@@ -533,7 +536,7 @@ app.get('/api/demo/percentile', async (req, res) => {
   }
 });
 
-// ─── Waitlist / lead capture (public, Belarus-compliant) ────────────────
+// в”Ђв”Ђв”Ђ Waitlist / lead capture (public, Belarus-compliant) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 // Email-only lead capture with explicit, informed consent. No auth. IP is
 // hashed (not stored raw) to minimize PII. Unsubscribe performs erasure.
 function isValidEmailAddress(value) {
@@ -550,7 +553,7 @@ function hashClientIp(req) {
   return crypto.createHash('sha256').update(raw + (process.env.JWT_SECRET || '')).digest('hex');
 }
 
-app.post('/api/waitlist',
+app.post('/api/waitlist', waitlistLimiter,
   validateBody({ email: { required: true, type: 'string', maxLength: 254 } }),
   async (req, res) => {
   try {
@@ -563,12 +566,12 @@ app.post('/api/waitlist',
       return res.status(400).json({ error: 'Consent is required to subscribe.' });
     }
 
-    // ── Belarus data-localization routing ─────────────────────────────────
-    // Under Закон РБ «Об информации…», personal data of RB citizens must be
+    // в”Ђв”Ђ Belarus data-localization routing в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    // Under Р—Р°РєРѕРЅ Р Р‘ В«РћР± РёРЅС„РѕСЂРјР°С†РёРёвЂ¦В», personal data of RB citizens must be
     // stored on servers located in the Republic of Belarus. We route RB-resident
     // PII to the RB-localized datastore (rbPool) when RB_DATABASE_URL is set.
     // Only if NO RB store is configured AND ALLOW_RB_PII is unset do we refuse
-    // the cross-border write (HTTP 451) — so the gate never triggers once RB
+    // the cross-border write (HTTP 451) вЂ” so the gate never triggers once RB
     // hosting is provisioned.
     const likelyRb =
       region === 'BY' || region === 'RB' || timezone === 'Europe/Minsk';
@@ -577,7 +580,7 @@ app.post('/api/waitlist',
       return res.status(451).json({
         error: 'not_localized',
         message:
-          'Сбор персональных данных граждан РБ временно приостановлен: хранение данных должно быть локализовано в РБ. Напишите нам в Telegram-бот, чтобы получать обновления.',
+          'РЎР±РѕСЂ РїРµСЂСЃРѕРЅР°Р»СЊРЅС‹С… РґР°РЅРЅС‹С… РіСЂР°Р¶РґР°РЅ Р Р‘ РІСЂРµРјРµРЅРЅРѕ РїСЂРёРѕСЃС‚Р°РЅРѕРІР»РµРЅ: С…СЂР°РЅРµРЅРёРµ РґР°РЅРЅС‹С… РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ Р»РѕРєР°Р»РёР·РѕРІР°РЅРѕ РІ Р Р‘. РќР°РїРёС€РёС‚Рµ РЅР°Рј РІ Telegram-Р±РѕС‚, С‡С‚РѕР±С‹ РїРѕР»СѓС‡Р°С‚СЊ РѕР±РЅРѕРІР»РµРЅРёСЏ.',
       });
     }
 
@@ -619,7 +622,7 @@ app.post('/api/waitlist',
 
 // Withdraw consent / right to erasure. Pseudonymizes the email and nulls PII so
 // the subject can no longer be contacted or identified from this record.
-app.post('/api/waitlist/unsubscribe',
+app.post('/api/waitlist/unsubscribe', waitlistLimiter,
   validateBody({ email: { required: true, type: 'string', maxLength: 254 } }),
   async (req, res) => {
     try {
@@ -655,7 +658,7 @@ app.post('/api/waitlist/unsubscribe',
   }
 );
 
-// ─── Email magic-link (web auth) ────────────────────────────────────
+// в”Ђв”Ђв”Ђ Email magic-link (web auth) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/auth/email/send', emailSendLimiter, async (req, res) => {
   try {
     const { email } = req.body;
@@ -746,8 +749,57 @@ app.post('/api/auth/email/verify', emailSendLimiter, async (req, res) => {
   }
 });
 
-// ─── Admin Routes (requireAdmin required) ─────────────────────────────
+// в”Ђв”Ђв”Ђ Admin Routes (requireAdmin required) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.use('/api/admin', requireAdmin);
+
+// Admin-only diagnostics (were public вЂ” leaked schema details via err.message).
+app.get('/api/debug/question-counts', async (_req, res) => {
+  try {
+    const result = await pool.query('SELECT language, COUNT(*) as count FROM questions GROUP BY language ORDER BY language');
+    const total = await pool.query('SELECT COUNT(*) as total FROM questions');
+    res.json({ languages: result.rows, total: total.rows[0].total });
+  } catch (err) {
+    logger.error({ err }, 'Debug question-counts error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/debug/track-counts', async (_req, res) => {
+  try {
+    const { rows: tracks } = await pool.query('SELECT id, language, name, is_active FROM learning_tracks ORDER BY id');
+    const { rows: steps } = await pool.query('SELECT track_id, COUNT(*) as steps FROM track_steps GROUP BY track_id');
+    const stepMap = {};
+    for (const s of steps) stepMap[s.track_id] = parseInt(s.steps);
+    res.json({ tracks: tracks.map(t => ({ ...t, steps: stepMap[t.id] || 0 })) });
+  } catch (err) {
+    logger.error({ err }, 'Debug track-counts error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/debug/tracks', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const tracks = await pool.query(
+      'SELECT id, language, name, is_active, sort_order FROM learning_tracks WHERE language = $1 ORDER BY sort_order',
+      [language]
+    );
+    const tracksCount = await pool.query('SELECT language, COUNT(*) as count FROM learning_tracks GROUP BY language ORDER BY language');
+    const questionsCount = await pool.query(
+      'SELECT language, category, COUNT(*) as count FROM questions WHERE language = $1 AND is_active = TRUE GROUP BY language, category ORDER BY category',
+      [language]
+    );
+    res.json({
+      language,
+      tracks: tracks.rows,
+      tracksByLanguage: tracksCount.rows,
+      questionsByCategory: questionsCount.rows,
+    });
+  } catch (err) {
+    logger.error({ err }, 'Debug tracks error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // List active (consented, not unsubscribed) waitlist leads for export/mailing.
 app.get('/api/admin/waitlist', async (req, res) => {
@@ -792,7 +844,7 @@ app.delete('/api/admin/waitlist/:email', async (req, res) => {
   }
 });
 
-// ─── Preferences ─────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Preferences в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/preferences', async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -835,7 +887,7 @@ app.post('/api/preferences', validateBody({ categories: { required: true } }), a
   }
 });
 
-// ─── Language switch (updates preference, clears category filter for new lang) ──
+// в”Ђв”Ђв”Ђ Language switch (updates preference, clears category filter for new lang) в”Ђв”Ђ
 app.post('/api/preferences/language', validateBody({ language: { required: true } }), async (req, res) => {
   try {
     const { language } = req.body;
@@ -860,7 +912,7 @@ app.post('/api/preferences/language', validateBody({ language: { required: true 
   }
 });
 
-// ─── Question Feed ────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Question Feed в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 function optionTextList(value) {
   if (Array.isArray(value)) return value.filter(item => typeof item === 'string').map(item => item.trim()).filter(Boolean);
   if (typeof value === 'string') {
@@ -875,7 +927,7 @@ function isTestReadyQuestion(question) {
   if (options.length < 3) return false;
   const normalized = options.map(option => option.toLowerCase());
   if (new Set(normalized).size !== normalized.length) return false;
-  const banned = /^(i come on|don't know|dont know|know|не знаю|знаю|yes|no|да|нет)$/i;
+  const banned = /^(i come on|don't know|dont know|know|РЅРµ Р·РЅР°СЋ|Р·РЅР°СЋ|yes|no|РґР°|РЅРµС‚)$/i;
   return options.every(option => option.length >= 3 && !banned.test(option) && option.toLowerCase() !== question.question.trim().toLowerCase());
 }
 
@@ -898,7 +950,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     const selectedCategories = (savedLang === language) ? (prefs?.selected_categories || []) : [];
 
     // Test options are generated lazily on the client (see TestMode), so we
-    // must NOT filter out questions that don't have options yet — otherwise
+    // must NOT filter out questions that don't have options yet вЂ” otherwise
     // a fresh database would show an empty test feed forever.
 
     // Optional difficulty filter (Junior / Middle / Senior).
@@ -1005,7 +1057,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
   }
 });
 
-// ─── Weak / Mistakes review deck (Pro) ────────────────────────────────
+// в”Ђв”Ђв”Ђ Weak / Mistakes review deck (Pro) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 // Returns the user's "unknown" questions so they can actively rehearse the
 // topics they keep getting wrong. Gated to Pro via the 'review' entitlement.
 app.get('/api/questions/weak', requireEntitlement('mode', 'review'), async (req, res) => {
@@ -1043,7 +1095,7 @@ app.get('/api/questions/weak', requireEntitlement('mode', 'review'), async (req,
   }
 });
 
-// ─── AI Generation (cache-first, non-blocking) ────────────────────────
+// в”Ђв”Ђв”Ђ AI Generation (cache-first, non-blocking) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 const GENERATION_TYPES = new Set(['explanation', 'test', 'blitz', 'bug', 'code']);
 const JSON_GENERATION_MODES = new Set(['test', 'bug', 'blitz', 'code']);
 
@@ -1161,7 +1213,7 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
   }
 });
 
-// ─── Code Execution ──────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Code Execution в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/execute',
   rateLimit('code_executions'),
   validateBody({ code: { required: true }, language: { required: true } }),
@@ -1178,14 +1230,14 @@ app.post('/api/execute',
   }
 );
 
-// ─── Helpers ──────────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Helpers в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 // Resolve AI-generated data for a question.
 // Priority: questions table column (fast, backfilled by worker)
-//           → ai_cache (slower, direct lookup)
-//           → null (not yet generated)
+//           в†’ ai_cache (slower, direct lookup)
+//           в†’ null (not yet generated)
 async function resolveAIData(questionId, columnName, cacheMode) {
-  // Whitelist AI data columns — callers pass constants today, but this
+  // Whitelist AI data columns вЂ” callers pass constants today, but this
   // prevents any future refactor from opening a SQL injection path.
   const ALLOWED_AI_COLUMNS = new Set([
     'bug_hunting_data',
@@ -1229,7 +1281,7 @@ async function resolveAIData(questionId, columnName, cacheMode) {
 //
 // SECURITY/PERF: this blocks the HTTP request (and a pg pool slot) for up to
 // `maxMs`. To avoid exhausting the connection pool under load, server-side
-// polling is DISABLED by default — the client already polls for the result
+// polling is DISABLED by default вЂ” the client already polls for the result
 // (it retries on `pending`). Enable only for tightly-coupled deployments via
 // EXPLANATION_SYNC_POLL=true, and keep maxMs modest.
 async function waitForExplanation(questionText, questionId, language = 'Java', maxMs = 10000) {
@@ -1310,7 +1362,7 @@ async function updateStreak(userId) {
     if (rows.length === 0) return null;
 
     const user = rows[0];
-    // last_activity_date is a DATE column → already a 'YYYY-MM-DD' string in DB.
+    // last_activity_date is a DATE column в†’ already a 'YYYY-MM-DD' string in DB.
     // Use the server's local calendar day (not UTC) so the streak boundary
     // aligns with a real midnight rather than 00:00 UTC. True per-user-local
     // days would require storing the user's timezone (follow-up).
@@ -1341,7 +1393,7 @@ async function updateStreak(userId) {
       metricsService.trackEvent(userId, 'streak_increased', { streak: newStreak });
       // Notify user of streak milestone via Telegram if milestone hit
       if (newStreak % 7 === 0 || newStreak === 30) {
-        const milestoneMsg = `🔥 Streak milestone! You've been studying for ${newStreak} days in a row.`;
+        const milestoneMsg = `рџ”Ґ Streak milestone! You've been studying for ${newStreak} days in a row.`;
         await sendTelegramMessage(userId, milestoneMsg).catch(
           (err) => logger.error({ err, userId }, 'Failed to send streak milestone notification')
         );
@@ -1366,7 +1418,7 @@ async function recordProgress(userId, questionId, isCorrect) {
   );
 }
 
-// ─── Swipe ────────────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Swipe в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/questions/swipe',
   validateBody({ questionId: { required: true }, status: { required: true, enum: ['known', 'unknown'] } }),
   async (req, res) => {
@@ -1399,10 +1451,10 @@ app.post('/api/questions/swipe',
   }
 );
 
-// ─── Import guest progress (post-signup migration) ──────────────────────
+// в”Ђв”Ђв”Ђ Import guest progress (post-signup migration) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 // A visitor who played the zero-login demo has their known/unknown answers
 // stored in localStorage. On sign-up the client flushes them here so the demo
-// work isn't lost — turning "try it" straight into a seeded account.
+// work isn't lost вЂ” turning "try it" straight into a seeded account.
 app.post('/api/questions/import-progress', async (req, res) => {
   try {
     const userId = req.userId;
@@ -1440,7 +1492,7 @@ app.post('/api/questions/import-progress', async (req, res) => {
   }
 });
 
-// ─── Undo Swipe ────────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Undo Swipe в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.delete('/api/questions/swipe/:questionId', async (req, res) => {
   try {
     const { questionId } = req.params;
@@ -1458,7 +1510,7 @@ app.delete('/api/questions/swipe/:questionId', async (req, res) => {
   }
 });
 
-// ─── Report Question ───────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Report Question в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/questions/:questionId/report', reportLimiter, async (req, res) => {
   try {
     const { questionId } = req.params;
@@ -1491,7 +1543,7 @@ app.post('/api/questions/:questionId/report', reportLimiter, async (req, res) =>
       const qRes = await pool.query('SELECT question_text FROM questions WHERE id = $1', [questionId]);
       const text = qRes.rows[0]?.question_text || 'Unknown';
 
-      const adminMsg = `⚠️ Question ${questionId} has 5 reports.\n\nText: "${text}"\nIt has been automatically hidden from the deck. Review at Admin Panel.`;
+      const adminMsg = `вљ пёЏ Question ${questionId} has 5 reports.\n\nText: "${text}"\nIt has been automatically hidden from the deck. Review at Admin Panel.`;
 
       // Send to all admins
       for (const adminId of ADMIN_IDS) {
@@ -1507,7 +1559,7 @@ app.post('/api/questions/:questionId/report', reportLimiter, async (req, res) =>
   }
 });
 
-// ─── Test answer ──────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Test answer в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/questions/test-answer',
   validateBody({ questionId: { required: true }, answer: { required: true } }),
   async (req, res) => {
@@ -1529,7 +1581,7 @@ app.post('/api/questions/test-answer',
   }
 );
 
-// ─── Bug hunt answer ──────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Bug hunt answer в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/questions/bug-hunt-answer',
   validateBody({ questionId: { required: true }, answer: { required: true } }),
   async (req, res) => {
@@ -1537,7 +1589,7 @@ app.post('/api/questions/bug-hunt-answer',
       const { questionId, answer } = req.body;
       const userId = req.userId;
       const { data } = await resolveAIData(questionId, 'bug_hunting_data', 'bug');
-      if (!data) return res.status(404).json({ error: 'Bug hunt data not generated yet — please wait' });
+      if (!data) return res.status(404).json({ error: 'Bug hunt data not generated yet вЂ” please wait' });
       const correctBug = data.bug;
       const norm = s => (s || '').trim().toLowerCase();
       const isCorrect = norm(answer) === norm(correctBug);
@@ -1551,7 +1603,7 @@ app.post('/api/questions/bug-hunt-answer',
   }
 );
 
-// ─── Blitz answer ─────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Blitz answer в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/questions/blitz-answer',
   validateBody({ questionId: { required: true }, answer: { required: true } }),
   async (req, res) => {
@@ -1564,7 +1616,7 @@ app.post('/api/questions/blitz-answer',
         if (data) {
           isCorrect = Boolean(answer) === Boolean(data.isCorrect);
         } else {
-          return res.status(404).json({ error: 'Blitz data not generated yet — please wait' });
+          return res.status(404).json({ error: 'Blitz data not generated yet вЂ” please wait' });
         }
       } catch (err) {
         logger.error({ err, questionId }, 'Blitz answer parse error');
@@ -1580,7 +1632,7 @@ app.post('/api/questions/blitz-answer',
   }
 );
 
-// ─── Code completion answer ───────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Code completion answer в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/questions/code-completion-answer',
   validateBody({ questionId: { required: true }, answer: { required: true } }),
   async (req, res) => {
@@ -1588,7 +1640,7 @@ app.post('/api/questions/code-completion-answer',
       const { questionId, answer } = req.body;
       const userId = req.userId;
       const { data } = await resolveAIData(questionId, 'code_completion_data', 'code');
-      if (!data) return res.status(404).json({ error: 'Code completion data not generated yet — please wait' });
+      if (!data) return res.status(404).json({ error: 'Code completion data not generated yet вЂ” please wait' });
       const correctPart = data.correctPart;
       const normC = s => (s || '').trim().toLowerCase();
       const isCorrect = normC(answer) === normC(correctPart);
@@ -1602,7 +1654,7 @@ app.post('/api/questions/code-completion-answer',
   }
 );
 
-// ─── Interview Evaluation ─────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Interview Evaluation в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/questions/interview-evaluate', rateLimit('interview'), async (req, res) => {
   try {
     const { question, answer, language = 'Java' } = req.body;
@@ -1620,7 +1672,7 @@ app.post('/api/questions/interview-evaluate', rateLimit('interview'), async (req
   }
 });
 
-// ─── Saved / bookmarked questions ──────────────────────────────────
+// в”Ђв”Ђв”Ђ Saved / bookmarked questions в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 const mapSavedRow = (row) => ({
   id: row.id,
   category: row.category,
@@ -1681,7 +1733,7 @@ app.get('/api/questions/saved', async (req, res) => {
   }
 });
 
-// ─── Explanation ──────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Explanation в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 // Throttle explanation job enqueues so rapid client polling (the frontend
 // retries on `pending`) doesn't spawn a storm of duplicate worker jobs for
 // the same question. One enqueue per question per ~20s window is enough.
@@ -1704,7 +1756,7 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
     const userId = req.userId;
     if (!questionId) return res.status(400).json({ error: 'questionId is required' });
 
-    // ── 1. Check DB-cached explanation first (no AI needed) ──────────
+    // в”Ђв”Ђ 1. Check DB-cached explanation first (no AI needed) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
     const result = await pool.query(
       'SELECT id, question_text, short_answer, cached_explanation, language FROM questions WHERE id = $1',
       [questionId]
@@ -1716,7 +1768,7 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
       return res.json({ explanation: question.cached_explanation, cached: true });
     }
 
-    // ── 2. Check AI cache (also cached, no model call needed) ─────────
+    // в”Ђв”Ђ 2. Check AI cache (also cached, no model call needed) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
     const cachedAI = await checkCache(question.question_text, 'explanation', null, question.language || 'Java');
     if (cachedAI) {
       // Backfill the questions table cache too
@@ -1724,14 +1776,14 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
       return res.json({ explanation: cachedAI, cached: true });
     }
 
-    // ── 3. Not cached: generate via the background worker, wait for the ──
+    // в”Ђв”Ђ 3. Not cached: generate via the background worker, wait for the в”Ђв”Ђ
     // result server-side. This offloads the (slow) AI call to a separate
     // worker process so THIS process stays free to serve other requests.
     // The request still resolves with the explanation once the worker is
     // done (most questions are pre-warmed at login, so usually instant).
     const language = question.language || 'Java';
 
-    // Free-tier daily cap on AI explanations — the honest nudge toward Pro.
+    // Free-tier daily cap on AI explanations вЂ” the honest nudge toward Pro.
     // Cached explanations above don't count (they cost no AI call).
     if (!question.cached_explanation) {
       const { rows: planRows } = await pool.query(
@@ -1742,7 +1794,7 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
       if (isFree) {
         const lr = await checkDailyAiExplain(userId);
         if (!lr.allowed) {
-          logger.info({ userId, questionId, used: lr.used, limit: lr.limit }, '⛔ Free daily AI explanation limit reached');
+          logger.info({ userId, questionId, used: lr.used, limit: lr.limit }, 'в›” Free daily AI explanation limit reached');
           return res.status(403).json({
             error: 'daily_ai_limit',
             code: 'DAILY_AI_LIMIT',
@@ -1754,7 +1806,7 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
       }
     }
 
-    logger.info({ questionId, language }, '🤖 Generating explanation (queued)');
+    logger.info({ questionId, language }, 'рџ¤– Generating explanation (queued)');
 
     // De-dupe: only enqueue a fresh generation job if we haven't already
     // enqueued one for this question in the last ~20s (rapid polling would
@@ -1783,11 +1835,11 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
       return;
     }
 
-    // Worker hasn't finished yet — the job stays queued and the client can
+    // Worker hasn't finished yet вЂ” the job stays queued and the client can
     // poll (it already retries on `pending`).
     res.json({
       status: 'pending',
-      message: 'Объяснение ещё генерируется. Попробуйте ещё раз через пару секунд.',
+      message: 'РћР±СЉСЏСЃРЅРµРЅРёРµ РµС‰С‘ РіРµРЅРµСЂРёСЂСѓРµС‚СЃСЏ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р· С‡РµСЂРµР· РїР°СЂСѓ СЃРµРєСѓРЅРґ.',
     });
   } catch (error) {
     logger.error({ err: error, questionId: req.body?.questionId }, 'Error in /questions/explain');
@@ -1797,7 +1849,7 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
   }
 });
 
-// ─── Resume Analysis ──────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Resume Analysis в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/user/analyze-resume', rateLimit('resume'), async (req, res) => {
   try {
     const { resumeText, language = 'Java' } = req.body;
@@ -1828,7 +1880,7 @@ app.get('/api/user/resume', async (req, res) => {
 
 app.use('/api', trendsRouter);
 
-// ─── Subscription ─────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Subscription в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/subscription/plans', async (req, res) => {
   try {
     // Only surface the active 2-plan model (Free/Pro). Legacy 'premium' rows,
@@ -1907,7 +1959,7 @@ app.post('/api/billing/stars/create-invoice', async (req, res) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: `Pro Plan (${planId})`,
-        description: 'Доступ ко всем функциям Java Interview Tinder на 1 месяц',
+        description: 'Р”РѕСЃС‚СѓРї РєРѕ РІСЃРµРј С„СѓРЅРєС†РёСЏРј Java Interview Tinder РЅР° 1 РјРµСЃСЏС†',
         payload: JSON.stringify({ userId: String(userId), planId }),
         provider_token: '', // Empty for Stars
         currency: 'XTR',
@@ -1925,7 +1977,7 @@ app.post('/api/billing/stars/create-invoice', async (req, res) => {
   }
 });
 
-// ─── Telegram Bot Webhook ───────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Telegram Bot Webhook в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 // Handles pre_checkout_query and successful_payment for Stars billing.
 // Verifies X-Telegram-Bot-Api-Secret-Token (set via setWebhook secret_token)
 // to prevent forged successful_payment updates that would grant free plans.
@@ -1933,10 +1985,10 @@ function verifyWebhookSecret(req) {
   const expected = process.env.TELEGRAM_WEBHOOK_SECRET;
   if (!expected) {
     // No secret configured: allow only outside production (local dev). In
-    // production this fails CLOSED — an unauthenticated webhook would let
+    // production this fails CLOSED вЂ” an unauthenticated webhook would let
     // anyone forge successful_payment updates and grant themselves Pro.
     if (process.env.NODE_ENV === 'production') {
-      logger.error('TELEGRAM_WEBHOOK_SECRET is not set — rejecting unauthenticated bot webhook in production');
+      logger.error('TELEGRAM_WEBHOOK_SECRET is not set вЂ” rejecting unauthenticated bot webhook in production');
       return false;
     }
     return true;
@@ -1951,108 +2003,87 @@ function verifyWebhookSecret(req) {
   }
 }
 
+// Shared handler for Telegram Bot API updates (pre-checkout + successful payment).
+// Validation happens BEFORE we acknowledge the update; if activation fails we
+// respond with a 5xx so Telegram retries (idempotent activation makes retries safe).
+async function processBotUpdate(update) {
+  if (update.pre_checkout_query) {
+    const pcq = update.pre_checkout_query;
+    let payload = null;
+    try { payload = JSON.parse(pcq.invoice_payload); } catch { payload = null; }
+    if (!payload || !payload.userId || !payload.planId) {
+      logger.warn('pre_checkout_query with invalid payload — rejecting');
+      await answerPreCheckout(pcq.id, false, 'Payment validation failed. Please try again.');
+      return { ok: false, error: 'invalid payload' };
+    }
+    const expected = await getStarsAmount(payload.planId, payload.interval === 'yearly' ? 'yearly' : 'monthly');
+    if (pcq.total_amount !== expected) {
+      logger.warn({ got: pcq.total_amount, expected }, 'pre_checkout amount mismatch — rejecting');
+      await answerPreCheckout(pcq.id, false, 'Amount mismatch. Please try again.');
+      return { ok: false, error: 'amount mismatch' };
+    }
+    await answerPreCheckout(pcq.id, true);
+    return { ok: true };
+  }
+
+  const message = update.message || update.edited_message;
+  if (message?.successful_payment) {
+    const payment = message.successful_payment;
+    let payload = null;
+    try { payload = JSON.parse(payment.invoice_payload); } catch { payload = null; }
+    if (!payload || !payload.userId || !payload.planId) {
+      logger.error({ payload: payment.invoice_payload }, 'successful_payment with invalid payload — NOT activating');
+      return { ok: false, error: 'invalid payload' };
+    }
+    const expected = await getStarsAmount(payload.planId, payload.interval === 'yearly' ? 'yearly' : 'monthly');
+    if (payment.currency !== 'XTR' || payment.total_amount !== expected) {
+      logger.error({ got: payment.total_amount, currency: payment.currency, expected }, 'successful_payment amount mismatch — NOT activating');
+      return { ok: false, error: 'amount mismatch' };
+    }
+    await activateStarsSubscription(
+      payload.userId, payload.planId, payload.interval ?? 'monthly',
+      payment.telegram_payment_charge_id
+    );
+    await sendTelegramMessage(message.chat.id,
+      'Payment confirmed! Your Pro plan is now active.\n' +
+      `Plan: ${payload.interval === 'yearly' ? 'Annual' : 'Monthly'} Pro\n` +
+      'Enjoy unlimited interviews and deep theory explanations!'
+    );
+    return { ok: true };
+  }
+
+  return { ok: true };
+}
+
 app.post('/api/bot/webhook', async (req, res) => {
   // Validate the request BEFORE acknowledging it to Telegram.
   if (!verifyWebhookSecret(req)) {
     logger.warn('Bot webhook rejected: invalid secret token');
     return res.status(403).json({ error: 'Forbidden' });
   }
-
-  // Respond 200 so Telegram does not retry a legit update.
-  res.json({ ok: true });
-
-  const update = req.body;
   try {
-    // 1. Pre-checkout: must answer within 10 seconds
-    if (update.pre_checkout_query) {
-      const pcq = update.pre_checkout_query;
-      try {
-        const { userId, planId } = JSON.parse(pcq.invoice_payload);
-        if (!userId || !planId) throw new Error('Invalid payload');
-        await answerPreCheckout(pcq.id, true);
-      } catch (err) {
-        logger.error({ err }, 'pre_checkout_query failed');
-        await answerPreCheckout(pcq.id, false, 'Payment validation failed. Please try again.');
-      }
-      return;
-    }
-
-    // 2. Successful payment — activate subscription
-    const message = update.message || update.edited_message;
-    if (message?.successful_payment) {
-      const payment = message.successful_payment;
-      const { userId, planId, interval } = JSON.parse(payment.invoice_payload);
-      logger.info({ userId, planId, interval }, '💰 Stars payment received');
-
-      await activateStarsSubscription(
-        userId, planId, interval ?? 'monthly',
-        payment.telegram_payment_charge_id
-      );
-
-      await sendTelegramMessage(message.chat.id,
-        `🎉 Payment confirmed! Your Pro plan is now active.\n` +
-        `Plan: ${interval === 'yearly' ? 'Annual' : 'Monthly'} Pro\n` +
-        `Enjoy unlimited interviews and deep theory explanations!`
-      );
-    }
+    const result = await processBotUpdate(req.body);
+    res.json(result);
   } catch (error) {
-    logger.error({ err: error, update }, 'Webhook processing failed');
-    Sentry.captureException(error, {
-      extra: {
-        updateId: update.update_id,
-        userId: update.message?.from?.id || update.pre_checkout_query?.from?.id
-      }
-    });
+    logger.error({ err: error }, 'Webhook processing failed');
+    Sentry.captureException(error, { extra: { updateId: req.body?.update_id } });
+    res.status(500).json({ ok: false, error: 'processing failed' });
   }
 });
 
-// ─── Telegram Webhook (legacy path) ──────────────────────────
-// Some bot configurations send webhooks to /webhook/telegram
-// instead of /api/bot/webhook. This route mirrors the same
-// handler to avoid 404s.
+// Telegram Webhook (legacy path) — mirrors the same handler to avoid 404s.
 app.post('/webhook/telegram', async (req, res) => {
   if (!verifyWebhookSecret(req)) {
     logger.warn('Bot webhook rejected: invalid secret token (legacy path)');
     return res.status(403).json({ error: 'Forbidden' });
   }
-  res.json({ ok: true });
-  const update = req.body;
   try {
-    if (update.pre_checkout_query) {
-      const pcq = update.pre_checkout_query;
-      try {
-        const { userId, planId } = JSON.parse(pcq.invoice_payload);
-        if (!userId || !planId) throw new Error('Invalid payload');
-        await answerPreCheckout(pcq.id, true);
-      } catch (err) {
-        logger.error({ err }, 'pre_checkout_query failed (legacy path)');
-        await answerPreCheckout(pcq.id, false, 'Payment validation failed. Please try again.');
-      }
-      return;
-    }
-    const message = update.message || update.edited_message;
-    if (message?.successful_payment) {
-      const payment = message.successful_payment;
-      const { userId, planId, interval } = JSON.parse(payment.invoice_payload);
-      logger.info({ userId, planId, interval }, '💰 Stars payment received (legacy path)');
-      await activateStarsSubscription(
-        userId, planId, interval ?? 'monthly',
-        payment.telegram_payment_charge_id
-      );
-      await sendTelegramMessage(message.chat.id,
-        `🎉 Payment confirmed! Your Pro plan is now active.\n` +
-        `Plan: ${interval === 'yearly' ? 'Annual' : 'Monthly'} Pro\n` +
-        `Enjoy unlimited interviews and deep theory explanations!`
-      );
-    }
+    const result = await processBotUpdate(req.body);
+    res.json(result);
   } catch (error) {
-    logger.error({ err: error, update }, 'Webhook processing failed (legacy path)');
-    Sentry.captureException(error, {
-      extra: {
-        updateId: update.update_id,
-        userId: update.message?.from?.id || update.pre_checkout_query?.from?.id
-      }
-    });
+    logger.error({ err: error }, 'Webhook processing failed (legacy path)');
+    Sentry.captureException(error, { extra: { updateId: req.body?.update_id } });
+    res.status(500).json({ ok: false, error: 'processing failed' });
   }
 });
 
@@ -2069,7 +2100,7 @@ app.use((err, req, res, next) => {
 
 Sentry.setupExpressErrorHandler(app);
 
-// ─── Stars invoice: sends invoice to user's Telegram chat ───────────
+// в”Ђв”Ђв”Ђ Stars invoice: sends invoice to user's Telegram chat в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/billing/stars/invoice',
   validateBody({ planId: { required: true } }),
   async (req, res) => {
@@ -2084,7 +2115,7 @@ app.post('/api/billing/stars/invoice',
   }
 );
 
-// ─── Billing info (current plan + renewal date) ──────────────────────
+// в”Ђв”Ђв”Ђ Billing info (current plan + renewal date) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/billing/info', async (req, res) => {
   try {
     const info = await billingService.getBillingInfo(req.userId);
@@ -2105,7 +2136,7 @@ app.get('/api/billing/history', async (req, res) => {
   }
 });
 
-// ─── Available payment methods (UI uses this to show/hide options) ─
+// в”Ђв”Ђв”Ђ Available payment methods (UI uses this to show/hide options) в”Ђ
 // Card (U-Kassa) is opt-in and enabled ONLY when UKASSA_TOKEN is set.
 app.get('/api/billing/methods', async (req, res) => {
   res.json({
@@ -2129,8 +2160,8 @@ app.delete('/api/billing/subscription', async (req, res) => {
   }
 });
 
-// ─── TON Crypto routes ───────────────────────────────────────────────
-// POST /api/billing/ton/invoice — create a pending TON invoice
+// в”Ђв”Ђв”Ђ TON Crypto routes в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// POST /api/billing/ton/invoice вЂ” create a pending TON invoice
 app.post('/api/billing/ton/invoice',
   validateBody({ planId: { required: true } }),
   async (req, res) => {
@@ -2156,13 +2187,13 @@ app.post('/api/billing/ton/invoice',
   }
 );
 
-// GET /api/billing/ton/check — poll for fulfillment of user's pending invoice
+// GET /api/billing/ton/check вЂ” poll for fulfillment of user's pending invoice
 app.get('/api/billing/ton/check', async (req, res) => {
   try {
     const invoice = await getUserPendingInvoice(req.userId);
     if (!invoice) {
       // No pending invoice. Only report "fulfilled" if the user is actually
-      // already Pro (e.g. re-check after success) — never fake a success.
+      // already Pro (e.g. re-check after success) вЂ” never fake a success.
       const info = await billingService.getBillingInfo(req.userId);
       if (info.plan && info.plan !== 'free') return res.json({ fulfilled: true });
       return res.json({ fulfilled: false, invoiceId: null });
@@ -2181,8 +2212,8 @@ app.get('/api/billing/ton/check', async (req, res) => {
   }
 });
 
-// ─── U-Kassa (bank card) routes ─────────────────────────────────────
-// POST /api/billing/ukassa/invoice — create a card payment, returns a
+// в”Ђв”Ђв”Ђ U-Kassa (bank card) routes в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// POST /api/billing/ukassa/invoice вЂ” create a card payment, returns a
 // redirect URL the client opens to complete the payment.
 app.post('/api/billing/ukassa/invoice',
   validateBody({ planId: { required: true } }),
@@ -2212,7 +2243,7 @@ app.post('/api/billing/ukassa/invoice',
   }
 );
 
-// POST /api/billing/ukassa/webhook — YooKassa asynchronous notification.
+// POST /api/billing/ukassa/webhook вЂ” YooKassa asynchronous notification.
 // Must capture the RAW body for HMAC signature verification.
 app.post('/api/billing/ukassa/webhook',
   express.json({
@@ -2226,21 +2257,20 @@ app.post('/api/billing/ukassa/webhook',
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    // Respond quickly; process asynchronously.
-    res.json({ ok: true });
-
     try {
       const result = await handleUkassaEvent(req.body);
       if (result.activated) {
         logger.info({ paymentId: result.paymentId }, '💳 U-Kassa webhook: subscription activated');
       }
+      res.json({ ok: true });
     } catch (err) {
       logger.error({ err }, 'U-Kassa webhook processing failed');
+      res.status(500).json({ ok: false, error: 'processing failed' });
     }
   }
 );
 
-// ─── Admin Endpoints ──────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Admin Endpoints в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 // Grant plan (admin-only)
 app.post('/api/admin/grant-plan', async (req, res) => {
@@ -2324,7 +2354,7 @@ app.post('/api/admin/clear-cache', requireAdmin, async (req, res) => {
     }
 
     const result = await pool.query(query, params);
-    logger.info({ mode, language, count: result.rowCount }, '🗑️ AI Cache cleared by admin');
+    logger.info({ mode, language, count: result.rowCount }, 'рџ—‘пёЏ AI Cache cleared by admin');
 
     // Redis invalidation (simple flush for now if no specific keys targetable)
     if (redis && (!mode && !language)) {
@@ -2339,7 +2369,7 @@ app.post('/api/admin/clear-cache', requireAdmin, async (req, res) => {
   }
 });
 
-// ─── Admin Moderation ──────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Admin Moderation в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/admin/reports', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -2401,7 +2431,7 @@ app.put('/api/admin/questions/:questionId', async (req, res) => {
   }
 });
 
-// ─── Viral Percentile Stats ──────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Viral Percentile Stats в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/stats/percentile', async (req, res) => {
   try {
     const { language = 'Java', score } = req.query;
@@ -2446,7 +2476,7 @@ app.get('/api/referrals/stats', async (req, res) => {
   }
 });
 
-// ─── Category-scoped stats (§3 topic counter) ────────────────────────
+// в”Ђв”Ђв”Ђ Category-scoped stats (В§3 topic counter) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/stats/categories', async (req, res) => {
   try {
     const userId = req.userId;
@@ -2476,7 +2506,7 @@ app.get('/api/stats/categories', async (req, res) => {
   }
 });
 
-// ─── Stats ────────────────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Stats в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/stats', async (req, res) => {
   try {
     const userId = req.userId;
@@ -2516,7 +2546,7 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// ─── Stats History (time series) ─────────────────────────────────
+// в”Ђв”Ђв”Ђ Stats History (time series) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/stats/history', async (req, res) => {
   try {
     const period = req.query.period || '7d';
@@ -2544,7 +2574,7 @@ app.get('/api/stats/history', async (req, res) => {
   }
 });
 
-// ─── Stats Topics (accuracy per category) ────────────────────────
+// в”Ђв”Ђв”Ђ Stats Topics (accuracy per category) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/stats/topics', async (req, res) => {
   try {
     const userId = req.userId;
@@ -2600,39 +2630,14 @@ app.post('/api/questions/mastery', validateBody({ questionId: { required: true }
   }
 });
 
-// ─── Debug ──────────────────────────────────────────────────────────
-app.get('/api/debug/tracks', async (req, res) => {
-  try {
-    const language = req.query.language || 'Java';
-    const tracks = await pool.query(
-      'SELECT id, language, name, is_active, sort_order FROM learning_tracks WHERE language = $1 ORDER BY sort_order',
-      [language]
-    );
-    const tracksCount = await pool.query('SELECT language, COUNT(*) as count FROM learning_tracks GROUP BY language ORDER BY language');
-    const questionsCount = await pool.query(
-      'SELECT language, category, COUNT(*) as count FROM questions WHERE language = $1 AND is_active = TRUE GROUP BY language, category ORDER BY category',
-      [language]
-    );
-    res.json({
-      language,
-      tracks: tracks.rows,
-      tracksByLanguage: tracksCount.rows,
-      questionsByCategory: questionsCount.rows,
-    });
-  } catch (err) {
-    logger.error({ err }, 'Debug tracks error');
-    res.status(500).json({ error: 'Debug error', detail: err.message });
-  }
-});
-
-// ─── Learning Tracks ─────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Learning Tracks в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/tracks', async (req, res) => {
   try {
     const language = req.query.language || 'Java';
     const userId = req.userId;
     const cacheKey = `tracks:${language}:${userId}`;
 
-    // Check Redis cache first (30s TTL — tracks metadata rarely changes but user progress does)
+    // Check Redis cache first (30s TTL вЂ” tracks metadata rarely changes but user progress does)
     if (redis) {
       try {
         const cached = await redis.get(cacheKey);
@@ -2707,29 +2712,36 @@ app.get('/api/tracks/:id/next', async (req, res) => {
 
 app.post('/api/tracks/:id/advance', async (req, res) => {
   try {
-    const result = await trackService.advanceTrack(
-      parseInt(req.params.id), req.userId
-    );
+    const trackId = parseInt(req.params.id);
+    if (!Number.isInteger(trackId)) return res.status(400).json({ error: 'Invalid track id' });
+    const result = await trackService.advanceTrack(trackId, req.userId);
     res.json(result);
   } catch (err) {
     logger.error({ err }, 'Track advance error');
+    if (err.status === 404 || err.status === 400) return res.status(err.status).json({ error: err.message });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// ─── Certificates ─────────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Certificates в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/certificates/generate', async (req, res) => {
   try {
-    const { trackId, title, score } = req.body;
+    const trackId = parseInt(req.body.trackId);
+    if (!Number.isInteger(trackId)) return res.status(400).json({ error: 'trackId is required' });
+    const score = Math.min(Math.max(parseInt(req.body.score) || 100, 0), 100);
+    const title = String(req.body.title || '').slice(0, 200);
     const cert = await generateCertificate({
       userId: req.userId,
       trackId,
-      title: title || 'Course Completion',
-      score: score || 100,
+      title,
+      score,
     });
     res.json(cert);
   } catch (err) {
     logger.error({ err }, 'Certificate generation error');
+    if (err.status === 403 || err.status === 404 || err.status === 400) {
+      return res.status(err.status).json({ error: err.message });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -2744,7 +2756,7 @@ app.get('/api/certificates', async (req, res) => {
   }
 });
 
-// ─── Weekly Challenges ───────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Weekly Challenges в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/challenges/current', async (req, res) => {
   try {
     const language = req.query.language || 'Java';
@@ -2786,7 +2798,7 @@ app.get('/api/challenges/leaderboard', async (req, res) => {
   }
 });
 
-// ─── System Design Module ──────────────────────────────────────────
+// в”Ђв”Ђв”Ђ System Design Module в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 const FREE_SD_DAILY_LIMIT = parseInt(process.env.FREE_SD_DAILY_LIMIT || '1', 10);
 
 async function checkDailySdLimit(userId) {
@@ -2884,7 +2896,7 @@ app.get('/api/system-design/progress', async (req, res) => {
   }
 });
 
-// ─── Question Discussions (community) ─────────────────────────────────
+// в”Ђв”Ђв”Ђ Question Discussions (community) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/questions/:id/discussions', async (req, res) => {
   try {
     const questionId = parseInt(req.params.id);
@@ -2896,7 +2908,7 @@ app.get('/api/questions/:id/discussions', async (req, res) => {
   }
 });
 
-app.post('/api/questions/:id/discussions',
+app.post('/api/questions/:id/discussions', discussionLimiter,
   validateBody({ content: { required: true } }),
   async (req, res) => {
     try {
@@ -2941,20 +2953,20 @@ app.post('/api/discussions/:id/solution', async (req, res) => {
   }
 });
 
-// ─── Badges / Achievements ──────────────────────────────────
+// в”Ђв”Ђв”Ђ Badges / Achievements в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 const BADGE_DEFINITIONS = [
-  { key: 'first_question', name: 'First Steps', icon: '🎯', description: 'Answer your first question' },
-  { key: 'streak_3', name: 'Getting Warm', icon: '🔥', description: '3-day streak' },
-  { key: 'streak_7', name: 'On Fire', icon: '🔥', description: '7-day streak' },
-  { key: 'streak_30', name: 'Unstoppable', icon: '💎', description: '30-day streak' },
-  { key: 'known_10', name: 'Novice', icon: '🏅', description: 'Mark 10 questions as known' },
-  { key: 'known_50', name: 'Intermediate', icon: '🏆', description: 'Mark 50 questions as known' },
-  { key: 'known_100', name: 'Expert', icon: '🏆', description: 'Mark 100 questions as known' },
-  { key: 'known_500', name: 'Master', icon: '👑', description: 'Mark 500 questions as known' },
-  { key: 'bug_hunter', name: 'Bug Hunter', icon: '🐛', description: 'Complete 5 Bug Hunting questions' },
-  { key: 'blitz_master', name: 'Blitz Master', icon: '⚡', description: 'Score 90%+ in Blitz mode' },
-  { key: 'daily_login', name: 'Consistent', icon: '📅', description: 'Log in for 5 consecutive days' },
-  { key: 'refer_friend', name: 'Social', icon: '🤝', description: 'Invite a friend' },
+  { key: 'first_question', name: 'First Steps', icon: 'рџЋЇ', description: 'Answer your first question' },
+  { key: 'streak_3', name: 'Getting Warm', icon: 'рџ”Ґ', description: '3-day streak' },
+  { key: 'streak_7', name: 'On Fire', icon: 'рџ”Ґ', description: '7-day streak' },
+  { key: 'streak_30', name: 'Unstoppable', icon: 'рџ’Ћ', description: '30-day streak' },
+  { key: 'known_10', name: 'Novice', icon: 'рџЏ…', description: 'Mark 10 questions as known' },
+  { key: 'known_50', name: 'Intermediate', icon: 'рџЏ†', description: 'Mark 50 questions as known' },
+  { key: 'known_100', name: 'Expert', icon: 'рџЏ†', description: 'Mark 100 questions as known' },
+  { key: 'known_500', name: 'Master', icon: 'рџ‘‘', description: 'Mark 500 questions as known' },
+  { key: 'bug_hunter', name: 'Bug Hunter', icon: 'рџђ›', description: 'Complete 5 Bug Hunting questions' },
+  { key: 'blitz_master', name: 'Blitz Master', icon: 'вљЎ', description: 'Score 90%+ in Blitz mode' },
+  { key: 'daily_login', name: 'Consistent', icon: 'рџ“…', description: 'Log in for 5 consecutive days' },
+  { key: 'refer_friend', name: 'Social', icon: 'рџ¤ќ', description: 'Invite a friend' },
 ];
 
 app.get('/api/badges', async (req, res) => {
@@ -3027,7 +3039,7 @@ app.post('/api/badges/check', async (req, res) => {
   }
 });
 
-// ─── Daily Challenge ───────────────────────────────────────
+// в”Ђв”Ђв”Ђ Daily Challenge в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/daily-challenge', async (req, res) => {
   try {
     const language = req.query.language || 'Java';
@@ -3117,7 +3129,7 @@ app.post('/api/daily-challenge/submit', async (req, res) => {
   }
 });
 
-// ─── Global Leaderboard ─────────────────────────────────────
+// в”Ђв”Ђв”Ђ Global Leaderboard в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/leaderboard', async (req, res) => {
   try {
     const language = req.query.language || 'Java';
@@ -3173,7 +3185,7 @@ app.get('/api/leaderboard', async (req, res) => {
   }
 });
 
-// ─── Progress Export ────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Progress Export в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/progress/export', async (req, res) => {
   try {
     const userId = req.userId;
@@ -3216,10 +3228,18 @@ app.get('/api/progress/export', async (req, res) => {
     };
 
     if (format === 'csv') {
+      // CSV-injection-safe escaping: double quotes, and neutralize formulas
+      // (=, +, -, @, tab, CR) that Excel/Sheets would otherwise execute.
+      const esc = (v) => {
+        const s = String(v ?? '');
+        return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+      };
+      const row = (r) =>
+        ['id', 'category', 'question_text', 'short_answer', 'status', 'difficulty', 'updated_at']
+          .map((k) => `"${esc(r[k]).replace(/"/g, '""')}"`)
+          .join(',');
       const csv = 'ID,Category,Question,Short Answer,Status,Difficulty,Last Reviewed\n' +
-        progress.rows.map(r =>
-          `${r.id},"${r.category}","${r.question_text}","${r.short_answer}",${r.status},${r.difficulty},"${r.updated_at}"`
-        ).join('\n');
+        progress.rows.map(row).join('\n');
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="progress-${language}-${new Date().toISOString().split('T')[0]}.csv"`);
       return res.send(csv);
@@ -3232,7 +3252,7 @@ app.get('/api/progress/export', async (req, res) => {
   }
 });
 
-// ─── Companies ───────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Companies в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/companies', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -3248,7 +3268,7 @@ app.get('/api/companies', async (req, res) => {
   }
 });
 
-// ─── UGC Questions ─────────────────────────────────────────
+// в”Ђв”Ђв”Ђ UGC Questions в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/questions/submit', validateBody({ question_text: { required: true }, short_answer: { required: true }, category: { required: true } }), async (req, res) => {
   try {
     const { question_text, short_answer, category, difficulty = 'Junior', options = [], language = 'Java' } = req.body;
@@ -3303,7 +3323,7 @@ app.get('/api/questions/ugc', async (req, res) => {
   }
 });
 
-// ─── Admin UGC moderation ─────────────────────────────────
+// в”Ђв”Ђв”Ђ Admin UGC moderation в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/admin/ugc', async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -3353,8 +3373,8 @@ app.post('/api/admin/ugc/:id/review', validateBody({ action: { required: true, e
   }
 });
 
-// ─── Email Digest ────────────────────────────────────────────
-app.post('/api/email/subscribe', validateBody({ email: { required: true } }), async (req, res) => {
+// в”Ђв”Ђв”Ђ Email Digest в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+app.post('/api/email/subscribe', waitlistLimiter, validateBody({ email: { required: true } }), async (req, res) => {
   try {
     const { email, language } = req.body;
     const cleanEmail = email.trim().toLowerCase();
@@ -3373,7 +3393,7 @@ app.post('/api/email/subscribe', validateBody({ email: { required: true } }), as
   }
 });
 
-app.post('/api/email/unsubscribe', validateBody({ email: { required: true } }), async (req, res) => {
+app.post('/api/email/unsubscribe', waitlistLimiter, validateBody({ email: { required: true } }), async (req, res) => {
   try {
     const { email } = req.body;
     await pool.query(
@@ -3410,11 +3430,12 @@ app.get('/api/email/daily-challenge', async (req, res) => {
   }
 });
 
-// ─── User Profile ────────────────────────────────────
+// в”Ђв”Ђв”Ђ User Profile в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/me', authMiddleware, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, telegram_id, first_name, username, language, plan, current_streak, longest_streak, known_count, total_answered, avatar_url, created_at
+      `SELECT id, telegram_id, first_name, username, language, subscription_plan AS plan,
+              current_streak, longest_streak, known_count, total_answered, avatar_url, created_at
        FROM users WHERE id = $1`,
       [req.userId]
     );
@@ -3447,15 +3468,27 @@ app.put('/api/me', authMiddleware, validateBody({}), async (req, res) => {
     const values = [];
     let idx = 1;
 
-    if (first_name !== undefined) { updates.push(`first_name = $${idx++}`); values.push(first_name); }
-    if (username !== undefined) { updates.push(`username = $${idx++}`); values.push(username); }
-    if (avatar_url !== undefined) { updates.push(`avatar_url = $${idx++}`); values.push(avatar_url); }
+    if (first_name !== undefined) {
+      const v = String(first_name).slice(0, 100);
+      if (!v.trim()) return res.status(400).json({ error: 'first_name cannot be empty' });
+      updates.push(`first_name = $${idx++}`); values.push(v);
+    }
+    if (username !== undefined) {
+      const v = String(username).slice(0, 100);
+      if (!v.trim()) return res.status(400).json({ error: 'username cannot be empty' });
+      updates.push(`username = $${idx++}`); values.push(v);
+    }
+    if (avatar_url !== undefined) {
+      const v = String(avatar_url).slice(0, 500);
+      if (v && !/^https?:\/\//.test(v)) return res.status(400).json({ error: 'avatar_url must be a valid http(s) URL' });
+      updates.push(`avatar_url = $${idx++}`); values.push(v);
+    }
 
     if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
 
     values.push(req.userId);
     const { rows } = await pool.query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${idx} RETURNING id, telegram_id, first_name, username, language, plan`,
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${idx} RETURNING id, telegram_id, first_name, username, language, subscription_plan AS plan`,
       values
     );
     res.json({ user: rows[0] });
@@ -3465,7 +3498,7 @@ app.put('/api/me', authMiddleware, validateBody({}), async (req, res) => {
   }
 });
 
-// ─── Server ───────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Server в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 let server = null;
 let tonTimer = null;
 
@@ -3473,9 +3506,9 @@ if (process.env.NODE_ENV !== 'test') {
   server = app.listen(PORT, '0.0.0.0', () => {
     logger.info({ port: PORT, mode: isDev ? 'development' : 'production', admins: ADMIN_IDS.size }, 'Server started');
 
-    // ── TON payment poller: every 30 s, check for fulfilled invoices ──
+    // в”Ђв”Ђ TON payment poller: every 30 s, check for fulfilled invoices в”Ђв”Ђ
     if (process.env.TON_WALLET_ADDRESS) {
-      logger.info('💫 TON poller started (30 s interval)');
+      logger.info('рџ’« TON poller started (30 s interval)');
       tonTimer = setInterval(async () => {
     try {
       await pollPendingInvoices();
@@ -3489,7 +3522,7 @@ if (process.env.NODE_ENV !== 'test') {
 
 // Graceful shutdown: stop accepting new connections, then drain the DB pool.
 async function shutdown(signal) {
-  logger.info({ signal }, '🛑 Received shutdown signal — draining...');
+  logger.info({ signal }, 'рџ›‘ Received shutdown signal вЂ” draining...');
   if (tonTimer) clearInterval(tonTimer);
   if (server) server.close(() => logger.info('HTTP server closed'));
   try {
@@ -3503,11 +3536,11 @@ async function shutdown(signal) {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
-// ─── Global error handler ───────────────────────────────────────────────
+// в”Ђв”Ђв”Ђ Global error handler в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 // Centralizes error responses and guarantees every failure is logged (Sentry
 // via the logger transport) instead of being swallowed by an empty catch.
 // MUST be registered after all routes and before the 404 handler.
-app.use(errorHandler(isDev));
+app.use(errorHandler(isDev, ALLOWED_ORIGINS));
 
   // Health check endpoint (Railway probes and Docker health checks)
   app.get('/health', (_req, res) => {
@@ -3522,7 +3555,7 @@ app.use(errorHandler(isDev));
     res.status(404).json({ error: 'Not found' });
   });
 
-// ─── WebSocket (Peer-to-Peer Mock Interviews) ────────────
+// в”Ђв”Ђв”Ђ WebSocket (Peer-to-Peer Mock Interviews) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 let peerSignaling = null;
 if (process.env.NODE_ENV !== 'test') {
   const { WebSocketServer } = await import('ws');

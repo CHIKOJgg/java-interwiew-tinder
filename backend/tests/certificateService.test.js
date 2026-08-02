@@ -22,7 +22,9 @@ describe('certificateService', () => {
   describe('generateCertificate', () => {
     it('creates certificate and returns id and issuedAt', async () => {
       const issuedAt = new Date('2026-07-27');
-      pool.query.mockResolvedValueOnce({ rows: [{ id: 42, issued_at: issuedAt }] });
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ completed: true, name: 'Java Core' }] }) // completion check
+        .mockResolvedValueOnce({ rows: [{ id: 42, issued_at: issuedAt }] });
 
       const result = await svc.generateCertificate({ userId: 1, trackId: 5, title: 'Java Pro', score: 85 });
       expect(result.id).toBe(42);
@@ -33,13 +35,33 @@ describe('certificateService', () => {
 
     it('upserts on conflict (ON CONFLICT DO UPDATE SET)', async () => {
       const issuedAt = new Date();
-      pool.query.mockResolvedValueOnce({ rows: [{ id: 42, issued_at: issuedAt }] });
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ completed: true, name: 'Java Core' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 42, issued_at: issuedAt }] });
 
       await svc.generateCertificate({ userId: 1, trackId: 5, title: 'Java Pro', score: 90 });
       expect(pool.query).toHaveBeenCalledWith(
         expect.stringContaining('ON CONFLICT'),
         [1, 5, 'Java Pro', 90]
       );
+    });
+
+    it('defaults title to the track name', async () => {
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ completed: true, name: 'Java Core' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 1, issued_at: new Date() }] });
+
+      await svc.generateCertificate({ userId: 1, trackId: 5, title: '', score: 90 });
+      expect(pool.query).toHaveBeenCalledWith(
+        expect.stringContaining('ON CONFLICT'),
+        [1, 5, 'Java Core', 90]
+      );
+    });
+
+    it('rejects when the track is not completed', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+      await expect(svc.generateCertificate({ userId: 1, trackId: 5, title: 'T', score: 50 }))
+        .rejects.toMatchObject({ status: 403 });
     });
 
     it('logs and re-throws on DB error', async () => {

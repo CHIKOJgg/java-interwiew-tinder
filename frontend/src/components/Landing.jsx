@@ -23,6 +23,14 @@ export default function Landing({ onStart, onLogin }) {
   const miniAppUrl = import.meta.env.VITE_TELEGRAM_MINIAPP_URL || `https://t.me/${botUsername}`;
   const RB = useRef(getRegion());
 
+  // Web visitors can jump straight into the in-app demo (no signup); the
+  // Telegram CTAs remain the primary funnel for the Mini App itself.
+  const startDemo = (e) => {
+    if (!onStart) return;
+    e.preventDefault();
+    onStart();
+  };
+
   /* ── live widget ── */
   const [liveQ, setLiveQ] = useState(null);
   const [liveLang, setLiveLang] = useState('Java');
@@ -194,7 +202,7 @@ export default function Landing({ onStart, onLogin }) {
             <h1>One forgotten question<br />shouldn't cost you <span className="hl">the offer.</span></h1>
             <p className="lead">Prep-It drills you on the exact questions companies ask, explains every gap instantly with AI, and shows your real readiness score — so you walk in knowing, not hoping. 10 minutes a day, free to start.</p>
             <div className="actions">
-              <a className="btn lime" href={miniAppUrl} target="_blank" rel="noopener" id="ctaHero">🚀 Try a real question free</a>
+              <a className="btn lime" href={miniAppUrl} onClick={startDemo} id="ctaHero">🚀 Try a real question free</a>
               <a className="btn" href={`https://t.me/${botUsername}`} target="_blank" rel="noopener">Open in Telegram</a>
             </div>
             <div className="trust-row">
@@ -518,7 +526,7 @@ export default function Landing({ onStart, onLogin }) {
           <div className="fz-36"><Target size={36} /></div>
           <h3>Wait — try 3 questions before you go</h3>
           <p>No signup. No card. Just real interview questions with AI breakdowns.</p>
-          <a className="btn lime" href={miniAppUrl} target="_blank" rel="noopener" id="exitCta">Try 3 free questions →</a>
+          <a className="btn lime" href={miniAppUrl} onClick={startDemo} id="exitCta">Try 3 free questions →</a>
           <button className="exit-skip" id="exitSkip" onClick={dismissExit}>No thanks</button>
         </div>
       </div>

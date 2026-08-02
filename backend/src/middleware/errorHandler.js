@@ -6,7 +6,7 @@
  * a consistent JSON envelope. In production the raw error message is never
  * leaked to clients.
  */
-export function errorHandler(isDev = process.env.NODE_ENV !== 'production') {
+export function errorHandler(isDev = process.env.NODE_ENV === 'development', allowedOrigins = null) {
   // eslint-disable-next-line no-unused-vars
   return (err, req, res, next) => {
     const status = err.status || err.statusCode || 500;
@@ -23,8 +23,16 @@ export function errorHandler(isDev = process.env.NODE_ENV !== 'production') {
       .catch(() => {});
 
     if (!res.headersSent) {
+      // Never reflect arbitrary origins in error responses — a preflight-less
+      // error must not grant CORS to an attacker-controlled page.
+      const origin = req.headers?.origin;
+      const allowOrigin =
+        origin && (isDev || (allowedOrigins && allowedOrigins.has(origin))) ? origin : undefined;
       if (typeof res.setHeader === 'function') {
-        res.setHeader('Access-Control-Allow-Origin', req.headers?.origin || '*');
+        if (allowOrigin) {
+          res.setHeader('Access-Control-Allow-Origin', allowOrigin);
+          res.setHeader('Vary', 'Origin');
+        }
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id');
       }

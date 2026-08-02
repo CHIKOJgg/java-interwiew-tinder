@@ -11,7 +11,7 @@ function makeInitData(user, botToken) {
   const data = {
     query_id: 'AAtest',
     user: JSON.stringify(user),
-    auth_date: '1700000000',
+    auth_date: String(Math.floor(Date.now() / 1000)),
   };
   const sorted = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
   const dataCheckString = sorted.map(([k, v]) => `${k}=${v}`).join('\n');
@@ -51,6 +51,21 @@ describe('validateTelegramWebAppData', () => {
       auth_date: '1700000000',
     });
     const result = validateTelegramWebAppData(params.toString(), BOT_TOKEN);
+    expect(result).toBeNull();
+  });
+
+  it('rejects initData older than 24 hours (stale replay)', () => {
+    const data = {
+      query_id: 'AAtest',
+      user: JSON.stringify(user),
+      auth_date: String(Math.floor(Date.now() / 1000) - 25 * 60 * 60),
+    };
+    const sorted = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
+    const dataCheckString = sorted.map(([k, v]) => `${k}=${v}`).join('\n');
+    const secret = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
+    const hash = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
+    const staleInitData = new URLSearchParams({ ...data, hash }).toString();
+    const result = validateTelegramWebAppData(staleInitData, BOT_TOKEN);
     expect(result).toBeNull();
   });
 });

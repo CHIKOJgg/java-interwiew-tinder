@@ -94,28 +94,51 @@ export async function sendTelegramMessage(chatId, text) {
 import logger from '../../config/logger.js';
 
 // ─── Activate subscription after confirmed payment ─────────────────
-// Idempotent: ON CONFLICT … DO UPDATE so replays are harmless.
+// Idempotent by chargeId: webhook replays are detected up front and ignored,
+// and a genuine re-purchase extends the subscription from its current expiry
+// (never resets the clock).
 export async function activateStarsSubscription(userId, planId, interval, chargeId) {
+  if (!chargeId) throw new Error('Missing chargeId — cannot activate subscription');
   const client = await pool.connect();
   try {
+    // Replay guard: this charge has already been processed.
+    const existingCharge = await client.query(
+      `SELECT id FROM user_subscriptions WHERE stars_charge_id = $1 OR payment_id = $1 LIMIT 1`,
+      [chargeId]
+    );
+    if (existingCharge.rows.length > 0) {
+      logger.info({ userId, planId, chargeId }, '⭐ Stars webhook replay ignored (charge already processed)');
+      return { success: true, replayed: true };
+    }
+
     await client.query('BEGIN');
 
     const isYearly   = interval === 'yearly';
-    const expiresAt  = new Date();
+    // Extend from the current expiry if the user still has an active
+    // subscription — a re-purchase stacks on top instead of wiping days.
+    const activeSub = await client.query(
+      `SELECT expires_at FROM user_subscriptions
+       WHERE user_id = $1 AND status = 'active' AND plan_id = $2
+       ORDER BY expires_at DESC NULLS LAST LIMIT 1`,
+      [userId, planId]
+    );
+    const base = new Date(activeSub.rows[0]?.expires_at || Date.now());
+    if (base.getTime() < Date.now()) base.setTime(Date.now());
+    const expiresAt = new Date(base);
     isYearly
       ? expiresAt.setFullYear(expiresAt.getFullYear() + 1)
       : expiresAt.setDate(expiresAt.getDate() + 30);
 
-    // Upsert subscription row — idempotent on chargeId
+    // Upsert subscription row — conflict only fires on a genuine re-purchase
+    // of the same plan; extend from the greatest expiry.
     await client.query(
       `INSERT INTO user_subscriptions
          (user_id, plan_id, status, expires_at, payment_provider, payment_id, stars_charge_id)
        VALUES ($1, $2, 'active', $3, 'stars', $4, $4)
        ON CONFLICT (user_id, plan_id, status) DO UPDATE
-         SET expires_at      = EXCLUDED.expires_at,
+         SET expires_at      = GREATEST(user_subscriptions.expires_at, EXCLUDED.expires_at),
              payment_id      = EXCLUDED.payment_id,
-             stars_charge_id = EXCLUDED.stars_charge_id,
-             started_at      = CURRENT_TIMESTAMP`,
+             stars_charge_id = EXCLUDED.stars_charge_id`,
       [userId, planId, expiresAt, chargeId]
     );
 

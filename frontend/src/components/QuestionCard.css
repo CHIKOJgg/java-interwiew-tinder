@@ -282,6 +282,7 @@
 /* ── Bookmark / report icons ──────────────────── */
 .bookmark-btn,
 .report-flag {
+  position: static; /* override the floating absolute rules above */
   background: var(--paper);
   color: var(--ink-soft);
   border: 2.5px solid var(--ink);

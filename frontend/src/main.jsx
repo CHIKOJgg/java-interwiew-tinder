@@ -29,6 +29,28 @@ function initTelegramApp() {
 
 initTelegramApp();
 
+// ─── Stale chunk self-healing ─────────────────────────────────────────
+// After a deploy the hashed chunk names change. If the shell (index.html)
+// or the service worker cache still references an old chunk, lazy imports
+// fail with "Failed to fetch dynamically imported module". Recovery:
+// wipe the SW cache and reload once — the fresh shell then loads new chunks.
+let chunkReloading = false;
+window.addEventListener('error', (event) => {
+  const msg = event.message || '';
+  if (!msg.includes('Failed to fetch dynamically imported module') && !msg.includes('error loading dynamically imported module')) return;
+  if (chunkReloading) return;
+  chunkReloading = true;
+  const reload = () => { window.location.reload(); };
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .catch(() => {})
+      .finally(reload);
+  } else {
+    reload();
+  }
+});
+
 // ─── Bootstrap ─────────────────────────────────────────────────────────
 async function bootstrap() {
   try {

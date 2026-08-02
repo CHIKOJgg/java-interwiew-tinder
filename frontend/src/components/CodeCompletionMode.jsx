@@ -1,40 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Code2, Check, X, Loader2, Braces, AlertTriangle } from 'lucide-react';
-import MonacoEditor from '@monaco-editor/react';
+import DOMPurify from 'dompurify';
+import { highlight } from '../utils/highlight';
 import '../utils/highlight.css';
 import './CodeCompletionMode.css';
 
-// Render a code snippet using Monaco Editor (read-only) with ___ as blank.
+// Render a code snippet with syntax highlighting and ___ as blank.
+// Uses the local highlighter (same as BugHuntingMode) instead of Monaco —
+// Monaco loads from a CDN which is unreachable for RU/BY users.
 function SnippetBlock({ snippet, selected, result, codeLanguage }) {
-  const parts = (snippet || '').split('___');
-  const displayPlaceholder = result
-    ? (result.isCorrect ? selected : selected)
+  const filled = result
+    ? (result.correctAnswer || selected || '___')
     : (selected || '___');
-  const fullCode = parts.join(displayPlaceholder);
-
+  const fullCode = (snippet || '').split('___').join(filled);
+  const html = useMemo(
+    () => DOMPurify.sanitize(highlight(fullCode, codeLanguage)),
+    [fullCode, codeLanguage]
+  );
   return (
-    <div className="hl-code-block snippet-block">
-      <MonacoEditor
-        height="auto"
-        language={codeLanguage}
-        theme="vs-dark"
-        value={fullCode}
-        options={{
-          minimap: { enabled: false },
-          fontSize: 14,
-          lineNumbers: 'off',
-          tabSize: 2,
-          wordWrap: 'on',
-          automaticLayout: true,
-          scrollBeyondLastLine: false,
-          readOnly: true,
-          cursorBlinking: 'solid',
-          padding: { top: 12, bottom: 12 },
-        }}
-      />
-    </div>
+    <pre
+      className="hl-code-block snippet-block"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }
 

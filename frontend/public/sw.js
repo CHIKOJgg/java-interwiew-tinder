@@ -1,4 +1,4 @@
-const CACHE = 'jit-v1';
+const CACHE = 'jit-v2';
 const STATIC = ['/', '/index.html', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
@@ -38,7 +38,7 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(request).then((cached) =>
-      cached || fetch(request).then((resp) => {
+      fetch(request).then((resp) => {
         if (resp.ok && (request.url.includes('/assets/') || STATIC.includes(new URL(request.url).pathname))) {
           const clone = resp.clone();
           caches.open(CACHE).then((c) => c.put(request, clone));

@@ -67,10 +67,9 @@
 }
 
 .snippet-block {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
+  margin: 4px 0 0;
   border-radius: 12px;
+  font-size: 13px;
 }
 
 .code-placeholder {

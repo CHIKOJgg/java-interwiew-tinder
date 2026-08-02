@@ -1430,6 +1430,21 @@ const migrations = [
     sql: `
       ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500);
     `
+  },
+  {
+    id: '046_pro_max_plan',
+    sql: `
+      INSERT INTO subscription_plans
+        (id, name, price_monthly, requests_per_day, ai_generations_per_month,
+         available_languages, available_modes, resume_analysis_limit,
+         interview_eval_limit, model_priority, stars_monthly, stars_yearly)
+      VALUES
+        ('pro_max', 'Pro Max', 50, 100000, 100000,
+         '{Java,Python,TypeScript,Go,Rust,React,Kotlin}',
+         '{swipe,test,bug-hunting,blitz,code-completion,mock-interview,concept-linker,system-design,review,peer-interview}',
+         100, 1000, 'quality', 2400, 21600)
+      ON CONFLICT (id) DO NOTHING;
+    `
   }
 ];
 

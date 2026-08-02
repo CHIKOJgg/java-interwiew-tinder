@@ -1889,10 +1889,10 @@ app.use('/api', trendsRouter);
 // в”Ђв”Ђв”Ђ Subscription в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/subscription/plans', async (req, res) => {
   try {
-    // Only surface the active 2-plan model (Free/Pro). Legacy 'premium' rows,
+    // Only surface the active plans (Free/Pro/Pro Max). Legacy 'premium' rows,
     // if any still exist, are excluded from the storefront.
     const { rows } = await pool.query(
-      "SELECT * FROM subscription_plans WHERE id IN ('free','pro') ORDER BY price_monthly ASC"
+      "SELECT * FROM subscription_plans WHERE id IN ('free','pro','pro_max') ORDER BY price_monthly ASC"
     );
     if (rows.length === 0) {
       // Return canonical default plans if table is empty or missing
@@ -1959,17 +1959,20 @@ app.post('/api/billing/stars/create-invoice', async (req, res) => {
     }
 
     const amount = await getStarsAmount(planId, interval || 'monthly');
+    const isYearly = (interval || 'monthly') === 'yearly';
 
     const response = await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/createInvoiceLink`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title: `Pro Plan (${planId})`,
-        description: 'Р”РѕСЃС‚СѓРї РєРѕ РІСЃРµРј С„СѓРЅРєС†РёСЏРј Java Interview Tinder РЅР° 1 РјРµСЃСЏС†',
-        payload: JSON.stringify({ userId: String(userId), planId }),
+        title: isYearly ? `Pro Plan (${planId}) — Yearly` : `Pro Plan (${planId})`,
+        description: isYearly
+          ? 'Доступ ко всем функциям Java Interview Tinder на 12 месяцев'
+          : 'Доступ ко всем функциям Java Interview Tinder на 1 месяц',
+        payload: JSON.stringify({ userId: String(userId), planId, interval: isYearly ? 'yearly' : 'monthly' }),
         provider_token: '', // Empty for Stars
         currency: 'XTR',
-        prices: [{ label: 'Pro Plan', amount }]
+        prices: [{ label: isYearly ? 'Pro Plan — Yearly' : 'Pro Plan', amount }]
       })
     });
 
@@ -2868,7 +2871,7 @@ app.post('/api/system-design/evaluate',
       if (userId) {
         const user = await pool.query('SELECT subscription_plan FROM users WHERE telegram_id = $1', [userId]);
         const plan = user.rows[0]?.subscription_plan || 'free';
-        if (plan !== 'pro' && !ADMIN_IDS.has(String(userId))) {
+        if (plan !== 'pro' && plan !== 'pro_max' && !ADMIN_IDS.has(String(userId))) {
           const limitCheck = await checkDailySdLimit(userId);
           if (!limitCheck.allowed) {
             return res.status(429).json({

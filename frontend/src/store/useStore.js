@@ -602,14 +602,14 @@ const useStore = create((set, get) => ({
   canAccessMode: (mode) => {
     const { user } = get();
     if (!user) return true; // not loaded yet — don't block the default flow
-    if (user.plan === 'admin' || user.plan === 'pro' || user.plan === 'annual_pro') return true;
+    if (user.plan === 'admin' || user.plan === 'pro' || user.plan === 'annual_pro' || user.plan === 'pro_max') return true;
     const modes = get().availableModes || user.available_modes || ['swipe', 'test'];
     return modes.includes(mode);
   },
 
   isPro: () => {
     const { user } = get();
-    return !!user && (user.plan === 'pro' || user.plan === 'annual_pro' || user.plan === 'admin');
+    return !!user && (user.plan === 'pro' || user.plan === 'annual_pro' || user.plan === 'pro_max' || user.plan === 'admin');
   },
 
   // Re-read billing state after a payment or cancellation and sync the store
@@ -620,12 +620,12 @@ const useStore = create((set, get) => ({
       const plan = info?.plan || 'free';
       const { user } = get();
       if (!user) return info;
-      const isPaid = plan === 'pro' || plan === 'annual_pro' || plan === 'admin';
+      const isPaid = plan === 'pro' || plan === 'annual_pro' || plan === 'pro_max' || plan === 'admin';
       const current = user?.plan;
       const normalized = plan === 'annual_pro' ? 'pro' : plan;
       if (current === normalized) return info;
       if (isPaid) {
-        const proModes = ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'system-design', 'review'];
+        const proModes = ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'system-design', 'review', 'peer-interview'];
         const proLangs = ['Java', 'Python', 'TypeScript', 'Go', 'Rust', 'React', 'Kotlin'];
         set({
           user: { ...user, plan: normalized },

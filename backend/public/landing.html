@@ -168,6 +168,9 @@
     .pricing { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; align-items:stretch; }
     .plan { background:var(--card); border-radius:18px; padding:26px 22px; box-shadow:0 1px 3px rgba(0,0,0,.06); display:flex; flex-direction:column; border:1px solid var(--line); position:relative; }
     .plan.featured { border:2px solid var(--brand); box-shadow:0 16px 40px rgba(92,124,250,.2); transform:translateY(-4px); }
+    .plan.pro-max-plan { border:2px solid #b197fc; background:#f7f2ff; box-shadow:0 16px 40px rgba(103,65,217,.15); transform:translateY(-4px); }
+    .plan.pro-max-plan .name { color:#6741d9; }
+    .plan.pro-max-plan .price { color:#6741d9; }
     .plan .badge { position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:var(--brand); color:#fff; font-size:11px; font-weight:800; padding:4px 12px; border-radius:999px; letter-spacing:.03em; }
     .plan .name { font-weight:800; font-size:19px; }
     .plan .price { font-size:32px; font-weight:800; margin:12px 0 2px; letter-spacing:-.02em; }
@@ -551,6 +554,19 @@
           </ul>
           <a class="btn" href="https://t.me/prep_interview_bot?start=pro&utm_source=landing&utm_medium=pricing_pro">Start 7-day PRO trial</a>
         </div>
+        <div class="plan pro-max-plan">
+          <div class="name">PRO MAX</div>
+          <div class="price" data-monthly="50" data-annual="480">$50<small>/mo</small></div>
+          <div class="price-note" id="proMaxNote">billed monthly</div>
+          <ul>
+            <li>Everything in PRO, unlimited</li>
+            <li>Live 1-on-1 interviews</li>
+            <li>Full AI mock interview room</li>
+            <li>All languages &amp; all modes</li>
+            <li>Priority AI model</li>
+          </ul>
+          <a class="btn" href="https://t.me/prep_interview_bot?start=pro_max&utm_source=landing&utm_medium=pricing_pro_max">Get Pro Max</a>
+        </div>
       </div>
       <div class="pwa-hint">
         <span>📲 Install as a PWA: tap <code>Install app</code> in your browser, or open in Telegram.</span>
@@ -840,6 +856,8 @@
         else { el.innerHTML='$'+n+'<small>/mo</small>'; }
       });
       document.getElementById('proNote').textContent= period==='annual'?'billed yearly · save 20%':'billed monthly';
+      var pmNote=document.getElementById('proMaxNote');
+      if(pmNote) pmNote.textContent= period==='annual'?'billed yearly · save 20%':'billed monthly';
     }
 
     (function(){

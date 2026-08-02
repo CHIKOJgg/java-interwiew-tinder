@@ -396,10 +396,23 @@ export default function Landing({ onStart, onLogin }) {
             <div className="plan featured">
               <div className="badge">MOST POPULAR</div>
               <div className="name">PRO</div>
-              <div className="price">{billing === 'annual' ? '$96<small>/yr</small>' : '$9.99<small>/mo</small>'}</div>
+              <div className="price">{billing === 'annual' ? <>$96<small>/yr</small></> : <>$9.99<small>/mo</small></>}</div>
               <div className="price-note" id="proNote">{billing === 'annual' ? 'billed yearly · save 20%' : 'billed monthly'}</div>
               <ul><li>Unlimited AI explanations</li><li>Mock Interview + feedback</li><li>Resume Analyzer</li><li>All 7 modes &amp; categories</li></ul>
               <a className="btn lime block" href={`https://t.me/${botUsername}?start=pro`} target="_blank" rel="noopener">Start 7-day PRO trial</a>
+            </div>
+            <div className="plan pro-max-plan">
+              <div className="name">PRO MAX</div>
+              <div className="price">{billing === 'annual' ? <>$480<small>/yr</small></> : <>$50<small>/mo</small></>}</div>
+              <div className="price-note" id="proMaxNote">{billing === 'annual' ? 'billed yearly · save 20%' : 'billed monthly'}</div>
+              <ul>
+                <li>Everything in PRO, unlimited</li>
+                <li>Live 1-on-1 interviews</li>
+                <li>Full AI mock interview room</li>
+                <li>All languages &amp; all modes</li>
+                <li>Priority AI model</li>
+              </ul>
+              <a className="btn block" href={`https://t.me/${botUsername}?start=pro_max`} target="_blank" rel="noopener">Get Pro Max</a>
             </div>
           </div>
         </div>

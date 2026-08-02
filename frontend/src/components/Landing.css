@@ -440,6 +440,13 @@
   position: relative;
 }
 .landing-wrap .plan.featured { background: var(--cream2); box-shadow: 6px 6px 0 var(--line); }
+.landing-wrap .plan.pro-max-plan {
+  background: #f3ecff;
+  border-color: #b197fc;
+  box-shadow: 6px 6px 0 #b197fc;
+}
+.landing-wrap .plan.pro-max-plan .name { color: #6741d9; }
+.landing-wrap .plan.pro-max-plan .price { color: #6741d9; }
 .landing-wrap .plan .badge {
   position: absolute;
   top: -13px;

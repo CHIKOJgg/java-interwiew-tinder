@@ -6,8 +6,8 @@ import { Check, Star, Shield, Zap, ArrowLeft, X, Clock, ChevronDown, ChevronUp, 
 import './SubscriptionPlans.css';
 
 // ─── Plan config ──────────────────────────────────────────────────────
-const PLAN_ICONS = { free: Zap, pro: Star, admin: Shield };
-const PLAN_COLORS = { free: '#adb5bd', pro: '#ffd43b', admin: '#748ffc' };
+const PLAN_ICONS = { free: Zap, pro: Star, pro_max: Crown, admin: Shield };
+const PLAN_COLORS = { free: '#adb5bd', pro: '#ffd43b', pro_max: '#7048e8', admin: '#748ffc' };
 
 // ─── Subscription Grant Panel ─────────────────────────────────────────
 // NOTE: this is intentionally distinct from components/AdminPanel.jsx (the

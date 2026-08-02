@@ -58,6 +58,22 @@ export const PLANS = {
     available_modes: ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'system-design', 'review'],
     model_priority: 'quality',
   },
+  pro_max: {
+    id: 'pro_max',
+    name: 'Pro Max',
+    price_monthly: 50,
+    price_yearly: 480,
+    stars_monthly: 2400,
+    stars_yearly: 21600,
+    requests_per_day: 100000,
+    ai_generations_per_month: 100000,
+    resume_analysis_limit: 100,
+    interview_eval_limit: 1000,
+    sd_evaluation_limit: 1000,
+    available_languages: ['Java', 'Python', 'TypeScript', 'Go', 'Rust', 'React', 'Kotlin'],
+    available_modes: ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'system-design', 'review', 'peer-interview'],
+    model_priority: 'quality',
+  },
 };
 
 export const FREE_DEFAULTS = {
@@ -71,4 +87,4 @@ export const FREE_DEFAULTS = {
   model_priority: PLANS.free.model_priority,
 };
 
-export const PLANS_LIST = [PLANS.free, PLANS.pro, PLANS.annual_pro];
+export const PLANS_LIST = [PLANS.free, PLANS.pro, PLANS.annual_pro, PLANS.pro_max];

@@ -21,6 +21,11 @@ function getPriceTon(planId, interval) {
     const yearly = parseFloat(process.env.TON_PRO_YEARLY_AMOUNT ?? '13.0');
     return interval === 'yearly' || planId === 'annual_pro' ? yearly : monthly;
   }
+  if (planId === 'pro_max') {
+    const monthly = parseFloat(process.env.TON_PRO_MAX_MONTHLY_AMOUNT ?? '12.0');
+    const yearly = parseFloat(process.env.TON_PRO_MAX_YEARLY_AMOUNT ?? '110.0');
+    return interval === 'yearly' ? yearly : monthly;
+  }
   throw new Error(`Unknown plan: ${planId}`);
 }
 

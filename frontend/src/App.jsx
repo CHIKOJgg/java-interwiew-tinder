@@ -423,7 +423,23 @@ if (screen === 'track-detail') return <Suspense fallback={<div className="app-lo
 if (screen === 'achievements') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AchievementScreen onBack={() => setScreen('main')} /></Suspense>;
    if (screen === 'profile') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProfileScreen onBack={() => setScreen('main')} onSettingsClick={() => setScreen('settings')} /></Suspense>;
    if (screen === 'settings') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><Settings onBack={() => setScreen('main')} onNavigate={(s) => setScreen(s)} onExport={exportProgress} onHelp={handleHelp} /></Suspense>;
-   if (screen === 'peer-interview') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PeerInterviewScreen onBack={() => setScreen('main')} /></Suspense>;
+   if (screen === 'peer-interview') {
+     if (!useStore.getState().canAccessMode('peer-interview')) {
+       return (
+         <div className="app-loading" style={{ minHeight: '70vh', justifyContent: 'center', alignItems: 'center', textAlign: 'center', gap: 12, padding: 24, display: 'flex', flexDirection: 'column' }}>
+           <p style={{ fontSize: 18, fontWeight: 600 }}>{t('peer.locked_title', 'Live interviews are part of Pro Max')}</p>
+           <p style={{ opacity: 0.6, maxWidth: 320 }}>{t('peer.locked_desc', 'Practice 1-on-1 with real people, get instant AI feedback and a full mock interview room — upgrade to Pro Max to unlock live sessions.')}</p>
+           <button className="start-button" style={{ marginTop: 8 }} onClick={() => setScreen('subscriptions')}>
+             {t('peer.upgrade', 'See Pro Max plans')}
+           </button>
+           <button className="ghost-btn" style={{ marginTop: 4 }} onClick={() => setScreen('main')}>
+             {t('common.back', 'Back')}
+           </button>
+         </div>
+       );
+     }
+     return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PeerInterviewScreen onBack={() => setScreen('main')} /></Suspense>;
+   }
    if (playgroundQuestion) return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><PlaygroundMode initialCode={playgroundQuestion.code} onBack={() => setPlaygroundQuestion(null)} /></Suspense>;
 
    const emptyDeck = () => (

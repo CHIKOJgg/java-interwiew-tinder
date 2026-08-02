@@ -35,8 +35,8 @@ function ProfileScreen({ onBack, onSettingsClick }) {
   const plan = user?.plan;
   const streak = stats?.streak;
   const progress = stats?.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
-  const planLabel = plan === 'pro' ? 'Pro' : plan === 'annual_pro' ? 'Annual Pro' : 'Free';
-  const planColor = plan === 'pro' || plan === 'annual_pro' ? 'var(--amber)' : 'var(--ink-soft)';
+  const planLabel = plan === 'pro' ? 'Pro' : plan === 'annual_pro' ? 'Annual Pro' : plan === 'pro_max' ? 'Pro Max' : 'Free';
+  const planColor = plan === 'pro' || plan === 'annual_pro' ? 'var(--amber)' : plan === 'pro_max' ? '#7048e8' : 'var(--ink-soft)';
 
   return (
     <div className="profile-screen">

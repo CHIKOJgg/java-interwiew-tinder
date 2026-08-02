@@ -32,11 +32,18 @@ function getAuthHeader() {
 }
 
 function getPriceRub(planId, interval) {
-  if (planId !== 'pro' && planId !== 'annual_pro') throw new Error(`Unknown plan: ${planId}`);
   const isYearly = interval === 'yearly' || planId === 'annual_pro';
-  const monthly = parseFloat(process.env.UKASSA_PRO_MONTHLY_AMOUNT ?? '590');
-  const yearly = parseFloat(process.env.UKASSA_PRO_YEARLY_AMOUNT ?? '5900');
-  return isYearly ? yearly : monthly;
+  if (planId === 'pro' || planId === 'annual_pro') {
+    const monthly = parseFloat(process.env.UKASSA_PRO_MONTHLY_AMOUNT ?? '590');
+    const yearly = parseFloat(process.env.UKASSA_PRO_YEARLY_AMOUNT ?? '5900');
+    return isYearly ? yearly : monthly;
+  }
+  if (planId === 'pro_max') {
+    const monthly = parseFloat(process.env.UKASSA_PRO_MAX_MONTHLY_AMOUNT ?? '4200');
+    const yearly = parseFloat(process.env.UKASSA_PRO_MAX_YEARLY_AMOUNT ?? '40000');
+    return isYearly ? yearly : monthly;
+  }
+  throw new Error(`Unknown plan: ${planId}`);
 }
 
 // ─── Create a card payment (redirect to YooKassa) ──────────────────

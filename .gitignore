@@ -25,3 +25,4 @@ backend/coverage/
 # Ignore local pnpm store
 .pnpm-store/
 
+.vercel

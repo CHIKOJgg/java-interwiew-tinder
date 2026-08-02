@@ -1,46 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, CheckCircle, XCircle, X, Check } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import useStore from '../../store/useStore';
 import apiClient from '../../api/client';
+import QuestionCard from '../QuestionCard';
 import './TrackMode.css';
 
 const TrackMode = ({ onBack }) => {
   const { t } = useTranslation();
   const { currentTrack, questions, currentIndex, swipeCard, advanceTrack } = useStore();
   const [trackInfo, setTrackInfo] = useState(null);
-  const [swiped, setSwiped] = useState(false);
-  const [pending, setPending] = useState(false);
-  const [swipedDirection, setSwipedDirection] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
   const cardRef = useRef(null);
-
   const question = questions[currentIndex];
 
   useEffect(() => {
-    if (currentTrack) {
-      apiClient.getTrack(currentTrack).then(setTrackInfo).catch(() => {});
-    }
+    if (currentTrack) apiClient.getTrack(currentTrack).then(setTrackInfo).catch(() => {});
   }, [currentTrack]);
 
   const handleSwipe = async (direction) => {
-    if (swiped || pending) return;
-    setSwiped(true);
-    setSwipedDirection(direction);
-
-    const status = direction === 'right' ? 'known' : 'unknown';
-    if (question) {
-      swipeCard(question.id, direction).catch(() => {});
-    }
-
-    setPending(true);
+    if (submitting || !question) return;
+    setSubmitting(true);
+    setError(null);
     try {
+      await swipeCard(question.id, direction);
       await advanceTrack();
+    } catch (err) {
+      setError(err?.message || t('tracks.answer_error', 'Не удалось сохранить ответ'));
     } finally {
-      setTimeout(() => {
-        setSwiped(false);
-        setSwipedDirection(null);
-        setPending(false);
-      }, 300);
+      setSubmitting(false);
     }
   };
 
@@ -48,44 +37,39 @@ const TrackMode = ({ onBack }) => {
     return (
       <div className="track-mode-empty">
         <p>{t('tracks.no_questions', 'No more questions in this track.')}</p>
-        <button className="track-btn-back" onClick={onBack}>{t('common.back', 'Back')}</button>
+        <button className="track-btn-back" onClick={onBack} type="button">{t('common.back', 'Back')}</button>
       </div>
     );
   }
 
+  const totalSteps = trackInfo?.totalSteps || 0;
+  const currentStep = trackInfo?.currentStep || currentIndex;
+  const progress = totalSteps ? Math.min(100, ((currentStep + 1) / totalSteps) * 100) : 0;
+
   return (
     <div className="track-mode">
       <div className="track-mode-header">
-        <button className="track-back-btn" onClick={onBack}>
-          <ArrowLeft size={20} />
-        </button>
-        <div className="track-progress-text">
-          {trackInfo && `${Math.min(trackInfo.currentStep + 1, trackInfo.totalSteps)} / ${trackInfo.totalSteps}`}
-        </div>
+        <button className="track-back-btn" onClick={onBack} type="button"><ArrowLeft size={20} /></button>
+        <div className="track-progress-text">{totalSteps ? `${Math.min(currentStep + 1, totalSteps)} / ${totalSteps}` : ''}</div>
         <div className="track-mode-progress">
-          <div
-            className="track-mode-progress-fill"
-            style={{ width: trackInfo ? `${Math.min(100, ((trackInfo.currentStep + 1) / trackInfo.totalSteps) * 100)}%` : '0%' }}
-          />
+          <div className="track-mode-progress-fill" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
       <div className="track-card-area">
-        <div className={`track-question-card ${swiped ? `swiped-${swipedDirection}` : ''}`} ref={cardRef}>
-          <div className="track-q-category">{question.category}</div>
-          <div className="track-q-text">{question.question}</div>
-          <div className="track-swipe-actions">
-            <button className="track-swipe-btn track-swipe-btn-left" onClick={() => handleSwipe('left')} disabled={pending}>
-              <X size={20} />
-              <span>{t('swipe.dont_know')}</span>
-            </button>
-            <button className="track-swipe-btn track-swipe-btn-right" onClick={() => handleSwipe('right')} disabled={pending}>
-              <Check size={20} />
-              <span>{t('swipe.know')}</span>
-            </button>
-          </div>
+        <div className="track-question-stack">
+          <QuestionCard
+            ref={cardRef}
+            question={question}
+            onSwipe={handleSwipe}
+            onSwipeLeft={() => cardRef.current?.swipe?.('left')}
+            onSwipeRight={() => cardRef.current?.swipe?.('right')}
+            swipeDisabled={submitting}
+            canSwipe={!submitting}
+          />
         </div>
       </div>
+      {error && <div className="track-mode-error" role="alert">⚠️ {error}</div>}
     </div>
   );
 };

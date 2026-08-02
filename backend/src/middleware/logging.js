@@ -79,12 +79,7 @@ export function sanitizeText(text) {
   return text
     .replace(/\r\n/g, '\n')
     .replace(new RegExp(String.fromCharCode(0), 'g'), '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;')
+    .replace(/<[^>]*>/g, '')
     .slice(0, 10000);
 }
 
@@ -94,9 +89,18 @@ export function sanitizeText(text) {
  */
 export function sanitizeBody(req, res, next) {
   if (req.body && typeof req.body === 'object') {
+    // Preserve code and document text for AI. Escaping these fields here
+    // changes the user's input (for example <T> becomes &lt;T&gt;) and makes
+    // generated results incorrect. Output is escaped at render time instead.
+    const rawTextFields = new Set([
+      'resumeText', 'vacancyText', 'questionText', 'shortAnswer',
+      'answer', 'code', 'stdin', 'content', 'codeSnippet',
+    ]);
     for (const [key, value] of Object.entries(req.body)) {
       if (typeof value === 'string' && key !== 'initData') {
-        req.body[key] = sanitizeText(value);
+        req.body[key] = rawTextFields.has(key)
+          ? value.replace(/\r\n/g, '\n').replace(new RegExp(String.fromCharCode(0), 'g'), '').slice(0, 10000)
+          : sanitizeText(value);
       }
     }
   }

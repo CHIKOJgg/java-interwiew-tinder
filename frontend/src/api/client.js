@@ -237,6 +237,13 @@ class ApiClient {
     });
   }
 
+  async requestGenerationBatch(type, questionIds) {
+    return this.request('/generate/batch', {
+      method: 'POST',
+      body: JSON.stringify({ type, questionIds, language: this.language }),
+    });
+  }
+
   // ─── Stats ─────────────────────────────────────────────────────────
   async getStats() {
     return this.request(`/stats?language=${this.language}`);

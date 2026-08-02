@@ -1,13 +1,18 @@
 .vacancy-prep {
   width: 100%;
-  max-width: 800px;
+  max-width: none;
   margin: 0 auto;
-  padding: 16px;
-  height: calc(100vh - 120px);
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  min-height: 100dvh;
+  height: 100dvh;
   overflow-y: auto;
+  background: var(--tg-theme-secondary-bg-color, #f8f9fa);
 }
 
 .vacancy-container {
+  width: min(1120px, 100%);
+  min-height: calc(100dvh - 32px);
+  margin: 0 auto;
   background: var(--paper);
   border: 2.5px solid var(--ink);
   border-radius: 18px;
@@ -176,6 +181,77 @@
   padding: 40px 0;
   color: var(--ink-soft);
   font-size: 14px;
+  color: var(--tg-theme-text-color, #495057);
+  line-height: 1.5;
+}
+
+.question-save {
+  background: none;
+  border: none;
+  color: var(--tg-theme-hint-color, #868e96);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.question-save:hover {
+  color: #fa5252;
+}
+
+.question-save.saved {
+  color: #228be6;
+}
+
+.share-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #2f9e44;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.vacancy-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.vacancy-actions .analyze-btn {
+  flex: 1;
+}
+
+@media (max-width: 400px) {
+  .vacancy-prep {
+    padding: 10px;
+  }
+  .vacancy-container {
+    padding: 16px;
+    border-radius: 18px;
+    gap: 16px;
+  }
+  .vacancy-header h2 {
+    font-size: 20px;
+  }
+  .input-group textarea {
+    padding: 11px 14px;
+    font-size: 13px;
+    border-radius: 12px;
+  }
+  .analyze-btn {
+    padding: 13px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+  .question-item {
+    padding: 11px 13px;
+    border-radius: 11px;
+  }
+  .vacancy-actions {
+    flex-direction: column;
+  }
 }
 
 .spinner {
@@ -199,15 +275,12 @@
   .vacancy-header h2 { font-size: 20px; }
   .input-group textarea { padding: 11px 14px; font-size: 13px; border-radius: 12px; }
   .analyze-btn { padding: 13px; font-size: 14px; border-radius: 12px; }
-  .result-card { padding: 14px; border-radius: 12px; }
+  .question-item { padding: 11px 13px; border-radius: 11px; }
+  .vacancy-actions { flex-direction: column; }
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  .vacancy-prep { padding: 8px; height: calc(100vh - 100px); }
+  .vacancy-prep { padding: 8px; height: 100dvh; }
   .vacancy-container { padding: 12px; gap: 10px; }
   .input-group textarea { padding: 8px 12px; }
-}
-
-@media (max-height: 500px) {
-  .vacancy-prep { height: calc(100vh - 100px); }
 }

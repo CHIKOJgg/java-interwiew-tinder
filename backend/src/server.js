@@ -37,6 +37,8 @@ import redis, { isConnected as isRedisConnected } from './config/redis.js';
 import logger from './config/logger.js';
 import { PLANS_LIST } from './config/plans.js';
 
+const isKnownPlan = (rows, planId) => rows?.length > 0 || PLANS_LIST.some(plan => plan.id === planId);
+
 if (process.env.NODE_ENV !== 'test' && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 16)) {
   console.error('FATAL: JWT_SECRET must be at least 16 characters long');
   process.exit(1);
@@ -72,7 +74,9 @@ const app = express();
 app.use(helmet());
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
-const isDev = process.env.NODE_ENV === 'development';
+// Test and local development may use the fixed mock identity, but production
+// must always require a real provider signature.
+const isDev = process.env.NODE_ENV !== 'production';
 
   const defaultAllowedOrigins = [
     'http://localhost:3000',
@@ -300,30 +304,6 @@ app.post('/api/auth/login', emailSendLimiter, async (req, res) => {
       }
     }
 
-    // Background warm-up: pre-enqueue AI generation jobs for this user's next questions
-    // This is fire-and-forget to keep login latency low.
-    (async () => {
-      try {
-        const preload = await pool.query(
-          `SELECT q.id, q.question_text, q.short_answer, q.language FROM questions q
-           LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
-           WHERE up.id IS NULL OR up.status = 'unknown' LIMIT 5`,
-          [user.telegram_id]
-        );
-        for (const q of preload.rows) {
-          await enqueueJob('explanation', {
-            questionId: q.id,
-            questionText: q.question_text,
-            shortAnswer: q.short_answer,
-            userId: user.telegram_id,
-            language: q.language || 'Java'
-          }).catch(err => logger.error({ err }, 'Failed to enqueue preload job'));
-        }
-      } catch (e) {
-        logger.error({ err: e, userId: user.telegram_id }, 'Preload error');
-      }
-    })();
-
     // Resolve plan
     let plan = 'free';
     if (ADMIN_IDS.has(String(user.telegram_id))) {
@@ -369,7 +349,7 @@ app.post('/api/auth/login', emailSendLimiter, async (req, res) => {
     }
 
     // Load tracks and stats in parallel so the client gets everything in one response
-    const [tracksResult, statsResult, totalResult, userStreak] = await Promise.all([
+    const [tracksResultRaw, statsResultRaw, totalResultRaw, userStreakRaw] = await Promise.all([
       pool.query(
         'SELECT * FROM learning_tracks WHERE language = $1 AND is_active = TRUE ORDER BY sort_order',
         [user.language || 'Java']
@@ -393,6 +373,13 @@ app.post('/api/auth/login', emailSendLimiter, async (req, res) => {
         [user.telegram_id]
       ),
     ]);
+    // Keep login resilient when an optional read is unavailable. A real
+    // database always returns { rows }, while degraded/test adapters may
+    // return undefined rather than rejecting the whole login response.
+    const tracksResult = tracksResultRaw || { rows: [] };
+    const statsResult = statsResultRaw || { rows: [] };
+    const totalResult = totalResultRaw || { rows: [] };
+    const userStreak = userStreakRaw || { rows: [] };
 
     const rawTracks = tracksResult.rows;
     let tracks = [];
@@ -444,10 +431,10 @@ app.post('/api/auth/login', emailSendLimiter, async (req, res) => {
       },
       tracks,
       stats: {
-        known: parseInt(statsResult.rows[0].known_count || 0),
-        unknown: parseInt(statsResult.rows[0].unknown_count || 0),
-        totalSeen: parseInt(statsResult.rows[0].total_seen || 0),
-        totalQuestions: parseInt(totalResult.rows[0].total || 0),
+         known: parseInt(statsResult.rows[0]?.known_count || 0),
+         unknown: parseInt(statsResult.rows[0]?.unknown_count || 0),
+         totalSeen: parseInt(statsResult.rows[0]?.total_seen || 0),
+         totalQuestions: parseInt(totalResult.rows[0]?.total || 0),
         streak: userStreak.rows[0]?.current_streak || 0,
         longestStreak: userStreak.rows[0]?.longest_streak || 0,
       },
@@ -874,12 +861,31 @@ app.post('/api/preferences/language', validateBody({ language: { required: true 
 });
 
 // ─── Question Feed ────────────────────────────────────────────────────
+function optionTextList(value) {
+  if (Array.isArray(value)) return value.filter(item => typeof item === 'string').map(item => item.trim()).filter(Boolean);
+  if (typeof value === 'string') {
+    try { return optionTextList(JSON.parse(value)); } catch { return []; }
+  }
+  if (value && Array.isArray(value.options)) return optionTextList(value.options);
+  return [];
+}
+
+function isTestReadyQuestion(question) {
+  const options = optionTextList(question.options);
+  if (options.length < 3) return false;
+  const normalized = options.map(option => option.toLowerCase());
+  if (new Set(normalized).size !== normalized.length) return false;
+  const banned = /^(i come on|don't know|dont know|know|не знаю|знаю|yes|no|да|нет)$/i;
+  return options.every(option => option.length >= 3 && !banned.test(option) && option.toLowerCase() !== question.question.trim().toLowerCase());
+}
+
 app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
   try {
     const userId = req.userId;
     const language = req.query.language || 'Java';
     const mode = req.query.mode || 'swipe';
     const limit = Math.min(parseInt(req.query.limit) || 5, 10);
+    const queryLimit = mode === 'test' ? Math.min(limit * 3, 30) : limit;
     const cursor = Math.max(0, parseInt(req.query.cursor) || 0);
     const seed = String(req.query.seed || 'default');
 
@@ -915,7 +921,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     if (difficulties && difficulties.length) { where.push(`q.difficulty = ANY($${p})`); params.push(difficulties); p++; }
     if (req.query.company) { where.push(`q.companies @> ARRAY[$${p}]`); params.push(req.query.company); p++; }
     const seedParam = `$${p++}`, limitParam = `$${p++}`, cursorParam = `$${p++}`;
-    params.push(seed, limit, cursor);
+     params.push(seed, queryLimit, cursor);
 
     const selectCols = `
       q.id, q.category, q.difficulty, q.question_text, q.short_answer,
@@ -955,6 +961,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
 
     const result = await pool.query(baseQuery, params);
     let questions = result.rows.map(mapRow);
+    if (mode === 'test') questions = questions.filter(isTestReadyQuestion);
 
     // Endless feed: if the new + due + unseen pool is exhausted (e.g. the user
     // has marked everything known and no reviews are due), top up with already
@@ -983,11 +990,14 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
         if (!seen.has(row.id)) questions.push(mapRow(row));
       }
     }
+    if (mode === 'test') questions = questions.filter(isTestReadyQuestion);
 
-    const hasMore = questions.length === limit;
+    const hasMore = mode === 'test'
+      ? result.rows.length === queryLimit
+      : questions.length === limit;
     res.json({
       questions,
-      meta: { language, mode, total: questions.length, cursor, nextCursor: cursor + questions.length, hasMore, refresher: questions.length < limit }
+      meta: { language, mode, total: questions.length, cursor, nextCursor: cursor + result.rows.length, hasMore, refresher: questions.length < limit }
     });
   } catch (error) {
     logger.error({ err: error }, 'Error in /questions/feed');
@@ -1034,16 +1044,97 @@ app.get('/api/questions/weak', requireEntitlement('mode', 'review'), async (req,
 });
 
 // ─── AI Generation (cache-first, non-blocking) ────────────────────────
+const GENERATION_TYPES = new Set(['explanation', 'test', 'blitz', 'bug', 'code']);
+const JSON_GENERATION_MODES = new Set(['test', 'bug', 'blitz', 'code']);
+
+// Warm several questions with one authenticated request. The server resolves
+// every question by id, so the browser cannot make a worker backfill data into
+// a different question by sending a forged text/id pair.
+app.post('/api/generate/batch', rateLimit('ai_generation'), async (req, res) => {
+  try {
+    const { type, questionIds, language = 'Java' } = req.body || {};
+    if (!GENERATION_TYPES.has(type) || type === 'explanation') {
+      return res.status(400).json({ error: 'Invalid batch generation type' });
+    }
+    if (!Array.isArray(questionIds) || questionIds.length === 0 || questionIds.length > 10) {
+      return res.status(400).json({ error: 'questionIds must contain 1 to 10 items' });
+    }
+
+    const ids = [...new Set(questionIds.map(id => Number(id)).filter(Number.isInteger))];
+    if (!ids.length) return res.status(400).json({ error: 'questionIds must contain valid ids' });
+
+    const { rows } = await pool.query(
+      `SELECT id, question_text, short_answer, category, language,
+              options, bug_hunting_data, blitz_data, code_completion_data
+       FROM questions
+       WHERE id = ANY($1::int[]) AND language = $2 AND is_active = TRUE`,
+      [ids, language],
+    );
+    const byId = new Map(rows.map(row => [row.id, row]));
+    const items = [];
+    const cacheColumn = { bug: 'bug_hunting_data', blitz: 'blitz_data', code: 'code_completion_data' }[type];
+
+    for (const id of ids) {
+      const question = byId.get(id);
+      if (!question) {
+        items.push({ questionId: id, status: 'not_found' });
+        continue;
+      }
+
+      let data = type === 'test' ? question.options : question[cacheColumn];
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        const cachedRaw = await checkCache(question.question_text, type, null, question.language || language);
+        if (cachedRaw) {
+          try { data = JSON_GENERATION_MODES.has(type) ? JSON.parse(cachedRaw) : cachedRaw; } catch { data = null; }
+        }
+      }
+      const hasData = type === 'test'
+        ? (Array.isArray(data) && data.length > 0) || (data?.options && data.options.length > 0)
+        : Boolean(data);
+      if (hasData) {
+        items.push({ questionId: id, status: 'ready', data });
+        continue;
+      }
+
+      await enqueueJob(type, {
+        questionId: id,
+        questionText: question.question_text,
+        shortAnswer: question.short_answer,
+        category: question.category,
+        language: question.language || language,
+      });
+      items.push({ questionId: id, status: 'pending' });
+    }
+    res.json({ type, language, items });
+  } catch (err) {
+    logger.error({ err }, 'Error in /api/generate/batch');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => {
   try {
     const { type } = req.params;
-    const { questionText, shortAnswer, category, questionId, language = 'Java' } = req.body;
+    let { questionText, shortAnswer, category, questionId, language = 'Java' } = req.body;
     const userId = req.userId;
-    if (!questionText) return res.status(400).json({ error: 'questionText is required' });
 
     const modeMap = { explanation: 'explanation', test: 'test', blitz: 'blitz', bug: 'bug', code: 'code' };
     const mode = modeMap[type];
     if (!mode) return res.status(400).json({ error: 'Invalid generation type' });
+
+    if (questionId) {
+      const { rows } = await pool.query(
+        'SELECT question_text, short_answer, category, language FROM questions WHERE id=$1 AND is_active=TRUE',
+        [questionId],
+      );
+      if (!rows[0]) return res.status(404).json({ error: 'Question not found' });
+      if (rows[0].language !== language) return res.status(400).json({ error: 'Question language mismatch' });
+      questionText = rows[0].question_text;
+      shortAnswer = rows[0].short_answer;
+      category = rows[0].category;
+      language = rows[0].language;
+    }
+    if (!questionText) return res.status(400).json({ error: 'questionText is required' });
 
     const cachedRaw = await checkCache(questionText, mode, null, language);
     if (cachedRaw) {
@@ -1057,8 +1148,9 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
       return res.json({ status: 'ready', data });
     }
 
-    // Include questionId in job payload so worker can backfill questions table
-    await enqueueJob(type, { questionText, shortAnswer, category, userId, questionId, language });
+    // userId is intentionally excluded from deterministic question jobs. The
+    // generated artifact is shared by users through the AI cache.
+    await enqueueJob(type, { questionText, shortAnswer, category, questionId, language });
     res.json({ status: 'pending' });
 
     // Track generation request
@@ -1370,7 +1462,7 @@ app.delete('/api/questions/swipe/:questionId', async (req, res) => {
 app.post('/api/questions/:questionId/report', reportLimiter, async (req, res) => {
   try {
     const { questionId } = req.params;
-    const { reason, comment } = req.body;
+    const { reason, comment = '' } = req.body;
     const userId = req.userId;
 
     if (typeof reason !== 'string' || reason.length > 50) {
@@ -1799,11 +1891,12 @@ app.post('/api/billing/stars/create-invoice', async (req, res) => {
     const { planId, interval } = req.body;
     const userId = req.userId;
 
-    const { rows: planRows } = await pool.query(
+    const planResult = await pool.query(
       'SELECT id FROM subscription_plans WHERE id = $1',
       [planId]
     );
-    if (planRows.length === 0) {
+    const planRows = planResult?.rows || [];
+    if (!isKnownPlan(planRows, planId)) {
       return res.status(400).json({ error: 'Invalid plan' });
     }
 
@@ -2046,11 +2139,12 @@ app.post('/api/billing/ton/invoice',
         return res.status(503).json({ error: 'TON payments are not configured on this server' });
       }
       const { planId, interval = 'monthly' } = req.body;
-      const { rows: planRows } = await pool.query(
+      const planResult = await pool.query(
         'SELECT id FROM subscription_plans WHERE id = $1',
         [planId]
       );
-      if (planRows.length === 0) {
+      const planRows = planResult?.rows || [];
+      if (!isKnownPlan(planRows, planId)) {
         return res.status(400).json({ error: 'Invalid plan' });
       }
       const invoice = await createTonInvoice(req.userId, planId, interval);
@@ -2098,11 +2192,12 @@ app.post('/api/billing/ukassa/invoice',
         return res.status(503).json({ error: 'Card payments are not configured on this server' });
       }
       const { planId, interval = 'monthly', returnUrl } = req.body;
-      const { rows: planRows } = await pool.query(
-        'SELECT id FROM subscription_plans WHERE id = $1',
-        [planId]
-      );
-      if (planRows.length === 0) {
+       const planResult = await pool.query(
+         'SELECT id FROM subscription_plans WHERE id = $1',
+         [planId]
+       );
+       const planRows = planResult?.rows || [];
+       if (!isKnownPlan(planRows, planId)) {
         return res.status(400).json({ error: 'Invalid plan' });
       }
       const redirect = returnUrl || process.env.FRONTEND_URL || 'https://t.me';
@@ -3156,7 +3251,7 @@ app.get('/api/companies', async (req, res) => {
 // ─── UGC Questions ─────────────────────────────────────────
 app.post('/api/questions/submit', validateBody({ question_text: { required: true }, short_answer: { required: true }, category: { required: true } }), async (req, res) => {
   try {
-    const { question_text, short_answer, category, difficulty, options, language } = req.body;
+    const { question_text, short_answer, category, difficulty = 'Junior', options = [], language = 'Java' } = req.body;
     const userId = req.userId;
 
     if (typeof question_text !== 'string' || question_text.length > 2000) {
@@ -3174,11 +3269,14 @@ app.post('/api/questions/submit', validateBody({ question_text: { required: true
     if (typeof language !== 'string' || language.length > 50) {
       return res.status(400).json({ error: 'language must be a string with max 50 characters' });
     }
+    if (!Array.isArray(options) || options.length > 10) {
+      return res.status(400).json({ error: 'options must be an array with max 10 items' });
+    }
 
     await pool.query(
       `INSERT INTO user_submitted_questions (user_id, category, difficulty, question_text, short_answer, options, language, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
-      [userId, category, difficulty || 'Junior', question_text, short_answer, options || [], language || 'Java']
+       [userId, category, difficulty, question_text, short_answer, options, language]
     );
     res.json({ success: true, message: 'Question submitted for review.' });
   } catch (err) {

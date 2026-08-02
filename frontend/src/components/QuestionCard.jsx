@@ -1,15 +1,14 @@
 import React, {
   useState,
   useRef,
+  useEffect,
   forwardRef,
   useImperativeHandle,
-  useEffect,
 } from 'react';
 import TinderCard from 'react-tinder-card';
-import { RotateCcw, Flag, Sparkles, Bookmark, BookmarkCheck, MessageSquare, X, Check } from 'lucide-react';
+import { RotateCcw, Flag, Sparkles, Bookmark, BookmarkCheck, X, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
-import DiscussionSheet from './DiscussionSheet';
 import './QuestionCard.css';
 
 const categoryColors = {
@@ -38,10 +37,9 @@ const QuestionCard = forwardRef(
   const { learningMode, loadExplanation, savedIds, toggleSave } = useStore();
   const [isFlipped, setIsFlipped] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showDiscussion, setShowDiscussion] = useState(false);
   const tinderRef = useRef(null);
 
-  useEffect(() => { setShowDiscussion(false); }, [question.id]);
+  useEffect(() => { setIsFlipped(false); }, [question.id]);
 
   const isSaved = !!savedIds[question.id];
   const isRepeat = !!question.prevStatus;
@@ -179,7 +177,7 @@ const QuestionCard = forwardRef(
                 <div className="card-swipe-actions">
                   <button
                     className="card-swipe-btn card-swipe-btn-left"
-                    onClick={(e) => { e.stopPropagation(); try { navigator.vibrate(10); } catch {} onSwipeLeft(); }}
+                     onClick={(e) => { e.stopPropagation(); try { navigator.vibrate(10); } catch { /* optional haptic */ } onSwipeLeft(); }}
                     disabled={swipeDisabled}
                     type="button"
                   >
@@ -188,7 +186,7 @@ const QuestionCard = forwardRef(
                   </button>
                   <button
                     className="card-swipe-btn card-swipe-btn-right"
-                    onClick={(e) => { e.stopPropagation(); try { navigator.vibrate(10); } catch {} onSwipeRight(); }}
+                     onClick={(e) => { e.stopPropagation(); try { navigator.vibrate(10); } catch { /* optional haptic */ } onSwipeRight(); }}
                     disabled={swipeDisabled}
                     type="button"
                   >
@@ -243,50 +241,30 @@ const QuestionCard = forwardRef(
                 </span>
               </div>
 
-              {learningMode === 'swipe' && (
-                <button
-                  className="explain-ai-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    loadExplanation(question.id);
-                  }}
-                  type="button"
-                >
-                  <Sparkles size={15} /> {t('card.explain_ai', 'Explain with AI')}
-                </button>
+              {['swipe', 'track'].includes(learningMode) && (
+                <div className="card-actions">
+                  <button
+                    className="explain-ai-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      loadExplanation(question.id);
+                    }}
+                    type="button"
+                  >
+                    <Sparkles size={15} /> {t('card.explain_ai', 'Разобрать ИИ')}
+                  </button>
+                  <button
+                    className={`bookmark-btn back ${isSaved ? 'saved' : ''}`}
+                    onClick={handleSave}
+                    type="button"
+                    title={t('card.bookmark', 'Save to review later')}
+                    disabled={saving}
+                  >
+                    {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+                    <span>{t('card.bookmark_short', 'Save')}</span>
+                  </button>
+                </div>
               )}
-
-              {learningMode === 'swipe' && (
-                <button
-                  className="discuss-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDiscussion(true);
-                  }}
-                  type="button"
-                >
-                  <MessageSquare size={15} /> {t('card.discuss', 'Discuss')}
-                </button>
-              )}
-
-              {showDiscussion && (
-                <DiscussionSheet
-                  questionId={question.id}
-                  onClose={() => setShowDiscussion(false)}
-                  isOwner={false}
-                />
-              )}
-
-              <button
-                className={`bookmark-btn back ${isSaved ? 'saved' : ''}`}
-                onClick={handleSave}
-                type="button"
-                title={t('card.bookmark', 'Save to review later')}
-                disabled={saving}
-              >
-                {isSaved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
-                {t('card.bookmark_short', 'Save')}
-              </button>
 
               {isRepeat && (
                 <p className="sr-note">

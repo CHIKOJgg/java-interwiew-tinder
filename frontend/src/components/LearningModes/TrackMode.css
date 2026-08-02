@@ -61,48 +61,15 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
+  min-height: 0;
 }
 
-.track-question-card {
-  background: var(--paper);
-  border: 2.5px solid var(--ink);
-  border-radius: 18px;
-  padding: 32px 24px 20px;
+.track-question-stack {
+  position: relative;
   width: 100%;
-  max-width: 400px;
-  text-align: center;
-  box-shadow: 4px 4px 0 var(--ink);
-  transition: transform 0.3s, opacity 0.3s;
-  display: flex;
-  flex-direction: column;
-}
-
-.track-question-card.swiped-left {
-  transform: translateX(-120%) rotate(-15deg);
-  opacity: 0;
-}
-
-.track-question-card.swiped-right {
-  transform: translateX(120%) rotate(15deg);
-  opacity: 0;
-}
-
-.track-q-category {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--blue);
-  margin-bottom: 16px;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.track-q-text {
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.5;
-  color: var(--ink);
-  flex: 1;
+  max-width: 560px;
+  height: 100%;
+  min-height: 0;
 }
 
 /* ── Embedded swipe action buttons ── */

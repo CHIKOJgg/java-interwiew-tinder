@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Code2, Check, X, Loader2, Braces, AlertTriangle } from 'lucide-react';
@@ -46,6 +46,7 @@ const CodeCompletionMode = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   const currentQuestion = questions[currentIndex];
   const completionData = currentQuestion?.codeCompletionData;
@@ -63,12 +64,13 @@ const CodeCompletionMode = () => {
   const handleSubmit = async () => {
     if (!selectedOption || isSubmitting) return;
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const response = await submitCodeCompletionAnswer(currentQuestion.id, selectedOption);
       setResult({ isCorrect: response.isCorrect, correctAnswer: response.correctAnswer });
     } catch (err) {
       console.error('Code completion submit error:', err);
-      setResult({ isCorrect: false, correctAnswer: completionData?.correctPart || '?' });
+      setSubmitError(err?.message || t('common.request_failed', 'Не удалось проверить ответ'));
     } finally {
       setIsSubmitting(false);
     }
@@ -140,10 +142,13 @@ const CodeCompletionMode = () => {
         </div>
 
         {!result ? (
-          <button className="submit-completion-btn"
-            disabled={!selectedOption || isSubmitting} onClick={handleSubmit}>
-            {isSubmitting ? <Loader2 className="spinner" size={18} /> : t('code_completion.submit', 'Finish')}
-          </button>
+          <>
+            {submitError && <div className="mode-error" role="alert">⚠️ {submitError}</div>}
+            <button className="submit-completion-btn"
+              disabled={!selectedOption || isSubmitting} onClick={handleSubmit} type="button">
+              {isSubmitting ? <Loader2 className="spinner" size={18} /> : t('code_completion.submit', 'Finish')}
+            </button>
+          </>
         ) : (
           <div className="completion-result-feedback">
             {result.isCorrect

@@ -18,7 +18,9 @@ export default class ErrorBoundary extends Component {
         stack: error?.stack?.split('\n').slice(0, 8).join('\n'),
         time: Date.now(),
       }));
-    } catch {}
+     } catch {
+       // Local error persistence is best-effort.
+     }
   }
 
   render() {

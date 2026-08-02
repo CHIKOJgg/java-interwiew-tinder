@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, BookOpen, CheckCircle, ChevronRight, Play } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle, ChevronRight } from 'lucide-react';
 import useStore from '../store/useStore';
 import './TracksScreen.css';
 
@@ -24,6 +24,15 @@ const TracksScreen = ({ onStartTrack, onBack, onSkipToCategories }) => {
         <p>{t('tracks.subtitle', 'Structured paths to master interview topics')}</p>
       </div>
 
+      <div className="tracks-quick-start">
+        <button className="quick-start-btn" onClick={onSkipToCategories} type="button">
+          <BookOpen size={18} />
+          <span>{t('tracks.quick_start', 'Перейти к обучению сразу')}</span>
+          <ChevronRight size={18} />
+        </button>
+        <p>{t('tracks.quick_start_hint', 'Начать практику без выбора трека')}</p>
+      </div>
+
       <div className="tracks-scroll">
         {loading ? (
           <div className="tracks-loading">{t('common.loading', 'Loading...')}</div>
@@ -43,9 +52,7 @@ const TracksScreen = ({ onStartTrack, onBack, onSkipToCategories }) => {
       </div>
 
       <div className="tracks-footer">
-        <button className="skip-link" onClick={onSkipToCategories}>
-          {t('tracks.skip_to_practice', 'Skip to free practice →')}
-        </button>
+        <span className="tracks-footer-note">{t('tracks.choose_track_hint', 'Или выберите структурированный трек ниже')}</span>
       </div>
     </div>
   );

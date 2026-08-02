@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS questions (
     blitz_data            JSONB,
     code_completion_data  JSONB,
     cached_explanation    TEXT,
+    test_ready            BOOLEAN      DEFAULT FALSE,
+    quality_flags         JSONB        DEFAULT '[]'::jsonb,
     is_active             BOOLEAN      DEFAULT TRUE,
     created_at            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(question_text, language)

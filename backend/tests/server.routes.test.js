@@ -672,7 +672,7 @@ describe('POST /api/questions/bug-hunt-answer', () => {
 
 // ─── BLITZ ANSWER ─────────────────────────────────────────────────────────
 describe('POST /api/questions/blitz-answer', () => {
-  it('trusts client when data missing', async () => {
+  it('rejects client answer when server data is missing', async () => {
     pool.query
       .mockResolvedValueOnce({ rows: [{ blitz_data: null }] }) // resolveAIData
       .mockResolvedValueOnce({ rows: [] })
@@ -683,8 +683,7 @@ describe('POST /api/questions/blitz-answer', () => {
       .post('/api/questions/blitz-answer')
       .set('Authorization', `Bearer ${userToken}`)
       .send({ questionId: '1', answer: true, clientIsCorrect: true });
-    expect(res.status).toBe(200);
-    expect(res.body.isCorrect).toBe(true);
+    expect(res.status).toBe(404);
   });
 
   it('uses server data when present', async () => {
@@ -701,16 +700,14 @@ describe('POST /api/questions/blitz-answer', () => {
     expect(res.body.isCorrect).toBe(true);
   });
 
-  it('500 on error', async () => {
-    // resolveAIData error is caught internally (falls back to clientIsCorrect),
-    // so the reject must land on recordProgress to surface a 500.
+  it('returns not-ready when server data is missing', async () => {
     pool.query.mockResolvedValueOnce({ rows: [{ blitz_data: null }] }); // resolveAIData
-    pool.query.mockRejectedValueOnce(new Error('x')); // recordProgress
+    checkCache.mockResolvedValueOnce(null);
     const res = await request(app)
       .post('/api/questions/blitz-answer')
       .set('Authorization', `Bearer ${userToken}`)
       .send({ questionId: '1', answer: true });
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(404);
   });
 });
 

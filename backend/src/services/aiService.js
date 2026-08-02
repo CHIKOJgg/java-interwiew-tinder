@@ -364,7 +364,7 @@ export function generateResumeQuestions(resumeData, language = 'Java') {
 
 export function generateVacancyQuestions(vacancyText, language = 'Java') {
   const { prompts } = getLanguage(language);
-  const { system, user } = prompts.vacancy(language, vacancyText);
+  const { system, user } = prompts.vacancy(vacancyText);
   logger.info({ mode: 'vacancy', language, textLength: vacancyText?.length }, 'generateVacancyQuestions called');
   return callAI({ questionText: vacancyText.substring(0, 300), mode: 'vacancy', language, isJson: true, maxTokens: 800, temperature: 0.5, systemPrompt: system, userPrompt: user });
 }

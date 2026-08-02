@@ -48,7 +48,13 @@ export default function MarketTrends({ onBack }) {
         )}
 
         {error && (
-          <div className="analyze-error"><AlertCircle size={16} /> {error}</div>
+          <div className="trends-error-state">
+            <div className="analyze-error">⚠️ {error}</div>
+            <button className="refresh-btn" onClick={loadTrends} disabled={loading} type="button">
+              <RefreshCw size={16} className={loading ? 'spinner' : ''} />
+              {t('common.retry', 'Повторить')}
+            </button>
+          </div>
         )}
 
         {trends && (
@@ -81,7 +87,7 @@ export default function MarketTrends({ onBack }) {
                 </h3>
                 <div className="skills-list">
                   {trends.topSkills.map((skill, i) => (
-                    <span key={i} className="skill-tag">{skill}</span>
+                    <span key={i} className="skill-tag">{typeof skill === 'string' ? skill : `${skill.name} (${skill.count})`}</span>
                   ))}
                 </div>
               </div>
@@ -95,12 +101,13 @@ export default function MarketTrends({ onBack }) {
                 </h3>
                 <div className="companies-list">
                   {trends.topCompanies.map((company, i) => (
-                    <span key={i} className="company-tag">{company}</span>
+                    <span key={i} className="company-tag">{typeof company === 'string' ? company : `${company.name} (${company.count})`}</span>
                   ))}
                 </div>
               </div>
             )}
 
+            {trends.isStale && <p className="trends-stale">{t('trends.stale', 'Показаны последние сохраненные данные')}</p>}
             <button className="refresh-btn" onClick={loadTrends} disabled={loading}>
               <RefreshCw size={16} className={loading ? 'spinner' : ''} />
               {t('trends.refresh', 'Refresh')}

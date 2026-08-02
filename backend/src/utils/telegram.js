@@ -13,23 +13,7 @@ export const validateTelegramWebAppData = (initData, botToken) => {
     const hash = urlParams.get('hash');
 
     if (!hash) {
-      try {
-        const userParam = urlParams.get('user');
-        if (userParam) {
-          const user = JSON.parse(userParam);
-          logger.warn({ telegramId: user.id }, 'No hash in initData — using unvalidated fallback');
-          return {
-            telegram_id: user.id,
-            username: user.username || null,
-            first_name: user.first_name || null,
-            last_name: user.last_name || null,
-          };
-        }
-      } catch (e) {
-        logger.warn({ initDataPreview: initData?.slice(0,400) }, 'No hash and no parseable user — rejecting');
-        return null;
-      }
-      logger.warn({ initDataPreview: initData?.slice(0,400), initDataLen: initData?.length }, 'No hash in initData — rejecting');
+      logger.warn({ initDataPreview: initData?.slice(0, 400), initDataLen: initData?.length }, 'No hash in initData — rejecting');
       return null;
     }
 

@@ -73,11 +73,11 @@ const BlitzMode = () => {
     if (!isBlitzActive || feedback || answeredRef.current) return;
     answeredRef.current = true;
     const q = questions[currentIndex];
-    if (!q) return;
+    if (!q) { answeredRef.current = false; return; }
 
     // Evaluate locally using whatever blitzData we have (AI or fallback)
     const blitzData = q.blitzData && !q.blitzData.__error ? q.blitzData : localBlitzData;
-    if (!blitzData) return;
+    if (!blitzData) { answeredRef.current = false; return; }
 
     const correct = Boolean(answer) === Boolean(blitzData.isCorrect);
     setFeedback(correct ? 'correct' : 'incorrect');

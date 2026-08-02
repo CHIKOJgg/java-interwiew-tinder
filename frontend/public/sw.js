@@ -1,7 +1,5 @@
 const CACHE = 'jit-v1';
 const STATIC = ['/', '/index.html', '/manifest.webmanifest'];
-const API_CACHE = 'jit-api-v1';
-const API_CACHE_MAX_AGE = 5 * 60 * 1000; // 5 min
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -12,8 +10,8 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE && k !== API_CACHE).map((k) => caches.delete(k)))
+       caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();

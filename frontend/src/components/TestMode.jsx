@@ -29,6 +29,7 @@ const TestMode = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   const currentQuestion = questions[currentIndex];
 
@@ -88,11 +89,12 @@ const TestMode = () => {
   const handleSubmit = async () => {
     if (!selectedOption || isSubmitting) return;
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const response = await submitTestAnswer(currentQuestion.id, selectedOption);
       setResult({ isCorrect: response.isCorrect, correctAnswer: response.correctAnswer });
     } catch (err) {
-      console.error('Test submit error:', err);
+      setSubmitError(err?.message || t('common.request_failed', 'Не удалось проверить ответ'));
     } finally {
       setIsSubmitting(false);
     }
@@ -188,14 +190,17 @@ const TestMode = () => {
         </div>
 
         {!result ? (
-          <button
-            className="submit-test-button"
-            disabled={!selectedOption || isSubmitting}
-            onClick={handleSubmit}
-            type="button"
-          >
-            {isSubmitting ? <Loader2 className="spinner" size={18} /> : t('test.submit', 'Answer')}
-          </button>
+          <>
+            {submitError && <div className="mode-error" role="alert">⚠️ {submitError}</div>}
+            <button
+              className="submit-test-button"
+              disabled={!selectedOption || isSubmitting}
+              onClick={handleSubmit}
+              type="button"
+            >
+              {isSubmitting ? <Loader2 className="spinner" size={18} /> : t('test.submit', 'Answer')}
+            </button>
+          </>
         ) : (
           <div className="test-result-feedback">
             {result.isCorrect ? (

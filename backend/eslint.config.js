@@ -17,6 +17,11 @@ export default [
     },
   },
   {
-    ignores: ['node_modules/', 'coverage/'],
+    ignores: [
+      'node_modules/',
+      'coverage/',
+      'public/',
+      'src/scripts/seed-generated.mjs',
+    ],
   },
 ];

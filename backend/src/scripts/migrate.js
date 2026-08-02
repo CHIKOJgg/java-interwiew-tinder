@@ -29,7 +29,7 @@ const migrations = [
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20) DEFAULT 'Junior';
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS prompt_version VARCHAR(10) DEFAULT 'v1';
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS generated_at TIMESTAMP;
-      ALTER TABLE questions ADD COLUMN IF NOT EXISTS options TEXT[];
+       ALTER TABLE questions ADD COLUMN IF NOT EXISTS options JSONB;
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS bug_hunting_data JSONB;
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS blitz_data JSONB;
       ALTER TABLE questions ADD COLUMN IF NOT EXISTS code_completion_data JSONB;
@@ -1130,7 +1130,6 @@ const migrations = [
       WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
     `
   },
-
   // ── 043: Seed learning tracks for Go, Rust, React, Kotlin ──
   {
     id: '043_seed_tracks_go_rust_react_kotlin',
@@ -1407,6 +1406,23 @@ const migrations = [
       UPDATE subscription_plans
       SET available_languages = ARRAY['Java', 'Python', 'TypeScript', 'Go', 'Rust', 'React', 'Kotlin']
       WHERE id IN ('free', 'pro', 'annual_pro');
+       `
+  },
+  {
+    id: '044_question_quality_and_json_options',
+    sql: `
+      ALTER TABLE questions
+        ALTER COLUMN options TYPE JSONB
+        USING CASE WHEN options IS NULL THEN NULL ELSE to_jsonb(options) END;
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS test_ready BOOLEAN DEFAULT FALSE;
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS quality_flags JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE user_submitted_questions
+        ALTER COLUMN options TYPE JSONB
+        USING CASE WHEN options IS NULL THEN NULL ELSE to_jsonb(options) END;
+      CREATE INDEX IF NOT EXISTS idx_questions_feed_language_active
+        ON questions(language, is_active, category);
+      CREATE INDEX IF NOT EXISTS idx_questions_test_ready
+        ON questions(language, test_ready) WHERE is_active = TRUE;
     `
   }
 ];

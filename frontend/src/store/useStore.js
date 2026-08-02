@@ -9,6 +9,10 @@ function loadFromLocal(key) { try { return JSON.parse(localStorage.getItem(`${CA
 function saveToSession(key, data) { try { sessionStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(data)); } catch { /* ignore */ } }
 function loadFromSession(key) { try { return JSON.parse(sessionStorage.getItem(`${CACHE_KEY}_${key}`)); } catch { return null; } }
 
+// One generation run per question/mode. A global polling token used to cancel
+// every other prefetch as soon as the next question started loading.
+const generationRuns = new Map();
+
 function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
@@ -343,7 +347,7 @@ const useStore = create((set, get) => ({
        if (append) {
           set(s => ({
             questions: [...s.questions, ...newQs],
-            feedCursor: s.feedCursor + newQs.length,
+             feedCursor: response.meta?.nextCursor ?? (s.feedCursor + newQs.length),
             hasMore,
             feedRefresher: response.meta?.refresher ?? false,
             isLoadingQuestions: false,
@@ -353,15 +357,18 @@ const useStore = create((set, get) => ({
           set({
             questions: newQs,
             currentIndex: 0,
-            feedCursor: newQs.length,
+             feedCursor: response.meta?.nextCursor ?? newQs.length,
             hasMore,
             feedRefresher: response.meta?.refresher ?? false,
             isLoadingQuestions: false,
             _loadingLock: false,
           });
         }
-       logger.info(`Store: loadQuestions ok (append=${append})`, `count=${newQs.length}`, `hasMore=${hasMore}`, `refresher=${response.meta?.refresher ?? false}`);
-       saveToLocal(`questions_${mode}`, newQs);
+        logger.info(`Store: loadQuestions ok (append=${append})`, `count=${newQs.length}`, `hasMore=${hasMore}`, `refresher=${response.meta?.refresher ?? false}`);
+        saveToLocal(`questions_${get().language}_${mode}`, newQs);
+        if (['test', 'bug-hunting', 'blitz', 'code-completion'].includes(mode)) {
+          get().primeModeData().catch(() => {});
+        }
     } catch (error) {
       if (error?.feature === 'mode') {
         // Server rejected this mode (shouldn't happen — UI guards first, but
@@ -373,7 +380,7 @@ const useStore = create((set, get) => ({
         }
       }
       if (!append) {
-        const cached = loadFromLocal(`questions_${get().learningMode}`);
+        const cached = loadFromLocal(`questions_${get().language}_${get().learningMode}`);
         if (cached?.length > 0) {
           logger.warn('Store: feed failed, using local cache', `count=${cached.length}`);
           set({ questions: cached, currentIndex: 0, feedCursor: cached.length, hasMore: false, isLoadingQuestions: false, _loadingLock: false });
@@ -702,78 +709,98 @@ const useStore = create((set, get) => ({
   },
 
   // ─── AI generation ─────────────────────────────────────────────────
+  primeModeData: async () => {
+    const { learningMode, questions, currentIndex } = get();
+    const typeMap = {
+      test: 'test',
+      'bug-hunting': 'bug',
+      blitz: 'blitz',
+      'code-completion': 'code',
+    };
+    const type = typeMap[learningMode];
+    if (!type) return;
+
+    const candidates = questions.slice(currentIndex, currentIndex + 3)
+      .filter((question) => question?.id);
+    if (!candidates.length) return;
+
+    try {
+      const batch = await apiClient.requestGenerationBatch(type, candidates.map(q => q.id));
+      for (const item of batch.items || []) {
+        if (item.status === 'ready' && item.data) {
+          set(state => ({
+            questions: state.questions.map(q => q.id === item.questionId
+              ? {
+                ...q,
+                [type === 'test' ? 'options' : ({ bug: 'bugHuntingData', blitz: 'blitzData', code: 'codeCompletionData' }[type])]: type === 'test'
+                  ? (Array.isArray(item.data) ? item.data : item.data.options || q.options)
+                  : item.data,
+              }
+              : q),
+          }));
+        } else {
+          get().fetchGeneration(type, item.questionId).catch(() => {});
+        }
+      }
+    } catch (error) {
+      logger.warn('Store: generation prefetch failed', error.message);
+    }
+  },
+
   fetchGeneration: async (type, questionId, _attempt = 0) => {
     // Generous budget: OpenRouter free tier + queue can take 30-60s per job.
     const MAX_ATTEMPTS = 25;
     const POLL_INTERVAL_MS = 2000;
-    const pollId = ++get()._pollRequestId;
-
-    const question = get().questions.find(q => q.id === questionId);
-    if (!question) return;
+    const key = `${type}:${questionId}`;
+    if (_attempt === 0 && generationRuns.has(key)) return generationRuns.get(key);
 
     const typeMap = { test: 'options', bug: 'bugHuntingData', blitz: 'blitzData', code: 'codeCompletionData' };
     const dataKey = typeMap[type];
+    const question = get().questions.find(q => q.id === questionId);
+    if (!question || !dataKey) return null;
 
-    // Reset error state when starting a fresh attempt so the UI shows loading again
     if (_attempt === 0) {
       set(state => ({
-        questions: state.questions.map(q =>
-          q.id === questionId ? { ...q, [dataKey]: null } : q
-        ),
+        questions: state.questions.map(q => q.id === questionId ? { ...q, [dataKey]: null } : q),
       }));
     }
 
-    // Bug 5 fix: terminal failure after MAX_ATTEMPTS — set a sentinel so the
-    // component can show an error instead of spinning forever
-    if (_attempt >= MAX_ATTEMPTS) {
-      console.error(`fetchGeneration(${type}) exceeded ${MAX_ATTEMPTS} attempts for q=${questionId}`);
-      set(state => ({
-        questions: state.questions.map(q =>
-          q.id === questionId
-            ? { ...q, [dataKey]: { __error: true, message: 'AI generation timed out. Try switching to a different mode.' } }
-            : q
-        ),
-      }));
-      return;
-    }
-
-    try {
-      // Pass questionId so the server includes it in the job payload for worker backfill
-      const response = await apiClient.requestGeneration(
-        type, question.question, question.shortAnswer, question.category, questionId
-      );
-
-      if (pollId !== get()._pollRequestId) return;
-
-      if (response.status === 'ready' && response.data) {
-        set(state => ({
-          questions: state.questions.map(q =>
-            q.id === questionId
-              ? {
-                ...q,
-                [dataKey]: response.data,
-                // For test mode the AI returns { options: [...] }, so pull the
-                // array out. Some cached payloads may already be a bare array.
-                options: type === 'test'
-                  ? (Array.isArray(response.data) ? response.data : (response.data?.options || q.options))
-                  : q.options,
-              }
-              : q
-          ),
-        }));
-        return response.data;
+    const run = (async () => {
+      for (let attempt = _attempt; attempt < MAX_ATTEMPTS; attempt += 1) {
+        try {
+          const response = await apiClient.requestGeneration(
+            type, question.question, question.shortAnswer, question.category, questionId,
+          );
+          if (response.status === 'ready' && response.data) {
+            set(state => ({
+              questions: state.questions.map(q => q.id === questionId
+                ? {
+                  ...q,
+                  [dataKey]: type === 'test'
+                    ? (Array.isArray(response.data) ? response.data : response.data?.options || q.options)
+                    : response.data,
+                }
+                : q),
+            }));
+            return response.data;
+          }
+        } catch (err) {
+          logger.warn(`fetchGeneration(${type}) attempt ${attempt} failed`, err.message);
+        }
+        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
       }
 
-      // Still pending — wait and retry
-      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
-      if (pollId !== get()._pollRequestId) return;
-      return get().fetchGeneration(type, questionId, _attempt + 1);
-    } catch (err) {
-      console.error(`fetchGeneration(${type}) attempt ${_attempt} failed:`, err.message);
-      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
-      if (pollId !== get()._pollRequestId) return;
-      return get().fetchGeneration(type, questionId, _attempt + 1);
-    }
+      set(state => ({
+        questions: state.questions.map(q => q.id === questionId
+          ? { ...q, [dataKey]: { __error: true, message: 'AI generation timed out. Try again.' } }
+          : q),
+      }));
+      return null;
+    })();
+
+    generationRuns.set(key, run);
+    run.finally(() => generationRuns.delete(key));
+    return run;
   },
 
   // ─── Explanation ───────────────────────────────────────────────────
@@ -1001,8 +1028,10 @@ const useStore = create((set, get) => ({
           set(s => ({ questions: [...s.questions, question], currentIndex: s.currentIndex + 1 }));
         }
       }
+      return result;
     } catch (err) {
       logger.error('Failed to advance track:', err.message);
+      throw err;
     }
   },
 

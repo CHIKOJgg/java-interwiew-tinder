@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
-import { FileText, Search, Target, Sparkles, Loader2, ArrowLeft, ArrowRight, Bookmark, Share2, AlertCircle } from 'lucide-react';
+import { FileText, Target, Sparkles, Loader2, ArrowLeft, Bookmark, BookmarkCheck, Share2, Check, AlertCircle } from 'lucide-react';
 import './VacancyPrep.css';
 
 export default function VacancyPrep({ onBack }) {
   const { t } = useTranslation();
-  const { prepareVacancy, isAnalyzingResume } = useStore();
+  const { prepareVacancy, setLearningMode } = useStore();
 
   const [vacancyText, setVacancyText] = useState('');
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [savedQuestions, setSavedQuestions] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('jit_vacancy_saved') || '{}'); } catch { return {}; }
+  });
+  const [shareState, setShareState] = useState(null);
 
   const handleAnalyze = async () => {
     if (!vacancyText.trim() || loading) return;
@@ -29,7 +33,31 @@ export default function VacancyPrep({ onBack }) {
   };
 
   const handleTopicClick = (topic) => {
-    useStore.getState().setLearningMode('swipe');
+    setLearningMode('swipe');
+    setShareState(t('vacancy.topic_selected', `Тема «${topic}» выбрана для дальнейшей практики`));
+  };
+
+  const toggleSave = (index, question) => {
+    const key = `${index}:${question}`;
+    setSavedQuestions(current => {
+      const next = { ...current, [key]: !current[key] };
+      try { localStorage.setItem('jit_vacancy_saved', JSON.stringify(next)); } catch { /* local cache is optional */ }
+      return next;
+    });
+  };
+
+  const handleShare = async () => {
+    const text = [
+      t('vacancy.title', 'Vacancy Prep'),
+      ...(result?.questions || []).map((question, index) => `${index + 1}. ${typeof question === 'string' ? question : question.question}`),
+    ].join('\n');
+    try {
+      if (navigator.share) await navigator.share({ title: t('vacancy.title', 'Vacancy Prep'), text });
+      else await navigator.clipboard.writeText(text);
+      setShareState(t('vacancy.shared', 'Результат скопирован'));
+    } catch (err) {
+      if (err?.name !== 'AbortError') setShareState(t('vacancy.share_error', 'Не удалось поделиться результатом'));
+    }
   };
 
   return (
@@ -106,15 +134,20 @@ export default function VacancyPrep({ onBack }) {
                   <span className="question-count">{result.questions.length}</span>
                 </h3>
                 <div className="questions-list">
-                  {result.questions.map((q, i) => (
+                  {result.questions.map((q, i) => {
+                    const questionText = typeof q === 'string' ? q : q.question;
+                    const key = `${i}:${questionText}`;
+                    const isSaved = !!savedQuestions[key];
+                    return (
                     <div key={i} className="question-item">
                       <span className="question-num">{i + 1}.</span>
-                      <span className="question-text">{q}</span>
-                      <button className="question-save" title={t('vacancy.save', 'Save question')}>
-                        <Bookmark size={14} />
+                      <span className="question-text">{questionText}</span>
+                      <button className={`question-save ${isSaved ? 'saved' : ''}`} title={t('vacancy.save', 'Save question')} onClick={() => toggleSave(i, questionText)} type="button">
+                        {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
                       </button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -124,11 +157,12 @@ export default function VacancyPrep({ onBack }) {
                 <ArrowLeft size={20} />
                 <span>{t('vacancy.new_vacancy', 'Analyze Another Vacancy')}</span>
               </button>
-              <button className="analyze-btn analyze-btn--secondary" onClick={() => { setVacancyText(''); setResult(null); }}>
+              <button className="analyze-btn analyze-btn--secondary" onClick={handleShare} type="button">
                 <Share2 size={20} />
                 <span>{t('vacancy.share', 'Share Results')}</span>
               </button>
             </div>
+            {shareState && <div className="share-status"><Check size={15} /> {shareState}</div>}
           </div>
         )}
       </div>

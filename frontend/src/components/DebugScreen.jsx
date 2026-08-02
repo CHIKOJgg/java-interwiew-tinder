@@ -46,7 +46,9 @@ export default function DebugScreen({ onClose }) {
           stats: JSON.stringify(s.stats),
         });
       });
-    } catch {}
+    } catch {
+      logger.warn('Debug: failed to read store snapshot');
+    }
   }, []);
 
   const copyAll = useCallback(() => {

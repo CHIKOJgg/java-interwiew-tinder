@@ -1,13 +1,18 @@
 .resume-analyzer {
   width: 100%;
-  max-width: 800px;
+  max-width: none;
   margin: 0 auto;
-  padding: 16px;
-  height: calc(100vh - 120px);
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  min-height: 100dvh;
+  height: 100dvh;
   overflow-y: auto;
+  background: var(--tg-theme-secondary-bg-color, #f8f9fa);
 }
 
 .analyzer-container {
+  width: min(1120px, 100%);
+  min-height: calc(100dvh - 32px);
+  margin: 0 auto;
   background: var(--paper);
   border: 2.5px solid var(--ink);
   border-radius: 18px;
@@ -261,6 +266,119 @@
   line-height: 1.5;
 }
 
+@media (max-width: 400px) {
+  .resume-analyzer {
+    padding: 10px;
+  }
+  .analyzer-container {
+    padding: 16px;
+    border-radius: 18px;
+    gap: 16px;
+  }
+  .analyzer-header h2 {
+    font-size: 20px;
+  }
+  .subtitle {
+    font-size: 13px;
+  }
+  .input-group textarea {
+    padding: 11px 14px;
+    font-size: 13px;
+    border-radius: 12px;
+  }
+  .analyze-btn {
+    padding: 13px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+  .result-card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+  .level-card {
+    gap: 12px;
+  }
+  .level-card .card-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .level-card h3 {
+    font-size: 13px;
+  }
+  .level-badge {
+    font-size: 12px;
+  }
+  .skill-tag {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+  .analysis-section li {
+    font-size: 13px;
+  }
+  .suggested-q-item {
+    font-size: 12px;
+    padding: 10px 14px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .resume-analyzer {
+    padding: 8px;
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+  .analyzer-container {
+    padding: 12px;
+    gap: 10px;
+    border-radius: 14px;
+  }
+  .analyzer-header h2 {
+    font-size: 18px;
+  }
+  .analyzer-input-section {
+    gap: 10px;
+  }
+  .input-group textarea {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-height: 500px) {
+.resume-analyzer {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+}
+
+.practice-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  text-align: left;
+}
+
+.practice-questions h3 {
+  font-size: 15px;
+  color: var(--tg-theme-text-color, #2d3436);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Drop Zone ────────────────────────────────────────────── */
 .drop-zone {
   border: 2.5px dashed var(--ink);
   border-radius: 16px;
@@ -397,7 +515,6 @@
   line-height: 1.5;
   text-align: center;
 }
-
 .spinner {
   animation: spin 1s linear infinite;
 }
@@ -425,7 +542,7 @@
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  .resume-analyzer { padding: 8px; height: calc(100vh - 100px); }
+  .resume-analyzer { padding: 8px; height: 100dvh; min-height: 100dvh; }
   .analyzer-container { padding: 12px; gap: 10px; border-radius: 14px; }
   .analyzer-header h2 { font-size: 18px; }
   .analyzer-input-section { gap: 10px; }
@@ -433,5 +550,5 @@
 }
 
 @media (max-height: 500px) {
-  .resume-analyzer { height: calc(100vh - 100px); }
+  .resume-analyzer { height: 100dvh; min-height: 100dvh; }
 }

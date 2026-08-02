@@ -144,6 +144,21 @@
   touch-action: manipulation;
 }
 
+.mode-error,
+.interview-error,
+.track-mode-error {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid rgba(201, 42, 42, 0.35);
+  border-radius: 10px;
+  background: rgba(255, 107, 107, 0.1);
+  color: #c92a2a;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
 /* ── Completion screen ───────────────────────────────────────────────── */
 .completion-screen {
   display: flex;

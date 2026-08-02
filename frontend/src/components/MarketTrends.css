@@ -1,13 +1,18 @@
 .market-trends {
   width: 100%;
-  max-width: 800px;
+  max-width: none;
   margin: 0 auto;
-  padding: 16px;
-  height: calc(100vh - 120px);
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  min-height: 100dvh;
+  height: 100dvh;
   overflow-y: auto;
+  background: var(--tg-theme-secondary-bg-color, #f8f9fa);
 }
 
 .trends-container {
+  width: min(1120px, 100%);
+  min-height: calc(100dvh - 32px);
+  margin: 0 auto;
   background: var(--paper);
   border: 2.5px solid var(--ink);
   border-radius: 18px;
@@ -187,6 +192,22 @@
   cursor: not-allowed;
 }
 
+.trends-stale {
+  margin: -8px 0 0;
+  text-align: center;
+  color: #b7791f;
+  font-size: 12px;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .analyze-error {
   display: flex;
   align-items: center;
@@ -201,17 +222,34 @@
   text-align: center;
 }
 
+.trends-error-state {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 @media (max-width: 400px) {
-  .market-trends { padding: 10px; }
-  .trends-container { padding: 16px; border-radius: 16px; }
-  .trends-header h2 { font-size: 20px; }
-  .subtitle { font-size: 13px; }
-  .trend-stat { padding: 12px; }
-  .stat-value { font-size: 20px; }
-  .skill-tag, .company-tag { padding: 6px 12px; font-size: 12px; }
+  .market-trends {
+    padding: 10px;
+  }
+  .trends-container {
+    padding: 16px;
+    border-radius: 18px;
+    gap: 16px;
+  }
+  .trends-header h2 {
+    font-size: 20px;
+  }
+  .trend-stat {
+    min-width: 80px;
+    padding: 12px;
+  }
+  .stat-value {
+    font-size: 17px;
+  }
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  .market-trends { height: calc(100vh - 100px); }
+  .market-trends { height: 100dvh; }
   .trends-container { padding: 12px; gap: 14px; }
 }

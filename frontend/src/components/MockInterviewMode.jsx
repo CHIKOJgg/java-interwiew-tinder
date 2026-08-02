@@ -33,6 +33,7 @@ const MockInterviewMode = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [isMuted, setIsMuted] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const transcriptRef = useRef('');
   const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -117,12 +118,13 @@ const MockInterviewMode = () => {
     const currentQuestion = interviewHistory[interviewHistory.length - 1]?.content;
     setAnswer('');
     setTranscript('');
-
+    setSubmitError(null);
     try {
       await submitInterviewAnswer(currentQuestion, textToSend);
     } catch (err) {
       console.error('Failed to submit interview answer:', err);
       setAnswer(textToSend);
+      setSubmitError(err?.message || t('common.request_failed', 'Не удалось оценить ответ'));
     }
   };
 
@@ -210,7 +212,8 @@ const MockInterviewMode = () => {
          )}
        </div>
 
-      <form className="interview-input-area" onSubmit={handleSubmit}>
+       <form className="interview-input-area" onSubmit={handleSubmit}>
+         {submitError && <div className="interview-error" role="alert">⚠️ {submitError}</div>}
         <textarea
           placeholder={canAnswer ? t('interview.placeholder_answer') : t('interview.placeholder_wait')}
           value={isRecording ? transcript : answer}

@@ -152,6 +152,11 @@ Evaluate this system design answer. Return only the JSON.`,
 
   resume: {
     system: () => jsonSystem({
+      experienceLevel: "string — Junior, Middle, Senior, or Unknown",
+      skills: ["string — relevant technical skill"],
+      strengths: ["string — concrete resume strength"],
+      improvementAreas: ["string — concrete improvement area"],
+      suggestedQuestions: ["string — specific question text to ask"],
       score: "number (0-100)",
       sections: {
         summary: { score: "number", feedback: "string" },
@@ -161,7 +166,6 @@ Evaluate this system design answer. Return only the JSON.`,
       },
       topIssues: ["string"],
       topStrengths: ["string"],
-      suggestedQuestions: ["string — specific question text to ask"]
     }),
     user: (lang, text) =>
       `Programming language focus: ${lang}
@@ -169,6 +173,11 @@ Resume text: ${text.substring(0, 1500)}
 
 Analyze this resume and provide a structured scoring rubric. Return JSON in this exact format:
 {
+  "experienceLevel": "Middle",
+  "skills": ["Java", "Spring Boot", "PostgreSQL"],
+  "strengths": ["Clear technical focus", "Strong backend experience"],
+  "improvementAreas": ["Add measurable impact to achievements", "Clarify testing experience"],
+  "suggestedQuestions": ["How do you optimize Spring Boot startup time?", "Explain optimistic and pessimistic locking."],
   "score": 85,
   "sections": {
     "summary": { "score": 90, "feedback": "Concise and professional." },
@@ -178,8 +187,7 @@ Analyze this resume and provide a structured scoring rubric. Return JSON in this
   },
   "topIssues": ["No quantitative achievements", "Missing cloud orchestration skills"],
   "topStrengths": ["Clear technical focus", "Strong tenure at previous roles"],
-  "recommendedQuestions": ["Spring", "Multithreading"],
-  "suggestedQuestions": ["How do you optimize Spring Boot startup time?", "Explain the difference between optimistic and pessimistic locking."]
+  "recommendedQuestions": ["Spring", "Multithreading"]
 }
 
 Return only the JSON.`,
@@ -334,6 +342,28 @@ export const LANGUAGES = {
     systemPrompt: 'You are an expert Kotlin mentor. Explain clearly. Use Russian language.',
   },
 };
+
+// These prompts are language-independent, but the per-language registry is
+// the single object consumed by aiService. Attach them once so every language
+// supports the same resume and vacancy flows.
+for (const language of Object.values(LANGUAGES)) {
+  Object.defineProperties(language.prompts, {
+    resumePractice: {
+      enumerable: false,
+      value: (data) => ({
+        system: PROMPTS.resumePractice.system(),
+        user: PROMPTS.resumePractice.user(language.id, data),
+      }),
+    },
+    vacancy: {
+      enumerable: false,
+      value: (text) => ({
+        system: PROMPTS.vacancy.system(),
+        user: PROMPTS.vacancy.user(language.id, text),
+      }),
+    },
+  });
+}
 
 export const getLanguage = (id) => LANGUAGES[id] || LANGUAGES.Java;
 export const getAvailableLanguages = () => Object.keys(LANGUAGES);

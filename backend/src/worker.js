@@ -23,8 +23,11 @@ const BACKFILL = {
       return; // Don't save [] to postgres ARRAY column — causes malformed array literal error
     }
     await pool.query(
-      'UPDATE questions SET options=$1 WHERE id=$2',
-      [JSON.stringify(options), qId]
+      `UPDATE questions
+       SET options=$1,
+           test_ready = COALESCE(test_ready, FALSE)
+       WHERE id=$2`,
+      [options, qId]
     );
   },
   bug: async (qId, result) => {
@@ -313,10 +316,17 @@ const runWorker = async () => {
     try {
       const { rows } = await pool.query(`
         UPDATE ai_jobs
-        SET status='processing', started_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
+         SET status='processing',
+             started_at=CURRENT_TIMESTAMP,
+             updated_at=CURRENT_TIMESTAMP,
+             attempts=CASE WHEN status='processing' THEN attempts + 1 ELSE attempts END
         WHERE id = (
           SELECT id FROM ai_jobs
-          WHERE (status='pending' OR (status='failed' AND attempts < max_attempts))
+           WHERE (
+             status='pending'
+             OR (status='failed' AND attempts < max_attempts)
+             OR (status='processing' AND started_at < CURRENT_TIMESTAMP - INTERVAL '5 minutes' AND attempts < max_attempts)
+           )
             AND next_run_at <= CURRENT_TIMESTAMP
           ORDER BY created_at ASC
           FOR UPDATE SKIP LOCKED

@@ -20,6 +20,8 @@ const ResumeAnalyzer = ({ onBack, onStartPractice }) => {
     resumeData,
     clearResumeData,
     setLearningMode,
+    generateResumeQuestions,
+    isGeneratingQuestions,
   } = useStore();
 
   const [resumeText, setResumeText] = useState('');
@@ -27,6 +29,8 @@ const ResumeAnalyzer = ({ onBack, onStartPractice }) => {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileError, setFileError] = useState(null);
+  const [practiceQuestions, setPracticeQuestions] = useState([]);
+  const [practiceError, setPracticeError] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleFileSelect = (file) => {
@@ -62,9 +66,13 @@ const ResumeAnalyzer = ({ onBack, onStartPractice }) => {
         }
         setResumeText(text);
       } else if (file.type.includes('word') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        const text = await file.text();
-        const stripped = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        setResumeText(stripped);
+        if (!file.name.toLowerCase().endsWith('.docx')) {
+          throw new Error('Only DOCX files are supported. Please export old DOC files as DOCX or PDF.');
+        }
+        const mammothModule = await import('mammoth');
+        const mammoth = mammothModule.default || mammothModule;
+        const { value } = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+        setResumeText(value.replace(/\s+/g, ' ').trim());
       } else {
         const text = await file.text();
         setResumeText(text);
@@ -108,6 +116,11 @@ const ResumeAnalyzer = ({ onBack, onStartPractice }) => {
 
   const handleStartPractice = () => {
     if (!resumeData) return;
+    setPracticeError(null);
+    setPracticeQuestions([]);
+    generateResumeQuestions(resumeData)
+      .then((questions) => setPracticeQuestions(questions || []))
+      .catch((err) => setPracticeError(err?.message || t('resume.questions_error', 'Не удалось подготовить вопросы')));
     setLearningMode('swipe');
     onStartPractice?.('main');
   };
@@ -117,6 +130,10 @@ const ResumeAnalyzer = ({ onBack, onStartPractice }) => {
     setSelectedFile(null);
     setFileError(null);
     setAnalyzeError(null);
+    setPracticeQuestions([]);
+    setPracticeError(null);
+    setPracticeQuestions([]);
+    setPracticeError(null);
     clearResumeData();
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -217,11 +234,20 @@ const ResumeAnalyzer = ({ onBack, onStartPractice }) => {
         ) : (
           <div className="analyzer-results-section">
             <div className="resume-practice-cta">
-              <button className="analyze-btn analyze-btn--large" onClick={handleStartPractice}>
+              <button className="analyze-btn analyze-btn--large" onClick={handleStartPractice} disabled={isGeneratingQuestions}>
                 <Play size={20} />
-                <span>{t('resume.start_practice', 'Start Practice Based on My Resume →')}</span>
+                <span>{isGeneratingQuestions ? t('resume.generating_questions', 'Готовим вопросы...') : t('resume.start_practice', 'Start Practice Based on My Resume →')}</span>
               </button>
               <p className="cta-hint">{t('resume.cta_hint', 'Switches to Swipe mode with AI-curated questions for your gaps')}</p>
+              {practiceError && <div className="analyze-error">⚠️ {practiceError}</div>}
+              {practiceQuestions.length > 0 && (
+                <div className="practice-questions">
+                  <h3>{t('resume.generated_questions', 'Вопросы для практики')}</h3>
+                  {practiceQuestions.map((question, index) => (
+                    <div className="suggested-q-item" key={index}>{typeof question === 'string' ? question : question.question}</div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="results-grid">
@@ -280,7 +306,7 @@ const ResumeAnalyzer = ({ onBack, onStartPractice }) => {
               </div>
             </div>
 
-            <button className="reset-analyzer-btn" onClick={() => { setResumeText(''); setSelectedFile(null); setFileError(null); setAnalyzeError(null); clearResumeData(); }}>
+             <button className="reset-analyzer-btn" onClick={handleClear}>
               {t('resume.reset')}
             </button>
           </div>

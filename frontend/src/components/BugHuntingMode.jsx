@@ -15,6 +15,7 @@ const BugHuntingMode = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   const currentQuestion = questions[currentIndex];
   const bugData = currentQuestion?.bugHuntingData;
@@ -39,12 +40,13 @@ const BugHuntingMode = () => {
   const handleSubmit = async () => {
     if (!selectedOption || isSubmitting) return;
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const response = await submitBugHuntAnswer(currentQuestion.id, selectedOption);
       setResult({ isCorrect: response.isCorrect, correctAnswer: response.correctAnswer });
     } catch (err) {
       console.error('Bug hunt submit error:', err);
-      setResult({ isCorrect: false, correctAnswer: bugData?.bug || '?' });
+      setSubmitError(err?.message || t('common.request_failed', 'Не удалось проверить ответ'));
     } finally {
       setIsSubmitting(false);
     }
@@ -113,9 +115,12 @@ const BugHuntingMode = () => {
         </div>
 
         {!result ? (
-          <button className="submit-bug-button" disabled={!selectedOption || isSubmitting} onClick={handleSubmit}>
-            {isSubmitting ? <Loader2 className="spinner" size={18} /> : t('bug.check', 'Check')}
-          </button>
+          <>
+            {submitError && <div className="mode-error" role="alert">⚠️ {submitError}</div>}
+            <button className="submit-bug-button" disabled={!selectedOption || isSubmitting} onClick={handleSubmit} type="button">
+              {isSubmitting ? <Loader2 className="spinner" size={18} /> : t('bug.check', 'Check')}
+            </button>
+          </>
         ) : (
           <div className="bug-result-feedback">
             {result.isCorrect

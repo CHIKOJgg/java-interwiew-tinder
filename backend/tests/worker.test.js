@@ -150,7 +150,10 @@ describe('worker — BACKFILL guards', () => {
     const orig = pool.query;
     pool.query = q;
     await BACKFILL.test(5, [{ text: 'a' }]);
-    expect(q).toHaveBeenCalledWith('UPDATE questions SET options=$1 WHERE id=$2', [JSON.stringify([{ text: 'a' }]), 5]);
+    expect(q).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE questions'),
+      [[{ text: 'a' }], 5],
+    );
     pool.query = orig;
   });
 

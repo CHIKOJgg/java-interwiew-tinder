@@ -23,9 +23,11 @@ export function errorHandler(isDev = process.env.NODE_ENV !== 'production') {
       .catch(() => {});
 
     if (!res.headersSent) {
-      res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id');
+      if (typeof res.setHeader === 'function') {
+        res.setHeader('Access-Control-Allow-Origin', req.headers?.origin || '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id');
+      }
       res.status(status).json({ error: safeMessage });
     }
   };

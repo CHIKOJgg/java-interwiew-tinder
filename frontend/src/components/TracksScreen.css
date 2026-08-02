@@ -33,6 +33,38 @@
   gap: 12px;
 }
 
+.tracks-quick-start {
+  padding: 8px 16px 4px;
+}
+
+.quick-start-btn {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 13px 16px;
+  border-radius: 15px;
+  background: #c6ff32;
+  color: #171717;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 4px 0 rgba(23, 23, 23, 0.2);
+}
+
+.quick-start-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(23, 23, 23, 0.2);
+}
+
+.tracks-quick-start p {
+  margin: 7px 0 0;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.55;
+}
+
 .tracks-loading {
   text-align: center;
   padding: 40px;
@@ -170,6 +202,11 @@
 .tracks-footer {
   padding: 12px 16px 24px;
   text-align: center;
+}
+
+.tracks-footer-note {
+  font-size: 12px;
+  opacity: 0.45;
 }
 
 .skip-link {

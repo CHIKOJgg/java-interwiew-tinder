@@ -377,6 +377,7 @@ DATABASE_URL=postgresql://...        # PostgreSQL connection string
 BOT_TOKEN=123456:ABC...             # Telegram Bot Token
 OPENROUTER_API_KEY=sk-or-...       # OpenRouter API Key (optional)
 OPENROUTER_MODEL=google/gemini...   # AI Model (optional)
+OPENROUTER_MODEL_FAST=deepseek/...  # Cheap fast model for bulk generation (optional, falls back to OPENROUTER_MODEL)
 PORT=3000                           # Server port
 NODE_ENV=development|production     # Environment
 ```

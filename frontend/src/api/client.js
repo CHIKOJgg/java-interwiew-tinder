@@ -82,7 +82,7 @@ class ApiClient {
   }
 
   // ─── Questions ─────────────────────────────────────────────────────
-  async getQuestionsFeed(limit = 5, mode = 'swipe', { cursor = 0, seed, difficulties, company } = {}) {
+  async getQuestionsFeed(limit = 5, mode = 'swipe', { cursor = 0, seed, difficulties, company, exclude } = {}) {
     const params = new URLSearchParams({ limit: String(limit), mode, language: this.language });
     if (seed) params.set('seed', seed);
     params.set('cursor', String(cursor));
@@ -90,6 +90,11 @@ class ApiClient {
       difficulties.forEach(d => params.append('difficulties', d));
     }
     if (company) params.set('company', company);
+    // Smart deck: questions already shown this session (across modes) are
+    // excluded so the user never gets the same card right after a mode switch.
+    if (Array.isArray(exclude) && exclude.length > 0) {
+      exclude.forEach(id => params.append('exclude', id));
+    }
     return this.request(`/questions/feed?${params.toString()}`);
   }
 

@@ -34,10 +34,17 @@ const ConceptLinker = () => {
     if (levelStartRef.current === currentIndex) return; // already built this level
     levelStartRef.current = currentIndex;
 
-    const levelQuestions = questions.slice(
-      currentIndex,
-      currentIndex + LEVEL_SIZE,
-    );
+    const seen = new Set();
+    const levelQuestions = [];
+    // Dedupe by id and skip questions without an answer — a repeated question
+    // would instantly "match" itself, and an empty definition breaks the grid.
+    for (let i = currentIndex; i < questions.length && levelQuestions.length < LEVEL_SIZE; i++) {
+      const q = questions[i];
+      if (q?.id && (q.shortAnswer || '').trim() && !seen.has(q.id)) {
+        seen.add(q.id);
+        levelQuestions.push(q);
+      }
+    }
     if (levelQuestions.length === 0) {
       levelStartRef.current = null; // deck exhausted — App.renderMode shows DeckComplete
       return;

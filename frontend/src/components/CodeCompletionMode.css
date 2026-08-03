@@ -2,9 +2,11 @@
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 16px 16px calc(24px + env(safe-area-inset-bottom, 0px));
   height: calc(100vh - 180px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .completion-card {
@@ -153,6 +155,10 @@
   font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
   transition: transform 0.1s, box-shadow 0.1s;
+  position: sticky;
+  bottom: 8px;
+  z-index: 2;
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.25);
 }
 
 .submit-completion-btn:disabled {

@@ -17,6 +17,12 @@ function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
+// Smart deck: ids of questions the user already saw this session (across all
+// modes), persisted per user per day. Mode switches exclude them so the same
+// card never pops up again immediately.
+function seenStorageKey(userId) { return `${CACHE_KEY}_seen_${userId || 'guest'}_${todayKey()}`; }
+function loadSeenIds(userId) { return loadFromSession(seenStorageKey(userId)) || []; }
+function saveSeenIds(userId, ids) { saveToSession(seenStorageKey(userId), ids); }
 function loadDaily() {
   try {
     const raw = localStorage.getItem(`${CACHE_KEY}_daily`);
@@ -60,6 +66,8 @@ const useStore = create((set, get) => ({
   // known cards for review — lets the UI show a "you've covered everything" note.
   feedRefresher: false,
   learningMode: 'swipe',
+  // Smart deck: ids of questions shown this session (across modes).
+  sessionSeen: [],
 
   // ─── Paywall ───────────────────────────────────────────────────────
   // Populated from the server's `user.available_modes` on login.
@@ -231,6 +239,7 @@ const useStore = create((set, get) => ({
       token: null,
       isAuthenticated: false,
       questions: [],
+      sessionSeen: [],
       stats: { known: 0, unknown: 0, totalSeen: 0, totalQuestions: 0 },
       categoryStats: { known: 0, total: 0 }
     });
@@ -354,8 +363,26 @@ const useStore = create((set, get) => ({
     logger.debug(`Store: loadQuestions start (append=${append}, mode=${mode}, cursor=${feedCursor})`);
     set({ _loadingLock: true, isLoadingQuestions: !append });
     try {
-      const response = await apiClient.getQuestionsFeed(5, mode, { cursor: feedCursor, seed: feedSeed, difficulties: get().selectedDifficulties, company: get().selectedCompany });
+      // Smart deck: don't re-serve questions already shown this session
+      // (across modes). Cap the exclude list so the URL stays small — the
+      // server caps it too, and the refresher fills with known cards after
+      // the fresh pool is exhausted.
+      const userId = get().user?.telegram_id;
+      const seen = loadSeenIds(userId);
+      const response = await apiClient.getQuestionsFeed(5, mode, {
+        cursor: feedCursor,
+        seed: feedSeed,
+        difficulties: get().selectedDifficulties,
+        company: get().selectedCompany,
+        exclude: seen.slice(-300),
+      });
       const newQs = response.questions || [];
+      // Remember this page so the next load (any mode) skips it.
+      if (newQs.length > 0) {
+        const merged = [...new Set([...seen, ...newQs.map(q => q.id)])].slice(-500);
+        saveSeenIds(userId, merged);
+        set({ sessionSeen: merged });
+      }
       // An empty page means the feed is exhausted — never treat an empty
       // page as "has more", otherwise loadQuestions(true) loops forever
       // appending zero questions (infinite deck / stuck UI).
@@ -511,6 +538,7 @@ const useStore = create((set, get) => ({
     // Do NOT auto-advance — TestMode.handleNext() calls advanceQuestion() after
     // showing the green feedback, so the user actually sees it.
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+    get().ensureGenerationQueue(3).catch(() => {});
     return response;
   },
 
@@ -523,6 +551,7 @@ const useStore = create((set, get) => ({
     if (!response.isCorrect) get().loadExplanation(questionId);
     // Do NOT auto-advance — BugHuntingMode shows feedback + "Следующая задача" button
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+    get().ensureGenerationQueue(3).catch(() => {});
     return response;
   },
 
@@ -534,6 +563,7 @@ const useStore = create((set, get) => ({
     // Fire-and-forget to server for stats recording (don't await for UX)
     apiClient.submitBlitzAnswer(questionId, answer, clientIsCorrect).catch(() => { });
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+    get().ensureGenerationQueue(3).catch(() => {});
     return { isCorrect: clientIsCorrect };
   },
 
@@ -582,6 +612,7 @@ const useStore = create((set, get) => ({
     // here too would skip a question (and show the wrong card during feedback).
     if (!response.isCorrect) get().loadExplanation(questionId);
     if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+    get().ensureGenerationQueue(3).catch(() => {});
     return response;
   },
 
@@ -726,7 +757,46 @@ const useStore = create((set, get) => ({
   },
 
   // ─── AI generation ─────────────────────────────────────────────────
+  // True when the question already has usable per-mode data (options for
+  // test, bugHuntingData / blitzData / codeCompletionData for the rest).
+  hasModeData: (question, type) => {
+    if (!question) return false;
+    if (type === 'test') {
+      const opts = question.options;
+      return Array.isArray(opts) && opts.length > 0 && !opts.__error;
+    }
+    const data = question[
+      type === 'bug' ? 'bugHuntingData'
+        : type === 'blitz' ? 'blitzData'
+          : 'codeCompletionData'
+    ];
+    return Boolean(data) && !data.__error;
+  },
+
+  applyGenerationData: (type, questionId, data) => {
+    const dataKey = { test: 'options', bug: 'bugHuntingData', blitz: 'blitzData', code: 'codeCompletionData' }[type];
+    if (!dataKey) return;
+    set(state => ({
+      questions: state.questions.map(q => q.id === questionId
+        ? {
+          ...q,
+          [dataKey]: type === 'test'
+            ? (Array.isArray(data) ? data : data?.options || q.options)
+            : data,
+        }
+        : q),
+    }));
+  },
+
   primeModeData: async () => {
+    await get().ensureGenerationQueue(3);
+  },
+
+  // Generation pipeline keeps the deck topped up: whenever the user answers
+  // or advances, make sure the next `keep` questions (including the current
+  // one if it's still missing data) already have their mode data ready or are
+  // being generated — the user never has to stare at a "generating" card.
+  ensureGenerationQueue: async (keep = 3) => {
     const { learningMode, questions, currentIndex } = get();
     const typeMap = {
       test: 'test',
@@ -737,37 +807,36 @@ const useStore = create((set, get) => ({
     const type = typeMap[learningMode];
     if (!type) return;
 
-    const candidates = questions.slice(currentIndex, currentIndex + 3)
-      .filter((question) => question?.id);
-    if (!candidates.length) return;
+    const missing = questions
+      .slice(currentIndex, currentIndex + keep + 2)
+      .filter(q => q?.id && !get().hasModeData(q, type))
+      .slice(0, keep);
+    if (!missing.length) return;
 
     try {
-      const batch = await apiClient.requestGenerationBatch(type, candidates.map(q => q.id));
+      const batch = await apiClient.requestGenerationBatch(type, missing.map(q => q.id));
       for (const item of batch.items || []) {
+        if (!item) continue;
         if (item.status === 'ready' && item.data) {
-          set(state => ({
-            questions: state.questions.map(q => q.id === item.questionId
-              ? {
-                ...q,
-                [type === 'test' ? 'options' : ({ bug: 'bugHuntingData', blitz: 'blitzData', code: 'codeCompletionData' }[type])]: type === 'test'
-                  ? (Array.isArray(item.data) ? item.data : item.data.options || q.options)
-                  : item.data,
-              }
-              : q),
-          }));
-        } else {
+          get().applyGenerationData(type, item.questionId, item.data);
+        } else if (item.status !== 'not_found') {
           get().fetchGeneration(type, item.questionId).catch(() => {});
         }
       }
     } catch (error) {
-      logger.warn('Store: generation prefetch failed', error.message);
+      logger.warn('Store: generation queue prefetch failed', error.message);
     }
   },
 
   fetchGeneration: async (type, questionId, _attempt = 0) => {
-    // Generous budget: OpenRouter free tier + queue can take 30-60s per job.
-    const MAX_ATTEMPTS = 25;
-    const POLL_INTERVAL_MS = 2000;
+    // Generous budget: OpenRouter free tier + queue can take minutes per job.
+    // Even after the active budget expires we keep a slow background watcher,
+    // so a slow provider finishing late still lands the data (the __error
+    // sentinel only shows once the watcher gives up too).
+    const MAX_ATTEMPTS = 80;         // 80 × 3s ≈ 4 min of active polling
+    const POLL_INTERVAL_MS = 3000;
+    const TAIL_ATTEMPTS = 40;        // 40 × 15s ≈ 10 more min in background
+    const TAIL_INTERVAL_MS = 15000;
     const key = `${type}:${questionId}`;
     if (_attempt === 0 && generationRuns.has(key)) return generationRuns.get(key);
 
@@ -782,6 +851,10 @@ const useStore = create((set, get) => ({
       }));
     }
 
+    const applyData = (data) => {
+      get().applyGenerationData(type, questionId, data);
+    };
+
     const run = (async () => {
       for (let attempt = _attempt; attempt < MAX_ATTEMPTS; attempt += 1) {
         try {
@@ -789,22 +862,39 @@ const useStore = create((set, get) => ({
             type, question.question, question.shortAnswer, question.category, questionId,
           );
           if (response.status === 'ready' && response.data) {
-            set(state => ({
-              questions: state.questions.map(q => q.id === questionId
-                ? {
-                  ...q,
-                  [dataKey]: type === 'test'
-                    ? (Array.isArray(response.data) ? response.data : response.data?.options || q.options)
-                    : response.data,
-                }
-                : q),
-            }));
+            applyData(response.data);
             return response.data;
           }
         } catch (err) {
           logger.warn(`fetchGeneration(${type}) attempt ${attempt} failed`, err.message);
         }
         await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+      }
+
+      // Active budget spent — surface a retriable error, but keep watching in
+      // the background so late answers still replace the error instead of
+      // being lost (the UI shows "Retry / Skip" while this runs). Release the
+      // dedup lock first so a manual Retry starts a fresh active poll.
+      set(state => ({
+        questions: state.questions.map(q => q.id === questionId
+          ? { ...q, [dataKey]: { __error: true, message: 'AI generation is taking longer than usual. It may still be in progress — retry in a moment.' } }
+          : q),
+      }));
+      generationRuns.delete(key);
+
+      for (let attempt = 0; attempt < TAIL_ATTEMPTS; attempt += 1) {
+        await new Promise(resolve => setTimeout(resolve, TAIL_INTERVAL_MS));
+        try {
+          const response = await apiClient.requestGeneration(
+            type, question.question, question.shortAnswer, question.category, questionId,
+          );
+          if (response.status === 'ready' && response.data) {
+            applyData(response.data);
+            return response.data;
+          }
+        } catch (err) {
+          logger.warn(`fetchGeneration(${type}) tail attempt ${attempt} failed`, err.message);
+        }
       }
 
       set(state => ({
@@ -879,6 +969,7 @@ const useStore = create((set, get) => ({
   advanceQuestion: () => {
     set(s => ({ currentIndex: s.currentIndex + 1 }));
     if (get().questions.length - get().currentIndex <= 2 && get().hasMore) get().loadQuestions(true);
+    get().ensureGenerationQueue(3).catch(() => {});
   },
 
   closeExplanation: () => {

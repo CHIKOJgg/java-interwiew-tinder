@@ -5,7 +5,9 @@
   align-items: flex-start;
   justify-content: center;
   overflow-y: auto;
-  padding: 4px 0 16px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 4px 0 calc(20px + env(safe-area-inset-bottom, 0px));
 }
 
 .test-card {
@@ -124,6 +126,8 @@
 }
 
 /* ── Submit / next buttons ────────────────────── */
+/* Sticky: keeps the "Answer" button visible without scrolling even in short
+   viewports (desktop Telegram WebView covers the bottom of the page). */
 .submit-test-button,
 .next-test-button {
   width: 100%;
@@ -142,6 +146,13 @@
   justify-content: center;
   gap: 8px;
   transition: transform 0.1s, box-shadow 0.1s, opacity 0.15s;
+}
+
+.submit-test-button {
+  position: sticky;
+  bottom: 8px;
+  z-index: 2;
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.25);
 }
 
 .submit-test-button:active:not(:disabled),

@@ -964,6 +964,16 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       ? (Array.isArray(req.query.difficulties) ? req.query.difficulties : [req.query.difficulties])
       : null;
 
+    // Smart deck: the client remembers which questions the user already saw
+    // THIS session (across all modes) and passes them back so mode switches
+    // never serve the same card immediately. Capped to protect the URL.
+    const rawExclude = req.query.exclude;
+    let excludeIds = [];
+    if (rawExclude) {
+      const list = Array.isArray(rawExclude) ? rawExclude : [rawExclude];
+      excludeIds = [...new Set(list.flatMap(x => String(x).split(',')).map(Number).filter(Number.isInteger))].slice(0, 500);
+    }
+
     // Stable per-session ordering via md5(seed) instead of RANDOM(), which
     // reshuffled on every page and caused duplicate questions across pages.
     // Build WHERE + params dynamically so placeholders stay correct with the
@@ -978,6 +988,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     if (selectedCategories.length > 0) { where.push(`q.category = ANY($${p})`); params.push(selectedCategories); p++; }
     if (difficulties && difficulties.length) { where.push(`q.difficulty = ANY($${p})`); params.push(difficulties); p++; }
     if (req.query.company) { where.push(`q.companies @> ARRAY[$${p}]`); params.push(req.query.company); p++; }
+    if (excludeIds.length > 0) { where.push(`NOT (q.id = ANY($${p}))`); params.push(excludeIds); p++; }
     const seedParam = `$${p++}`, limitParam = `$${p++}`, cursorParam = `$${p++}`;
      params.push(seed, queryLimit, cursor);
 
@@ -1023,14 +1034,20 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
 
     // Endless feed: if the new + due + unseen pool is exhausted (e.g. the user
     // has marked everything known and no reviews are due), top up with already
-    // known cards for a refresher so the deck never feels "empty".
-    if (questions.length < limit) {
+    // known cards for a refresher so the deck never feels "empty". The filler
+    // first honours the session exclusions, then falls back to serving
+    // anything (minus duplicates already pushed this page) so a long session
+    // can never produce an empty deck.
+    let fillerAdded = 0;
+    const seenPage = new Set();
+    const runFiller = async (withExclusion) => {
       const fWhere = ['q.is_active = TRUE', "q.language = $2", "up.status = 'known'"];
       const fParams = [userId, language];
       let fp = 3;
       if (selectedCategories.length > 0) { fWhere.push(`q.category = ANY($${fp})`); fParams.push(selectedCategories); fp++; }
       if (difficulties && difficulties.length) { fWhere.push(`q.difficulty = ANY($${fp})`); fParams.push(difficulties); fp++; }
       if (req.query.company) { fWhere.push(`q.companies @> ARRAY[$${fp}]`); fParams.push(req.query.company); fp++; }
+      if (withExclusion && excludeIds.length > 0) { fWhere.push(`NOT (q.id = ANY($${fp}))`); fParams.push(excludeIds); fp++; }
       const fSeed = `$${fp++}`, fOffset = `$${fp++}`, fLimit = `$${fp++}`;
       fParams.push(seed, cursor, limit - questions.length);
       const fillerQuery = `
@@ -1043,10 +1060,14 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
         OFFSET ${fOffset}
         LIMIT ${fLimit}`;
       const filler = await pool.query(fillerQuery, fParams);
-      const seen = new Set(questions.map(q => q.id));
       for (const row of filler.rows) {
-        if (!seen.has(row.id)) questions.push(mapRow(row));
+        if (!seenPage.has(row.id)) { seenPage.add(row.id); questions.push(mapRow(row)); fillerAdded++; }
       }
+    };
+    for (const row of result.rows) seenPage.add(row.id);
+    if (questions.length < limit) {
+      await runFiller(true);
+      if (questions.length < limit) await runFiller(false);
     }
     if (mode === 'test') questions = questions.filter(isTestReadyQuestion);
 
@@ -1055,7 +1076,15 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       : questions.length === limit;
     res.json({
       questions,
-      meta: { language, mode, total: questions.length, cursor, nextCursor: cursor + result.rows.length, hasMore, refresher: questions.length < limit }
+      meta: {
+        language, mode, total: questions.length, cursor,
+        // Advance the cursor by EVERY row consumed (base + refresher filler),
+        // not just the base rows — otherwise the refresher re-serves the same
+        // known questions on every next page (repeated questions in the deck).
+        nextCursor: cursor + result.rows.length + fillerAdded,
+        hasMore,
+        refresher: questions.length < limit,
+      },
     });
   } catch (error) {
     logger.error({ err: error }, 'Error in /questions/feed');

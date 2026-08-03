@@ -11,6 +11,11 @@ const PROMPT_VERSION = 'v2'; // bump version so old bad-response cache entries a
 // capture `undefined` into a top-level constant.
 function getOpenRouterKey() { return process.env.OPENROUTER_API_KEY; }
 function getModel() { return process.env.OPENROUTER_MODEL || 'openrouter/free'; }
+// Bulk, low-stakes generation (test options, blitz statements, bug/code tasks)
+// can use a cheap fast model without hurting quality — set OPENROUTER_MODEL_FAST.
+function getFastModel() { return process.env.OPENROUTER_MODEL_FAST || getModel(); }
+const FAST_GENERATION_MODES = new Set(['test', 'blitz', 'bug', 'code']);
+function getModelForMode(mode) { return FAST_GENERATION_MODES.has(mode) ? getFastModel() : getModel(); }
 const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS || '45000');
 
 if (!getOpenRouterKey()) {
@@ -156,7 +161,7 @@ async function readCache(clusterId, mode, language) {
 }
 
 // ─── Cache — write (only valid responses) ─────────────────────────────
-async function writeCache(clusterId, mode, language, content, isJson) {
+async function writeCache(clusterId, mode, language, content, isJson, model = getModel()) {
   // CRITICAL: For JSON modes, validate before caching.
   // Bad responses (prose, schema descriptions) must NOT enter the cache.
   if (isJson) {
@@ -176,7 +181,7 @@ async function writeCache(clusterId, mode, language, content, isJson) {
        VALUES ($1,$2,$3,$4,$5,$6)
        ON CONFLICT (cluster_id, mode, model, prompt_version, language) DO UPDATE
          SET response=EXCLUDED.response, created_at=CURRENT_TIMESTAMP`,
-      [clusterId, mode, getModel(), PROMPT_VERSION, language, content]
+      [clusterId, mode, model, PROMPT_VERSION, language, content]
     );
 
     // 2. Write to Redis (fast, 30 days TTL)
@@ -197,7 +202,7 @@ export const checkCache = (questionText, mode, _model, language = 'Java') =>
 const pendingRequests = new Map();
 
 // ─── OpenRouter HTTP call ─────────────────────────────────────────────
-export async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature) {
+export async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature, model = getModel()) {
   if (!getOpenRouterKey()) throw new Error('OPENROUTER_API_KEY is not configured');
 
   const controller = new AbortController();
@@ -215,7 +220,7 @@ export async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temper
         'X-Title': 'Interview Tinder',
       },
       body: JSON.stringify({
-        model: getModel(),
+        model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -237,7 +242,7 @@ export async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temper
   const content = data.choices?.[0]?.message?.content;
   if (!content?.trim()) throw new Error('Empty response from OpenRouter');
 
-  const usedModel = data.model || getModel();
+  const usedModel = data.model || model;
   logger.info({ model: usedModel, chars: content.length }, '✅ OpenRouter response received');
   return content.trim();
 }
@@ -246,6 +251,7 @@ export async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temper
 async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens, temperature, systemPrompt, userPrompt }) {
   const clusterId = generateClusterId(questionText, language);
   const dedupKey = `${clusterId}:${mode}:${language}`;
+  const model = getModelForMode(mode);
 
   // 1. DB cache hit
   const cached = await readCache(clusterId, mode, language);
@@ -298,8 +304,8 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
 
   // 3. Call AI, validate, cache
   const promise = (async () => {
-    const content = await callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature);
-    await writeCache(clusterId, mode, language, content, isJson);
+    const content = await callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature, model);
+    await writeCache(clusterId, mode, language, content, isJson, model);
     return isJson ? parseAIResponse(content) : content;
   })();
 

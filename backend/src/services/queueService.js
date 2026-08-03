@@ -23,12 +23,23 @@ export async function initQueueTable() {
 
 /**
  * Enqueue a job — idempotent via UNIQUE constraint.
- * Duplicate payloads are silently ignored (ON CONFLICT DO NOTHING).
+ * Duplicate payloads are silently ignored (ON CONFLICT DO NOTHING), EXCEPT
+ * for permanently dead jobs: a job that exhausted its retries (failed with
+ * attempts >= max_attempts) would otherwise block every future generation
+ * for that question forever. Such a job is reset to pending so a later
+ * request (or a fresh worker) can retry it.
  */
 export async function enqueueJob(taskType, payload) {
   try {
     await pool.query(
-      `INSERT INTO ai_jobs (task_type, payload) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `INSERT INTO ai_jobs (task_type, payload) VALUES ($1, $2)
+       ON CONFLICT (task_type, payload) DO UPDATE
+         SET status = 'pending',
+             attempts = 0,
+             error_message = NULL,
+             next_run_at = CURRENT_TIMESTAMP,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE ai_jobs.status = 'failed' AND ai_jobs.attempts >= ai_jobs.max_attempts`,
       [taskType, JSON.stringify(payload)]
     );
   } catch (err) {

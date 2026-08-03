@@ -131,32 +131,6 @@ const QuestionCard = forwardRef(
                 >
                   {isSaved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
                 </button>
-                <span
-                  className="flip-hint-label"
-                  role="button"
-                  tabIndex={0}
-                  aria-label={t('card.flip_hint', 'Tap for answer')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      flip();
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    // Prevent the synthesized click so the card doesn't flip twice
-                    // on touch devices (touchEnd + click would cancel out).
-                    e.preventDefault();
-                    e.stopPropagation();
-                    flip();
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    flip();
-                  }}
-                >
-                  <RotateCcw size={15} />
-                  <span>{t('card.flip_hint', 'Tap for answer')}</span>
-                </span>
                 <button
                   className="report-flag"
                   onClick={(e) => {

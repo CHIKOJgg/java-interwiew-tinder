@@ -250,6 +250,7 @@
 .flip-hint {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding: 6px 8px;
   border-radius: 14px;
@@ -421,7 +422,8 @@
 .card-swipe-actions {
   display: flex;
   gap: 12px;
-  padding: 10px 0 2px;
+  margin-top: 12px;
+  padding: 0;
 }
 
 .card-swipe-btn {

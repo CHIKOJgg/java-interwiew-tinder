@@ -65,6 +65,29 @@ const QuestionCard = forwardRef(
       flip();
     };
 
+    // react-tinder-card preventDefaults touchstart, which cancels the
+    // synthesized click on phones — so the card body must flip via touch
+    // events directly. Only treat as a tap when there was no real movement
+    // (swipes / scrolling must not flip), and ignore taps on controls.
+    const touchStartRef = useRef(null);
+    const handleTouchStart = (e) => {
+      const t = e.touches && e.touches[0];
+      if (t) touchStartRef.current = { x: t.clientX, y: t.clientY };
+    };
+
+    const handleTouchEnd = (e) => {
+      const start = touchStartRef.current;
+      touchStartRef.current = null;
+      if (!start) return;
+      if (e.target && e.target.closest && e.target.closest('button, a, [role="button"]')) return;
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      if (Math.abs(t.clientX - start.x) < 10 && Math.abs(t.clientY - start.y) < 10) {
+        e.preventDefault();
+        flip();
+      }
+    };
+
     const onCardSwipe = (direction) => {
       setIsFlipped(false);
       if (onSwipe) onSwipe(direction);
@@ -86,6 +109,8 @@ const QuestionCard = forwardRef(
         <div
           className={`card ${isFlipped ? 'flipped' : ''}`}
           onClick={handleClick}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           <div className="card-inner">
             {/* ── Front ─────────────────────────────────────────── */}

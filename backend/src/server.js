@@ -1130,7 +1130,40 @@ app.get('/api/questions/weak', requireEntitlement('mode', 'review'), async (req,
   }
 });
 
-// в”Ђв”Ђв”Ђ AI Generation (cache-first, non-blocking) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ─── Instant Test distractors ───────────────────────────────────────────
+// Random short answers from the same language, used by the frontend as a
+// LOCAL fallback for Test-mode options while real AI options are still being
+// generated — tests never have to wait on the LLM. Lightweight SQL, no AI.
+app.get('/api/questions/distractors', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const limit = Math.min(parseInt(req.query.limit) || 30, 50);
+    const rawExclude = req.query.exclude;
+    let excludeIds = [];
+    if (rawExclude) {
+      const list = Array.isArray(rawExclude) ? rawExclude : [rawExclude];
+      excludeIds = [...new Set(list.flatMap(x => String(x).split(',')).map(Number).filter(Number.isInteger))];
+    }
+    const where = ['q.is_active = TRUE', 'q.language = $1', 'length(q.short_answer) BETWEEN 8 AND 200'];
+    const params = [language];
+    let p = 2;
+    if (excludeIds.length > 0) { where.push(`NOT (q.id = ANY($${p}))`); params.push(excludeIds); p++; }
+    const result = await pool.query(
+      `SELECT q.id, q.short_answer
+       FROM questions q
+       WHERE ${where.join(' AND ')}
+       ORDER BY random()
+       LIMIT $${p}`,
+      [...params, limit],
+    );
+    res.json({ distractors: result.rows.map(r => ({ id: r.id, text: r.short_answer })) });
+  } catch (error) {
+    logger.error({ err: error }, 'Error in /questions/distractors');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// в”Ђв”Ђв”Ђ AI Generation (cache-first, non-blocking) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 const GENERATION_TYPES = new Set(['explanation', 'test', 'blitz', 'bug', 'code']);
 const JSON_GENERATION_MODES = new Set(['test', 'bug', 'blitz', 'code']);
 

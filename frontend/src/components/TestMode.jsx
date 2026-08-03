@@ -2,18 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import { Check, X, Loader2, AlertCircle } from 'lucide-react';
-import { hasRealDistractors, realDistractors } from '../utils/stubOptions';
+import { hasRealDistractors } from '../utils/stubOptions';
+import { buildTestOptions } from '../utils/fallbackOptions';
 import './TestMode.css';
-
-// Shuffle an array without mutating it
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 const TestMode = () => {
   const {
@@ -23,6 +14,9 @@ const TestMode = () => {
     advanceQuestion,
     isLoadingQuestions,
     fetchGeneration,
+    distractorPool,
+    loadDistractors,
+    language,
   } = useStore();
   const { t } = useTranslation();
 
@@ -33,17 +27,31 @@ const TestMode = () => {
 
   const currentQuestion = questions[currentIndex];
 
+  // Keep the local distractor pool warm so Test mode renders options
+  // instantly — real AI options still arrive in the background.
+  useEffect(() => {
+    loadDistractors().catch(() => { });
+  }, [loadDistractors, language]);
+
   // Build the 4 shuffled options once per question.
-  // The correct answer is always shortAnswer. The 3 distractors come from options[] in DB.
-  // Stub placeholders ("Common misconception" etc.) are filtered out — they make
-  // the correct answer obvious, so such questions wait for real generated options.
+  // The correct answer is always shortAnswer. Prefer real AI-generated
+  // distractors; until they exist, fall back to other questions' answers from
+  // the pool (never wait on the LLM). Results are cached per question so the
+  // options the user sees never get reshuffled mid-question.
+  const builtOptionsRef = useRef(new Map());
   const displayOptions = useMemo(() => {
     if (!currentQuestion) return [];
-    const correct = currentQuestion.shortAnswer || '';
-    const wrongs = realDistractors(currentQuestion.options, correct).slice(0, 3);
-    if (wrongs.length < 3) return [];        // no real distractors → not a test question yet
-    return shuffle([correct, ...wrongs]);
-  }, [currentQuestion?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    const qid = currentQuestion.id;
+    if (builtOptionsRef.current.has(qid)) return builtOptionsRef.current.get(qid);
+    const built = buildTestOptions(currentQuestion, distractorPool);
+    if (built.length > 0) {
+      builtOptionsRef.current.set(qid, built);
+      if (builtOptionsRef.current.size > 20) {
+        builtOptionsRef.current.delete(builtOptionsRef.current.keys().next().value);
+      }
+    }
+    return built;
+  }, [currentQuestion, distractorPool]);
 
   // Reset UI when question changes
   const prevIdRef = useRef(null);
@@ -57,29 +65,19 @@ const TestMode = () => {
 
   // Test options are generated on demand (the backend doesn't pre-fill them).
   // Trigger generation for the current question, but only once per question.
-  // Stub-only option sets count as "not ready" too.
+  // Stub-only option sets count as "not ready" too. The local fallback pool
+  // keeps the test usable meanwhile; the queue re-requests AI options on
+  // advance/submit, so an errored generation retries in the background.
   const requestedRef = useRef(new Set());
-  const genError = currentQuestion?.options?.__error;
   useEffect(() => {
     if (!currentQuestion) return;
     const opts = currentQuestion.options;
     if (Array.isArray(opts) && opts.length > 0 && hasRealDistractors(opts, currentQuestion.shortAnswer)) return; // already ready
-    if (opts && opts.__error) return;                   // errored — wait for retry
+    if (opts && opts.__error) return;                   // errored — retried via queue on next answer/advance
     if (requestedRef.current.has(currentQuestion.id)) return;
     requestedRef.current.add(currentQuestion.id);
     fetchGeneration('test', currentQuestion.id).catch(() => { });
   }, [currentQuestion?.id, fetchGeneration]); // eslint-disable-line
-
-  const retryGeneration = () => {
-    const id = currentQuestion?.id;
-    if (!id) return;
-    requestedRef.current.delete(id);
-    // Reset the error sentinel so the effect re-triggers generation
-    useStore.setState(s => ({
-      questions: s.questions.map(q => q.id === id ? { ...q, options: null } : q),
-    }));
-    fetchGeneration('test', id, 0).catch(() => { });
-  };
 
   const handleOptionSelect = (option) => {
     if (result || isSubmitting) return;
@@ -126,23 +124,12 @@ const TestMode = () => {
     );
   }
 
-  if (genError) {
-    return (
-      <div className="test-mode-loading error">
-        <AlertCircle size={44} />
-        <p>{genError.message || t('test.generating_options', 'Answer options are still being generated')}</p>
-        <button className="retry-btn" onClick={retryGeneration}>
-          {t('common.retry', 'Try again')}
-        </button>
-        <button className="skip-btn" onClick={handleNext} type="button">
-          {t('test.skip', 'Skip question')}
-        </button>
-      </div>
-    );
-  }
+  // genError no longer blocks the question: instant local fallback options are
+  // always shown; the AI error only means "improved options will come later".
 
   if (!displayOptions.length) {
-    // Options are still being generated — wait instead of skipping the card.
+    // Only reachable when even the local distractor pool is empty (first load
+    // race / offline) — options are being fetched, wait instead of skipping.
     return (
       <div className="test-mode-loading">
         <Loader2 className="spinner" size={44} />

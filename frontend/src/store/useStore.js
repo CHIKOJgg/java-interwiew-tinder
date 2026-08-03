@@ -68,6 +68,9 @@ const useStore = create((set, get) => ({
   learningMode: 'swipe',
   // Smart deck: ids of questions shown this session (across modes).
   sessionSeen: [],
+  // Local fallback distractors for Test mode (other questions' short answers)
+  // so tests render instantly while real AI options are still generating.
+  distractorPool: [],
 
   // ─── Paywall ───────────────────────────────────────────────────────
   // Populated from the server's `user.available_modes` on login.
@@ -432,6 +435,23 @@ const useStore = create((set, get) => ({
       }
       logger.error('Store: loadQuestions failed', error.message);
       set({ isLoadingQuestions: false, _loadingLock: false, hasMore: false });
+    }
+  },
+
+  // ─── Test distractors (instant fallback options) ────────────────────
+  // Top up the local pool of other questions' short answers so Test mode can
+  // render options instantly while real AI options generate in background.
+  loadDistractors: async (force = false) => {
+    const { distractorPool, language } = get();
+    if (!force && distractorPool.length >= 30) return;
+    try {
+      const data = await apiClient.getDistractors(language);
+      const fresh = data.distractors || [];
+      const known = new Set(distractorPool.map(d => d.id));
+      const merged = [...distractorPool, ...fresh.filter(d => d?.id && !known.has(d.id))].slice(-120);
+      set({ distractorPool: merged });
+    } catch (err) {
+      logger.warn('Store: loadDistractors failed', err.message);
     }
   },
 

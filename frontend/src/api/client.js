@@ -121,6 +121,16 @@ class ApiClient {
     });
   }
 
+  // Instant Test-mode distractors: other questions' short answers used as a
+  // local fallback while real AI options are still being generated.
+  async getDistractors(language, excludeIds = []) {
+    const params = new URLSearchParams({ language: language || this.language });
+    if (Array.isArray(excludeIds) && excludeIds.length > 0) {
+      excludeIds.forEach(id => params.append('exclude', id));
+    }
+    return this.request(`/questions/distractors?${params.toString()}`);
+  }
+
   async submitBugHuntAnswer(questionId, answer) {
     return this.request('/questions/bug-hunt-answer', {
       method: 'POST',

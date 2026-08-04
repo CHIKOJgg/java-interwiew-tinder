@@ -919,31 +919,13 @@ app.post('/api/preferences/language', validateBody({ language: { required: true 
 });
 
 // в”Ђв”Ђв”Ђ Question Feed в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
-function optionTextList(value) {
-  if (Array.isArray(value)) return value.filter(item => typeof item === 'string').map(item => item.trim()).filter(Boolean);
-  if (typeof value === 'string') {
-    try { return optionTextList(JSON.parse(value)); } catch { return []; }
-  }
-  if (value && Array.isArray(value.options)) return optionTextList(value.options);
-  return [];
-}
-
-function isTestReadyQuestion(question) {
-  const options = optionTextList(question.options);
-  if (options.length < 3) return false;
-  const normalized = options.map(option => option.toLowerCase());
-  if (new Set(normalized).size !== normalized.length) return false;
-  const banned = /^(i come on|don't know|dont know|know|РЅРµ Р·РЅР°СЋ|Р·РЅР°СЋ|yes|no|РґР°|РЅРµС‚)$/i;
-  return options.every(option => option.length >= 3 && !banned.test(option) && option.toLowerCase() !== question.question.trim().toLowerCase());
-}
-
 app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
   try {
     const userId = req.userId;
     const language = req.query.language || 'Java';
     const mode = req.query.mode || 'swipe';
     const limit = Math.min(parseInt(req.query.limit) || 5, 10);
-    const queryLimit = mode === 'test' ? Math.min(limit * 3, 30) : limit;
+    const queryLimit = limit;
     const cursor = Math.max(0, parseInt(req.query.cursor) || 0);
     const seed = String(req.query.seed || 'default');
 
@@ -977,11 +959,13 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     // Stable per-session ordering via md5(seed) instead of RANDOM(), which
     // reshuffled on every page and caused duplicate questions across pages.
     // Build WHERE + params dynamically so placeholders stay correct with the
-    // optional category / difficulty filters.
+    // optional category / difficulty filters. Questions without a meaningful
+    // short answer are never served (defense in depth on top of is_active).
     const where = [
       'q.is_active = TRUE',
       "(up.id IS NULL OR up.status = 'unknown' OR qm.next_review <= CURRENT_DATE)",
       'q.language = $2',
+      'length(q.short_answer) >= 8',
     ];
     const params = [userId, language];
     let p = 3;
@@ -1007,8 +991,9 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       ORDER BY 
         CASE 
           WHEN qm.next_review <= CURRENT_DATE THEN 0
-          WHEN up.id IS NULL THEN 1
-          ELSE 2
+          WHEN up.status = 'unknown' THEN 1
+          WHEN up.id IS NULL THEN 2
+          ELSE 3
         END ASC,
         review_date ASC,
         md5(q.id::text || ${seedParam}) ASC
@@ -1030,7 +1015,6 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
 
     const result = await pool.query(baseQuery, params);
     let questions = result.rows.map(mapRow);
-    if (mode === 'test') questions = questions.filter(isTestReadyQuestion);
 
     // Endless feed: if the new + due + unseen pool is exhausted (e.g. the user
     // has marked everything known and no reviews are due), top up with already
@@ -1041,7 +1025,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     let fillerAdded = 0;
     const seenPage = new Set();
     const runFiller = async (withExclusion) => {
-      const fWhere = ['q.is_active = TRUE', "q.language = $2", "up.status = 'known'"];
+      const fWhere = ['q.is_active = TRUE', "q.language = $2", "up.status = 'known'", 'length(q.short_answer) >= 8'];
       const fParams = [userId, language];
       let fp = 3;
       if (selectedCategories.length > 0) { fWhere.push(`q.category = ANY($${fp})`); fParams.push(selectedCategories); fp++; }
@@ -1069,11 +1053,8 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       await runFiller(true);
       if (questions.length < limit) await runFiller(false);
     }
-    if (mode === 'test') questions = questions.filter(isTestReadyQuestion);
 
-    const hasMore = mode === 'test'
-      ? result.rows.length === queryLimit
-      : questions.length === limit;
+    const hasMore = questions.length === limit;
     res.json({
       questions,
       meta: {

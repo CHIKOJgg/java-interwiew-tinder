@@ -1,6 +1,23 @@
 import pool from '../config/database.js';
 import logger from '../config/logger.js';
 
+// Map raw DB rows to the camelCase shape QuestionCard expects
+// (question, shortAnswer, options...) — without this, the flipped card shows
+// an empty short answer in Track mode.
+function stepToQuestion(row) {
+  return {
+    id: row.id,
+    category: row.category,
+    difficulty: row.difficulty,
+    question: row.question,
+    shortAnswer: row.short_answer,
+    language: row.language || 'Java',
+    options: row.options || [],
+    companies: row.companies || null,
+    prevStatus: null,
+  };
+}
+
 export async function getTracks(language) {
   try {
     const { rows } = await pool.query(
@@ -27,7 +44,8 @@ export async function getTrackWithProgress(trackId, userId) {
     );
 
     const { rows: steps } = await pool.query(
-      `SELECT ts.step_order, q.id, q.question_text as question, q.short_answer, q.difficulty
+      `SELECT ts.step_order, q.id, q.category, q.difficulty,
+              q.question_text as question, q.short_answer, q.language, q.options, q.companies
        FROM track_steps ts
        JOIN questions q ON q.id = ts.question_id
        WHERE ts.track_id = $1
@@ -41,7 +59,7 @@ export async function getTrackWithProgress(trackId, userId) {
       currentStep: progress.rows[0]?.current_step || 0,
       completed: progress.rows[0]?.completed || false,
       completedAt: progress.rows[0]?.completed_at || null,
-      steps,
+      steps: steps.map(stepToQuestion),
     };
   } catch (err) {
     logger.error({ err, trackId, userId }, 'getTrackWithProgress failed');
@@ -70,7 +88,7 @@ export async function getNextTrackQuestion(trackId, userId) {
       [trackId, currentStep + 1]
     );
 
-    return rows[0] || null;
+    return rows[0] ? stepToQuestion(rows[0]) : null;
   } catch (err) {
     logger.error({ err, trackId, userId }, 'getNextTrackQuestion failed');
     throw err;

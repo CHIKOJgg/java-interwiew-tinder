@@ -354,6 +354,12 @@
   font-family: 'Inter', sans-serif;
 }
 
+.answer-content p.answer-missing {
+  font-style: italic;
+  opacity: 0.75;
+  font-size: clamp(13px, 3.5vw, 16px);
+}
+
 /* ── Swipe instructions ───────────────────────── */
 .swipe-instructions {
   display: flex;

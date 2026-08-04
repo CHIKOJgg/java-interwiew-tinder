@@ -228,7 +228,13 @@ const QuestionCard = forwardRef(
                 <div className="answer-label">
                   {t('card.short_answer', 'Short answer')}:
                 </div>
-                <p>{question.shortAnswer}</p>
+                {question.shortAnswer ? (
+                  <p>{question.shortAnswer}</p>
+                ) : (
+                  <p className="answer-missing">
+                    {t('card.no_answer', 'Краткий ответ ещё не добавлен — нажми «Разобрать ИИ» для подробного объяснения.')}
+                  </p>
+                )}
               </div>
 
               <div className="swipe-instructions">

@@ -209,6 +209,7 @@
   "card": {
     "tap_for_answer": "Tap for answer",
     "short_answer": "Short answer:",
+    "no_answer": "Short answer not added yet — tap \"Explain with AI\" for a full breakdown.",
     "dont_know": "Don't know",
     "know": "Know",
     "explain_ai": "✨ Explain with AI",

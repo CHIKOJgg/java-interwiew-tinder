@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import apiClient from '../api/client';
 import logger from '../utils/logger';
 
@@ -372,7 +372,7 @@ const useStore = create((set, get) => ({
       // the fresh pool is exhausted.
       const userId = get().user?.telegram_id;
       const seen = loadSeenIds(userId);
-      const response = await apiClient.getQuestionsFeed(5, mode, {
+      const response = await apiClient.getQuestionsFeed(10, mode, {
         cursor: feedCursor,
         seed: feedSeed,
         difficulties: get().selectedDifficulties,
@@ -389,7 +389,7 @@ const useStore = create((set, get) => ({
       // An empty page means the feed is exhausted — never treat an empty
       // page as "has more", otherwise loadQuestions(true) loops forever
       // appending zero questions (infinite deck / stuck UI).
-      const hasMore = newQs.length > 0 && (response.meta?.hasMore ?? (newQs.length === 5));
+      const hasMore = newQs.length > 0 && (response.meta?.hasMore ?? (newQs.length === 10));
        if (append) {
           set(s => ({
             questions: [...s.questions, ...newQs],
@@ -516,7 +516,7 @@ const useStore = create((set, get) => ({
         get().openMissed(q);
       }
       get().bumpDaily();
-      if (get().learningMode === 'swipe' && get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+      if (get().learningMode === 'swipe' && get().questions.length - get().currentIndex <= 5) get().loadQuestions(true);
    },
 
   undoSwipe: async (questionId, direction) => {
@@ -557,7 +557,7 @@ const useStore = create((set, get) => ({
     if (!response.isCorrect) get().loadExplanation(questionId);
     // Do NOT auto-advance — TestMode.handleNext() calls advanceQuestion() after
     // showing the green feedback, so the user actually sees it.
-    if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+    if (get().questions.length - get().currentIndex <= 5) get().loadQuestions(true);
     get().ensureGenerationQueue(3).catch(() => {});
     return response;
   },
@@ -570,7 +570,7 @@ const useStore = create((set, get) => ({
     get().bumpDaily();
     if (!response.isCorrect) get().loadExplanation(questionId);
     // Do NOT auto-advance — BugHuntingMode shows feedback + "Следующая задача" button
-    if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+    if (get().questions.length - get().currentIndex <= 5) get().loadQuestions(true);
     get().ensureGenerationQueue(3).catch(() => {});
     return response;
   },
@@ -582,7 +582,7 @@ const useStore = create((set, get) => ({
     get().bumpDaily();
     // Fire-and-forget to server for stats recording (don't await for UX)
     apiClient.submitBlitzAnswer(questionId, answer, clientIsCorrect).catch(() => { });
-    if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+    if (get().questions.length - get().currentIndex <= 5) get().loadQuestions(true);
     get().ensureGenerationQueue(3).catch(() => {});
     return { isCorrect: clientIsCorrect };
   },
@@ -631,7 +631,7 @@ const useStore = create((set, get) => ({
     // advanceQuestion() exactly once, mirroring TestMode/BugHunting. Advancing
     // here too would skip a question (and show the wrong card during feedback).
     if (!response.isCorrect) get().loadExplanation(questionId);
-    if (get().questions.length - get().currentIndex <= 2) get().loadQuestions(true);
+    if (get().questions.length - get().currentIndex <= 5) get().loadQuestions(true);
     get().ensureGenerationQueue(3).catch(() => {});
     return response;
   },
@@ -988,7 +988,7 @@ const useStore = create((set, get) => ({
 
   advanceQuestion: () => {
     set(s => ({ currentIndex: s.currentIndex + 1 }));
-    if (get().questions.length - get().currentIndex <= 2 && get().hasMore) get().loadQuestions(true);
+    if (get().questions.length - get().currentIndex <= 5 && get().hasMore) get().loadQuestions(true);
     get().ensureGenerationQueue(3).catch(() => {});
   },
 

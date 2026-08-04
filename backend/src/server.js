@@ -129,6 +129,18 @@ const emailSendLimiter = expressRateLimit({
   message: { error: 'Too many code requests. Please wait before trying again.' }
 });
 
+// Login limiter: generous (the Mini App re-authenticates on every open, and
+// Telegram initData is HMAC-signed so brute force is impossible). The strict
+// email limiter must NOT gate login — it would lock real users out with a
+// confusing "too many code requests" after a few app opens.
+const loginLimiter = expressRateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts. Please wait a moment and try again.' }
+});
+
 const reportLimiter = expressRateLimit({
   windowMs: 60 * 1000,
   max: 5,
@@ -264,7 +276,7 @@ app.get('/api/companies', async (req, res) => {
 });
 
 // в”Ђв”Ђв”Ђ Auth в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
-app.post('/api/auth/login', emailSendLimiter, async (req, res) => {
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
   try {
     const { provider, initData, idToken, email, code, referralId } = req.body;
 

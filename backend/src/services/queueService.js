@@ -24,10 +24,10 @@ export async function initQueueTable() {
 /**
  * Enqueue a job — idempotent via UNIQUE constraint.
  * Duplicate payloads are silently ignored (ON CONFLICT DO NOTHING), EXCEPT
- * for permanently dead jobs: a job that exhausted its retries (failed with
- * attempts >= max_attempts) would otherwise block every future generation
- * for that question forever. Such a job is reset to pending so a later
- * request (or a fresh worker) can retry it.
+ * for failed jobs: a failed job would otherwise sit on its exponential
+ * backoff (2^n minutes) and block every future generation for that question
+ * for a long time. A new request is a fresh retry trigger, so any failed job
+ * is reset to pending (attempts=0, run immediately).
  */
 export async function enqueueJob(taskType, payload) {
   try {
@@ -39,7 +39,7 @@ export async function enqueueJob(taskType, payload) {
              error_message = NULL,
              next_run_at = CURRENT_TIMESTAMP,
              updated_at = CURRENT_TIMESTAMP
-         WHERE ai_jobs.status = 'failed' AND ai_jobs.attempts >= ai_jobs.max_attempts`,
+         WHERE ai_jobs.status = 'failed'`,
       [taskType, JSON.stringify(payload)]
     );
   } catch (err) {

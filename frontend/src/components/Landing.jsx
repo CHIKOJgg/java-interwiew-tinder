@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import i18n from '../i18n/config';
 import { Target, Check, X, AlertTriangle, Users, Tag, Lightbulb, Brain, MessageSquare } from 'lucide-react';
 import Mascot from './Mascot';
 import './Landing.css';
@@ -40,7 +41,7 @@ export default function Landing({ onStart, onLogin }) {
   const fetchLive = useCallback(() => {
     const lang = LANGS[langIdx.current % LANGS.length];
     langIdx.current++;
-    fetch(`${API_BASE}/demo/questions?language=${encodeURIComponent(lang)}&limit=1&seed=${Math.random().toString(36).slice(2)}`)
+    fetch(`${API_BASE}/demo/questions?language=${encodeURIComponent(lang)}&limit=1&seed=${Math.random().toString(36).slice(2)}&lng=${i18n?.language || 'en'}`)
       .then(r => r.json())
       .then(d => { const qs = (d && d.questions) || []; if (qs.length) { setLiveQ(qs[0]); setLiveLang(lang); } else { setLiveQ(null); } })
       .catch(() => setLiveQ(null));
@@ -171,7 +172,7 @@ export default function Landing({ onStart, onLogin }) {
 
   const dismissExit = () => { setExitShown(false); localStorage.setItem('exit_popup_dismissed', '1'); };
 
-  const liveQuestion = liveQ || { language: 'Java', category: 'Core', question: 'What is the difference between == and equals()?', shortAnswer: '== compares references; equals() compares object content.' };
+  const liveQuestion = liveQ || { language: 'Java', category: 'Core', question: (i18n?.language === 'ru' ? 'В чем разница между == и equals()?' : 'What is the difference between == and equals()?'), shortAnswer: (i18n?.language === 'ru' ? '== сравнивает ссылки; equals() сравнивает содержимое объектов.' : '== compares references; equals() compares object content.') };
 
   return (
     <div className="landing-wrap">

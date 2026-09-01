@@ -1,7 +1,9 @@
 [build]
-  dockerfile = "Dockerfile"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
+  startCommand = "npm run start:all"
   restart_policy_type = "ON_FAILURE"
   restart_policy_max_retries = 5
   # Apply DB migrations before the new release starts serving traffic.

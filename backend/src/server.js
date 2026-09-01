@@ -39,6 +39,12 @@ import { PLANS_LIST } from './config/plans.js';
 
 const isKnownPlan = (rows, planId) => rows?.length > 0 || PLANS_LIST.some(plan => plan.id === planId);
 
+// Check if text contains Cyrillic characters (indicates Russian content)
+function hasCyrillic(text) {
+  if (!text) return false;
+  return /[\u0400-\u04FF\u0500-\u052F]/.test(String(text));
+}
+
 if (process.env.NODE_ENV !== 'test' && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 16)) {
   console.error('FATAL: JWT_SECRET must be at least 16 characters long');
   process.exit(1);
@@ -494,6 +500,7 @@ app.use('/api', (req, res, next) => {
 app.get('/api/demo/questions', demoLimiter, async (req, res) => {
   try {
     const language = String(req.query.language || 'Java');
+    const interfaceLang = String(req.query.lng || req.query.interfaceLanguage || 'en');
     const limit = Math.min(parseInt(req.query.limit) || 10, 15);
     // Random-but-cheap sampling; a per-request seed keeps repeat visits fresh.
     const seed = String(req.query.seed || Math.random().toString(36).slice(2));
@@ -506,7 +513,7 @@ app.get('/api/demo/questions', demoLimiter, async (req, res) => {
        LIMIT $3`,
       [language, seed, limit]
     );
-    const questions = rows.map((r) => ({
+    let questions = rows.map((r) => ({
       id: r.id,
       category: r.category,
       difficulty: r.difficulty,
@@ -514,7 +521,10 @@ app.get('/api/demo/questions', demoLimiter, async (req, res) => {
       shortAnswer: r.short_answer,
       language: r.language || 'Java',
     }));
-    res.json({ questions, meta: { language, total: questions.length } });
+    if (interfaceLang === 'ru') {
+      questions = questions.filter(q => hasCyrillic(q.question) && hasCyrillic(q.shortAnswer));
+    }
+    res.json({ questions: questions.slice(0, limit), meta: { language, total: questions.length } });
   } catch (err) {
     logger.error({ err }, 'Error in /demo/questions');
     res.status(500).json({ error: 'Internal server error' });
@@ -935,6 +945,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
   try {
     const userId = req.userId;
     const language = req.query.language || 'Java';
+    const interfaceLang = String(req.query.lng || req.query.interfaceLanguage || 'en');
     const mode = req.query.mode || 'swipe';
     const limit = Math.min(parseInt(req.query.limit) || 5, 10);
     const queryLimit = limit;
@@ -1027,6 +1038,9 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
 
     const result = await pool.query(baseQuery, params);
     let questions = result.rows.map(mapRow);
+    if (interfaceLang === 'ru') {
+      questions = questions.filter(q => hasCyrillic(q.question) && hasCyrillic(q.shortAnswer));
+    }
 
     // Endless feed: if the new + due + unseen pool is exhausted (e.g. the user
     // has marked everything known and no reviews are due), top up with already
@@ -1057,7 +1071,9 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
         LIMIT ${fLimit}`;
       const filler = await pool.query(fillerQuery, fParams);
       for (const row of filler.rows) {
-        if (!seenPage.has(row.id)) { seenPage.add(row.id); questions.push(mapRow(row)); fillerAdded++; }
+        const mapped = mapRow(row);
+        if (interfaceLang === 'ru' && (!hasCyrillic(mapped.question) || !hasCyrillic(mapped.shortAnswer))) continue;
+        if (!seenPage.has(row.id)) { seenPage.add(row.id); questions.push(mapped); fillerAdded++; }
       }
     };
     for (const row of result.rows) seenPage.add(row.id);
@@ -1137,6 +1153,7 @@ app.get('/api/questions/distractors', async (req, res) => {
       const list = Array.isArray(rawExclude) ? rawExclude : [rawExclude];
       excludeIds = [...new Set(list.flatMap(x => String(x).split(',')).map(Number).filter(Number.isInteger))];
     }
+    const interfaceLang = String(req.query.lng || req.query.interfaceLanguage || 'en');
     const where = ['q.is_active = TRUE', 'q.language = $1', 'length(q.short_answer) BETWEEN 8 AND 200'];
     const params = [language];
     let p = 2;
@@ -1149,7 +1166,11 @@ app.get('/api/questions/distractors', async (req, res) => {
        LIMIT $${p}`,
       [...params, limit],
     );
-    res.json({ distractors: result.rows.map(r => ({ id: r.id, text: r.short_answer })) });
+    let distractors = result.rows.map(r => ({ id: r.id, text: r.short_answer }));
+    if (interfaceLang === 'ru') {
+      distractors = distractors.filter(d => hasCyrillic(d.text));
+    }
+    res.json({ distractors: distractors.slice(0, limit) });
   } catch (error) {
     logger.error({ err: error }, 'Error in /questions/distractors');
     res.status(500).json({ error: 'Internal server error' });
@@ -1236,7 +1257,8 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
     if (!mode) return res.status(400).json({ error: 'Invalid generation type' });
 
     if (questionId) {
-      const { rows } = await pool.query(
+    const interfaceLang = String(req.query.lng || req.query.interfaceLanguage || 'en');
+    const { rows } = await pool.query(
         'SELECT question_text, short_answer, category, language FROM questions WHERE id=$1 AND is_active=TRUE',
         [questionId],
       );

@@ -1,5 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 import logger from '../utils/logger';
+import i18n from '../i18n/config';
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
@@ -72,7 +73,7 @@ class ApiClient {
 
   // ─── Public demo (zero-login) ──────────────────────────────────────
   async getDemoQuestions(limit = 10, language = 'Java') {
-    const params = new URLSearchParams({ limit: String(limit), language });
+    const params = new URLSearchParams({ limit: String(limit), language, lng: i18n.language || 'en' });
     return this.request(`/demo/questions?${params.toString()}`);
   }
 
@@ -83,7 +84,7 @@ class ApiClient {
 
   // ─── Questions ─────────────────────────────────────────────────────
   async getQuestionsFeed(limit = 5, mode = 'swipe', { cursor = 0, seed, difficulties, company, exclude } = {}) {
-    const params = new URLSearchParams({ limit: String(limit), mode, language: this.language });
+    const params = new URLSearchParams({ limit: String(limit), mode, language: this.language, lng: i18n.language || 'en' });
     if (seed) params.set('seed', seed);
     params.set('cursor', String(cursor));
     if (Array.isArray(difficulties) && difficulties.length > 0) {
@@ -124,7 +125,7 @@ class ApiClient {
   // Instant Test-mode distractors: other questions' short answers used as a
   // local fallback while real AI options are still being generated.
   async getDistractors(language, excludeIds = []) {
-    const params = new URLSearchParams({ language: language || this.language });
+    const params = new URLSearchParams({ language: language || this.language, lng: i18n.language || 'en' });
     if (Array.isArray(excludeIds) && excludeIds.length > 0) {
       excludeIds.forEach(id => params.append('exclude', id));
     }

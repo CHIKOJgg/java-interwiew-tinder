@@ -26,17 +26,18 @@ const PROMPTS = {
       key_points: ["string — bullet point"],
     }),
     user: (lang, q, a) =>
-      `Language: ${lang}
+      `Ответь ТОЛЬКО на русском языке. Весь текст, примеры и варианты должны быть на русском.
+Language: ${lang}
 Question: ${q}
 Short answer: ${a}
 
 Respond with a JSON explanation. Example of the exact format:
 {
-  "title": "HashMap vs TreeMap",
-  "theory": "HashMap stores key-value pairs in a hash table with O(1) average lookup. TreeMap uses a red-black tree with O(log n) lookup but keeps keys sorted.",
-  "where_used": ["HashMap: caching, frequency counting", "TreeMap: range queries, sorted iteration"],
+  "title": "HashMap против TreeMap",
+  "theory": "HashMap хранит пары ключ-значение в хэш-таблице со средней сложностью O(1). TreeMap использует красно-черное дерево с O(log n), но сохраняет ключи отсортированными.",
+  "where_used": ["HashMap: кэширование, подсчет частоты", "TreeMap: запросы диапазона, сортированная итерация"],
   "code_example": "Map<String, Integer> map = new HashMap<>();\\nmap.put(\\"a\\", 1);",
-  "key_points": ["HashMap is faster", "TreeMap is sorted", "Neither is thread-safe"]
+  "key_points": ["HashMap быстрее", "TreeMap сортирован", "Ни один не потокобезопасен"]
 }`,
   },
 
@@ -45,12 +46,13 @@ Respond with a JSON explanation. Example of the exact format:
       options: ["wrong option 1", "wrong option 2", "wrong option 3"],
     }),
     user: (lang, q, correct) =>
-      `Language: ${lang}
+      `Ответь ТОЛЬКО на русском языке. Все варианты ответов должны быть на русском.
+Language: ${lang}
 Question: ${q}
 Correct answer: ${correct}
 
 Generate exactly 3 WRONG but plausible distractor answers. Example format:
-{"options": ["ArrayList is thread-safe", "LinkedList has O(1) random access", "Vector is deprecated"]}
+{"options": ["ArrayList потокобезопасен", "LinkedList имеет O(1) случайный доступ", "Vector устарел"]}
 
 Now generate 3 wrong answers for the question above. Return only the JSON.`,
   },
@@ -60,13 +62,14 @@ Now generate 3 wrong answers for the question above. Return only the JSON.`,
 Required format: {"code":"...","bug":"short phrase","options":["correct","wrong1","wrong2","wrong3"]}
 Rules: options[0] must exactly match the bug field. Keep code under 8 lines. Use \\n for newlines in code.`,
     user: (lang, q, topic) => {
-      return `Write a ${lang} bug hunting exercise about: ${topic}.
+      return `Ответь ТОЛЬКО на русском языке. Весь текст, код и варианты должны быть на русском.
+Write a ${lang} bug hunting exercise about: ${topic}.
 \nSteps:
 1. Write 4-8 lines of ${lang} code that has exactly ONE subtle bug.
-2. Describe the bug in a short phrase (5-10 words).
-3. Write 3 WRONG but plausible-sounding bug descriptions.
+2. Describe the bug in a short phrase (5-10 words) НА РУССКОМ.
+3. Write 3 WRONG but plausible-sounding bug descriptions НА РУССКОМ.
 \nReturn ONLY this JSON (no other text):
-{"code":"line1\\nline2\\nline3","bug":"the real bug description","options":["the real bug description","plausible wrong 1","plausible wrong 2","plausible wrong 3"]}`;
+{"code":"line1\\nline2\\nline3","bug":"реальное описание бага","options":["реальное описание бага","неверный вариант 1","неверный вариант 2","неверный вариант 3"]}`;
     },
   },
 
@@ -76,12 +79,13 @@ Rules: options[0] must exactly match the bug field. Keep code under 8 lines. Use
       isCorrect: "boolean — true if the statement is correct, false if it contains a deliberate error",
     }),
     user: (lang, q, topic) =>
-      `Language: ${lang}, Topic: ${topic}
+      `Ответь ТОЛЬКО на русском языке. Все тексты должны быть на русском.
+Language: ${lang}, Topic: ${topic}
 Context: ${q}
 
-Write ONE statement about ${lang} that is either true or false (50% chance each).
+Write ONE statement about ${lang} that is either true or false (50% chance each). Текст должен быть НА РУССКОМ.
 Return JSON in this exact format:
-{"statement": "ArrayList in Java is synchronized by default", "isCorrect": false}
+{"statement": "ArrayList в Java синхронизирован по умолчанию", "isCorrect": false}
 
 Return only the JSON.`,
   },
@@ -93,7 +97,8 @@ Return only the JSON.`,
       options: ["correct replacement", "wrong option 1", "wrong option 2", "wrong option 3"],
     }),
     user: (lang, q, topic) =>
-      `Language: ${lang}, Topic: ${topic}
+      `Ответь ТОЛЬКО на русском языке. Код и варианты должны быть на русском.
+Language: ${lang}, Topic: ${topic}
 Context: ${q}
 
 Write a short ${lang} code snippet with exactly ONE blank marked as ___ where a keyword or expression is missing.
@@ -115,22 +120,23 @@ Return only the JSON.`,
       correctVersion: "string — ideal complete answer",
     }),
     user: (lang, q, answer) =>
-      `Language: ${lang}
+      `Ответь ТОЛЬКО на русском языке. Весь текст оценки должен быть на русском.
+Language: ${lang}
 Interview question: ${q}
 Candidate's answer: ${answer}
 
 Evaluate the answer. Return JSON in this exact format:
 {
   "score": 7,
-  "feedback": "Good mention of O(1) lookup. Missed thread-safety implications and load factor.",
-  "correctVersion": "HashMap provides O(1) average for get/put using hashing. Not thread-safe. Use ConcurrentHashMap for concurrent access."
+  "feedback": "Хорошо упомянул O(1) поиск. Не упомянул вопросы потокобезопасности и коэффициент загрузки.",
+  "correctVersion": "HashMap обеспечивает среднюю сложность O(1) для get/put с использованием хеширования. Не потокобезопасен. Используйте ConcurrentHashMap для конкурентного доступа."
 }
 
 Return only the JSON.`,
   },
 
   system_design: {
-    system: () => `You are a senior system design interviewer at FAANG. Evaluate the candidate's answer. Respond with ONLY a valid JSON object — no markdown, no prose, no code fences.
+    system: () => `You are a senior system design interviewer at FAANG. ВСЕГДА отвечай ТОЛЬКО на русском языке. Evaluate the candidate's answer. Respond with ONLY a valid JSON object — no markdown, no prose, no code fences.
 Required format: {
   "score": 0-100,
   "strengths": ["string"],
@@ -140,7 +146,8 @@ Required format: {
   "followUpQuestion": "string"
 }`,
     user: (topic, answer) =>
-      `Topic: ${topic.title}
+      `Ответь ТОЛЬКО на русском языке. Весь текст оценки и архитектуры должен быть на русском.
+Topic: ${topic.title}
 Requirements: ${(topic.requirements || []).join(', ')}
 Constraints: ${(topic.constraints || []).join(', ')}
 Expected components: ${(topic.expected_components || []).join(', ')}
@@ -168,26 +175,27 @@ Evaluate this system design answer. Return only the JSON.`,
       topStrengths: ["string"],
     }),
     user: (lang, text) =>
-      `Programming language focus: ${lang}
+      `Ответь ТОЛЬКО на русском языке. Весь анализ, вопросы и текст должны быть на русском.
+Programming language focus: ${lang}
 Resume text: ${text.substring(0, 1500)}
 
 Analyze this resume and provide a structured scoring rubric. Return JSON in this exact format:
 {
   "experienceLevel": "Middle",
   "skills": ["Java", "Spring Boot", "PostgreSQL"],
-  "strengths": ["Clear technical focus", "Strong backend experience"],
-  "improvementAreas": ["Add measurable impact to achievements", "Clarify testing experience"],
-  "suggestedQuestions": ["How do you optimize Spring Boot startup time?", "Explain optimistic and pessimistic locking."],
+  "strengths": ["Четкая техническая направленность", "Сильный бэкенд-опыт"],
+  "improvementAreas": ["Добавь измеримые достижения", "Проясни опыт тестирования"],
+  "suggestedQuestions": ["Как оптимизировать время запуска Spring Boot?", "Объясни оптимистическую и пессимистическую блокировку."],
   "score": 85,
   "sections": {
-    "summary": { "score": 90, "feedback": "Concise and professional." },
-    "experience": { "score": 80, "feedback": "Good progression, but metrics are missing." },
-    "skills": { "score": 85, "feedback": "Relevant stack.", "missing": ["Docker", "Kubernetes"] },
-    "education": { "score": 100, "feedback": "Degree is in a relevant field." }
+    "summary": { "score": 90, "feedback": "Кратко и профессионально." },
+    "experience": { "score": 80, "feedback": "Хорошая прогрессия, но отсутствуют метрики." },
+    "skills": { "score": 85, "feedback": "Релевантный стек.", "missing": ["Docker", "Kubernetes"] },
+    "education": { "score": 100, "feedback": "Степень в релевантной области." }
   },
-  "topIssues": ["No quantitative achievements", "Missing cloud orchestration skills"],
-  "topStrengths": ["Clear technical focus", "Strong tenure at previous roles"],
-  "recommendedQuestions": ["Spring", "Multithreading"]
+  "topIssues": ["Нет количественных достижений", "Отсутствуют навыки облачной оркестрации"],
+  "topStrengths": ["Четкая техническая направленность", "Длительный стаж на предыдущих позициях"],
+  "recommendedQuestions": ["Spring", "Многопоточность"]
 }
 
 Return only the JSON.`,
@@ -198,14 +206,15 @@ Return only the JSON.`,
       questions: ["string — specific interview question tailored to gaps"]
     }),
     user: (lang, data) =>
-      `Programming language focus: ${lang}
+      `Ответь ТОЛЬКО на русском языке. Все вопросы должны быть на русском.
+Programming language focus: ${lang}
 Resume analysis data: ${typeof data === 'string' ? data : JSON.stringify(data)}
 
 Based on this resume analysis, generate 5 specific interview questions that target the user's identified skill gaps and improvement areas. Focus on questions that would help the user strengthen their weakest areas. Return JSON in this exact format:
 {
   "questions": [
-    "Explain how garbage collection works in Java and when tuning is necessary.",
-    "Describe the difference between abstract and interface in Go."
+    "Объясни, как работает сборка мусора в Java и когда требуется настройка.",
+    "Опиши разницу между abstract и interface в Go."
   ]
 }
 
@@ -218,16 +227,17 @@ Return only the JSON.`,
       suggestedTopTopics: ["string — top topics to study for this vacancy"]
     }),
     user: (lang, vacancyText) =>
-      `Programming language focus: ${lang}
+      `Ответь ТОЛЬКО на русском языке. Все вопросы и темы должны быть на русском.
+Programming language focus: ${lang}
 Vacancy description: ${vacancyText.substring(0, 2000)}
 
 Analyze this job vacancy and generate 8 interview questions that would be asked for this role. Include questions that cover both core concepts and practical skills mentioned in the vacancy. Also identify the top topics the candidate should study. Return JSON in this exact format:
 {
   "questions": [
-    "Explain how to handle concurrency in the context of this role.",
-    "What design patterns are most relevant for building scalable microservices?"
+    "Объясни, как обрабатывать конкурентность в контексте этой роли.",
+    "Какие шаблоны проектирования наиболее релевантны для создания масштабируемых микросервисов?"
   ],
-  "suggestedTopTopics": ["Concurrency", "Microservices Architecture"]
+  "suggestedTopTopics": ["Конкурентность", "Архитектура микросервисов"]
 }
 
 Return only the JSON.`,
@@ -249,7 +259,7 @@ export const LANGUAGES = {
       resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('Java', t) }),
     },
     codeLanguage: 'java',
-    systemPrompt: 'You are an expert Java mentor. Explain clearly. Use Russian language.',
+    systemPrompt: 'You are an expert Java mentor. Explain clearly. ВСЕГДА отвечай ТОЛЬКО на русском языке. Никаких английских слов в ответах. Все примеры, варианты и тексты должны быть на русском.',
   },
   Python: {
     id: 'Python', name: 'Python',
@@ -264,7 +274,7 @@ export const LANGUAGES = {
       resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('Python', t) }),
     },
     codeLanguage: 'python',
-    systemPrompt: 'You are an expert Python mentor. Explain clearly. Use Russian language.',
+    systemPrompt: 'You are an expert Python mentor. Explain clearly. ВСЕГДА отвечай ТОЛЬКО на русском языке. Никаких английских слов в ответах. Все примеры, варианты и тексты должны быть на русском.',
   },
   TypeScript: {
     id: 'TypeScript', name: 'TypeScript',
@@ -279,7 +289,7 @@ export const LANGUAGES = {
       resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('TypeScript', t) }),
     },
     codeLanguage: 'typescript',
-    systemPrompt: 'You are an expert TypeScript mentor. Explain clearly. Use Russian language.',
+    systemPrompt: 'You are an expert TypeScript mentor. Explain clearly. ВСЕГДА отвечай ТОЛЬКО на русском языке. Никаких английских слов в ответах. Все примеры, варианты и тексты должны быть на русском.',
   },
   Go: {
     id: 'Go', name: 'Go',
@@ -294,7 +304,7 @@ export const LANGUAGES = {
       resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('Go', t) }),
     },
     codeLanguage: 'go',
-    systemPrompt: 'You are an expert Go mentor. Explain clearly. Use Russian language.',
+    systemPrompt: 'You are an expert Go mentor. Explain clearly. ВСЕГДА отвечай ТОЛЬКО на русском языке. Никаких английских слов в ответах. Все примеры, варианты и тексты должны быть на русском.',
   },
   Rust: {
     id: 'Rust', name: 'Rust',
@@ -309,7 +319,7 @@ export const LANGUAGES = {
       resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('Rust', t) }),
     },
     codeLanguage: 'rust',
-    systemPrompt: 'You are an expert Rust mentor. Explain clearly. Use Russian language.',
+    systemPrompt: 'You are an expert Rust mentor. Explain clearly. ВСЕГДА отвечай ТОЛЬКО на русском языке. Никаких английских слов в ответах. Все примеры, варианты и тексты должны быть на русском.',
   },
   React: {
     id: 'React', name: 'React',
@@ -324,7 +334,7 @@ export const LANGUAGES = {
       resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('React', t) }),
     },
     codeLanguage: 'javascript',
-    systemPrompt: 'You are an expert React mentor. Explain clearly. Use Russian language.',
+    systemPrompt: 'You are an expert React mentor. Explain clearly. ВСЕГДА отвечай ТОЛЬКО на русском языке. Никаких английских слов в ответах. Все примеры, варианты и тексты должны быть на русском.',
   },
   Kotlin: {
     id: 'Kotlin', name: 'Kotlin',
@@ -339,7 +349,7 @@ export const LANGUAGES = {
       resume: (t) => ({ system: PROMPTS.resume.system(), user: PROMPTS.resume.user('Kotlin', t) }),
     },
     codeLanguage: 'kotlin',
-    systemPrompt: 'You are an expert Kotlin mentor. Explain clearly. Use Russian language.',
+    systemPrompt: 'You are an expert Kotlin mentor. Explain clearly. ВСЕГДА отвечай ТОЛЬКО на русском языке. Никаких английских слов в ответах. Все примеры, варианты и тексты должны быть на русском.',
   },
 };
 

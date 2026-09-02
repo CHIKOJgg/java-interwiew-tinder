@@ -79,11 +79,9 @@ async function bootstrap() {
     }
 
     ReactDOM.createRoot(document.getElementById('root')).render(
-      <React.StrictMode>
-        <ErrorBoundary>
-          <App />
-        </ErrorBoundary>
-      </React.StrictMode>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
     );
   } catch (err) {
     console.error('BOOT FAILED:', err);

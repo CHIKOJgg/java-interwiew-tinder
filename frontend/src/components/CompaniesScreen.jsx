@@ -35,16 +35,19 @@ function CompaniesScreen({ onBack }) {
         <div className="companies-loading">{t('common.loading')}</div>
       ) : (
         <div className="companies-list">
-          {companies.map((name) => (
-            <button
-              key={name}
-              className="company-chip"
-              onClick={() => handleCompanySelect(name)}
-              type="button"
-            >
-              {name}
-            </button>
-          ))}
+          {companies.map((company) => {
+            const companyName = typeof company === 'string' ? company : company?.name || 'Unknown';
+            return (
+              <button
+                key={companyName}
+                className="company-chip"
+                onClick={() => handleCompanySelect(companyName)}
+                type="button"
+              >
+                {companyName}
+              </button>
+            );
+          })}
           {companies.length === 0 && (
             <div className="companies-empty">{t('companies.no_companies')}</div>
           )}

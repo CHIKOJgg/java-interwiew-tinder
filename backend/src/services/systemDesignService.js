@@ -39,7 +39,7 @@ export async function getTopics(userId, language = 'Java', difficulty) {
     let p = 2;
     if (difficulty) { where.push(`difficulty = $${p}`); params.push(difficulty); p++; }
 
-    const { rows } = await pool.query(
+    let { rows } = await pool.query(
       `SELECT id, topic, title, description, difficulty, estimated_readiness_hours
        FROM system_design_topics
        WHERE ${where.join(' AND ')}
@@ -48,6 +48,24 @@ export async function getTopics(userId, language = 'Java', difficulty) {
          id ASC`,
       params
     );
+
+    // Fallback: if no topics for selected language, use Java topics
+    if (rows.length === 0) {
+      const fallbackWhere = ['is_active = TRUE', 'language = $1'];
+      const fallbackParams = ['Java'];
+      let fp = 2;
+      if (difficulty) { fallbackWhere.push(`difficulty = $${fp}`); fallbackParams.push(difficulty); fp++; }
+      const fallback = await pool.query(
+        `SELECT id, topic, title, description, difficulty, estimated_readiness_hours
+         FROM system_design_topics
+         WHERE ${fallbackWhere.join(' AND ')}
+         ORDER BY
+           CASE difficulty WHEN 'junior' THEN 0 WHEN 'middle' THEN 1 ELSE 2 END,
+           id ASC`,
+        fallbackParams
+      );
+      rows = fallback.rows;
+    }
 
     let progressMap = {};
     if (userId) {

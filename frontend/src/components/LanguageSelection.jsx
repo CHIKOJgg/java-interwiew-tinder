@@ -15,8 +15,13 @@ const languages = [
 ];
 
 const LanguageSelection = ({ onSelect }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { switchLanguage, language: currentLang } = useStore();
+  // Audit 2026-09-02: DB has only 2 languages with >=100 RU questions (Java 584, Python 408)
+  // Hide empty languages when interface is RU to avoid "No questions" dead-end.
+  const visibleLanguages = i18n.language === 'ru'
+    ? languages.filter(l => ['Java', 'Python'].includes(l.id))
+    : languages;
 
   const handleSelect = async (langId) => {
     await switchLanguage(langId);
@@ -31,7 +36,7 @@ const LanguageSelection = ({ onSelect }) => {
       </div>
 
       <div className="language-grid">
-        {languages.map((lang) => (
+        {visibleLanguages.map((lang) => (
           <button
             key={lang.id}
             className={`language-card ${currentLang === lang.id ? 'active' : ''}`}

@@ -251,7 +251,13 @@ app.get('/debug-sentry', authMiddleware, requireAdmin, (_req, _res) => {
   throw new Error('Sentry backend test error');
 });
 // в”Ђв”Ђв”Ђ Languages в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
-app.get('/api/languages', (req, res) => res.json({ languages: getAvailableLanguages() }));
+app.get('/api/languages', (req, res) => {
+  const lng = String(req.query.lng || req.query.interfaceLanguage || 'en');
+  const all = getAvailableLanguages();
+  // Audit 2026-09-02: DB has only Java(584) + Python(408) with >=100 RU questions, others 0
+  const filtered = lng === 'ru' ? all.filter(l => ['Java', 'Python'].includes(l)) : all;
+  res.json({ languages: filtered });
+});
 
 // в”Ђв”Ђв”Ђ Categories (language-aware) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/categories', async (req, res) => {
@@ -504,16 +510,19 @@ app.get('/api/demo/questions', demoLimiter, async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 10, 15);
     // Random-but-cheap sampling; a per-request seed keeps repeat visits fresh.
     const seed = String(req.query.seed || Math.random().toString(36).slice(2));
+    // When RU interface, filter to Cyrillic-only in SQL to avoid lag (previously JS-filter after LIMIT caused empty deck)
+    const ruFilterSql = interfaceLang === 'ru' ? ` AND question_text ~ '[^ -~]' AND short_answer ~ '[^ -~]' ` : '';
     const { rows } = await pool.query(
       `SELECT id, category, difficulty, question_text, short_answer, language
        FROM questions
        WHERE is_active = TRUE AND language = $1
          AND question_text IS NOT NULL AND short_answer IS NOT NULL
+         ${ruFilterSql}
        ORDER BY md5(id::text || $2) ASC
        LIMIT $3`,
       [language, seed, limit]
     );
-    let questions = rows.map((r) => ({
+    const questions = rows.map((r) => ({
       id: r.id,
       category: r.category,
       difficulty: r.difficulty,
@@ -521,10 +530,7 @@ app.get('/api/demo/questions', demoLimiter, async (req, res) => {
       shortAnswer: r.short_answer,
       language: r.language || 'Java',
     }));
-    if (interfaceLang === 'ru') {
-      questions = questions.filter(q => hasCyrillic(q.question) && hasCyrillic(q.shortAnswer));
-    }
-    res.json({ questions: questions.slice(0, limit), meta: { language, total: questions.length } });
+    res.json({ questions, meta: { language, total: questions.length } });
   } catch (err) {
     logger.error({ err }, 'Error in /demo/questions');
     res.status(500).json({ error: 'Internal server error' });
@@ -872,6 +878,43 @@ app.delete('/api/admin/waitlist/:email', async (req, res) => {
   }
 });
 
+// Temporary admin seed for missing RU languages (allowed by user, remove after 2026-10-01)
+app.post('/api/admin/seed-other-languages', async (req, res) => {
+  try {
+    const seed = [
+      { category: 'TypeScript Core', question: 'Что такое структурная типизация в TypeScript?', short_answer: 'TypeScript проверяет совместимость типов на основе структуры, а не имени.', language: 'TypeScript', difficulty: 'Junior' },
+      { category: 'Type System', question: 'В чём разница между interface и type?', short_answer: 'interface — объявление формы объекта, расширяемое через extends. type — псевдоним, может быть объединением.', language: 'TypeScript', difficulty: 'Junior' },
+      { category: 'Generics', question: 'Что такое Generics в TypeScript?', short_answer: 'Параметризованные типы для создания повторно используемых компонентов с безопасностью типов.', language: 'TypeScript', difficulty: 'Middle' },
+      { category: 'Go Core', question: 'Что такое горутины (goroutines) в Go?', short_answer: 'Лёгкие потоки, управляемые Go runtime. Запускаются через ключевое слово go.', language: 'Go', difficulty: 'Junior' },
+      { category: 'Concurrency', question: 'В чём разница между буферизованными и небуферизованными каналами?', short_answer: 'Буферизованные не блокируют отправителя до заполнения буфера. Без буфера — синхронная передача.', language: 'Go', difficulty: 'Junior' },
+      { category: 'Go Core', question: 'Что такое defer в Go?', short_answer: 'Отложенный вызов функции, выполняется в LIFO-порядке при выходе из функции.', language: 'Go', difficulty: 'Junior' },
+      { category: 'Rust Core', question: 'Что такое владение (ownership) в Rust?', short_answer: 'Каждое значение имеет единственного владельца. При выходе владельца из области видимости значение удаляется.', language: 'Rust', difficulty: 'Junior' },
+      { category: 'Ownership', question: 'Как работает заимствование (borrowing)?', short_answer: 'Можно создать ссылки (& или &mut), но не более одной изменяемой одновременно.', language: 'Rust', difficulty: 'Junior' },
+      { category: 'Lifetimes', question: 'Что такое lifetimes в Rust?', short_answer: 'Аннотации времени жизни, указывающие, как долго ссылка остаётся валидной.', language: 'Rust', difficulty: 'Middle' },
+      { category: 'React Core', question: 'Что такое хуки (hooks) в React?', short_answer: 'Функции для управления состоянием и жизненным циклом в функциональных компонентах.', language: 'React', difficulty: 'Junior' },
+      { category: 'Hooks', question: 'В чём разница между useEffect с пустым массивом зависимостей и с зависимостями?', short_answer: 'Пустой массив — эффект один раз при монтировании. С зависимостями — при изменении любой из них.', language: 'React', difficulty: 'Junior' },
+      { category: 'React Core', question: 'Что такое виртуальный DOM в React?', short_answer: 'Абстракция над реальным DOM для минимизации прямых манипуляций и оптимизации рендеринга.', language: 'React', difficulty: 'Junior' },
+      { category: 'Kotlin Core', question: 'Что такое null-safety в Kotlin?', short_answer: 'Kotlin запрещает присвоение null по умолчанию. Для nullable используется String?.', language: 'Kotlin', difficulty: 'Junior' },
+      { category: 'Coroutines', question: 'Что такое suspend-функция?', short_answer: 'Функция, которую можно приостановить и возобновить в корутинах.', language: 'Kotlin', difficulty: 'Junior' },
+      { category: 'Kotlin Core', question: 'Что такое data class?', short_answer: 'Класс с автоматически сгенерированными equals, hashCode, toString, copy.', language: 'Kotlin', difficulty: 'Junior' },
+    ];
+    let inserted = 0;
+    for (const q of seed) {
+      const r = await pool.query(
+        `INSERT INTO questions (category, question_text, short_answer, language, difficulty, is_active)
+         VALUES ($1,$2,$3,$4,$5,TRUE)
+         ON CONFLICT (question_text, language) DO NOTHING`,
+        [q.category, q.question, q.short_answer, q.language, q.difficulty]
+      );
+      inserted += r.rowCount || 0;
+    }
+    res.json({ success: true, inserted, totalSeed: seed.length });
+  } catch (err) {
+    logger.error({ err }, 'Admin seed-other-languages failed');
+    res.status(500).json({ error: 'Seed failed' });
+  }
+});
+
 // в”Ђв”Ђв”Ђ Preferences в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/preferences', async (req, res) => {
   try {
@@ -990,6 +1033,10 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       'q.language = $2',
       'length(q.short_answer) >= 8',
     ];
+    if (interfaceLang === 'ru') {
+      where.push(`q.question_text ~ '[^ -~]'`);
+      where.push(`q.short_answer ~ '[^ -~]'`);
+    }
     const params = [userId, language];
     let p = 3;
     if (selectedCategories.length > 0) { where.push(`q.category = ANY($${p})`); params.push(selectedCategories); p++; }
@@ -1037,10 +1084,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     });
 
     const result = await pool.query(baseQuery, params);
-    let questions = result.rows.map(mapRow);
-    if (interfaceLang === 'ru') {
-      questions = questions.filter(q => hasCyrillic(q.question) && hasCyrillic(q.shortAnswer));
-    }
+    const questions = result.rows.map(mapRow);
 
     // Endless feed: if the new + due + unseen pool is exhausted (e.g. the user
     // has marked everything known and no reviews are due), top up with already
@@ -1052,6 +1096,10 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     const seenPage = new Set();
     const runFiller = async (withExclusion) => {
       const fWhere = ['q.is_active = TRUE', "q.language = $2", "up.status = 'known'", 'length(q.short_answer) >= 8'];
+      if (interfaceLang === 'ru') {
+        fWhere.push(`q.question_text ~ '[^ -~]'`);
+        fWhere.push(`q.short_answer ~ '[^ -~]'`);
+      }
       const fParams = [userId, language];
       let fp = 3;
       if (selectedCategories.length > 0) { fWhere.push(`q.category = ANY($${fp})`); fParams.push(selectedCategories); fp++; }
@@ -1071,9 +1119,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
         LIMIT ${fLimit}`;
       const filler = await pool.query(fillerQuery, fParams);
       for (const row of filler.rows) {
-        const mapped = mapRow(row);
-        if (interfaceLang === 'ru' && (!hasCyrillic(mapped.question) || !hasCyrillic(mapped.shortAnswer))) continue;
-        if (!seenPage.has(row.id)) { seenPage.add(row.id); questions.push(mapped); fillerAdded++; }
+        if (!seenPage.has(row.id)) { seenPage.add(row.id); questions.push(mapRow(row)); fillerAdded++; }
       }
     };
     for (const row of result.rows) seenPage.add(row.id);
@@ -1155,6 +1201,10 @@ app.get('/api/questions/distractors', async (req, res) => {
     }
     const interfaceLang = String(req.query.lng || req.query.interfaceLanguage || 'en');
     const where = ['q.is_active = TRUE', 'q.language = $1', 'length(q.short_answer) BETWEEN 8 AND 200'];
+    if (interfaceLang === 'ru') {
+      where.push(`q.short_answer ~ '[^ -~]'`);
+      where.push(`q.question_text ~ '[^ -~]'`);
+    }
     const params = [language];
     let p = 2;
     if (excludeIds.length > 0) { where.push(`NOT (q.id = ANY($${p}))`); params.push(excludeIds); p++; }
@@ -1166,11 +1216,8 @@ app.get('/api/questions/distractors', async (req, res) => {
        LIMIT $${p}`,
       [...params, limit],
     );
-    let distractors = result.rows.map(r => ({ id: r.id, text: r.short_answer }));
-    if (interfaceLang === 'ru') {
-      distractors = distractors.filter(d => hasCyrillic(d.text));
-    }
-    res.json({ distractors: distractors.slice(0, limit) });
+    const distractors = result.rows.map(r => ({ id: r.id, text: r.short_answer }));
+    res.json({ distractors });
   } catch (error) {
     logger.error({ err: error }, 'Error in /questions/distractors');
     res.status(500).json({ error: 'Internal server error' });

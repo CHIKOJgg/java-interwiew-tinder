@@ -46,6 +46,7 @@ import logger from './utils/logger';
 
 const TracksScreenWrapper = ({ onStartTrack, onBack, onSkipToCategories }) => {
   const { tracks, loadTracks, language, setSelectedCategories, loadQuestions, setLearningMode, user } = useStore();
+  const { t } = useTranslation();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {

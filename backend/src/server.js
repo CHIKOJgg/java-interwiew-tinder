@@ -252,11 +252,11 @@ app.get('/debug-sentry', authMiddleware, requireAdmin, (_req, _res) => {
 });
 // в”Ђв”Ђв”Ђ Languages в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/languages', (req, res) => {
-  const lng = String(req.query.lng || req.query.interfaceLanguage || 'en');
   const all = getAvailableLanguages();
-  // Audit 2026-09-02: DB has only Java(584) + Python(408) with >=100 RU questions, others 0
-  const filtered = lng === 'ru' ? all.filter(l => ['Java', 'Python'].includes(l)) : all;
-  res.json({ languages: filtered });
+  // RU+EN fallback: never hide languages — feed/demo top up RU with EN so
+  // the deck is never empty (Go/TS/Rust/React/Kotlin have ~3 RU each).
+  // Client may show RU/EN badges, but all 7 stay selectable.
+  res.json({ languages: all });
 });
 
 // в”Ђв”Ђв”Ђ Categories (language-aware) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
@@ -353,7 +353,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     // Resolve plan entitlements (available modes/languages) so the client can
     // render correct locks and the paywall without re-deriving plan rules.
     const ALL_MODES = ['swipe', 'test', 'bug-hunting', 'blitz', 'mock-interview', 'concept-linker', 'code-completion', 'review', 'system-design'];
-    const ALL_LANGS = ['Java', 'Python', 'TypeScript'];
+    const ALL_LANGS = ['Java', 'Python', 'TypeScript', 'Go', 'Rust', 'React', 'Kotlin'];
     let availableModes = ['swipe', 'test'];
     let availableLanguages = ALL_LANGS;
     if (plan === 'admin' || plan === 'pro') {
@@ -510,27 +510,67 @@ app.get('/api/demo/questions', demoLimiter, async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 10, 15);
     // Random-but-cheap sampling; a per-request seed keeps repeat visits fresh.
     const seed = String(req.query.seed || Math.random().toString(36).slice(2));
-    // When RU interface, filter to Cyrillic-only in SQL to avoid lag (previously JS-filter after LIMIT caused empty deck)
-    const ruFilterSql = interfaceLang === 'ru' ? ` AND question_text ~ '[^ -~]' AND short_answer ~ '[^ -~]' ` : '';
-    const { rows } = await pool.query(
-      `SELECT id, category, difficulty, question_text, short_answer, language
-       FROM questions
-       WHERE is_active = TRUE AND language = $1
+    // RU-first + EN fallback: RU pool first (Cyrillic in SQL for speed),
+    // then top up with EN so the deck is never empty for Go/TS/Rust/React/Kotlin (~3 RU each).
+    // Low-quality one-liners (short_answer < 20) are deprioritized via length ordering.
+    const baseCols = `id, category, difficulty, question_text, short_answer, language`;
+    const baseWhere = `is_active = TRUE AND language = $1
          AND question_text IS NOT NULL AND short_answer IS NOT NULL
-         ${ruFilterSql}
-       ORDER BY md5(id::text || $2) ASC
-       LIMIT $3`,
-      [language, seed, limit]
-    );
-    const questions = rows.map((r) => ({
+         AND length(short_answer) >= 8`;
+    const mapDemo = (r) => ({
       id: r.id,
       category: r.category,
       difficulty: r.difficulty,
       question: r.question_text,
       shortAnswer: r.short_answer,
       language: r.language || 'Java',
-    }));
-    res.json({ questions, meta: { language, total: questions.length } });
+    });
+    let questions = [];
+    let ruCount = 0;
+    let enCount = 0;
+    if (interfaceLang === 'ru') {
+      const { rows } = await pool.query(
+        `SELECT ${baseCols}
+       FROM questions
+       WHERE ${baseWhere}
+         AND question_text ~ '[^ -~]' AND short_answer ~ '[^ -~]'
+       ORDER BY CASE WHEN length(short_answer) < 20 THEN 1 ELSE 0 END ASC,
+         md5(id::text || $2) ASC
+       LIMIT $3`,
+        [language, seed, limit]
+      );
+      questions = rows.map(mapDemo);
+      ruCount = questions.length;
+      if (questions.length < limit) {
+        const fetchedIds = questions.map(q => q.id);
+        const { rows: enRows } = await pool.query(
+          `SELECT ${baseCols}
+         FROM questions
+         WHERE ${baseWhere}
+           AND NOT (id = ANY($4))
+         ORDER BY CASE WHEN length(short_answer) < 20 THEN 1 ELSE 0 END ASC,
+           md5(id::text || $2) ASC
+         LIMIT $3`,
+          [language, seed, limit - questions.length, fetchedIds.length ? fetchedIds : [-1]]
+        );
+        const enQs = enRows.map(mapDemo);
+        enCount = enQs.length;
+        questions = [...questions, ...enQs];
+      }
+    } else {
+      const { rows } = await pool.query(
+        `SELECT ${baseCols}
+       FROM questions
+       WHERE ${baseWhere}
+       ORDER BY CASE WHEN length(short_answer) < 20 THEN 1 ELSE 0 END ASC,
+         md5(id::text || $2) ASC
+       LIMIT $3`,
+        [language, seed, limit]
+      );
+      questions = rows.map(mapDemo);
+      enCount = questions.length;
+    }
+    res.json({ questions, meta: { language, total: questions.length, ruCount, enCount, fallback: interfaceLang === 'ru' && enCount > 0 } });
   } catch (err) {
     logger.error({ err }, 'Error in /demo/questions');
     res.status(500).json({ error: 'Internal server error' });
@@ -1066,6 +1106,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
           ELSE 3
         END ASC,
         review_date ASC,
+        CASE WHEN length(q.short_answer) < 20 THEN 1 ELSE 0 END ASC,
         md5(q.id::text || ${seedParam}) ASC
       LIMIT ${limitParam} OFFSET ${cursorParam}`;
 
@@ -1114,7 +1155,8 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
         LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
         LEFT JOIN question_mastery qm ON q.id = qm.question_id AND qm.user_id = $1
         WHERE ${fWhere.join(' AND ')}
-        ORDER BY md5(q.id::text || ${fSeed}) ASC
+        ORDER BY CASE WHEN length(q.short_answer) < 20 THEN 1 ELSE 0 END ASC,
+          md5(q.id::text || ${fSeed}) ASC
         OFFSET ${fOffset}
         LIMIT ${fLimit}`;
       const filler = await pool.query(fillerQuery, fParams);
@@ -1126,6 +1168,49 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     if (questions.length < limit) {
       await runFiller(true);
       if (questions.length < limit) await runFiller(false);
+    }
+    // RU+EN fallback: RU pool exhausted (Go/TS/Rust/React/Kotlin have ~3 RU each).
+    // Top up with EN questions so the deck is never empty. Track counts for meta.
+    let enFallbackAdded = 0;
+    const ruCount = questions.length;
+    if (interfaceLang === 'ru' && questions.length < limit) {
+      const fetchedIds = [...seenPage];
+      const eWhere = [
+        'q.is_active = TRUE',
+        "(up.id IS NULL OR up.status = 'unknown' OR qm.next_review <= CURRENT_DATE)",
+        'q.language = $2',
+        'length(q.short_answer) >= 8',
+      ];
+      const eParams = [userId, language];
+      let ep = 3;
+      if (selectedCategories.length > 0) { eWhere.push(`q.category = ANY($${ep})`); eParams.push(selectedCategories); ep++; }
+      if (difficulties && difficulties.length) { eWhere.push(`q.difficulty = ANY($${ep})`); eParams.push(difficulties); ep++; }
+      if (req.query.company) { eWhere.push(`q.companies @> ARRAY[$${ep}]`); eParams.push(req.query.company); ep++; }
+      const allExcluded = [...new Set([...excludeIds, ...fetchedIds])].slice(0, 500);
+      if (allExcluded.length > 0) { eWhere.push(`NOT (q.id = ANY($${ep}))`); eParams.push(allExcluded); ep++; }
+      const eSeed = `$${ep++}`, eLimit = `$${ep++}`;
+      eParams.push(seed, limit - questions.length);
+      const enQuery = `
+        SELECT ${selectCols}
+        FROM questions q
+        LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
+        LEFT JOIN question_mastery qm ON q.id = qm.question_id AND qm.user_id = $1
+        WHERE ${eWhere.join(' AND ')}
+        ORDER BY
+          CASE
+            WHEN qm.next_review <= CURRENT_DATE THEN 0
+            WHEN up.status = 'unknown' THEN 1
+            WHEN up.id IS NULL THEN 2
+            ELSE 3
+          END ASC,
+          review_date ASC,
+          CASE WHEN length(q.short_answer) < 20 THEN 1 ELSE 0 END ASC,
+          md5(q.id::text || ${eSeed}) ASC
+        LIMIT ${eLimit}`;
+      const enResult = await pool.query(enQuery, eParams);
+      for (const row of enResult.rows) {
+        if (!seenPage.has(row.id)) { seenPage.add(row.id); questions.push(mapRow(row)); enFallbackAdded++; }
+      }
     }
 
     const hasMore = questions.length === limit;
@@ -1139,6 +1224,9 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
         nextCursor: cursor + result.rows.length + fillerAdded,
         hasMore,
         refresher: questions.length < limit,
+        ruCount,
+        enCount: enFallbackAdded,
+        fallback: enFallbackAdded > 0,
       },
     });
   } catch (error) {
@@ -1200,23 +1288,41 @@ app.get('/api/questions/distractors', async (req, res) => {
       excludeIds = [...new Set(list.flatMap(x => String(x).split(',')).map(Number).filter(Number.isInteger))];
     }
     const interfaceLang = String(req.query.lng || req.query.interfaceLanguage || 'en');
-    const where = ['q.is_active = TRUE', 'q.language = $1', 'length(q.short_answer) BETWEEN 8 AND 200'];
-    if (interfaceLang === 'ru') {
-      where.push(`q.short_answer ~ '[^ -~]'`);
-      where.push(`q.question_text ~ '[^ -~]'`);
-    }
+    const baseWhere = ['q.is_active = TRUE', 'q.language = $1', 'length(q.short_answer) BETWEEN 8 AND 200'];
     const params = [language];
     let p = 2;
-    if (excludeIds.length > 0) { where.push(`NOT (q.id = ANY($${p}))`); params.push(excludeIds); p++; }
+    if (excludeIds.length > 0) { baseWhere.push(`NOT (q.id = ANY($${p}))`); params.push(excludeIds); p++; }
+    const ruWhere = interfaceLang === 'ru'
+      ? [...baseWhere, `q.short_answer ~ '[^ -~]'`, `q.question_text ~ '[^ -~]'`]
+      : baseWhere;
     const result = await pool.query(
       `SELECT q.id, q.short_answer
        FROM questions q
-       WHERE ${where.join(' AND ')}
+       WHERE ${ruWhere.join(' AND ')}
        ORDER BY random()
        LIMIT $${p}`,
       [...params, limit],
     );
-    const distractors = result.rows.map(r => ({ id: r.id, text: r.short_answer }));
+    let distractors = result.rows.map(r => ({ id: r.id, text: r.short_answer }));
+    // RU+EN fallback: top up with EN distractors when RU pool is thin (Go/TS/...).
+    if (interfaceLang === 'ru' && distractors.length < limit) {
+      const seenIds = [...new Set([...excludeIds, ...distractors.map(d => d.id)])];
+      const eParams = [language];
+      let ep = 2;
+      const eWhere = [...baseWhere];
+      // rebuild NOT clause with merged exclusions
+      const withoutNot = eWhere.filter(c => !c.startsWith('NOT (q.id'));
+      if (seenIds.length > 0) { withoutNot.push(`NOT (q.id = ANY($${ep}))`); eParams.push(seenIds); ep++; }
+      const enResult = await pool.query(
+        `SELECT q.id, q.short_answer
+         FROM questions q
+         WHERE ${withoutNot.join(' AND ')}
+         ORDER BY random()
+         LIMIT $${ep}`,
+        [...eParams, limit - distractors.length],
+      );
+      distractors = [...distractors, ...enResult.rows.map(r => ({ id: r.id, text: r.short_answer }))];
+    }
     res.json({ distractors });
   } catch (error) {
     logger.error({ err: error }, 'Error in /questions/distractors');
@@ -2476,7 +2582,18 @@ app.get('/api/admin/metrics', async (req, res) => {
 
 app.post('/api/admin/clear-cache', requireAdmin, async (req, res) => {
   try {
-    const { mode, language } = req.body;
+    const { mode, language, confirm, dryRun } = req.body;
+    // Guard: full wipe (no scope) requires explicit confirm + supports dry-run
+    // so a stray click can't cold-start AI cache for all users at once.
+    if (!mode && !language) {
+      if (dryRun) {
+        const { rows } = await pool.query('SELECT COUNT(*) as count FROM ai_cache');
+        return res.json({ success: true, dryRun: true, rows: parseInt(rows[0].count) || 0 });
+      }
+      if (confirm !== true) {
+        return res.status(400).json({ error: 'Confirmation required', code: 'CONFIRM_REQUIRED' });
+      }
+    }
     let query = 'DELETE FROM ai_cache';
     const params = [];
 
@@ -2781,7 +2898,7 @@ app.get('/api/tracks', async (req, res) => {
     const tracks = await trackService.getTracks(language);
     if (tracks.length === 0) {
       const result = { tracks: [] };
-      if (redis) redis.set(cacheKey, JSON.stringify(result), 'EX', 30).catch(() => {});
+      if (redis) redis.set(cacheKey, JSON.stringify(result), 'EX', 30).catch((err) => logger.warn({ err }, 'Redis tracks cache write failed'));
       return res.json(result);
     }
     const trackIds = tracks.map(t => t.id);
@@ -2809,7 +2926,7 @@ app.get('/api/tracks', async (req, res) => {
       completed: progressMap[t.id]?.completed || false,
     }));
     const result = { tracks: withProgress };
-    if (redis) redis.set(cacheKey, JSON.stringify(result), 'EX', 30).catch(() => {});
+    if (redis) redis.set(cacheKey, JSON.stringify(result), 'EX', 30).catch((err) => logger.warn({ err }, 'Redis tracks cache write failed'));
     res.json(result);
   } catch (err) {
     logger.error({ err }, 'Tracks error');

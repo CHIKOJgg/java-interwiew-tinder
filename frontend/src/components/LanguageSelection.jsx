@@ -15,13 +15,11 @@ const languages = [
 ];
 
 const LanguageSelection = ({ onSelect }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { switchLanguage, language: currentLang } = useStore();
-  // Audit 2026-09-02: DB has only 2 languages with >=100 RU questions (Java 584, Python 408)
-  // Hide empty languages when interface is RU to avoid "No questions" dead-end.
-  const visibleLanguages = i18n.language === 'ru'
-    ? languages.filter(l => ['Java', 'Python'].includes(l.id))
-    : languages;
+  // RU+EN fallback: all 7 languages stay visible. Feed/demo top up scarce RU
+  // pools (Go/TS/Rust/React/Kotlin ~3 RU each) with EN so the deck never empties.
+  const visibleLanguages = languages;
 
   const handleSelect = async (langId) => {
     await switchLanguage(langId);

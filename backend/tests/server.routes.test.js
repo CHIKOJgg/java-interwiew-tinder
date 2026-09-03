@@ -1386,13 +1386,26 @@ describe('Admin endpoints', () => {
   it('POST admin/clear-cache success', async () => {
     pool.query.mockResolvedValueOnce({ rows: [], rowCount: 3 });
     redis.keys.mockResolvedValueOnce([]);
-    const res = await request(app).post('/api/admin/clear-cache').set('Authorization', `Bearer ${adminToken}`).send({});
+    const res = await request(app).post('/api/admin/clear-cache').set('Authorization', `Bearer ${adminToken}`).send({ confirm: true });
     expect(res.status).toBe(200);
+  });
+
+  it('POST admin/clear-cache requires confirm for full wipe', async () => {
+    const res = await request(app).post('/api/admin/clear-cache').set('Authorization', `Bearer ${adminToken}`).send({});
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('CONFIRM_REQUIRED');
+  });
+
+  it('POST admin/clear-cache dryRun returns count without deleting', async () => {
+    pool.query.mockResolvedValueOnce({ rows: [{ count: '12' }] });
+    const res = await request(app).post('/api/admin/clear-cache').set('Authorization', `Bearer ${adminToken}`).send({ dryRun: true });
+    expect(res.status).toBe(200);
+    expect(res.body.dryRun).toBe(true);
   });
 
   it('POST admin/clear-cache 500', async () => {
     pool.query.mockRejectedValueOnce(new Error('x'));
-    const res = await request(app).post('/api/admin/clear-cache').set('Authorization', `Bearer ${adminToken}`).send({});
+    const res = await request(app).post('/api/admin/clear-cache').set('Authorization', `Bearer ${adminToken}`).send({ confirm: true });
     expect(res.status).toBe(500);
   });
 

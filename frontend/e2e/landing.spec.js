@@ -1,31 +1,43 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Landing page', () => {
-  test('loads and shows hero section', async ({ page }) => {
+  test('loads and shows hero CTA', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('h1')).toBeVisible();
-    await expect(page.locator('text=Interview')).toBeVisible();
+    await expect(page.locator('#root')).toBeAttached();
+    await expect(page.locator('#ctaHero')).toBeVisible();
   });
 
-  test('has Try free and Log in buttons', async ({ page }) => {
+  test('hero CTA opens the free demo deck', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('button:has-text("Try free")')).toBeVisible();
-    await expect(page.locator('button:has-text("Log in")')).toBeVisible();
+    await page.locator('#ctaHero').click();
+    await expect(page.locator('.demo')).toBeVisible();
+    await expect(page.locator('.demo-card-shell').first()).toBeVisible();
   });
 });
 
-test.describe('Language selection', () => {
-  test('shows language grid after landing', async ({ page }) => {
+test.describe('Demo deck (zero-login)', () => {
+  test('shows language tabs and a question card', async ({ page }) => {
     await page.goto('/');
-    const tryFree = page.locator('button:has-text("Try free")');
-    await tryFree.click();
-    await expect(page.locator('[data-testid="language-selection"]')).toBeVisible();
+    await page.locator('#ctaHero').click();
+    await expect(page.locator('.demo-langs').first()).toBeVisible();
+    await expect(page.locator('.demo-counter').first()).toBeVisible();
   });
 
-  test('language cards are clickable', async ({ page }) => {
+  test('flip reveals the short answer', async ({ page }) => {
     await page.goto('/');
-    await page.locator('button:has-text("Try free")').click();
-    const javaCard = page.locator('[data-testid="language-card-Java"]');
-    await expect(javaCard).toBeVisible();
+    await page.locator('#ctaHero').click();
+    const card = page.locator('.demo-card-shell').first();
+    await expect(card).toBeVisible();
+    await card.click();
+    await expect(page.locator('.demo-back').first()).toBeVisible();
+  });
+
+  test('answering advances the counter', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('#ctaHero').click();
+    const counter = page.locator('.demo-counter').first();
+    await expect(counter).toContainText('1 /');
+    await page.locator('.demo-swipe').first().click();
+    await expect(counter).toContainText('2 /');
   });
 });

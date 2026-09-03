@@ -51,6 +51,28 @@ window.addEventListener('error', (event) => {
   }
 });
 
+// ─── Sentry (gated, 10% traces) ─────────────────────────────────────────
+// Only initializes when VITE_SENTRY_DSN is set. Exposed as window.__JIT_SENTRY__
+// for the in-app logger (utils/logger.js) to forward errors/warnings.
+async function initSentry() {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (!dsn) return;
+  try {
+    const Sentry = await import('@sentry/react');
+    Sentry.init({
+      dsn,
+      tracesSampleRate: 0.1,
+      replaysSessionSampleRate: 0,
+      replaysOnErrorSampleRate: 0,
+    });
+    window.__JIT_SENTRY__ = Sentry;
+  } catch (err) {
+    console.warn('Sentry init failed:', err?.message || err);
+  }
+}
+
+initSentry();
+
 // ─── Bootstrap ─────────────────────────────────────────────────────────
 async function bootstrap() {
   try {

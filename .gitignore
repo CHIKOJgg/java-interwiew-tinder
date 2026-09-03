@@ -22,6 +22,12 @@ Thumbs.db
 coverage/
 backend/coverage/
 
+# Playwright artifacts
+test-results/
+playwright-report/
+frontend/test-results/
+frontend/playwright-report/
+
 # Ignore local pnpm store
 .pnpm-store/
 

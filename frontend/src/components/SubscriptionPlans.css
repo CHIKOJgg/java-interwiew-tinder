@@ -1,9 +1,13 @@
 /* ─── Container ────────────────────────────────── */
 .subscription-container {
-  min-height: 100vh;
-  padding: 0 0 40px;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding: 0 0 calc(40px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
   max-width: 760px;
   margin: 0 auto;
+  box-sizing: border-box;
   animation: fadeInUp 0.3s ease-out;
 }
 

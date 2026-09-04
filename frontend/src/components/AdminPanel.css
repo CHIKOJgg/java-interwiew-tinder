@@ -1,8 +1,12 @@
 .admin-panel {
-  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding: 20px 20px calc(20px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
   background: var(--cream);
-  min-height: 100vh;
   color: var(--ink);
+  box-sizing: border-box;
 }
 
 .admin-header {

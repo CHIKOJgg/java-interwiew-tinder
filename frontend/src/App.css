@@ -8,7 +8,7 @@
   flex-direction: column;
   overflow: hidden;
   padding-top: var(--safe-top, env(safe-area-inset-top, 0px));
-  padding-bottom: calc(56px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 8px);
+  padding-bottom: calc(56px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 4px);
 }
 
 /* ── Loading/error screens ───────────────────────────────────────────── */
@@ -37,7 +37,9 @@
   min-height: 0;
   position: relative;
   overflow: hidden;
-  padding: 10px 16px 0;
+  padding: 0 12px 4px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Swipe card stack ────────────────────────────────────────────────── */
@@ -46,15 +48,14 @@
    could collapse the stack and leave a blank area where the card should be). */
 .card-stack {
   position: absolute;
-  top: 2vh;
-  left: 2vh;
-  right: 2vh;
-  bottom: 2vh;
+  top: 4px;
+  left: 8px;
+  right: 8px;
+  bottom: 6px;
   max-width: 420px;
   margin-left: auto;
   margin-right: auto;
 }
-
 .refresher-banner {
   display: flex;
   align-items: center;

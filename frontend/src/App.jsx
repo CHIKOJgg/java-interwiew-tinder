@@ -573,10 +573,10 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
          onTopClick={() => setScreen('top-questions')}
          onFilterClick={() => setScreen('category')}
          />
+      {['swipe', 'test', 'bug-hunting', 'blitz', 'code-completion'].includes(learningMode) && (
+        <QuickFilterBar onOpenFilters={() => setScreen('category')} />
+      )}
       <div className="card-container">
-        {['swipe', 'test', 'bug-hunting', 'blitz', 'code-completion'].includes(learningMode) && (
-          <QuickFilterBar onOpenFilters={() => setScreen('category')} />
-        )}
         <Suspense fallback={<SkeletonCard />}>
           {renderMode()}
         </Suspense>

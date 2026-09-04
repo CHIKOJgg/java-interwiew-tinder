@@ -77,6 +77,8 @@ initSentry();
 async function bootstrap() {
   try {
     const { default: App } = await import('./App');
+    const { default: useStore } = await import('./store/useStore');
+    window.__store = useStore;
 
     if (!window.__jitGoogleCallback) {
       window.__jitGoogleCallback = async (response) => {

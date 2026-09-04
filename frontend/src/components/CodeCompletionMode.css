@@ -2,8 +2,8 @@
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
-  padding: 16px 16px calc(24px + env(safe-area-inset-bottom, 0px));
-  height: calc(100vh - 180px);
+  padding: 10px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;

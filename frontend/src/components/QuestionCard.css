@@ -36,15 +36,14 @@
   transform: rotateY(180deg);
 }
 
-/* ── Both card faces ──────────────────────────── */
 .card-face {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: 22px;
-  padding: 22px 20px 18px;
+  border-radius: 20px;
+  padding: 16px 16px 12px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -70,7 +69,8 @@
   display: flex;
   gap: 7px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .category-badge,
@@ -260,10 +260,12 @@
   background: var(--cream);
   border: 2.5px solid var(--ink);
   cursor: pointer;
-  min-height: 50px;
+  min-height: 44px;
   touch-action: manipulation;
   font-family: 'JetBrains Mono', monospace;
   transition: transform 0.1s, box-shadow 0.1s;
+  flex-shrink: 0;
+  margin-top: 8px;
 }
 
 .flip-hint:active {
@@ -311,15 +313,18 @@
 
 .bookmark-btn.back {
   width: auto;
-  height: auto;
+  height: 42px;
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 0 12px;
   gap: 6px;
   font-size: 13px;
   font-weight: 700;
   background: var(--cream);
   color: var(--ink);
-  margin-top: 12px;
+  margin-top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .bookmark-btn.back.saved {
@@ -330,10 +335,11 @@
 /* ── Answer content ───────────────────────────── */
 .answer-content {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 12px;
+  gap: 6px;
   overflow-y: auto;
   touch-action: pan-y;
 }
@@ -341,15 +347,16 @@
 .answer-label {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1.2px;
+  letter-spacing: 1px;
   opacity: 0.75;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
 }
 
 .answer-content p {
-  font-size: clamp(15px, 4vw, 19px);
-  line-height: 1.6;
+  font-size: clamp(13px, 3.8vw, 17px);
+  line-height: 1.5;
   margin: 0;
   font-family: 'Inter', sans-serif;
 }
@@ -357,17 +364,18 @@
 .answer-content p.answer-missing {
   font-style: italic;
   opacity: 0.75;
-  font-size: clamp(13px, 3.5vw, 16px);
+  font-size: clamp(12px, 3.4vw, 15px);
 }
 
 /* ── Swipe instructions ───────────────────────── */
 .swipe-instructions {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
-  padding: 13px 16px;
-  margin-top: 14px;
+  padding: 8px 12px;
+  margin-top: 8px;
   background: var(--cream);
-  border: 2.5px solid var(--ink);
+  border: 2px solid var(--ink);
   border-radius: 12px;
 }
 
@@ -393,13 +401,14 @@
   gap: 7px;
   flex: 1;
   min-width: 0;
+  height: 42px;
   margin-top: 0;
-  padding: 12px;
+  padding: 0 10px;
   border: 2.5px solid var(--ink);
   border-radius: 12px;
   background: var(--lime);
   color: var(--ink);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   font-family: 'JetBrains Mono', monospace;
@@ -413,22 +422,24 @@
 
 /* ── SR note ──────────────────────────────────── */
 .sr-note {
-  margin-top: 14px;
-  font-size: 12.5px;
-  line-height: 1.5;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.4;
   color: var(--ink-soft);
   background: var(--cream);
   border: 2px solid var(--ink);
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   font-family: 'Inter', sans-serif;
+  flex-shrink: 0;
 }
 
 /* ── Embedded swipe action buttons ──────────────── */
 .card-swipe-actions {
+  flex-shrink: 0;
   display: flex;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 10px;
+  margin-top: 8px;
   padding: 0;
 }
 
@@ -438,8 +449,8 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 48px;
-  border-radius: 14px;
+  height: 42px;
+  border-radius: 12px;
   border: 2.5px solid var(--ink);
   color: var(--ink);
   font-size: 13px;
@@ -471,10 +482,11 @@
 }
 
 .card-actions {
+  flex-shrink: 0;
   display: flex;
   align-items: stretch;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 /* ── Card appear animation ────────────────────────────────────────── */
@@ -485,4 +497,46 @@
 
 .swipe-card {
   animation: cardAppear 0.35s ease-out;
+}
+
+/* ── Compact screens (mobile/Telegram WebView) ────────────────────── */
+@media (max-height: 680px) {
+  .card-face {
+    padding: 12px 14px 10px;
+    border-radius: 16px;
+  }
+  .badges-container {
+    margin-bottom: 6px;
+  }
+  .category-badge,
+  .difficulty-badge {
+    padding: 3px 9px;
+    font-size: 10px;
+  }
+  .answer-content {
+    gap: 4px;
+  }
+  .swipe-instructions {
+    padding: 6px 10px;
+    margin-top: 6px;
+    font-size: 12px;
+  }
+  .card-actions {
+    margin-top: 6px;
+  }
+  .explain-ai-btn,
+  .bookmark-btn.back {
+    height: 38px;
+    font-size: 12px;
+  }
+  .card-swipe-btn {
+    height: 38px;
+    font-size: 12px;
+  }
+  .flip-hint {
+    min-height: 38px;
+    padding: 4px 8px;
+    font-size: 12px;
+    margin-top: 6px;
+  }
 }

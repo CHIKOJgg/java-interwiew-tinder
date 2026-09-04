@@ -2,11 +2,13 @@
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  height: calc(100vh - 180px);
+  gap: 14px;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .blitz-header {

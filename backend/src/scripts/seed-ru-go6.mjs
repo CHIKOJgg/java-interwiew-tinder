@@ -1,0 +1,13 @@
+// RU batch GO-6: Data Structures (10). Feeds the 'Go Data Structures' track.
+export const questions = [
+  { category: 'Data Structures', question: 'Массивы vs слайсы?', short_answer: 'Массив [N]T фиксирован, слайс — динамическое окно с len/cap.', options: ['Фиксированность против динамики', 'Одинаковы', 'Массивов нет', 'Слайсы медленнее'], difficulty: 'Junior', language: 'Go' },
+  { category: 'Data Structures', question: 'Как устроен map?', short_answer: 'Хэш-таблица с бакетами; чтение ok-формой, итерация случайна.', options: ['Бакеты с ok-проверкой', 'Дерево', 'Список', 'Массив'], difficulty: 'Junior', language: 'Go' },
+  { category: 'Data Structures', question: 'Строки как данные?', short_answer: 'Иммутабельные UTF-8 байты; руны через range, сборка через Builder.', options: ['Байты с рунами через range', 'Массив символов', 'Изменяемые', 'Latin only'], difficulty: 'Junior', language: 'Go' },
+  { category: 'Data Structures', question: 'Стек на слайсе?', short_answer: 'Push append, pop срезом с обнулением хвоста против утечек.', options: ['Append и срез с зачисткой', 'Связанный список', 'Рекурсия', 'Канал'], difficulty: 'Junior', language: 'Go' },
+  { category: 'Data Structures', question: 'Очередь на слайсе/канале?', short_answer: 'Кольцо на слайсе или буферный канал для FIFO между горутинами.', options: ['Кольцо или канал FIFO', 'Стек', 'Дерево', 'Граф'], difficulty: 'Middle', language: 'Go' },
+  { category: 'Data Structures', question: 'Множество на map?', short_answer: 'map[T]struct{} как set: проверка через ok, ноль памяти на значения.', options: ['Ключи с пустыми значениями', 'Слайс с поиском', 'Дерево', 'БД'], difficulty: 'Middle', language: 'Go' },
+  { category: 'Data Structures', question: 'Сортировка слайсов?', short_answer: 'sort.Slice с less или generics slices.Sort с 1.21.', options: ['Компаратор или дженерики', 'Пузырьком вручную', 'Без сортировки', 'Через БД'], difficulty: 'Middle', language: 'Go' },
+  { category: 'Data Structures', question: 'Пакет container?', short_answer: 'Heap/list/ring: готовые куча, двусвязный список и кольцо.', options: ['Куча, список и кольцо', 'Контейнеры Docker', 'Грузоперевозки', 'Тара'], difficulty: 'Middle', language: 'Go' },
+  { category: 'Data Structures', question: 'Дерево на структурах?', short_answer: 'Узлы со ссылками + обход рекурсией; баланс вручную или либы.', options: ['Ссылки с рекурсивным обходом', 'Деревья невозможны', 'Только массивы', 'Граф БД'], difficulty: 'Senior', language: 'Go' },
+  { category: 'Data Structures', question: 'Граф на map?', short_answer: 'Смежность map[T][]T, обходы BFS/DFS с visited-множеством.', options: ['Списки смежности с visited', 'Матрица всегда', 'Графы не нужны', 'Neo4j'], difficulty: 'Senior', language: 'Go' },
+];

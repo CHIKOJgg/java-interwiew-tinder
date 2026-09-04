@@ -801,7 +801,8 @@ export default async function seedDB() {
   for (const q of questions) {
     await pool.query(
       'INSERT INTO questions (category, question_text, short_answer, options, difficulty, language) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (question_text, language) DO NOTHING',
-      [q.category, q.question, q.short_answer, q.options, q.difficulty, q.language]
+      // options column is JSONB since 044 (passing a JS array sends an invalid PG array literal)
+      [q.category, q.question, q.short_answer, JSON.stringify(q.options), q.difficulty, q.language]
     );
   }
 }

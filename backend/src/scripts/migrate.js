@@ -1466,6 +1466,210 @@ const migrations = [
       ) AS v(language, topic, title, description, difficulty, requirements, constraints, expected_components)
       WHERE NOT EXISTS (SELECT 1 FROM system_design_topics WHERE language = 'Python');
     `
+  },
+  {
+    id: '048_track_steps_heal',
+    sql: `
+      -- Heal track_steps: drop steps pointing at deactivated questions, rebuild
+      -- the 7 tracks that contain dead steps, and seed the 13 tracks that are
+      -- still empty (their original matchers found nothing at seed time).
+      -- Step integrity: getNextTrackQuestion uses step_order = currentStep + 1,
+      -- so rebuilt tracks are renumbered contiguously via ROW_NUMBER.
+      DELETE FROM track_steps ts USING questions q
+      WHERE ts.question_id = q.id AND q.is_active = FALSE;
+
+      DELETE FROM track_steps WHERE track_id IN (
+        SELECT id FROM learning_tracks WHERE
+          (language = 'Java' AND name = 'Java Core Fundamentals') OR
+          (language = 'Kotlin' AND name IN ('Kotlin Coroutines', 'Kotlin Data Structures', 'Kotlin Design Patterns', 'Kotlin Multiplatform')) OR
+          (language = 'Python' AND name = 'FastAPI / Django') OR
+          (language = 'Rust' AND name = 'Rust Unsafe & FFI')
+      );
+
+      -- Java Core Fundamentals (OOP 4 + Exceptions 3 + Java Core 3)
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        (SELECT id FROM questions WHERE language = 'Java' AND category = 'OOP' AND is_active = TRUE ORDER BY id LIMIT 4)
+        UNION ALL
+        (SELECT id FROM questions WHERE language = 'Java' AND category = 'Exceptions' AND is_active = TRUE ORDER BY id LIMIT 3)
+        UNION ALL
+        (SELECT id FROM questions WHERE language = 'Java' AND category = 'Java Core' AND is_active = TRUE ORDER BY id LIMIT 3)
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Java Core Fundamentals' AND language = 'Java' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Kotlin Coroutines
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Kotlin' AND (category ILIKE '%coroutine%' OR category ILIKE '%flow%' OR category ILIKE '%concurr%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Kotlin Coroutines' AND language = 'Kotlin' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Kotlin Data Structures
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Kotlin' AND (category ILIKE '%collection%' OR category ILIKE '%data struct%' OR category ILIKE '%sequence%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Kotlin Data Structures' AND language = 'Kotlin' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Kotlin Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Kotlin' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%' OR category ILIKE '%dsl%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Kotlin Design Patterns' AND language = 'Kotlin' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Kotlin Multiplatform
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Kotlin' AND (category ILIKE '%multiplatform%' OR category ILIKE '%kmp%' OR category ILIKE '%expect%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Kotlin Multiplatform' AND language = 'Kotlin' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Python FastAPI / Django
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Python' AND (category ILIKE '%fastapi%' OR category ILIKE '%django%' OR category ILIKE '%flask%' OR category ILIKE '%web%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'FastAPI / Django' AND language = 'Python' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Rust Unsafe & FFI
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Rust' AND (category ILIKE '%unsafe%' OR category ILIKE '%ffi%' OR category ILIKE '%raw pointer%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Rust Unsafe & FFI' AND language = 'Rust' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Go Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Go' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Design Patterns in Go' AND language = 'Go' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Go Data Structures
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Go' AND (category ILIKE '%data struct%' OR category ILIKE '%slice%' OR category ILIKE '%map%' OR category ILIKE '%collection%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Go Data Structures' AND language = 'Go' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Go Runtime Deep Dive (runtime topics + Senior Go Core: GC/scheduler/profiling)
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Go' AND ((category ILIKE '%runtime%' OR category ILIKE '%gc%' OR category ILIKE '%memory%' OR category ILIKE '%profil%' OR category ILIKE '%schedul%') OR (category = 'Go Core' AND difficulty = 'Senior')) AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Go Runtime Deep Dive' AND language = 'Go' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Python Data Structures & Algorithms
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Python' AND (category ILIKE '%data struct%' OR category ILIKE '%algorithm%' OR category ILIKE '%collection%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Data Structures & Algorithms' AND language = 'Python' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Python Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Python' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Design Patterns in Python' AND language = 'Python' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Python Internals
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Python' AND (category ILIKE '%intern%' OR category ILIKE '%memory%' OR category ILIKE '%performance%' OR category ILIKE '%optim%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Python Internals' AND language = 'Python' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- React Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'React' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%' OR category ILIKE '%hoc%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'React Design Patterns' AND language = 'React' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- React Server Components
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'React' AND (category ILIKE '%server%' OR category ILIKE '%ssr%' OR category ILIKE '%next%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'React Server Components' AND language = 'React' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Rust Data Structures
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Rust' AND (category ILIKE '%data struct%' OR category ILIKE '%collection%' OR category ILIKE '%iterator%' OR category ILIKE '%vec%' OR category ILIKE '%hashmap%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Rust Data Structures' AND language = 'Rust' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- Rust Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'Rust' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Rust Design Patterns' AND language = 'Rust' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- TypeScript Design Patterns
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'TypeScript' AND (category ILIKE '%design pattern%' OR category ILIKE '%pattern%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'Design Patterns in TypeScript' AND language = 'TypeScript' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- TypeScript Compiler Deep Dive
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'TypeScript' AND (category ILIKE '%compil%' OR category ILIKE '%intern%' OR category ILIKE '%declaration%') AND is_active = TRUE ORDER BY id LIMIT 8
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'TypeScript Compiler Deep Dive' AND language = 'TypeScript' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+
+      -- TypeScript + React / Node
+      INSERT INTO track_steps (track_id, question_id, step_order)
+      SELECT lt.id, q.id, ROW_NUMBER() OVER (ORDER BY q.id)
+      FROM (
+        SELECT id FROM questions WHERE language = 'TypeScript' AND (category ILIKE '%react%' OR category ILIKE '%node%' OR category ILIKE '%express%' OR category ILIKE '%next%') AND is_active = TRUE ORDER BY id LIMIT 10
+      ) q
+      CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'TypeScript + React / Node' AND language = 'TypeScript' LIMIT 1) lt
+      WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
+    `
   }
 ];
 

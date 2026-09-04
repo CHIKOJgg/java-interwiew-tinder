@@ -40,7 +40,7 @@
   },
   {
     "category": "Arrays",
-    "question": "Что такое Kadane\\'s алгоритм?",
+    "question": "Что такое Kadane's алгоритм?",
     "short_answer": "Максимальная сумма подмассива. O(n). Отслеживаем текущую сумму и сбрасываем при отрицательном значении.",
     "options": [
       "Максимальная сумма подмассива за O(n) с отслеживанием текущей суммы",
@@ -1639,7 +1639,7 @@
   },
   {
     "category": "Python Basics",
-    "question": "Что такое __name__ == \\'__main__\\'?",
+    "question": "Что такое __name__ == '__main__'?",
     "short_answer": "True когда скрипт запущен напрямую. False когда импортирован.",
     "options": [
       "True когда скрипт запущен напрямую, False при импорте",
@@ -1679,7 +1679,7 @@
   {
     "category": "Python Basics",
     "question": "Что такое контекстный менеджер?",
-    "short_answer": "__enter__/__exit__ с оператором \\'with\\'. Управление ресурсами.",
+    "short_answer": "__enter__/__exit__ с оператором 'with'. Управление ресурсами.",
     "options": [
       "__enter__/__exit__ с оператором with для управления ресурсами",
       "Контекстный менеджер это цикл for",
@@ -1692,9 +1692,9 @@
   {
     "category": "Python Basics",
     "question": "Что такое f-строка?",
-    "short_answer": "f\\'Привет {name}\\' — встроенные выражения (3.6+).",
+    "short_answer": "f'Привет {name}' — встроенные выражения (3.6+).",
     "options": [
-      "f\\'Привет {name}\\' с встроенными выражениями",
+      "f'Привет {name}' с встроенными выражениями",
       "f-строка это список",
       "f-строка работает только с числами",
       "f-строка не существует"
@@ -1978,7 +1978,7 @@
   {
     "category": "Python Basics",
     "question": "Что такое pathlib?",
-    "short_answer": "ООП пути файловой системы. Path(\\'.\\').glob(\\'*.py\\'). read_text().",
+    "short_answer": "ООП пути файловой системы. Path('.').glob('*.py'). read_text().",
     "options": [
       "ООП пути файловой системы",
       "Pathlib работает только с int",
@@ -2225,7 +2225,7 @@
   {
     "category": "Python Advanced",
     "question": "Профилирование памяти Python.",
-    "short_answer": "memory_profiler, tracemalloc, objgraph. __slots__, arrays.",
+    "short_answer": "Память профилируют через memory_profiler, tracemalloc и objgraph; экономят её с помощью __slots__ и arrays.",
     "options": [
       "memory_profiler, tracemalloc, objgraph для профилирования памяти",
       "Профилирование памяти не существует",
@@ -2238,7 +2238,7 @@
   {
     "category": "Python Advanced",
     "question": "Построение CLI инструмента.",
-    "short_answer": "argparse/click. Type hints, docstrings, tests. pyproject.toml.",
+    "short_answer": "CLI-инструменты строят на argparse или click, добавляют type hints, docstrings и тесты, упаковывают через pyproject.toml.",
     "options": [
       "argparse/click с type hints и docstrings",
       "CLI инструменты не существуют",
@@ -2251,7 +2251,7 @@
   {
     "category": "Python Advanced",
     "question": "Упаковка для PyPI.",
-    "short_answer": "pyproject.toml. Src layout. build + twine upload.",
+    "short_answer": "Для PyPI используют pyproject.toml и src layout, собирают через build и загружают через twine upload.",
     "options": [
       "pyproject.toml, src layout, build + twine upload",
       "PyPI упаковка не существует",
@@ -2277,7 +2277,7 @@
   {
     "category": "Python Advanced",
     "question": "Проектирование FastAPI микросервиса.",
-    "short_answer": "Async endpoints. SQLAlchemy async. Alembic. Docker multi-stage.",
+    "short_answer": "Микросервис на FastAPI: async endpoints, асинхронный SQLAlchemy, миграции Alembic и multi-stage сборка Docker.",
     "options": [
       "Async endpoints с SQLAlchemy async и Alembic",
       "FastAPI микросервис не существует",
@@ -2303,7 +2303,7 @@
   {
     "category": "TypeScript Basics",
     "question": "Какие базовые типы?",
-    "short_answer": "number, string, boolean, null, undefined, void, any, unknown, never.",
+    "short_answer": "Базовые типы: number, string, boolean, null, undefined, void, any, unknown и never.",
     "options": [
       "number, string, boolean, null, undefined, void, any, unknown, never",
       "Базовые типы это только number и string",
@@ -2485,7 +2485,7 @@
   {
     "category": "Advanced Types",
     "question": "Что такое mapped type?",
-    "short_answer": "type Readonly<T> = { readonly [P in keyof T]: T[P] }.",
+    "short_answer": "Mapped type строит новый тип из существующего, например type Readonly<T> = { readonly [P in keyof T]: T[P] }.",
     "options": [
       "type Readonly<T> = { readonly [P in keyof T]: T[P] }",
       "Mapped type работает только с int",
@@ -2524,7 +2524,7 @@
   {
     "category": "Advanced Types",
     "question": "Что такое template literal type?",
-    "short_answer": "type Event = `on${Capitalize<string>}`.",
+    "short_answer": "Template literal type собирает строковый тип из шаблона, например type Event = `on${Capitalize<string>}`.",
     "options": [
       "type Event = `on${Capitalize<string>}`",
       "Template literal type работает только с int",
@@ -2667,7 +2667,7 @@
   {
     "category": "Advanced Types",
     "question": "Что такое type narrowing?",
-    "short_answer": "typeof, instanceof, in, discriminated unions.",
+    "short_answer": "Сужение типов (narrowing) делают через typeof, instanceof, in и discriminated unions.",
     "options": [
       "Type narrowing через typeof, instanceof, in, discriminated unions",
       "Type narrowing работает только с int",
@@ -2718,7 +2718,7 @@
   },
   {
     "category": "React Basics",
-    "question": "Functional vs class?",
+    "question": "В чём разница между Functional и class компонентами?",
     "short_answer": "Functional: hooks, проще. Class: lifecycle, this, render().",
     "options": [
       "Functional с hooks проще. Class с жизненным циклом и this",
@@ -2966,7 +2966,7 @@
   {
     "category": "React Basics",
     "question": "Что такое кастомный хук?",
-    "short_answer": "function useCustom() { useState(); useEffect(); return value; }.",
+    "short_answer": "Кастомный хук — это функция вида function useCustom(), которая комбинирует useState и useEffect и возвращает значение.",
     "options": [
       "Функция хука использующая useState и useEffect",
       "Кастомный хук это компонент",
@@ -3304,7 +3304,7 @@
   {
     "category": "React Basics",
     "question": "Что такое createRoot API?",
-    "short_answer": "ReactDOM.createRoot(container).render(<App />). React 18+.",
+    "short_answer": "Корень создают через ReactDOM.createRoot(container).render(<App />) — так работает React 18+.",
     "options": [
       "ReactDOM.createRoot для React 18+",
       "createRoot это useState",
@@ -3434,7 +3434,7 @@
   {
     "category": "React Advanced",
     "question": "Что такое React Router?",
-    "short_answer": "<Routes><Route path=\"/\" element={<Home />} />.</Routes>",
+    "short_answer": "Маршруты описывают компонентами Routes и Route с element, например Route path Hi Home.",
     "options": [
       "<Routes><Route path=\"/\" element={<Home />} /></Routes>",
       "React Router это useState",
@@ -3447,7 +3447,7 @@
   {
     "category": "React Advanced",
     "question": "Что такое useNavigate?",
-    "short_answer": "const navigate = useNavigate(); navigate(\"/path\").",
+    "short_answer": "Навигацию делают через хук: const navigate = useNavigate(), затем navigate к нужному пути.",
     "options": [
       "const navigate = useNavigate(); navigate(\"/path\")",
       "useNavigate это useState",
@@ -3564,7 +3564,7 @@
   {
     "category": "React Advanced",
     "question": "Что такое SSR?",
-    "short_answer": "renderToString/renderToPipeableStream. Next.js, Remix.",
+    "short_answer": "SSR рендерит на сервере через renderToString или renderToPipeableStream; используют Next.js и Remix.",
     "options": [
       "SSR с renderToString/renderToPipeableStream",
       "SSR это useState",
@@ -3616,7 +3616,7 @@
   {
     "category": "React Advanced",
     "question": "Что такое testing в React?",
-    "short_answer": "React Testing Library: render, screen, fireEvent, waitFor.",
+    "short_answer": "Тесты пишут на React Testing Library: render, screen, fireEvent и waitFor.",
     "options": [
       "React Testing Library с render, screen, fireEvent, waitFor",
       "Testing это useState",
@@ -3667,7 +3667,7 @@
   },
   {
     "category": "React Advanced",
-    "question": "State undo/redo.",
+    "question": "Как реализовать State undo/redo?",
     "short_answer": "Стек истории. Каждое действие push. Undo reverse. Redo re-apply.",
     "options": [
       "Стек истории для undo/redo",
@@ -3681,7 +3681,7 @@
   {
     "category": "React Advanced",
     "question": "Профилирование render производительности.",
-    "short_answer": "React DevTools Profiler. Flamegraph. useMemo, React.memo.",
+    "short_answer": "Производительность смотрят в React DevTools Profiler по flamegraph; чинят через useMemo и React.memo.",
     "options": [
       "React DevTools Profiler с flamegraph",
       "Профилирование не существует",
@@ -3746,7 +3746,7 @@
   {
     "category": "Go Basics",
     "question": "Встроенные типы?",
-    "short_answer": "bool, int, int8..64, uint, float32/64, string, byte, rune.",
+    "short_answer": "Встроенные типы Go: bool, int, int8..64, uint, float32/64, string, byte и rune.",
     "options": [
       "bool, int, int8..64, uint, float32/64, string, byte, rune",
       "Встроенные типы это только int",
@@ -3785,7 +3785,7 @@
   {
     "category": "Go Basics",
     "question": "Что такое структура?",
-    "short_answer": "type Person struct { Name string; Age int }.",
+    "short_answer": "Структуру объявляют с полями, например type Person struct с Name string и Age int.",
     "options": [
       "Структура с полями Name и Age",
       "Структура это интерфейс",
@@ -4058,7 +4058,7 @@
   {
     "category": "Go Basics",
     "question": "Что такое строки?",
-    "short_answer": "Contains, Split, Join, Trim, Replace, HasPrefix.",
+    "short_answer": "Пакет strings даёт Contains, Split, Join, Trim, Replace и HasPrefix.",
     "options": [
       "Contains, Split, Join, Trim, Replace, HasPrefix",
       "Строковый пакет не существует",
@@ -4084,7 +4084,7 @@
   {
     "category": "Go Basics",
     "question": "Что такое time?",
-    "short_answer": "time.Now, time.Sleep, time.Timer, time.Ticker.",
+    "short_answer": "Пакет time даёт time.Now, time.Sleep, time.Timer и time.Ticker.",
     "options": [
       "time.Now, time.Sleep, time.Timer, time.Ticker",
       "Time не существует",
@@ -4162,7 +4162,7 @@
   {
     "category": "Go Basics",
     "question": "Что такое sync?",
-    "short_answer": "Mutex, WaitGroup, Once, Pool, Map, RWMutex.",
+    "short_answer": "Пакет sync даёт Mutex, WaitGroup, Once, Pool, Map и RWMutex.",
     "options": [
       "Mutex, WaitGroup, Once, Pool, Map, RWMutex",
       "Sync не существует",
@@ -4175,7 +4175,7 @@
   {
     "category": "Go Basics",
     "question": "Что такое atomic?",
-    "short_answer": "sync/atomic: AddInt64, LoadInt64, CompareAndSwap.",
+    "short_answer": "Атомарные операции — пакет sync/atomic: AddInt64, LoadInt64, CompareAndSwap.",
     "options": [
       "sync/atomic с AddInt64, LoadInt64, CompareAndSwap",
       "Atomic не существует",
@@ -4266,9 +4266,9 @@
   {
     "category": "Rust Basics",
     "question": "Что такое lifetimes?",
-    "short_answer": "Обозначение \\'a. Гарантирует что ссылки валидны. Элидится когда очевидно.",
+    "short_answer": "Обозначение 'a. Гарантирует что ссылки валидны. Элидится когда очевидно.",
     "options": [
-      "Lifetime \\'a гарантирующий валидность ссылок",
+      "Lifetime 'a гарантирующий валидность ссылок",
       "Lifetimes это GC",
       "Lifetimes не существуют",
       "Lifetimes это переменные"
@@ -4278,7 +4278,7 @@
   },
   {
     "category": "Rust Basics",
-    "question": "String vs &str?",
+    "question": "В чём разница между String и &str?",
     "short_answer": "String: владеющий, в куче, изменяемый. &str: заимствованная строковая ссылка.",
     "options": [
       "String владеющий в куче, &str заимствованная",
@@ -4500,7 +4500,7 @@
   {
     "category": "Rust Basics",
     "question": "Что такое const generics?",
-    "short_answer": "fn arr<const N: usize>() -> [i32; N].",
+    "short_answer": "Const generics параметризуют значением, например функция arr с const N: usize возвращает массив [i32; N].",
     "options": [
       "fn arr<const N: usize>() -> [i32; N] с const generic",
       "Const generics не существуют",
@@ -4630,7 +4630,7 @@
   {
     "category": "Rust Basics",
     "question": "Что такое FFI?",
-    "short_answer": "extern \\'C\\' { fn abs(i: i32) -> i32; } для C interop.",
+    "short_answer": "extern 'C' { fn abs(i: i32) -> i32; } для C interop.",
     "options": [
       "extern C для вызова C функций",
       "FFI работает только с Python",
@@ -4721,7 +4721,7 @@
   {
     "category": "Rust Advanced",
     "question": "Что такое rayon?",
-    "short_answer": "par_iter() data parallelism. Work-stealing.",
+    "short_answer": "Rayon даёт data parallelism через par_iter на work-stealing планировщике.",
     "options": [
       "par_iter() data parallelism с work-stealing",
       "Rayon это tokio",
@@ -4734,7 +4734,7 @@
   {
     "category": "Rust Advanced",
     "question": "Что такое HashMap entry API?",
-    "short_answer": "entry(key).or_insert(value).and_modify(|v| *v += 1).",
+    "short_answer": "Entry API обновляет значение на месте: entry, or_insert и and_modify для инкремента.",
     "options": [
       "entry(key).or_insert(value).and_modify(|v| *v += 1)",
       "Entry API не существует",
@@ -4876,7 +4876,7 @@
   },
   {
     "category": "Kotlin Basics",
-    "question": "val vs var?",
+    "question": "В чём разница между val и var?",
     "short_answer": "val: только чтение (неизменяемая ссылка). var: изменяемый.",
     "options": [
       "val для только чтения, var для изменяемого",
@@ -5098,7 +5098,7 @@
   {
     "category": "Kotlin Basics",
     "question": "Что такое kotlinx.serialization?",
-    "short_answer": "@Serializable. JSON, CBOR, ProtoBuf.",
+    "short_answer": "Сериализация — аннотация Serializable; форматы JSON, CBOR и ProtoBuf.",
     "options": [
       "@Serializable для JSON, CBOR, ProtoBuf",
       "Kotlinx.serialization не существует",
@@ -5150,7 +5150,7 @@
   {
     "category": "Kotlin Basics",
     "question": "Что такое infix?",
-    "short_answer": "infix fun Int.add(x: Int) = this + x. 1 add 2.",
+    "short_answer": "Infix-функция вызывается без скобок и точки, например вызов 1 add 2.",
     "options": [
       "infix fun для вызова без скобок 1 add 2",
       "Infix это оператор",
@@ -5163,7 +5163,7 @@
   {
     "category": "Kotlin Basics",
     "question": "Что такое operator overloading?",
-    "short_answer": "operator fun plus(other: Point) = Point(x + other.x, y).",
+    "short_answer": "Перегрузка операторов через operator fun, например plus для сложения точек.",
     "options": [
       "operator fun для перегрузки операторов",
       "Operator overloading не существует",
@@ -5202,7 +5202,7 @@
   {
     "category": "Kotlin Basics",
     "question": "Что такое object?",
-    "short_answer": "object Singleton { } singleton declaration.",
+    "short_answer": "Синглтон объявляют через object Singleton — это singleton declaration.",
     "options": [
       "object Singleton для singleton declaration",
       "Object это class",
@@ -5241,7 +5241,7 @@
   {
     "category": "Kotlin Basics",
     "question": "Что такое typealias?",
-    "short_answer": "typealias Predicate<T> = (T) -> Boolean.",
+    "short_answer": "Псевдоним типа, например typealias Predicate для функции (T) -> Boolean.",
     "options": [
       "typealias для создания псевдонимов типов",
       "Typealias не существует",
@@ -5293,7 +5293,7 @@
   {
     "category": "Kotlin Advanced",
     "question": "Что такое Dispatchers?",
-    "short_answer": "Default (CPU), IO, Main (UI), Unconfined.",
+    "short_answer": "Диспетчеры корутин: Default для CPU, IO, Main для UI и Unconfined.",
     "options": [
       "Default (CPU), IO, Main (UI), Unconfined",
       "Dispatchers это Threads",
@@ -5345,7 +5345,7 @@
   {
     "category": "Kotlin Advanced",
     "question": "Что такое collection operations?",
-    "short_answer": "map, filter, reduce, groupBy, partition, associate.",
+    "short_answer": "Операции коллекций: map, filter, reduce, groupBy, partition и associate.",
     "options": [
       "map, filter, reduce, groupBy, partition, associate",
       "Collection operations это for loop",
@@ -5436,7 +5436,7 @@
   {
     "category": "Kotlin Advanced",
     "question": "Что такое runCatching?",
-    "short_answer": "kotlin.runCatching { block }. Returns Result. onSuccess/onFailure.",
+    "short_answer": "Результат ловят через kotlin.runCatching с блоком, получая Result с onSuccess и onFailure.",
     "options": [
       "kotlin.runCatching { block } возвращающий Result с onSuccess/onFailure",
       "RunCatching не существует",
@@ -7334,7 +7334,7 @@
   {
     "category": "Python Advanced",
     "question": "Расширение Python через C.",
-    "short_answer": "Python C API: PyModuleDef, PyMethodDef, PyArg_ParseTuple.",
+    "short_answer": "Расширения на C пишут через Python C API: PyModuleDef, PyMethodDef и разбор аргументов PyArg_ParseTuple.",
     "options": [
       "Python C API с PyModuleDef PyMethodDef PyArg_ParseTuple",
       "Расширение Python через C не существует",
@@ -7516,7 +7516,7 @@
   {
     "category": "Advanced Types",
     "question": "Что такое Assertion functions?",
-    "short_answer": "function assert(cond: any): asserts cond throws if false.",
+    "short_answer": "Assertion function вида function assert(cond: any): asserts cond бросает исключение, если условие ложно.",
     "options": [
       "function assert с asserts типом",
       "Assertion functions не существуют",
@@ -7542,7 +7542,7 @@
   {
     "category": "Advanced Types",
     "question": "Что такое abstract construct signature?",
-    "short_answer": "abstract new (...args: any[]) => T.",
+    "short_answer": "Абстрактная конструктная сигнатура: abstract new (...args: any[]) => T.",
     "options": [
       "abstract new конструктор",
       "Abstract construct signature не существует",
@@ -7581,7 +7581,7 @@
   {
     "category": "Advanced Types",
     "question": "Что такое Intrinsic string types?",
-    "short_answer": "Uppercase, Lowercase, Capitalize, Uncapitalize.",
+    "short_answer": "Встроенные строковые типы: Uppercase, Lowercase, Capitalize, Uncapitalize.",
     "options": [
       "Uppercase Lowercase Capitalize Uncapitalize",
       "Intrinsic string types не существуют",
@@ -7594,7 +7594,7 @@
   {
     "category": "Advanced Types",
     "question": "Что такое recursive conditional types?",
-    "short_answer": "type DeepReadonly<T> = T extends object ? { readonly [P in keyof T]: DeepReadonly<T[P]> } : T.",
+    "short_answer": "Рекурсивный условный тип применяет сам себя к вложенным свойствам, например DeepReadonly<T>.",
     "options": [
       "Recursive conditional types для DeepReadonly",
       "Recursive conditional types не существуют",
@@ -7672,7 +7672,7 @@
   {
     "category": "Advanced Types",
     "question": "Что такое Namespace merging?",
-    "short_answer": "namespace N { export class C {} } namespace N { export interface I {} }.",
+    "short_answer": "Слияние пространств имён: два блока namespace N с export class и export interface объединяются.",
     "options": [
       "namespace merging export class и export interface",
       "Namespace merging не существует",
@@ -7958,7 +7958,7 @@
   {
     "category": "React Advanced",
     "question": "Спроектируйте type-safe authentication.",
-    "short_answer": "JWT HTTP-only cookies. AuthContext. Protected routes.",
+    "short_answer": "Аутентификацию строят на JWT в HTTP-only cookies, контексте AuthContext и защищённых маршрутах.",
     "options": [
       "JWT HTTP-only cookies AuthContext protected routes",
       "Type-safe auth не существует",
@@ -8010,7 +8010,7 @@
   {
     "category": "React Advanced",
     "question": "Спроектируйте type-safe caching.",
-    "short_answer": "CacheKey generic. Stale-while-revalidate strategy.",
+    "short_answer": "Кэширование типизируют через generic CacheKey и стратегию stale-while-revalidate.",
     "options": [
       "CacheKey generic с stale-while-revalidate",
       "Type-safe caching не существует",
@@ -8036,7 +8036,7 @@
   {
     "category": "React Advanced",
     "question": "Спроектируйте type-safe analytics.",
-    "short_answer": "Typed events. Type-safe payloads. Generic tracking.",
+    "short_answer": "Аналитику типизируют: typed events, type-safe payloads и generic tracking.",
     "options": [
       "Typed events type-safe payloads generic tracking",
       "Type-safe analytics не существует",
@@ -8075,7 +8075,7 @@
   {
     "category": "React Advanced",
     "question": "Спроектируйте type-safe theming.",
-    "short_answer": "Generic theme type. Type-safe color tokens.",
+    "short_answer": "Темизацию типизируют через generic theme type и type-safe color tokens.",
     "options": [
       "Generic theme type type-safe color tokens",
       "Type-safe theming не существует",
@@ -8088,7 +8088,7 @@
   {
     "category": "React Advanced",
     "question": "Спроектируйте type-safe routing.",
-    "short_answer": "Typed route params. Type-safe navigation.",
+    "short_answer": "Маршрутизацию типизируют: typed route params и type-safe navigation.",
     "options": [
       "Typed route params type-safe navigation",
       "Type-safe routing не существует",
@@ -8101,7 +8101,7 @@
   {
     "category": "Concurrency",
     "question": "Объясните планирование горутин.",
-    "short_answer": "M:N threading. Work-stealing. Go 1.14+ async preemption.",
+    "short_answer": "Планировщик горутин — M:N threading с work-stealing; с Go 1.14 есть асинхронное вытеснение.",
     "options": [
       "M:N threading с work-stealing Go 1.14+ async preemption",
       "Горутины планируются операционной системой",
@@ -8179,7 +8179,7 @@
   {
     "category": "Concurrency",
     "question": "Что такое context cancellation?",
-    "short_answer": "context.WithCancel, WithTimeout. Done() channel.",
+    "short_answer": "Отмену контекста делают через context.WithCancel и WithTimeout, готовность читают из канала Done().",
     "options": [
       "context.WithCancel WithTimeout Done channel",
       "Context cancellation не существует",
@@ -8478,7 +8478,7 @@
   {
     "category": "Go Advanced",
     "question": "Что такое http.Handler interface?",
-    "short_answer": "Handler: ServeHTTP(ResponseWriter, *Request).",
+    "short_answer": "Интерфейс один: Handler требует метод ServeHTTP с ResponseWriter и Request.",
     "options": [
       "ServeHTTP ResponseWriter Request",
       "Handler не существует",
@@ -8491,7 +8491,7 @@
   {
     "category": "Go Advanced",
     "question": "Что такое middleware pattern?",
-    "short_answer": "func logging(h http.Handler) http.Handler { return http.HandlerFunc(...) }.",
+    "short_answer": "Middleware — это функция-обёртка над http.Handler, выстраивающая handler в цепочку.",
     "options": [
       "func middleware паттерн для HTTP handler chaining",
       "Middleware не существует",
@@ -8725,7 +8725,7 @@
   {
     "category": "Go Advanced",
     "question": "Реализуйте Kubernetes operator на Go.",
-    "short_answer": "controller-runtime. Reconcile loop. CRD + controller.",
+    "short_answer": "Оператор пишут на controller-runtime: reconcile loop, CRD и controller.",
     "options": [
       "Controller-runtime reconcile loop CRD controller",
       "Kubernetes operator не существует",
@@ -8738,7 +8738,7 @@
   {
     "category": "Go Advanced",
     "question": "Спроектируйте real-time чат сервер.",
-    "short_answer": "WebSocket hub. Room-based broadcast. History persistence.",
+    "short_answer": "Чат делают на WebSocket hub с room-based broadcast и сохранением истории.",
     "options": [
       "WebSocket hub room-based broadcast history persistence",
       "Real-time chat не существует",
@@ -8842,7 +8842,7 @@
   {
     "category": "Rust Advanced",
     "question": "Что такое env модуль?",
-    "short_answer": "args(), var(), current_dir(), set_var(), temp_dir().",
+    "short_answer": "Модуль env даёт args, var, current_dir, set_var и temp_dir.",
     "options": [
       "args var current_dir set_var temp_dir",
       "Env модуль не существует",
@@ -8868,25 +8868,12 @@
   {
     "category": "Rust Advanced",
     "question": "Что такое Duration type?",
-    "short_answer": "Duration::from_secs, from_millis, from_nanos.",
+    "short_answer": "Время задают через Duration::from_secs, from_millis и from_nanos.",
     "options": [
       "Duration::from_secs from_millis from_nanos",
       "Duration не существует",
       "Duration это Instant",
       "Duration это time"
-    ],
-    "difficulty": "Middle",
-    "language": "Rust"
-  },
-  {
-    "category": "Rust Advanced",
-    "question": "Что такое HashMap entry API?",
-    "short_answer": "entry(key).or_insert(value).and_modify(|v| *v += 1).",
-    "options": [
-      "entry(key).or_insert(value).and_modify(|v| *v += 1)",
-      "HashMap entry API не существует",
-      "Entry API это get",
-      "Entry API это insert"
     ],
     "difficulty": "Middle",
     "language": "Rust"
@@ -8933,7 +8920,7 @@
   {
     "category": "Rust Advanced",
     "question": "Что такое Iterator adapters?",
-    "short_answer": "take, skip, step_by, peekable, cycle, fuse.",
+    "short_answer": "Адаптеры итераторов: take, skip, step_by, peekable, cycle и fuse.",
     "options": [
       "take skip step_by peekable cycle fuse",
       "Iterator adapters не существуют",
@@ -9127,21 +9114,8 @@
   },
   {
     "category": "Kotlin Advanced",
-    "question": "Что такое runCatching?",
-    "short_answer": "kotlin.runCatching { block }. Returns Result. onSuccess/onFailure.",
-    "options": [
-      "kotlin.runCatching { block } возвращающий Result с onSuccess/onFailure",
-      "RunCatching не существует",
-      "RunCatching это try/catch",
-      "RunCatching это Result"
-    ],
-    "difficulty": "Middle",
-    "language": "Kotlin"
-  },
-  {
-    "category": "Kotlin Advanced",
     "question": "Что такое Result class?",
-    "short_answer": "Result<T>. map, recover, getOrNull, getOrDefault.",
+    "short_answer": "Класс Result даёт map, recover, getOrNull и getOrDefault.",
     "options": [
       "Result<T> с map recover getOrNull getOrDefault",
       "Result class не существует",
@@ -9310,7 +9284,7 @@
   {
     "category": "Kotlin Advanced",
     "question": "Что такое take/drop?",
-    "short_answer": "take(3), drop(3), takeLast, dropLast, takeWhile, dropWhile.",
+    "short_answer": "Функции take, drop, takeLast, dropLast, takeWhile и dropWhile.",
     "options": [
       "take(3) drop(3) takeLast dropLast takeWhile dropWhile",
       "Take/drop не существует",
@@ -9609,7 +9583,7 @@
   {
     "category": "Kotlin Advanced",
     "question": "Что такое actor функция?",
-    "short_answer": "actor { for msg in channel { handle(msg) } } (deprecated).",
+    "short_answer": "Актор обрабатывает сообщения из канала в цикле, но этот API deprecated.",
     "options": [
       "actor { for msg in channel { handle(msg) } } deprecated",
       "Actor не существует",
@@ -10103,7 +10077,7 @@
   {
     "category": "General",
     "question": "Что такое MongoDB?",
-    "short_answer": "Document DB. BSON format. Sharding, replication.",
+    "short_answer": "MongoDB — документоориентированная СУБД: формат BSON, sharding и replication.",
     "options": [
       "Document DB с BSON форматом sharding replication",
       "MongoDB не существует",
@@ -10129,7 +10103,7 @@
   {
     "category": "General",
     "question": "Что такое Elasticsearch?",
-    "short_answer": "Search engine. Inverted index. Full-text search.",
+    "short_answer": "Elasticsearch — поисковый движок: inverted index и full-text search.",
     "options": [
       "Search engine inverted index full-text search",
       "Elasticsearch не существует",
@@ -10285,7 +10259,7 @@
   {
     "category": "General",
     "question": "Что такое PAXOS?",
-    "short_answer": "Consensus protocol. Prepare, promise, accept, acknowledged phases.",
+    "short_answer": "PAXOS — протокол консенсуса с фазами prepare, promise, accept и acknowledged.",
     "options": [
       "Consensus protocol prepare promise accept acknowledged phases",
       "PAXOS не существует",

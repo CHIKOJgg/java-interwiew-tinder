@@ -122,6 +122,25 @@ describe('GET /api/demo/questions — RU+EN fallback', () => {
     expect(res.body.meta.fallback).toBe(false);
     expect(pool.query).toHaveBeenCalledTimes(1);
   });
+
+  it('serves the shared General pool inside a language deck', async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        { ...demoRuRow(11), language: 'Go' },
+        {
+          id: 42522, category: 'System Design', difficulty: 'Senior',
+          question_text: 'What is the Active Directory?',
+          short_answer: 'A directory service with LDAP and Kerberos support.',
+          language: 'General',
+        },
+      ],
+    });
+    const res = await request(app).get(
+      '/api/demo/questions?language=Go&limit=10&lng=en&seed=abc'
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.questions.map(q => q.language).sort()).toEqual(['General', 'Go']);
+  });
 });
 
 describe('POST /api/admin/clear-cache — confirm guard', () => {

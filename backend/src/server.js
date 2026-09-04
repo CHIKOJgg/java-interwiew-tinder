@@ -514,7 +514,11 @@ app.get('/api/demo/questions', demoLimiter, async (req, res) => {
     // then top up with EN so the deck is never empty for Go/TS/Rust/React/Kotlin (~3 RU each).
     // Low-quality one-liners (short_answer < 20) are deprioritized via length ordering.
     const baseCols = `id, category, difficulty, question_text, short_answer, language`;
-    const baseWhere = `is_active = TRUE AND language = $1
+    // Cross-language pool: 'General' (System Design / DevOps / Architecture)
+    // is served inside every language feed — 1277 questions would otherwise
+    // be invisible (feed filters language=$2). Category filter still applies,
+    // so scoped users only see General rows when they match selected cats.
+    const baseWhere = `is_active = TRUE AND (language = $1 OR language = 'General')
          AND question_text IS NOT NULL AND short_answer IS NOT NULL
          AND length(short_answer) >= 8`;
     const mapDemo = (r) => ({
@@ -1070,7 +1074,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     const where = [
       'q.is_active = TRUE',
       "(up.id IS NULL OR up.status = 'unknown' OR qm.next_review <= CURRENT_DATE)",
-      'q.language = $2',
+      "(q.language = $2 OR q.language = 'General')",
       'length(q.short_answer) >= 8',
     ];
     if (interfaceLang === 'ru') {
@@ -1136,7 +1140,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     let fillerAdded = 0;
     const seenPage = new Set();
     const runFiller = async (withExclusion) => {
-      const fWhere = ['q.is_active = TRUE', "q.language = $2", "up.status = 'known'", 'length(q.short_answer) >= 8'];
+      const fWhere = ['q.is_active = TRUE', "(q.language = $2 OR q.language = 'General')", "up.status = 'known'", 'length(q.short_answer) >= 8'];
       if (interfaceLang === 'ru') {
         fWhere.push(`q.question_text ~ '[^ -~]'`);
         fWhere.push(`q.short_answer ~ '[^ -~]'`);
@@ -1178,7 +1182,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       const eWhere = [
         'q.is_active = TRUE',
         "(up.id IS NULL OR up.status = 'unknown' OR qm.next_review <= CURRENT_DATE)",
-        'q.language = $2',
+        "(q.language = $2 OR q.language = 'General')",
         'length(q.short_answer) >= 8',
       ];
       const eParams = [userId, language];

@@ -3081,7 +3081,24 @@ app.get('/api/stats/categories', async (req, res) => {
   }
 });
 
-// ─── Stats ─────────────────────────────────────────────────────────
+// ─── API Index & Root ──────────────────────────────────────────────────────────
+app.get('/', (_req, res) => {
+  res.json({
+    name: 'Java & Python Interview Tinder API',
+    status: 'online',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      categories: '/api/categories',
+      languages: '/api/languages',
+      filters: '/api/filters',
+      topQuestions: '/api/questions/top',
+      stats: '/api/stats',
+    },
+  });
+});
+
+// ─── Stats ───────────────────────────────────────────────────────────────────
 app.get('/api/stats', async (req, res) => {
   try {
     const userId = req.userId;

@@ -20,6 +20,7 @@ const manualChunks = (id) => {
 };
 
 export function createViteConfig() {
+  const apiTarget = process.env.VITE_BACKEND_URL || 'https://java-interwiew-tinder-production.up.railway.app';
   return {
     configFile: false,
     root,
@@ -27,6 +28,24 @@ export function createViteConfig() {
     server: {
       port: 5173,
       host: true,
+      proxy: {
+        '/api': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
+    preview: {
+      port: 4173,
+      host: true,
+      proxy: {
+        '/api': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+      },
     },
     build: {
       outDir: 'dist',

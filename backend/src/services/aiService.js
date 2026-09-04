@@ -10,10 +10,18 @@ const PROMPT_VERSION = 'v2'; // bump version so old bad-response cache entries a
 // Lazy getters — read at call time so a missing/late dotenv load can never
 // capture `undefined` into a top-level constant.
 function getOpenRouterKey() { return process.env.OPENROUTER_API_KEY; }
-function getModel() { return process.env.OPENROUTER_MODEL || 'openrouter/free'; }
+function getModel() {
+  const envModel = process.env.OPENROUTER_MODEL;
+  if (envModel && envModel !== 'openrouter/free') return envModel;
+  return 'google/gemini-2.0-flash-exp:free';
+}
 // Bulk, low-stakes generation (test options, blitz statements, bug/code tasks)
 // can use a cheap fast model without hurting quality — set OPENROUTER_MODEL_FAST.
-function getFastModel() { return process.env.OPENROUTER_MODEL_FAST || getModel(); }
+function getFastModel() {
+  const envFast = process.env.OPENROUTER_MODEL_FAST;
+  if (envFast && envFast !== 'openrouter/free') return envFast;
+  return getModel();
+}
 const FAST_GENERATION_MODES = new Set(['test', 'blitz', 'bug', 'code']);
 function getModelForMode(mode) { return FAST_GENERATION_MODES.has(mode) ? getFastModel() : getModel(); }
 const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS || '45000');
@@ -223,50 +231,67 @@ export const checkCache = (questionText, mode, _model, language = 'Java') =>
 // ─── In-flight dedup ──────────────────────────────────────────────────
 const pendingRequests = new Map();
 
+const FALLBACK_FREE_MODELS = [
+  'google/gemini-2.0-flash-exp:free',
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'mistralai/mistral-small-3.1:free',
+  'openrouter/auto',
+];
+
 // ─── OpenRouter HTTP call ─────────────────────────────────────────────
 export async function callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature, model = getModel()) {
   if (!getOpenRouterKey()) throw new Error('OPENROUTER_API_KEY is not configured');
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  const candidates = [...new Set([model, ...FALLBACK_FREE_MODELS].filter(m => m && m !== 'openrouter/free'))];
+  let lastError = null;
 
-  let response;
-  try {
-    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Authorization': `Bearer ${getOpenRouterKey()}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.APP_URL || 'https://interview-tinder.app',
-        'X-Title': 'Interview Tinder',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        max_tokens: maxTokens,
-        temperature,
-      }),
-    });
-  } finally {
-    clearTimeout(timer);
+  for (let i = 0; i < candidates.length; i++) {
+    const currentModel = candidates[i];
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Authorization': `Bearer ${getOpenRouterKey()}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.APP_URL || 'https://interview-tinder.app',
+          'X-Title': 'Interview Tinder',
+        },
+        body: JSON.stringify({
+          model: currentModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          max_tokens: maxTokens,
+          temperature,
+        }),
+      });
+
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        throw new Error(`OpenRouter ${response.status} (${currentModel}): ${body.substring(0, 200)}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (!content?.trim()) throw new Error(`Empty response from OpenRouter (${currentModel})`);
+
+      const usedModel = data.model || currentModel;
+      logger.info({ model: usedModel, chars: content.length }, '✅ OpenRouter response received');
+      return content.trim();
+    } catch (err) {
+      lastError = err;
+      logger.warn({ err: err.message, model: currentModel, remaining: candidates.length - i - 1 }, '⚠️ OpenRouter attempt failed, trying fallback');
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`OpenRouter ${response.status}: ${body.substring(0, 200)}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content?.trim()) throw new Error('Empty response from OpenRouter');
-
-  const usedModel = data.model || model;
-  logger.info({ model: usedModel, chars: content.length }, '✅ OpenRouter response received');
-  return content.trim();
+  throw lastError || new Error('All OpenRouter models failed');
 }
 
 // ─── Core: cache → dedup → AI → validate → write ──────────────────────

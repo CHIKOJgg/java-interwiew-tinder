@@ -83,14 +83,25 @@ class ApiClient {
   }
 
   // ─── Questions ─────────────────────────────────────────────────────
-  async getQuestionsFeed(limit = 5, mode = 'swipe', { cursor = 0, seed, difficulties, company, exclude } = {}) {
+  async getQuestionsFeed(limit = 5, mode = 'swipe', { cursor = 0, seed, difficulties, company, exclude, categories, frameworks, topics, search, top } = {}) {
     const params = new URLSearchParams({ limit: String(limit), mode, language: this.language, lng: i18n.language || 'en' });
     if (seed) params.set('seed', seed);
     params.set('cursor', String(cursor));
+    if (top) params.set('top', 'true');
     if (Array.isArray(difficulties) && difficulties.length > 0) {
       difficulties.forEach(d => params.append('difficulties', d));
     }
     if (company) params.set('company', company);
+    if (Array.isArray(categories) && categories.length > 0) {
+      params.set('categories', categories.join(','));
+    }
+    if (Array.isArray(frameworks) && frameworks.length > 0) {
+      params.set('frameworks', frameworks.join(','));
+    }
+    if (Array.isArray(topics) && topics.length > 0) {
+      params.set('topics', topics.join(','));
+    }
+    if (search) params.set('search', search);
     // Smart deck: questions already shown this session (across modes) are
     // excluded so the user never gets the same card right after a mode switch.
     if (Array.isArray(exclude) && exclude.length > 0) {
@@ -261,8 +272,9 @@ class ApiClient {
   }
 
   // ─── Stats ─────────────────────────────────────────────────────────
-  async getStats() {
-    return this.request(`/stats?language=${this.language}`);
+  async getStats(language) {
+    const lang = language || this.language;
+    return this.request(`/stats?language=${encodeURIComponent(lang)}`);
   }
 
   // Category-scoped progress for topic counter (§3)
@@ -276,6 +288,25 @@ class ApiClient {
     return this.request(`/categories?language=${this.language}`);
   }
 
+  async getFilters() {
+    return this.request(`/filters?language=${this.language}`);
+  }
+
+  async getTopQuestions({ language, category, limit = 50, cursor = 0 } = {}) {
+    const params = new URLSearchParams({
+      language: language || this.language,
+      limit: String(limit),
+      cursor: String(cursor),
+    });
+    if (category) params.set('category', category);
+    return this.request(`/questions/top?${params.toString()}`);
+  }
+
+  async getTopStats(language) {
+    const lang = language || this.language;
+    return this.request(`/questions/top/stats?language=${lang}`);
+  }
+
   async getCompanies() {
     return this.request('/companies');
   }
@@ -284,10 +315,10 @@ class ApiClient {
     return this.request('/preferences');
   }
 
-  async updatePreferences(categories, language, company) {
+  async updatePreferences(categories, language, company, frameworks, topics) {
     return this.request('/preferences', {
       method: 'POST',
-      body: JSON.stringify({ categories, language: language || this.language, company }),
+      body: JSON.stringify({ categories, language: language || this.language, company, frameworks, topics }),
     });
   }
 
@@ -543,14 +574,29 @@ class ApiClient {
   }
 
   // ─── Stats History ───────────────────────────────────────────────
-  async getStatsHistory(period = '7d') {
-    const params = new URLSearchParams({ period, language: this.language });
+  async getStatsHistory(period = '7d', language) {
+    const lang = language || this.language;
+    const params = new URLSearchParams({ period, language: lang });
     return this.request(`/stats/history?${params.toString()}`);
   }
 
-  async getTopicStats() {
-    const params = new URLSearchParams({ language: this.language });
+  async getTopicStats(language) {
+    const lang = language || this.language;
+    const params = new URLSearchParams({ language: lang });
     return this.request(`/stats/topics?${params.toString()}`);
+  }
+
+  async getAnsweredQuestions({ language, status, category, search, limit = 20, offset = 0 } = {}) {
+    const lang = language || this.language;
+    const params = new URLSearchParams({
+      language: lang,
+      limit: String(limit),
+      offset: String(offset),
+    });
+    if (status && status !== 'all') params.set('status', status);
+    if (category) params.set('category', category);
+    if (search) params.set('search', search);
+    return this.request(`/stats/answers?${params.toString()}`);
   }
 
   // ─── Challenges ──────────────────────────────────────────────────

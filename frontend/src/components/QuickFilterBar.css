@@ -1,0 +1,199 @@
+.quick-filter-bar {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 8px;
+  padding: 0 8px;
+  z-index: 5;
+}
+
+.quick-filter-scroll {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 4px 2px;
+}
+
+.quick-filter-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Difficulty Selector Group */
+.quick-diff-group {
+  display: flex;
+  align-items: center;
+  background: var(--paper, #fff);
+  border: 2px solid var(--ink, #121212);
+  border-radius: 20px;
+  padding: 2px;
+  flex-shrink: 0;
+  box-shadow: 2px 2px 0 var(--ink, #121212);
+}
+
+.quick-diff-chip {
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink, #121212);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.quick-diff-chip:active {
+  transform: scale(0.95);
+}
+
+.quick-diff-chip.active {
+  background: var(--ink, #121212);
+  color: var(--paper, #fff);
+}
+
+.quick-diff-chip.diff-junior.active {
+  background: var(--green, #22c55e);
+  color: #000;
+}
+
+.quick-diff-chip.diff-middle.active {
+  background: var(--accent, #ffd93d);
+  color: #000;
+}
+
+.quick-diff-chip.diff-senior.active {
+  background: var(--purple, #a855f7);
+  color: #fff;
+}
+
+/* Divider */
+.quick-filter-divider {
+  width: 2px;
+  height: 20px;
+  background: var(--ink-border, #e5e5e5);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* Active Filter Pills */
+.active-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--paper, #fff);
+  border: 1.5px solid var(--ink, #121212);
+  border-radius: 14px;
+  padding: 4px 8px 4px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 1.5px 1.5px 0 var(--ink, #121212);
+}
+
+.active-filter-pill.pill-top {
+  background: #ff5722;
+  color: #fff;
+  border-color: var(--ink, #121212);
+}
+
+.active-filter-pill.pill-framework {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.active-filter-pill.pill-topic {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.active-filter-pill.pill-category {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.pill-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+
+.pill-remove-btn:hover {
+  opacity: 1;
+}
+
+/* Open Full Filters Button */
+.quick-open-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--paper, #fff);
+  border: 2px solid var(--ink, #121212);
+  border-radius: 16px;
+  padding: 5px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink, #121212);
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 2px 2px 0 var(--ink, #121212);
+  transition: transform 0.1s, background 0.15s;
+  white-space: nowrap;
+}
+
+.quick-open-filter-btn:hover {
+  background: var(--cream, #f9f9f9);
+}
+
+.quick-open-filter-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink, #121212);
+}
+
+.quick-filter-count {
+  background: var(--accent, #ffd93d);
+  color: var(--ink, #121212);
+  border-radius: 10px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* Clear all button */
+.quick-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: var(--paper, #fff);
+  border: 1.5px solid var(--ink, #121212);
+  border-radius: 50%;
+  color: var(--ink-soft, #666);
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 1.5px 1.5px 0 var(--ink, #121212);
+  transition: transform 0.1s;
+}
+
+.quick-clear-btn:hover {
+  color: var(--ink, #121212);
+}
+
+.quick-clear-btn:active {
+  transform: scale(0.92);
+}

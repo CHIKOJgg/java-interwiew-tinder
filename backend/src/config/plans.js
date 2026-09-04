@@ -23,7 +23,7 @@ export const PLANS = {
     interview_eval_limit: 3,
     sd_evaluation_limit: 1,
     available_languages: ['Java', 'Python', 'TypeScript', 'Go', 'Rust', 'React', 'Kotlin'],
-    available_modes: ['swipe', 'test', 'system-design'],
+    available_modes: ['swipe', 'test', 'system-design', 'review'],
     model_priority: 'standard',
   },
   pro: {
@@ -85,6 +85,12 @@ export const FREE_DEFAULTS = {
   available_languages: PLANS.free.available_languages,
   available_modes: PLANS.free.available_modes,
   model_priority: PLANS.free.model_priority,
+  requests_today: 0,
+  ai_generations_this_month: 0,
+  resume_analyses_this_month: 0,
+  interview_evals_this_month: 0,
+  code_executions_today: 0,
+  sd_evaluations_today: 0,
 };
 
 export const PLANS_LIST = [PLANS.free, PLANS.pro, PLANS.annual_pro, PLANS.pro_max];

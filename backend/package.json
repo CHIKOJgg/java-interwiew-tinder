@@ -21,6 +21,7 @@
     "migrate-stars": "node src/scripts/migrate-stars.js",
     "migrate-ton": "node src/scripts/migrate-ton.js",
     "migrate-ukassa": "node src/scripts/migrate-ukassa.js",
+    "parse:top-questions": "node src/scripts/parse-top-questions.mjs",
     "worker": "node src/worker.js",
     "generate-seo": "node src/scripts/generate-seo.js",
     "test": "vitest run tests/",

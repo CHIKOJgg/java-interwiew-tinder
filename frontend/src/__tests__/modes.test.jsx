@@ -42,6 +42,8 @@ describe('mode components import without throwing', () => {
       import('../components/SavedQuestions.jsx'),
       import('../components/AdminPanel.jsx'),
       import('../components/ShareCard.jsx'),
+      import('../components/QuickFilterBar.jsx'),
+      import('../components/TopQuestionsScreen.jsx'),
     ]);
     for (const m of mods) {
       expect(m.default).toBeDefined();

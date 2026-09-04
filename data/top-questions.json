@@ -1,0 +1,2971 @@
+[
+  {
+    "question_text": "Почему в Java 21 виртуальный поток может «запиниться» (pinning) на carrier thread, и как этого избежать?",
+    "short_answer": "Поток пинится внутри блока synchronized или нативного вызова; для решения synchronized заменяют на ReentrantLock.",
+    "category": "Multithreading",
+    "framework": "Virtual Threads",
+    "topic": "Concurrency",
+    "difficulty": "Senior",
+    "language": "Java",
+    "options": [
+      "При входе в блок synchronized или вызове native-кода; для решения synchronized заменяют на ReentrantLock",
+      "При выполнении блокирующего сокетного I/O; для решения сокеты оборачивают в асинхронные каналы NIO",
+      "При превышении лимита размера стека фреймов; для решения увеличивают параметр JVM -XX:ThreadStackSize",
+      "При обращении к объектам в Old Generation GC; для решения включают флаг -XX:+UseZGCGenerational"
+    ],
+    "top_rank": 1,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Virtual Threads",
+      "Concurrency"
+    ]
+  },
+  {
+    "question_text": "В чем главное преимущество StructuredTaskScope по сравнению с CompletableFuture в Java 21?",
+    "short_answer": "Гарантирует объединение жизненного цикла дочерних задач в единый синтаксический блок с отменой при сбое.",
+    "category": "Multithreading",
+    "framework": "Structured Concurrency",
+    "topic": "Concurrency",
+    "difficulty": "Senior",
+    "language": "Java",
+    "options": [
+      "Объединяет жизненный цикл дочерних подзадач в единый блок, отменяя остальные при первом сбое или таймауте",
+      "Автоматически переносит выполнение всех вычислительных потоков с CPU-ядер на GPU для ускорения вычислений",
+      "Полностью устраняет необходимость выделения оперативной памяти под стек вызовов для дочерних потоков",
+      "Позволяет передавать неизменяемые контекстные переменные между микросервисами без сериализации в JSON"
+    ],
+    "top_rank": 2,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Structured Concurrency",
+      "Concurrency"
+    ]
+  },
+  {
+    "question_text": "Как работает проверка исчерпываемости (exhaustiveness) в switch expressions с sealed-иерархиями в Java 21?",
+    "short_answer": "Компилятор знает все прямые подклассы sealed-типа и требует либо покрытия каждого из них, либо ветки default.",
+    "category": "Java Core",
+    "framework": "Modern Java",
+    "topic": "Language Features",
+    "difficulty": "Middle",
+    "language": "Java",
+    "options": [
+      "Компилятор знает всех прямых наследников sealed-типа и требует покрыть каждый класс либо указать default",
+      "JVM во время выполнения генерирует ветку default через динамический байт-код при обнаружении неизвестного типа",
+      "Разработчик обязан объявить специальную аннотацию @Exhaustive над выражением switch для контроля компилятора",
+      "Исчерпываемость проверяется только для enum-типов, а для sealed-классов всегда обязательна ветка default"
+    ],
+    "top_rank": 3,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Modern Java",
+      "Language Features"
+    ]
+  },
+  {
+    "question_text": "Какое ключевое архитектурное улучшение получил Generational ZGC в Java 21 по сравнению с классическим ZGC?",
+    "short_answer": "Разделение кучи на поколения позволяет чаще собирать короткоживущие объекты, снижая нагрузку на CPU.",
+    "category": "JVM",
+    "framework": "Garbage Collection",
+    "topic": "Memory & GC",
+    "difficulty": "Senior",
+    "language": "Java",
+    "options": [
+      "Разделение кучи на поколения позволяет чаще собирать молодые объекты, существенно снижая расход CPU",
+      "Переход на синхронный Stop-The-World алгоритм для ускорения освобождения непрерывных блоков памяти",
+      "Полный отказ от использования цветных указателей (colored pointers) и барьеров чтения (load barriers)",
+      "Интеграция со сжатием указателей (Compressed OOPs) для куч размером свыше 32 терабайт оперативной памяти"
+    ],
+    "top_rank": 4,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Garbage Collection",
+      "Memory & GC"
+    ]
+  },
+  {
+    "question_text": "Зачем в Spring Boot 3 при компиляции в GraalVM Native Image необходим этап Ahead-Of-Time (AOT) генерации?",
+    "short_answer": "GraalVM требует закрытого мира: AOT заранее вычисляет граф бинов и регистрирует метаданные для рефлексии.",
+    "category": "Spring",
+    "framework": "Spring Boot 3",
+    "topic": "Native Compilation",
+    "difficulty": "Senior",
+    "language": "Java",
+    "options": [
+      "AOT заранее анализирует конфигурацию бинов и создает подсказки для рефлексии, нужные закрытому миру GraalVM",
+      "AOT выполняет предварительное шифрование байт-кода приложения для защиты от декомпиляции в облачной среде",
+      "AOT компилирует все входящие SQL-запросы в бинарные функции драйвера базы данных для исключения сетевых задержек",
+      "AOT запускает встроенный контейнер Tomcat во время сборки и замораживает его состояние в оперативной памяти"
+    ],
+    "top_rank": 5,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Spring Boot 3",
+      "Native Compilation"
+    ]
+  },
+  {
+    "question_text": "Что представляют собой HTTP Interfaces (@HttpExchange), появившиеся в Spring Framework 6 / Spring Boot 3?",
+    "short_answer": "Декларативные интерфейсы HTTP-клиентов с аннотациями обмена, генерируемые через HttpServiceProxyFactory.",
+    "category": "Spring",
+    "framework": "Spring Boot 3",
+    "topic": "Web & REST",
+    "difficulty": "Middle",
+    "language": "Java",
+    "options": [
+      "Декларативное описание HTTP-клиентов через интерфейс с аннотациями, проксируемое поверх WebClient или RestClient",
+      "Специальные контроллеры для автоматической генерации Swagger-документации без использования аннотаций OpenAPI",
+      "Новый механизм маршрутизации входящих веб-сокетов с поддержкой аппаратного ускорения сетевых протоколов HTTP/3",
+      "Фильтры безопасности для проверки валидности JWT-токенов на уровне сетевого драйвера операционной системы"
+    ],
+    "top_rank": 6,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Spring Boot 3",
+      "Web & REST"
+    ]
+  },
+  {
+    "question_text": "Чем Cooperative Sticky Assignor в Apache Kafka отличается от классического Eager Rebalance?",
+    "short_answer": "Не отзывает все партиции у консьюмеров при ребалансировке, отзывая только перемещаемые партиции без простоя.",
+    "category": "Microservices",
+    "framework": "Kafka",
+    "topic": "Messaging",
+    "difficulty": "Senior",
+    "language": "Java",
+    "options": [
+      "Отзывает только те партиции, которые нужно перенести на другой консьюмер, исключая общий stop-the-world простой",
+      "Назначает все партиции одному лидер-консьюмеру, а остальные инстансы держит в горячем резерве без чтения данных",
+      "Блокирует отправку новых сообщений брокером до тех пор, пока все консьюмеры группы не подтвердят получение оффсетов",
+      "Переносит партиции между консьюмерами только в момент плановой перезагрузки брокера Apache Kafka по протоколу Raft"
+    ],
+    "top_rank": 7,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Kafka",
+      "Messaging"
+    ]
+  },
+  {
+    "question_text": "Как Kafka продюсер гарантирует идемпотентность (enable.idempotence=true) при повторных сетевых отправках?",
+    "short_answer": "Брокер присваивает продюсеру уникальный Producer ID, а сообщениям порядковые номера в рамках партиции.",
+    "category": "Microservices",
+    "framework": "Kafka",
+    "topic": "Messaging",
+    "difficulty": "Middle",
+    "language": "Java",
+    "options": [
+      "Брокер выделяет продюсеру Producer ID (PID) и отслеживает порядковые Sequence Number для каждой партиции",
+      "Продюсер перед каждой отправкой выполняет распределенную блокировку партиции в координаторе кластера KRaft",
+      "Брокер сохраняет SHA-256 хеш каждого сообщения в оперативной памяти на протяжении ровно двадцати четырех часов",
+      "Продюсер ожидает синхронного ответа от всех брокеров кластера перед переходом к сериализации следующего батча"
+    ],
+    "top_rank": 8,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Kafka",
+      "Messaging"
+    ]
+  },
+  {
+    "question_text": "Какую проблему в распределенных системах решает шаблон Transactional Outbox?",
+    "short_answer": "Гарантирует атомарность между изменением данных в БД и публикацией события в брокер сообщений.",
+    "category": "Microservices",
+    "framework": "Architecture",
+    "topic": "Distributed Systems",
+    "difficulty": "Senior",
+    "language": "Java",
+    "options": [
+      "Гарантирует атомарность обновления локальной базы данных и отправки сообщения в брокер без двухфазного коммита",
+      "Обеспечивает автоматическое горизонтальное масштабирование очередей сообщений при пиковых всплесках трафика",
+      "Шифрует заголовки сетевых пакетов между микросервисами для защиты от атак типа man-in-the-middle в сети",
+      "Предотвращает возникновение циклических зависимостей между сервисами при использовании протокола gRPC"
+    ],
+    "top_rank": 9,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Architecture",
+      "Distributed Systems"
+    ]
+  },
+  {
+    "question_text": "В чем главное преимущество оркестрируемой Saga над хореографической при сложных бизнес-процессах?",
+    "short_answer": "Централизованная логика координации, простота мониторинга состояния и отсутствие запутанных циклических связей.",
+    "category": "Microservices",
+    "framework": "Architecture",
+    "topic": "Distributed Systems",
+    "difficulty": "Senior",
+    "language": "Java",
+    "options": [
+      "Централизованный контроль шагов процесса и компенсирующих транзакций, предотвращающий запутанные циклические связи",
+      "Полное отсутствие сетевых вызовов между микросервисами благодаря выполнению всего кода в общей разделяемой памяти",
+      "Автоматическая изоляция уровня Serializable для распределенных транзакций без использования блокировок строк",
+      "Возможность отката уже закоммиченных локальных транзакций в реляционных базах данных без компенсирующих действий"
+    ],
+    "top_rank": 10,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Architecture",
+      "Distributed Systems"
+    ]
+  },
+  {
+    "question_text": "Чем оператор satisfies в TypeScript 5 отличается от явной аннотации типа (const obj: Type = ...)?",
+    "short_answer": "Проверяет соответствие типу Type, но сохраняет наиболее узкий (литеральный) выведенный тип выражения.",
+    "category": "TypeScript Core",
+    "framework": "TypeScript 5",
+    "topic": "Type System",
+    "difficulty": "Middle",
+    "language": "TypeScript",
+    "options": [
+      "Проверяет соответствие типу, но сохраняет точный литеральный выведенный тип объекта без расширения до общего типа",
+      "Выполняет динамическую валидацию схемы данных в рантайме JavaScript аналогично библиотекам Zod и Yup",
+      "Принудительно приводит тип выражения к any во время выполнения для обхода строгих проверок компилятора",
+      "Создает глубокую неизменяемую копию переданного объекта с блокировкой добавления новых свойств в Object"
+    ],
+    "top_rank": 11,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "TypeScript 5",
+      "Type System"
+    ]
+  },
+  {
+    "question_text": "Зачем в TypeScript 5 добавили const модификатор для type parameters (<const T>)?",
+    "short_answer": "Заставляет компилятор автоматически выводить литеральные и readonly-типы для аргументов без as const.",
+    "category": "TypeScript Core",
+    "framework": "TypeScript 5",
+    "topic": "Generics",
+    "difficulty": "Senior",
+    "language": "TypeScript",
+    "options": [
+      "Заставляет TypeScript по умолчанию выводить глубокие литеральные типы аргументов без явного указания as const",
+      "Запрещает переопределение дженерик-типа в классах-наследниках на уровне синтаксического анализатора кода",
+      "Оптимизирует компиляцию больших проектов, кэшируя абстрактное синтаксическое дерево неизменяемых функций",
+      "Гарантирует, что переданная в функцию переменная не может быть переприсвоена внутри тела самой функции"
+    ],
+    "top_rank": 12,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "TypeScript 5",
+      "Generics"
+    ]
+  },
+  {
+    "question_text": "Какое ограничение накладывается на пропсы, передаваемые из Server Component в Client Component ('use client') в React 19?",
+    "short_answer": "Пропсы должны быть сериализуемыми значениями (JSON-подобными или Promise), функции передавать нельзя.",
+    "category": "React",
+    "framework": "React 19",
+    "topic": "Server Components",
+    "difficulty": "Senior",
+    "language": "TypeScript",
+    "options": [
+      "Пропсы должны быть сериализуемыми (примитивы, простые объекты, Promise), обычные функции передавать нельзя",
+      "Client Component может принимать исключительно строковые значения, а числа должны передаваться в URL-параметрах",
+      "Размер всех пропсов клиентского компонента жестко ограничен шестнадцатью килобайтами в сжатом виде gzip",
+      "Все передаваемые объекты обязаны быть экземплярами классов, унаследованных от базового класса React.Component"
+    ],
+    "top_rank": 13,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "React 19",
+      "Server Components"
+    ]
+  },
+  {
+    "question_text": "Для чего в React 19 предназначен новый хук useActionState (ранее useFormState)?",
+    "short_answer": "Управляет состоянием асинхронного Action, возвращая текущее состояние, функцию запуска и статус isPending.",
+    "category": "React",
+    "framework": "React 19",
+    "topic": "Hooks & Forms",
+    "difficulty": "Middle",
+    "language": "TypeScript",
+    "options": [
+      "Управляет состоянием асинхронных Server/Client Actions, возвращая результат, функцию вызова и флаг isPending",
+      "Заменяет глобальный Redux-стор на легковесный контекст с автоматической синхронизацией через LocalStorage",
+      "Перехватывает необработанные ошибки в дочернем дереве компонентов вместо стандартного метода componentDidCatch",
+      "Оптимизирует отрисовку тяжелых списков с помощью виртуализации узлов DOM-дерева в фоновом web-worker"
+    ],
+    "top_rank": 14,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "React 19",
+      "Hooks & Forms"
+    ]
+  },
+  {
+    "question_text": "В каком порядке и когда в JavaScript Event Loop очищается очередь микротасок (microtask queue)?",
+    "short_answer": "Очередь микротасок выполняется полностью сразу после текущего синхронного стека перед любой макротаской.",
+    "category": "TypeScript Core",
+    "framework": "Node.js",
+    "topic": "Event Loop",
+    "difficulty": "Middle",
+    "language": "TypeScript",
+    "options": [
+      "Выполняется полностью сразу после завершения текущего синхронного кода перед следующей макротаской и рендером",
+      "Выполняется строго один раз в секунду по системному таймеру операционной системы параллельно с макротасками",
+      "Обрабатывается порциями по 10 задач исключительно после завершения всех таймеров setTimeout и сетевых запросов",
+      "Запускается только тогда, когда стек вызовов и очередь макротасок одновременно становятся абсолютно пустыми"
+    ],
+    "top_rank": 15,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Node.js",
+      "Event Loop"
+    ]
+  },
+  {
+    "question_text": "Что представляет собой инициатива Free-threaded CPython (PEP 703), представленная в Python 3.12/3.13?",
+    "short_answer": "Опциональная сборка CPython без глобальной блокировки интерпретатора (GIL) с потокобезопасным подсчетом ссылок.",
+    "category": "Python Core",
+    "framework": "Python 3.12+",
+    "topic": "GIL & Concurrency",
+    "difficulty": "Senior",
+    "language": "Python",
+    "options": [
+      "Возможность запуска CPython без GIL (--disable-gil) с параллельным исполнением байт-кода на нескольких CPU",
+      "Автоматическая трансляция Python-скриптов в машинный бинарный код LLVM без участия стандартного интерпретатора",
+      "Замена механизма подсчета ссылок на сборщик мусора Mark-and-Sweep для полного устранения циклических ссылок",
+      "Встроенная поддержка асинхронного выполнения синхронных блокирующих функций через технологию eBPF в ядре Linux"
+    ],
+    "top_rank": 16,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Python 3.12+",
+      "GIL & Concurrency"
+    ]
+  },
+  {
+    "question_text": "Почему в современном Python (3.11+) рекомендуется использовать asyncio.TaskGroup вместо asyncio.gather?",
+    "short_answer": "TaskGroup реализует structured concurrency: при исключении в одной задаче остальные надежно отменяются.",
+    "category": "Python Core",
+    "framework": "Async/Await",
+    "topic": "Structured Concurrency",
+    "difficulty": "Senior",
+    "language": "Python",
+    "options": [
+      "TaskGroup гарантирует отмену всех остальных подзадач при падении одной из них и выбрасывает ExceptionGroup",
+      "TaskGroup выполняет корутины в отдельных системных процессах операционной системы для обхода ограничений GIL",
+      "TaskGroup автоматически преобразует синхронные блокирующие вызовы библиотек requests и time в асинхронные",
+      "TaskGroup исключает накладные расходы на создание контекстных менеджеров за счет раннего выделения стека"
+    ],
+    "top_rank": 17,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Async/Await",
+      "Structured Concurrency"
+    ]
+  },
+  {
+    "question_text": "В чем преимущество нового оператора `type` (PEP 695), появившегося в Python 3.12, для создания type aliases?",
+    "short_answer": "Синтаксис объявляет лениво вычисляемые псевдонимы типов со встроенной поддержкой generic параметров.",
+    "category": "Python Core",
+    "framework": "Modern Python",
+    "topic": "Type Hints",
+    "difficulty": "Middle",
+    "language": "Python",
+    "options": [
+      "Создает лениво вычисляемый псевдоним типа с лаконичным синтаксисом дженериков без TypeVar и импорта TypeAlias",
+      "Проверяет типы переданных параметров функции во время выполнения и бросает исключение TypeError при несовпадении",
+      "Компилирует аннотации типов в C-структуры для существенного ускорения работы математических вычислений NumPy",
+      "Позволяет создавать множественное наследование от встроенных примитивных типов int и str без ограничений метаклассов"
+    ],
+    "top_rank": 18,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Modern Python",
+      "Type Hints"
+    ]
+  },
+  {
+    "question_text": "В чем разница в выполнении эндпоинта в FastAPI, если объявить его как `def endpoint()` вместо `async def endpoint()`?",
+    "short_answer": "Обычный def запускается в отдельном потоке из threadpool, а async def выполняется напрямую в event loop.",
+    "category": "Python Core",
+    "framework": "FastAPI",
+    "topic": "Web Frameworks",
+    "difficulty": "Middle",
+    "language": "Python",
+    "options": [
+      "Обычный def запускается во внешнем пуле потоков (threadpool), а async def выполняется прямо в главном event loop",
+      "Обычный def не поддерживает валидацию входящих моделей Pydantic и возвращает сырой HTTP-ответ клиенту",
+      "Функция async def выполняется в отдельном системном процессе операционной системы через модуль multiprocessing",
+      "Между ними нет никакой разницы, так как компилятор AnyIO автоматически преобразует def в корутину async def"
+    ],
+    "top_rank": 19,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "FastAPI",
+      "Web Frameworks"
+    ]
+  },
+  {
+    "question_text": "Как устроена модель M:P:N (G-M-P) планировщика Go, и какую роль в ней играет абстракция P (Processor)?",
+    "short_answer": "P представляет логический контекст исполнения с локальной очередью горутин, привязываемый к системному потоку M.",
+    "category": "Go Core",
+    "framework": "Go Runtime",
+    "topic": "Concurrency",
+    "difficulty": "Senior",
+    "language": "Go",
+    "options": [
+      "P представляет логический контекст выполнения с локальной очередью горутин, связывающий поток ОС (M) и горутину (G)",
+      "P отвечает за предварительную компиляцию байт-кода горутины в процессорные инструкции непосредственно перед запуском",
+      "P является физическим ядром процессора, на которое Go runtime жестко привязывает системные прерывания операционной системы",
+      "P хранит глобальный стек вызовов всех горутин и синхронизирует выделение блоков памяти между потоками без блокировок"
+    ],
+    "top_rank": 20,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Go Runtime",
+      "Concurrency"
+    ]
+  },
+  {
+    "question_text": "Какая ключевая структура данных лежит в основе канала в Go runtime, и как она защищена от гонок?",
+    "short_answer": "Структура hchan содержит кольцевой буфер, очереди ожидающих горутин recvq/sendq и встроенный мьютекс lock.",
+    "category": "Go Core",
+    "framework": "Go Runtime",
+    "topic": "Channels",
+    "difficulty": "Senior",
+    "language": "Go",
+    "options": [
+      "Структура hchan с кольцевым циклическим буфером, очередями ожидания горутин (waitq) и встроенным мьютексом lock",
+      "Атомарный lock-free связный список на базе CAS-инструкций процессора без использования внутренних мьютексов",
+      "Специальный кольцевой буфер операционной системы Linux pipe с разделяемой памятью между потоками процесса",
+      "Двусвязный список указателей на стек горутин, защищенный RCU (Read-Copy-Update) блокировкой ядра runtime"
+    ],
+    "top_rank": 21,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Go Runtime",
+      "Channels"
+    ]
+  },
+  {
+    "question_text": "В каких случаях компилятор Go при Escape Analysis принимает решение выделить переменную в куче (heap), а не на стеке?",
+    "short_answer": "Когда указатель на переменную выходит за пределы функции, передается в interface{} или ее размер неизвестен.",
+    "category": "Go Core",
+    "framework": "Go Runtime",
+    "topic": "Memory & Performance",
+    "difficulty": "Middle",
+    "language": "Go",
+    "options": [
+      "Когда ссылка на переменную покидает область видимости функции, передается в interface{} или размер неизвестен",
+      "Когда функция содержит более трех циклов for или содержит вызов любой стандартной функции из пакета math",
+      "Когда локальная переменная объявлена с использованием оператора := вместо явного ключевого слова var в коде",
+      "Исключительно тогда, когда объем доступной оперативной памяти превышает восемьдесят процентов от общего объема"
+    ],
+    "top_rank": 22,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Go Runtime",
+      "Memory & Performance"
+    ]
+  },
+  {
+    "question_text": "Как правильно реализовать паттерн Idempotency Key в платежных или критических REST API?",
+    "short_answer": "Клиент передает уникальный UUID в заголовке, сервер атомарно фиксирует статус обработки и кэширует ответ.",
+    "category": "Microservices",
+    "framework": "Architecture",
+    "topic": "Distributed Systems",
+    "difficulty": "Middle",
+    "language": "Java",
+    "options": [
+      "Клиент шлет уникальный UUID в заголовке, сервер атомарно резервирует ключ в БД/Redis и кэширует готовый ответ",
+      "Сервер вычисляет MD5-хеш IP-адреса клиента и отклоняет любые повторные сетевые пакеты в течение одного часа",
+      "Клиент отправляет запрос строго по протоколу UDP с подтверждением доставки через контрольную сумму заголовка",
+      "Сервер выполняет блокировку всей таблицы заказов в базе данных до завершения обработки сетевого соединения"
+    ],
+    "top_rank": 23,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Architecture",
+      "Distributed Systems"
+    ]
+  },
+  {
+    "question_text": "Какими свойствами по умолчанию обладает класс типа record в современном синтаксисе Java?",
+    "short_answer": "Является final классом, все поля final и private, генерирует канонический конструктор, equals, hashCode и toString.",
+    "category": "Java Core",
+    "framework": "Modern Java",
+    "topic": "OOP & Records",
+    "difficulty": "Junior",
+    "language": "Java",
+    "options": [
+      "Класс является final, все поля private final, автоматически создаются геттеры, equals(), hashCode() и toString()",
+      "Класс может наследоваться от абстрактных классов и позволяет динамически мутировать свои поля через сеттеры",
+      "Все поля записи автоматически сохраняются в постоянное дисковое хранилище при завершении виртуальной машины",
+      "Экземпляр записи всегда сериализуется исключительно в бинарный формат Protobuf без поддержки JSON-сериализации"
+    ],
+    "top_rank": 24,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Modern Java",
+      "OOP & Records"
+    ]
+  },
+  {
+    "question_text": "Как наиболее эффективно предотвратить проблему N+1 SELECT в Spring Data JPA при выборке связанных сущностей?",
+    "short_answer": "Использовать JOIN FETCH в JPQL запросе или аннотацию @EntityGraph для жадной загрузки за один SQL запрос.",
+    "category": "Database",
+    "framework": "Spring Data JPA",
+    "topic": "JPA & Hibernate",
+    "difficulty": "Middle",
+    "language": "Java",
+    "options": [
+      "Использовать предложение JOIN FETCH в JPQL-запросе либо декларативную аннотацию @EntityGraph над методом репозитория",
+      "Установить глобальный параметр FetchType.EAGER на все связи @OneToMany в доменных сущностях проекта",
+      "Увеличить размер пула соединений HikariCP в конфигурационном файле application.properties в четыре раза",
+      "Отключить кэш первого уровня Hibernate в свойствах EntityManagerFactory перед выполнением выборки из базы"
+    ],
+    "top_rank": 25,
+    "is_top": true,
+    "tags": [
+      "top",
+      "modern",
+      "Spring Data JPA",
+      "JPA & Hibernate"
+    ]
+  },
+  {
+    "question_text": "What are the key differences between JVM, JRE, and JDK?",
+    "short_answer": "JDK is the full development kit with compiler; JRE provides the runtime environment and core libraries; JVM executes Java bytecode.",
+    "category": "Java Architecture",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 26,
+    "options": [
+      "JDK contains compiler and tools; JRE contains JVM and runtime libraries; JVM executes bytecode",
+      "JVM compiles code, JRE executes code, JDK is only for documentation",
+      "JRE contains JDK which runs directly on hardware without JVM",
+      "JVM and JRE are identical; JDK is only needed for JavaFX"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Why is String immutable in Java?",
+    "short_answer": "For security, String pool caching, hashcode caching for HashMaps, and thread-safety across concurrent operations.",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 27,
+    "options": [
+      "For security, String pool caching, hashcode caching, and thread safety",
+      "Because JVM cannot reallocate heap memory for strings",
+      "To prevent garbage collector from deleting long strings",
+      "Because strings in Java are stored on the execution stack only"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the contract between equals() and hashCode()?",
+    "short_answer": "If two objects are equal according to equals(), they must return the same hashCode(). If hashCodes are equal, objects are not necessarily equal.",
+    "category": "Object Oriented Programming",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 28,
+    "options": [
+      "Equal objects must have identical hashCodes; identical hashCodes do not guarantee equality",
+      "Different objects must always have different hashCodes",
+      "hashCode is used for sorting and equals is used only for memory deallocation",
+      "If equals returns true, hashCode must return 0"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "How does HashMap work internally in Java 8+?",
+    "short_answer": "Uses an array of Node buckets (hash modulo capacity). Collisions form a linked list, transforming into a red-black tree when bucket length exceeds 8.",
+    "category": "Collections",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 29,
+    "options": [
+      "Array of buckets using linked lists, transforming into red-black trees when bucket size >= 8",
+      "A continuous array shifted linearly on every collision (open addressing)",
+      "A balanced B-Tree persisted to JVM heap storage",
+      "A single synchronized LinkedList protected by a global mutex"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between ArrayList and LinkedList?",
+    "short_answer": "ArrayList uses a dynamic resizable array with O(1) random access; LinkedList uses a doubly linked list with O(n) traversal and O(1) insertion at pointer.",
+    "category": "Collections",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 30,
+    "options": [
+      "ArrayList provides O(1) indexed access; LinkedList provides O(1) insertion/deletion at known node with higher memory overhead",
+      "ArrayList is synchronized by default, LinkedList is asynchronous",
+      "LinkedList stores primitive types only, ArrayList stores objects",
+      "ArrayList cannot grow after creation, LinkedList has no size limit"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between final, finally, and finalize()?",
+    "short_answer": "final is a modifier (constants, non-extensible classes/methods); finally is a try-catch block that always executes; finalize() was a deprecated GC cleanup method.",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 31,
+    "options": [
+      "final is a keyword modifier; finally is an execution block; finalize() was a Garbage Collector callback",
+      "They are aliases for the same memory deallocation routine",
+      "finally declares constants, final handles exceptions, finalize starts threads",
+      "final is used only for primitive data types"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What causes a deadlock and how can it be prevented?",
+    "short_answer": "Mutual exclusion, hold and wait, no preemption, and circular wait. Prevented by locking resources in a global fixed order and using timed tryLock.",
+    "category": "Concurrency",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 32,
+    "options": [
+      "Circular wait on locks; prevented by consistent lock ordering and using tryLock with timeouts",
+      "Excessive garbage collection pause times; prevented by increasing heap size",
+      "Stack overflow in recursive calls; prevented by iterative refactoring",
+      "CPU core starvation; prevented by increasing thread pool size"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "В чем разница между ArrayList и LinkedList в Java?",
+    "short_answer": "ArrayList основан на динамическом массиве с быстрым доступом по индексу O(1). LinkedList — двусвязный список с быстрым добавлением O(1) в начало/конец, но медленным поиском O(n).",
+    "category": "Collections",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 33,
+    "options": [
+      "ArrayList использует динамический массив (O(1) по индексу), LinkedList — двусвязный список с указателями",
+      "ArrayList синхронизирован, LinkedList потоконебезопасен",
+      "LinkedList хранит только примитивы, ArrayList только объекты",
+      "ArrayList выделяет память в стеке, LinkedList в куче"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Как устроен и работает HashMap внутри?",
+    "short_answer": "Массив корзин (buckets) на основе хешкода ключа. При коллизиях используется связный список, при превышении 8 элементов — красно-чёрное дерево.",
+    "category": "Collections",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 34,
+    "options": [
+      "Массив корзин (хеш по модулю длины), связный список при коллизиях, переходящий в красно-черное дерево при >= 8 узлах",
+      "Двоичное дерево поиска с автоматической балансировкой AVL",
+      "Один непрерывный массив с линейным пробированием при коллизиях",
+      "Хеш-таблица на диске с кэшированием в оперативной памяти"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Что такое volatile и какие гарантии оно дает?",
+    "short_answer": "Гарантирует видимость изменений переменной между потоками (чтение/запись прямо в основную память без кэша ядра) и запрещает reordering инструкций.",
+    "category": "Concurrency",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 35,
+    "options": [
+      "Гарантирует видимость изменений всеми потоками и упорядоченность (happens-before), но не атомарность сложных операций",
+      "Обеспечивает полную атомарность инкремента i++ и блокировку потоков",
+      "Запрещает изменение переменной после инициализации (аналог final)",
+      "Сохраняет переменную в энергонезависимую память"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "How does the Python Global Interpreter Lock (GIL) work?",
+    "short_answer": "The GIL is a mutex that protects Python objects, allowing only one native thread to execute Python bytecode at a time in CPython.",
+    "category": "Python Internals",
+    "difficulty": "Middle",
+    "language": "Python",
+    "top_rank": 36,
+    "options": [
+      "A mutex in CPython allowing only one thread to execute Python bytecode at a time",
+      "A hardware lock preventing memory leaks across CPU sockets",
+      "A compiler optimization that converts Python scripts to C binaries",
+      "A garbage collection mechanism that pauses all background tasks"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between list and tuple in Python?",
+    "short_answer": "Lists are mutable (can append, remove, reorder) with higher memory overhead. Tuples are immutable, hashable (can be dict keys), and faster.",
+    "category": "Data Structures",
+    "difficulty": "Junior",
+    "language": "Python",
+    "top_rank": 37,
+    "options": [
+      "Lists are mutable; tuples are immutable and hashable",
+      "Lists store strings only; tuples store numbers",
+      "Tuples can change size dynamically while lists cannot",
+      "There is no difference, tuple is just deprecated syntax"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the Event Loop in JavaScript and how does it handle async tasks?",
+    "short_answer": "Monitors the Call Stack and Task Queue. When the stack is empty, it processes Microtasks (Promises) first, then Macrotasks (setTimeout, I/O).",
+    "category": "Asynchronous JS",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 38,
+    "options": [
+      "Executes synchronous code on Call Stack, drains Microtask Queue (Promises), then processes Task Queue (timers, events)",
+      "Spawns multi-threaded worker pools for every async function call",
+      "Pauses JavaScript execution until browser network requests finish",
+      "Replaces the browser DOM engine with a background Node runtime"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is closure in JavaScript and where is it used?",
+    "short_answer": "A closure is the combination of a function bundled together with references to its surrounding state (lexical environment), enabling data privacy.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 39,
+    "options": [
+      "A function bundled with its lexical environment, allowing access to an outer scope even after it has returned",
+      "A syntax error caused by unclosed curly braces in blocks",
+      "An automated garbage collection cleanup cycle",
+      "A method to immediately terminate long-running loops"
+    ],
+    "is_top": true,
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are the differences between JVM, JRE and JDK?",
+    "short_answer": "The main differences between JVM, JRE and JDK are listed below, JVM: Java Virtual Machine(JVM) is an abstract machine that provides a runtime environment for the execution of Java ByteCode.",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 40,
+    "is_top": true,
+    "options": [
+      "The main differences between JVM, JRE and JDK are listed below, JVM: Java Virtual Machine(JVM)",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Why Java is platform-independent language",
+    "short_answer": "Java is platform-independent language because java programs are compiled to a bytecode that can be run on any device or OS which has a Java Virtual Machine(JVM).",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 41,
+    "is_top": true,
+    "options": [
+      "Java is platform-independent language because java programs are compiled to a bytecode that",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "How does JVM works",
+    "short_answer": "JVM(Java Virtual Machine) is an abstract runtime engine to run java applications. It is part of Java Runtime Environment(JRE) to execute the bytecode generated by java compilers.",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 42,
+    "is_top": true,
+    "options": [
+      "JVM(Java Virtual Machine) is an abstract runtime engine to run java applications. It is part",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are the main features of Java",
+    "short_answer": "Java has many important features which makes it unique among the popular programming languages.",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 43,
+    "is_top": true,
+    "options": [
+      "Java has many important features which makes it unique among the popular programming languages.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is public static void main?",
+    "short_answer": "The main() method acts as a starting point for JVM to start the execution of a Java program.",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 44,
+    "is_top": true,
+    "options": [
+      "The main() method acts as a starting point for JVM to start the execution of a Java program.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is string constant pool",
+    "short_answer": "String constant pool is a special storage space inside the heap memory area where string literals are stored.",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 45,
+    "is_top": true,
+    "options": [
+      "String constant pool is a special storage space inside the heap memory area where string",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Why strings are immutable",
+    "short_answer": "In Java, the String class is immutable, meaning once a String object is created, its value cannot be changed.",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 46,
+    "is_top": true,
+    "options": [
+      "In Java, the String class is immutable, meaning once a String object is created, its value",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between StringBuffer and StringBuilder",
+    "short_answer": "String is an immutable class to represent sequence of characters. Java also provided mutable version of String class through StringBuffer and StringBuilder.",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 47,
+    "is_top": true,
+    "options": [
+      "String is an immutable class to represent sequence of characters. Java also provided mutable",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the importance of hashCode() and equals() methods",
+    "short_answer": "Since both equals() and hashCode() methods are available in Object class(i.e, Java.lang.object), every java class gets the default implementation of equals and hashCode methods.",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 48,
+    "is_top": true,
+    "options": [
+      "Since both equals() and hashCode() methods are available in Object class(i.e",
+      "Alternative runtime specification handled differently across specialized non-standard",
+      "Legacy platform behavior that was officially deprecated and",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between checked and unchecked expceptions",
+    "short_answer": "An exception is an event that interrupts the normal flow the program execution. There are two types of exceptions, 1.",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 49,
+    "is_top": true,
+    "options": [
+      "An exception is an event that interrupts the normal flow the program execution. There are two",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are wrapper classes",
+    "short_answer": "Wrapper classes provides the mechanism to convert primitive types into object types and vice versa.",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 50,
+    "is_top": true,
+    "options": [
+      "Wrapper classes provides the mechanism to convert primitive types into object types and vice versa.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine vendor",
+      "Legacy platform behavior that was officially deprecated and completely superseded in",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the application"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Why java is not pure object oriented language",
+    "short_answer": "Java is not a fully object-oriented programming language because of two main reasons. 1.",
+    "category": "Core Java",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 51,
+    "is_top": true,
+    "options": [
+      "Java is not a fully object-oriented programming language because of two main reasons. 1.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between abstract class and interface",
+    "short_answer": "Both Abstract class and interface are used to define contracts in object-oriented programming.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 52,
+    "is_top": true,
+    "options": [
+      "Both Abstract class and interface are used to define contracts in object-oriented programming.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are marker interfaces",
+    "short_answer": "Marker interfaces are interfaces that don't have any fields, methods, or constants inside of it.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 53,
+    "is_top": true,
+    "options": [
+      "Marker interfaces are interfaces that don't have any fields, methods, or constants inside of it.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine vendor",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are collections in Java?",
+    "short_answer": "Collections in Java is a unified framework that provides architecture for storing and manipulating a group of objects.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 54,
+    "is_top": true,
+    "options": [
+      "Collections in Java is a unified framework that provides architecture for storing and",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are the differences between arraylist and vector?",
+    "short_answer": "Both Vector and ArrayList use dynamically resizable array as their internal data structure and implement the List interface.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 55,
+    "is_top": true,
+    "options": [
+      "Both Vector and ArrayList use dynamically resizable array as their internal data structure and",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is finalize method? How do you override it?",
+    "short_answer": "The finalize() is a method from the Object class used to perform cleanup activity before destroying any object.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 56,
+    "is_top": true,
+    "options": [
+      "The finalize() is a method from the Object class used to perform cleanup activity before",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What Is the Difference Between the Comparable and Comparator Interfaces",
+    "short_answer": "Java provides Comparable and Comparator interfaces for sorting the collection of objects, but they serve different purposes and are used in different scenarios.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 57,
+    "is_top": true,
+    "options": [
+      "Java provides Comparable and Comparator interfaces for sorting the collection of objects, but",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What Is an inner class",
+    "short_answer": "An inner class is a class that is defined within another class. Inner classes are used to logically group classes that are only used in one place, increase encapsulation, and make code more readable and maintainable.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 58,
+    "is_top": true,
+    "options": [
+      "An inner class is a class that is defined within another class. Inner classes are used to",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between final, finally, and finalize() in Java?",
+    "short_answer": "The terms final, finally, and finalize() in Java look similar but serve completely different purposes.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 59,
+    "is_top": true,
+    "options": [
+      "The terms final, finally, and finalize() in Java look similar but serve completely different",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between '==' and equals() method?",
+    "short_answer": "Both == and .equals() methods are used to compare objects, but they work in different ways: 1.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 60,
+    "is_top": true,
+    "options": [
+      "Both == and .equals() methods are used to compare objects, but they work in different ways: 1.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is method overloading and method overriding?",
+    "short_answer": "Method overloading and method overriding are two important concepts in Java that enable polymorphism.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 61,
+    "is_top": true,
+    "options": [
+      "Method overloading and method overriding are two important concepts in Java that enable",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between HashMap and Hashtable?",
+    "short_answer": "Both HashMap and Hashtable are used to store key-value pairs in Java, but they have several important differences: | HashMap | Hashtable | |---------|-----------| | Not synchronized (not thread-safe) | Synchronized (thread-safe) | | Allows one null key and multiple null values | Does not allow null",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 62,
+    "is_top": true,
+    "options": [
+      "Both HashMap and Hashtable are used to store key-value pairs in Java, but they have several",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is Java Reflection API?",
+    "short_answer": "Java Reflection API is a powerful feature that allows programs to examine and modify the behavior of classes, interfaces, methods, and fields at runtime.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 63,
+    "is_top": true,
+    "options": [
+      "Java Reflection API is a powerful feature that allows programs to examine and modify the",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are the different types of memory areas allocated by JVM?",
+    "short_answer": "JVM allocates memory in different areas for efficient program execution. The main memory areas are: 1.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 64,
+    "is_top": true,
+    "options": [
+      "JVM allocates memory in different areas for efficient program execution. The main memory areas",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between throw and throws?",
+    "short_answer": "Both throw and throws are used in exception handling but serve different purposes. throw: - Used to explicitly throw an exception - Used inside a method body - Can throw only one exception at a time - Followed by an exception instance throws: - Used to declare exceptions that a method might throw -",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 65,
+    "is_top": true,
+    "options": [
+      "Both throw and throws are used in exception handling but serve different purposes. throw: -",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is a singleton class and how to create one?",
+    "short_answer": "A Singleton class is a design pattern that ensures only one instance of a class is created throughout the application lifecycle.",
+    "category": "Core Java",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 66,
+    "is_top": true,
+    "options": [
+      "A Singleton class is a design pattern that ensures only one instance of a class is created",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are Java 8 Stream API features?",
+    "short_answer": "Java 8 Stream API provides a functional approach to process collections of objects. Streams support sequential and parallel operations on data.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 67,
+    "is_top": true,
+    "options": [
+      "Java 8 Stream API provides a functional approach to process collections of objects. Streams",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between fail-fast and fail-safe iterators?",
+    "short_answer": "Iterators in Java can be categorized as fail-fast or fail-safe based on their behavior when the underlying collection is modified during iteration.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 68,
+    "is_top": true,
+    "options": [
+      "Iterators in Java can be categorized as fail-fast or fail-safe based on their behavior when",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between process and thread?",
+    "short_answer": "A process and a thread are both units of execution, but they differ significantly in their characteristics and usage.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 69,
+    "is_top": true,
+    "options": [
+      "A process and a thread are both units of execution, but they differ significantly in their",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are the different ways to create a thread in Java?",
+    "short_answer": "There are multiple ways to create a thread in Java: 1. Extending Thread class: ``java class MyThread extends Thread { @Override public void run() { System.out.println(\"Thread running: \" + Thread.currentThread().getName()); } } // Usage MyThread thread = new MyThread(); thread.start(); ` 2.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 70,
+    "is_top": true,
+    "options": [
+      "There are multiple ways to create a thread in Java: 1. Extending Thread class: ``java class",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is synchronization in Java?",
+    "short_answer": "Synchronization is a mechanism that ensures only one thread can access a shared resource at a time.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 71,
+    "is_top": true,
+    "options": [
+      "Synchronization is a mechanism that ensures only one thread can access a shared resource at a time.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine vendor",
+      "Legacy platform behavior that was officially deprecated and completely superseded in",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the application"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is deadlock and how to avoid it?",
+    "short_answer": "A deadlock is a situation where two or more threads are blocked forever, each waiting for the other to release a lock.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 72,
+    "is_top": true,
+    "options": [
+      "A deadlock is a situation where two or more threads are blocked forever, each waiting for the",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the volatile keyword in Java?",
+    "short_answer": "The volatile keyword in Java is used to indicate that a variable's value may be modified by different threads.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 73,
+    "is_top": true,
+    "options": [
+      "The volatile keyword in Java is used to indicate that a variable's value may be modified by",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the transient keyword in Java?",
+    "short_answer": "The transient keyword in Java is used to indicate that a field should not be serialized when the object is converted to a byte stream.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 74,
+    "is_top": true,
+    "options": [
+      "The transient keyword in Java is used to indicate that a field should not be serialized when",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is serialization and deserialization?",
+    "short_answer": "Serialization is the process of converting an object's state into a byte stream. Deserialization is the reverse process - converting a byte stream back into an object.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 75,
+    "is_top": true,
+    "options": [
+      "Serialization is the process of converting an object's state into a byte stream.",
+      "Alternative runtime specification handled differently across specialized non-standard",
+      "Legacy platform behavior that was officially deprecated and",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are functional interfaces in Java?",
+    "short_answer": "A functional interface is an interface that contains exactly one abstract method. They are the foundation for lambda expressions in Java 8.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 76,
+    "is_top": true,
+    "options": [
+      "A functional interface is an interface that contains exactly one abstract method. They are the",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are lambda expressions in Java?",
+    "short_answer": "Lambda expressions are anonymous functions that provide a concise way to implement functional interfaces.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 77,
+    "is_top": true,
+    "options": [
+      "Lambda expressions are anonymous functions that provide a concise way to implement functional",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is Optional class in Java 8?",
+    "short_answer": "The Optional class is a container object that may or may not contain a non-null value. It helps avoid NullPointerException and makes null handling more explicit.",
+    "category": "Core Java",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 78,
+    "is_top": true,
+    "options": [
+      "The Optional class is a container object that may or may not contain a non-null value. It",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Чем различаются JRE, JVM и JDK?",
+    "short_answer": "__JVM__, Java Virtual Machine (Виртуальная машина Java) — основная часть среды времени исполнения Java (JRE).",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 79,
+    "is_top": true,
+    "options": [
+      "__JVM__, Java Virtual Machine (Виртуальная машина Java) — основная часть среды времени",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Какие существуют модификаторы доступа?",
+    "short_answer": "__private__ (приватный): члены класса доступны только внутри класса. Для обозначения используется служебное слово private.",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 80,
+    "is_top": true,
+    "options": [
+      "__private__ (приватный): члены класса доступны только внутри класса. Для обозначения",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "О чем говорит ключевое слово final?",
+    "short_answer": "Модификатор final может применяться к переменным, параметрам методов, полям и методам класса или самим классам.",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 81,
+    "is_top": true,
+    "options": [
+      "Модификатор final может применяться к переменным, параметрам методов, полям и методам класса",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Какими значениями инициализируются переменные по умолчанию?",
+    "short_answer": "+ byte — (byte)0; + short — (short)0; + int — 0; + long — 0L; + floatg — 0f; + double — 0d; + char — \\u0000; + boolean — false; + Объекты (в том числе String) — null.",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 82,
+    "is_top": true,
+    "options": [
+      "+ byte — (byte)0; + short — (short)0; + int — 0; + long — 0L; + floatg — 0f; + double — 0d; +",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Что вы знаете о функции main()?",
+    "short_answer": "Метод main() — точка входа в программу. В приложении может быть несколько таких методов.",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 83,
+    "is_top": true,
+    "options": [
+      "Метод main() — точка входа в программу. В приложении может быть несколько таких методов.",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Какие логические операции и операторы вы знаете?",
+    "short_answer": "+ &: Логическое _AND_ (И); + &&: Сокращённое _AND_; + |: Логическое _OR_ (ИЛИ); + ||: Сокращённое _OR_; + ^: Логическое _XOR_ (исключающее _OR_ (ИЛИ)); + !: Логическое унарное _NOT_ (НЕ); + &=: _AND_ с присваиванием; + |=: _OR_ с присваиванием; + ^=: _XOR_ с присваиванием; + ==: Равно; + !=: Не равн",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 84,
+    "is_top": true,
+    "options": [
+      "+ &: Логическое _AND_ (И); + &&: Сокращённое _AND_; + |: Логическое _OR_ (ИЛИ); + ||",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Что такое тернарный оператор выбора?",
+    "short_answer": "Тернарный условный оператор ?: - оператор, которым можно заменить некоторые конструкции операторов if-then-else.",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 85,
+    "is_top": true,
+    "options": [
+      "Тернарный условный оператор ?: - оператор, которым можно заменить некоторые конструкции",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Какие побитовые операции вы знаете?",
+    "short_answer": "+ ~: Побитовый унарный оператор NOT; + &: Побитовый AND; + &=: Побитовый AND с присваиванием; + |: Побитовый OR; + |=: Побитовый OR с присваиванием; + ^: Побитовый исключающее XOR; + ^=: Побитовый исключающее XOR с присваиванием; + >>: Сдвиг вправо (деление на 2 в степени сдвига); + >>=: Сдвиг вправ",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 86,
+    "is_top": true,
+    "options": [
+      "+ ~: Побитовый унарный оператор NOT; + &: Побитовый AND; + &=: Побитовый AND с присваиванием",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Где и для чего используется модификатор abstract?",
+    "short_answer": "Класс, помеченный модификатором abstract, называется абстрактным классом. Такие классы могут выступать только предками для других классов.",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 87,
+    "is_top": true,
+    "options": [
+      "Класс, помеченный модификатором abstract, называется абстрактным классом. Такие классы могут",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Дайте определение понятию _«интерфейс»_. Какие модификаторы по умолчанию имеют поля и методы интерфейсов?",
+    "short_answer": "Ключевое слово interface используется для создания полностью абстрактных классов. Основное предназначение интерфейса - определять каким образом мы можем использовать класс, который его реализует.",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 88,
+    "is_top": true,
+    "options": [
+      "Ключевое слово interface используется для создания полностью абстрактных классов. Основное",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Чем абстрактный класс отличается от интерфейса? В каких случаях следует использовать абстрактный класс, а в каких интерфейс?",
+    "short_answer": "+ В Java класс может одновременно реализовать несколько интерфейсов, но наследоваться только от одного класса.",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 89,
+    "is_top": true,
+    "options": [
+      "+ В Java класс может одновременно реализовать несколько интерфейсов, но наследоваться только",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Почему в некоторых интерфейсах вообще не определяют методов?",
+    "short_answer": "Это так называемые _маркерные интерфейсы_. Они просто указывают что класс относится к определенному типу.",
+    "category": "Java Core",
+    "difficulty": "Junior",
+    "language": "Java",
+    "top_rank": 90,
+    "is_top": true,
+    "options": [
+      "Это так называемые _маркерные интерфейсы_. Они просто указывают что класс относится к",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Почему нельзя объявить метод интерфейса с модификатором final?",
+    "short_answer": "В случае интерфейсов указание модификатора final бессмысленно, т.к. все методы интерфейсов неявно объявляются как абстрактные, т.е.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 91,
+    "is_top": true,
+    "options": [
+      "В случае интерфейсов указание модификатора final бессмысленно, т.к. все методы интерфейсов",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Может ли объект получить доступ к члену класса, объявленному как private? Если да, то каким образом?",
+    "short_answer": "+ Внутри класса доступ к приватной переменной открыт без ограничений; + Вложенный класс имеет полный доступ ко всем (в том числе и приватным) членам содержащего его класса; + Доступ к приватным переменным извне может быть организован через отличные от приватных методов, которые предоставлены разрабо",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 92,
+    "is_top": true,
+    "options": [
+      "+ Внутри класса доступ к приватной переменной открыт без ограничений; + Вложенный класс имеет",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Каков порядок вызова конструкторов и блоков инициализации с учётом иерархии классов?",
+    "short_answer": "Сначала вызываются все статические блоки в очередности от первого статического блока корневого предка и выше по цепочке иерархии до статических блоков самого класса.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 93,
+    "is_top": true,
+    "options": [
+      "Сначала вызываются все статические блоки в очередности от первого статического блока корневого",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Зачем нужны и какие бывают блоки инициализации?",
+    "short_answer": "Блоки инициализации представляют собой код, заключенный в фигурные скобки и размещаемый внутри класса вне объявления методов или конструкторов.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 94,
+    "is_top": true,
+    "options": [
+      "Блоки инициализации представляют собой код, заключенный в фигурные скобки и размещаемый внутри",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "К каким конструкциям Java применим модификатор static?",
+    "short_answer": "+ полям; + методам; + вложенным классам; + блокам инициализации; + членам секции import.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 95,
+    "is_top": true,
+    "options": [
+      "+ полям; + методам; + вложенным классам; + блокам инициализации; + членам секции import.",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Для чего в Java используются статические блоки инициализации?",
+    "short_answer": "Статические блоки инициализация используются для выполнения кода, который должен выполняться один раз при инициализации класса загрузчиком классов, в момент, предшествующий созданию объектов этого класса при помощи конструктора.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 96,
+    "is_top": true,
+    "options": [
+      "Статические блоки инициализация используются для выполнения кода, который должен выполняться",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Что произойдёт, если в блоке инициализации возникнет исключительная ситуация?",
+    "short_answer": "Для нестатических блоков инициализации, если выбрасывание исключения прописано явным образом требуется, чтобы объявления этих исключений были перечислены в throws всех конструкторов класса.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 97,
+    "is_top": true,
+    "options": [
+      "Для нестатических блоков инициализации, если выбрасывание исключения прописано явным образом",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Какое исключение выбрасывается при возникновении ошибки в блоке инициализации класса?",
+    "short_answer": "Если возникшее исключение - наследник RuntimeException: + для статических блоков инициализации будет выброшено java.lang.ExceptionInInitializerError; + для нестатических будет проброшено исключение-источник.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 98,
+    "is_top": true,
+    "options": [
+      "Если возникшее исключение - наследник RuntimeException: + для статических блоков инициализации",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Может ли статический метод быть переопределён или перегружен?",
+    "short_answer": "Перегружен - да. Всё работает точно так же, как и с обычными методами - 2 статических метода могут иметь одинаковое имя, если количество их параметров или типов различается.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 99,
+    "is_top": true,
+    "options": [
+      "Перегружен - да. Всё работает точно так же, как и с обычными методами - 2 статических метода",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Могут ли нестатические методы перегрузить статические?",
+    "short_answer": "Да. В итоге получится два разных метода.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 100,
+    "is_top": true,
+    "options": [
+      "Да. В итоге получится два разных метода.",
+      "Альтернативное поведение виртуальной машины",
+      "Устаревшая спецификация платформы",
+      "Конфигурация параметров виртуальной"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Можно ли сузить уровень доступа/тип возвращаемого значения при переопределении метода?",
+    "short_answer": "+ При переопределении метода нельзя сузить модификатор доступа к методу (например с public в MainClass до private в Class extends MainClass).",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 101,
+    "is_top": true,
+    "options": [
+      "+ При переопределении метода нельзя сузить модификатор доступа к методу (например с public в",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Возможно ли при переопределении метода изменить: модификатор доступа, возвращаемый тип, тип аргумента или их количество, имена аргументов или их порядок; убирать, добавлять, изменять порядок следования элементов секции throws?",
+    "short_answer": "При переопределении метода сужать модификатор доступа не разрешается, т.к. это приведёт к нарушению принципа подстановки Барбары Лисков.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 102,
+    "is_top": true,
+    "options": [
+      "При переопределении метода сужать модификатор доступа не разрешается, т.к. это приведёт к",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Как получить доступ к переопределенным методам родительского класса?",
+    "short_answer": "С помощью ключевого слова super мы можем обратиться к любому члену родительского класса - методу или полю, если они не определены с модификатором private.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 103,
+    "is_top": true,
+    "options": [
+      "С помощью ключевого слова super мы можем обратиться к любому члену родительского класса -",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Можно ли объявить метод абстрактным и статическим одновременно?",
+    "short_answer": "Нет. В таком случае компилятор выдаст ошибку: _\"Illegal combination of modifiers: ‘abstract’ and ‘static’\"_.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 104,
+    "is_top": true,
+    "options": [
+      "Нет. В таком случае компилятор выдаст ошибку: _\"Illegal combination of modifiers: ‘abstract’",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "В чем разница между членом экземпляра класса и статическим членом класса?",
+    "short_answer": "Модификатор static говорит о том, что данный метод или поле принадлежат самому классу и доступ к ним возможен даже без создания экземпляра класса.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 105,
+    "is_top": true,
+    "options": [
+      "Модификатор static говорит о том, что данный метод или поле принадлежат самому классу и доступ",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Где разрешена инициализация статических/нестатических полей?",
+    "short_answer": "+ Статические поля можно инициализировать при объявлении, в статическом или нестатическом блоке инициализации.",
+    "category": "Java Core",
+    "difficulty": "Middle",
+    "language": "Java",
+    "top_rank": 106,
+    "is_top": true,
+    "options": [
+      "+ Статические поля можно инициализировать при объявлении, в статическом или нестатическом",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Какие типы классов бывают в java?",
+    "short_answer": "+ _Top level class_ (Обычный класс): + _Abstract class_ (Абстрактный класс); + _Final class_ (Финализированный класс).",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 107,
+    "is_top": true,
+    "options": [
+      "+ _Top level class_ (Обычный класс): + _Abstract class_ (Абстрактный класс); + _Final class_",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Расскажите про вложенные классы. В каких случаях они применяются?",
+    "short_answer": "Класс называется вложенным (_Nested class_), если он определен внутри другого класса. Вложенный класс должен создаваться только для того, чтобы обслуживать обрамляющий его класс.",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 108,
+    "is_top": true,
+    "options": [
+      "Класс называется вложенным (_Nested class_), если он определен внутри другого класса.",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Что такое _«статический класс»_?",
+    "short_answer": "Это вложенный класс, объявленный с использованием ключевого слова static. К классам верхнего уровня модификатор static неприменим.",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 109,
+    "is_top": true,
+    "options": [
+      "Это вложенный класс, объявленный с использованием ключевого слова static. К классам верхнего",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Какие существуют особенности использования вложенных классов: статических и внутренних? В чем заключается разница между ними?",
+    "short_answer": "+ Вложенные классы могут обращаться ко всем членам обрамляющего класса, в том числе и приватным.",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 110,
+    "is_top": true,
+    "options": [
+      "+ Вложенные классы могут обращаться ко всем членам обрамляющего класса, в том числе и приватным.",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов оптимизации",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Что такое _«локальный класс»_? Каковы его особенности?",
+    "short_answer": "__Local inner class__ (Локальный класс) - это вложенный класс, который может быть декларирован в любом блоке, в котором разрешается декларировать переменные.",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 111,
+    "is_top": true,
+    "options": [
+      "__Local inner class__ (Локальный класс) - это вложенный класс, который может быть декларирован",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Что такое _«анонимные классы»_? Где они применяются?",
+    "short_answer": "Это вложенный локальный класс без имени, который разрешено декларировать в любом месте обрамляющего класса, разрешающем размещение выражений.",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 112,
+    "is_top": true,
+    "options": [
+      "Это вложенный локальный класс без имени, который разрешено декларировать в любом месте",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Каким образом из вложенного класса получить доступ к полю внешнего класса?",
+    "short_answer": "Статический вложенный класс имеет прямой доступ только к статическим полям обрамляющего класса.",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 113,
+    "is_top": true,
+    "options": [
+      "Статический вложенный класс имеет прямой доступ только к статическим полям обрамляющего класса.",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов оптимизации",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Для чего используется оператор assert?",
+    "short_answer": "__Assert__ (Утверждение) — это специальная конструкция, позволяющая проверять предположения о значениях произвольных данных в произвольном месте программы.",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 114,
+    "is_top": true,
+    "options": [
+      "__Assert__ (Утверждение) — это специальная конструкция, позволяющая проверять предположения о",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Что такое _Heap_ и _Stack_ память в Java? Какая разница между ними?",
+    "short_answer": "__Heap (куча)__ используется Java Runtime для выделения памяти под объекты и классы. Создание нового объекта также происходит в куче.",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 115,
+    "is_top": true,
+    "options": [
+      "__Heap (куча)__ используется Java Runtime для выделения памяти под объекты и классы. Создание",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Верно ли утверждение, что примитивные типы данных всегда хранятся в стеке, а экземпляры ссылочных типов данных в куче?",
+    "short_answer": "Не совсем. Примитивное поле экземпляра класса хранится не в стеке, а в куче.",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 116,
+    "is_top": true,
+    "options": [
+      "Не совсем. Примитивное поле экземпляра класса хранится не в стеке, а в куче.",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора",
+      "Устаревшая спецификация платформы, полностью исключенная и",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Каким образом передаются переменные в методы, по значению или по ссылке?",
+    "short_answer": "В Java параметры всегда передаются только по значению, что определяется как «скопировать значение и передать копию».",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 117,
+    "is_top": true,
+    "options": [
+      "В Java параметры всегда передаются только по значению, что определяется как «скопировать",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Для чего нужен сборщик мусора?",
+    "short_answer": "Сборщик мусора (Garbage Collector) должен делать всего две вещи: + Находить мусор - неиспользуемые объекты.",
+    "category": "Java Core",
+    "difficulty": "Senior",
+    "language": "Java",
+    "top_rank": 118,
+    "is_top": true,
+    "options": [
+      "Сборщик мусора (Garbage Collector) должен делать всего две вещи: + Находить мусор -",
+      "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и",
+      "Устаревшая спецификация платформы, полностью исключенная и замененная",
+      "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are the possible ways to create objects in JavaScript",
+    "short_answer": "There are many ways to create objects in javascript as mentioned below: 1. Object literal syntax: The object literal syntax (or object initializer), is a comma-separated set of name-value pairs wrapped in curly braces.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 119,
+    "is_top": true,
+    "options": [
+      "There are many ways to create objects in javascript as mentioned below: 1. Object literal",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is a prototype chain",
+    "short_answer": "The prototype chain is a core concept in JavaScript’s inheritance model. It allows objects to inherit properties and methods from other objects.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 120,
+    "is_top": true,
+    "options": [
+      "The prototype chain is a core concept in JavaScript’s inheritance model. It allows objects to",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the Difference Between call, apply, and bind",
+    "short_answer": "In JavaScript, call, apply, and bind are methods that allow you to control the context (this value) in which a function is executed.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 121,
+    "is_top": true,
+    "options": [
+      "In JavaScript, call, apply, and bind are methods that allow you to control the context (this",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is JSON and its common operations",
+    "short_answer": "JSON (JavaScript Object Notation) is a lightweight, text-based data format that uses JavaScript object syntax for structuring data.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 122,
+    "is_top": true,
+    "options": [
+      "JSON (JavaScript Object Notation) is a lightweight, text-based data format that uses",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the purpose of the array slice method",
+    "short_answer": "The slice() method in JavaScript is used to extract a section of an array, returning a new array containing the selected elements.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 123,
+    "is_top": true,
+    "options": [
+      "The slice() method in JavaScript is used to extract a section of an array, returning a new",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the purpose of the array splice method",
+    "short_answer": "The splice() method in JavaScript is used to add, remove, or replace elements within an array.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 124,
+    "is_top": true,
+    "options": [
+      "The splice() method in JavaScript is used to add, remove, or replace elements within an array.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between slice and splice",
+    "short_answer": "Here are the key differences between slice() and splice() methods in JavaScript arrays: | slice() | splice() | | ------------------------------------------------- | --------------------------------------------------- | | Does not modify the original array (immutable) | Modifies the original array (m",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 125,
+    "is_top": true,
+    "options": [
+      "Here are the key differences between slice() and splice() methods in JavaScript arrays: |",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "How do you compare Object and Map",
+    "short_answer": "Objects and Maps both allow you to associate keys with values, retrieve those values, delete keys, and check if a key exists.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 126,
+    "is_top": true,
+    "options": [
+      "Objects and Maps both allow you to associate keys with values, retrieve those values, delete",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between == and === operators",
+    "short_answer": "JavaScript provides two types of equality operators: - Loose equality (==, !=): Performs type conversion if the types differ, comparing values after converting them to a common type.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 127,
+    "is_top": true,
+    "options": [
+      "JavaScript provides two types of equality operators: - Loose equality (==, !=): Performs type",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are lambda expressions or arrow functions",
+    "short_answer": "Arrow functions (also known as \"lambda expressions\") provide a concise syntax for writing function expressions in JavaScript.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 128,
+    "is_top": true,
+    "options": [
+      "Arrow functions (also known as \"lambda expressions\") provide a concise syntax for writing",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is a first class function",
+    "short_answer": "In JavaScript, first-class functions(first-class citizens) mean that functions are treated like any other variable.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 129,
+    "is_top": true,
+    "options": [
+      "In JavaScript, first-class functions(first-class citizens) mean that functions are treated",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is a first order function",
+    "short_answer": "A first-order function is a function that doesn’t accept another function as an argument and doesn’t return a function as its return value.",
+    "category": "JavaScript Core",
+    "difficulty": "Junior",
+    "language": "JavaScript",
+    "top_rank": 130,
+    "is_top": true,
+    "options": [
+      "A first-order function is a function that doesn’t accept another function as an argument and",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is a higher order function",
+    "short_answer": "A higher-order function is a function that either accepts another function as an argument, returns a function as its result, or both.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 131,
+    "is_top": true,
+    "options": [
+      "A higher-order function is a function that either accepts another function as an argument",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is a unary function",
+    "short_answer": "A unary function (also known as a monadic function) is a function that accepts exactly one argument.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 132,
+    "is_top": true,
+    "options": [
+      "A unary function (also known as a monadic function) is a function that accepts exactly one argument.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine vendor",
+      "Legacy platform behavior that was officially deprecated and completely superseded in",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the application"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the currying function",
+    "short_answer": "Currying is the process of transforming a function with multiple arguments into a sequence of nested functions, each accepting only one argument at a time.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 133,
+    "is_top": true,
+    "options": [
+      "Currying is the process of transforming a function with multiple arguments into a sequence of",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is a pure function",
+    "short_answer": "A pure function is a function whose output depends only on its input arguments and produces no side effects.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 134,
+    "is_top": true,
+    "options": [
+      "A pure function is a function whose output depends only on its input arguments and produces no",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are the benefits of pure functions",
+    "short_answer": "Some of the major benefits of pure functions are listed below, - Easier testing: Since output depends only on input, pure functions are simple to test.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 135,
+    "is_top": true,
+    "options": [
+      "Some of the major benefits of pure functions are listed below, - Easier testing: Since output",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the purpose of the let keyword",
+    "short_answer": "The let keyword in JavaScript is used to declare a block-scoped local variable. This means that variables declared with let are only accessible within the block, statement, or expression where they are defined.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 136,
+    "is_top": true,
+    "options": [
+      "The let keyword in JavaScript is used to declare a block-scoped local variable. This means",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the difference between let and var",
+    "short_answer": "You can list out the differences in a tabular format | var | let | | -------------------------------------------------------------- | --------------------------------------------- | | It has been available from the beginning of JavaScript | Introduced as part of ES6 | | It has function scope | It ha",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 137,
+    "is_top": true,
+    "options": [
+      "You can list out the differences in a tabular format | var | let | |",
+      "Alternative runtime specification handled differently across specialized",
+      "Legacy platform behavior that was officially deprecated and",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the reason to choose the name let as a keyword",
+    "short_answer": "The keyword let was chosen because it originates from mathematical notation, where \"let\" is used to introduce new variables (for example, \"let x = 5\").",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 138,
+    "is_top": true,
+    "options": [
+      "The keyword let was chosen because it originates from mathematical notation, where \"let\" is",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "How do you redeclare variables in a switch block without an error",
+    "short_answer": "When you try to redeclare variables using let or const in multiple case clauses of a switch statement, you will get a SyntaxError.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 139,
+    "is_top": true,
+    "options": [
+      "When you try to redeclare variables using let or const in multiple case clauses of a switch",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is the Temporal Dead Zone",
+    "short_answer": "The Temporal Dead Zone (TDZ) refers to the period between the start of a block and the point where a variable declared with let or const is initialized.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 140,
+    "is_top": true,
+    "options": [
+      "The Temporal Dead Zone (TDZ) refers to the period between the start of a block and the point",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is an IIFE (Immediately Invoked Function Expression)",
+    "short_answer": "IIFE (Immediately Invoked Function Expression) is a JavaScript function that runs as soon as it is defined.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 141,
+    "is_top": true,
+    "options": [
+      "IIFE (Immediately Invoked Function Expression) is a JavaScript function that runs as soon as",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "How do you decode or encode a URL in JavaScript?",
+    "short_answer": "encodeURI() function is used to encode an URL. This function requires a URL string as a parameter and return that encoded string.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 142,
+    "is_top": true,
+    "options": [
+      "encodeURI() function is used to encode an URL. This function requires a URL string as a",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is memoization",
+    "short_answer": "Memoization is a functional programming technique which attempts to increase a function’s performance by caching its previously computed results.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 143,
+    "is_top": true,
+    "options": [
+      "Memoization is a functional programming technique which attempts to increase a function’s",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is Hoisting",
+    "short_answer": "Hoisting is JavaScript's default behavior where variable and function declarations are moved to the top of their scope before code execution.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 144,
+    "is_top": true,
+    "options": [
+      "Hoisting is JavaScript's default behavior where variable and function declarations are moved",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are classes in ES6",
+    "short_answer": "In ES6, JavaScript classes are primarily syntactic sugar over JavaScript’s existing prototype-based inheritance.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 145,
+    "is_top": true,
+    "options": [
+      "In ES6, JavaScript classes are primarily syntactic sugar over JavaScript’s existing",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are closures",
+    "short_answer": "A closure is the combination of a function bundled(enclosed) together with its lexical environment within which that function was declared.",
+    "category": "JavaScript Core",
+    "difficulty": "Middle",
+    "language": "JavaScript",
+    "top_rank": 146,
+    "is_top": true,
+    "options": [
+      "A closure is the combination of a function bundled(enclosed) together with its lexical",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are modules",
+    "short_answer": "Modules refer to small units of independent, reusable code and also act as the foundation of many JavaScript design patterns.",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 147,
+    "is_top": true,
+    "options": [
+      "Modules refer to small units of independent, reusable code and also act as the foundation of",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Why do you need modules",
+    "short_answer": "Below are the list of benefits using modules in javascript ecosystem 1. Maintainability 2.",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 148,
+    "is_top": true,
+    "options": [
+      "Below are the list of benefits using modules in javascript ecosystem 1. Maintainability 2.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is scope in javascript",
+    "short_answer": "Scope is the accessibility of variables, functions, and objects in some particular part of your code during runtime.",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 149,
+    "is_top": true,
+    "options": [
+      "Scope is the accessibility of variables, functions, and objects in some particular part of",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is a service worker",
+    "short_answer": "A Service worker is basically a script (JavaScript file) that runs in the background, separate from a web page and provides features that don't need a web page or user interaction.",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 150,
+    "is_top": true,
+    "options": [
+      "A Service worker is basically a script (JavaScript file) that runs in the background, separate",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "How do you manipulate DOM using a service worker",
+    "short_answer": "Service worker can't access the DOM directly. But it can communicate with the pages it controls by responding to messages sent via the postMessage interface, and those pages can manipulate the DOM.",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 151,
+    "is_top": true,
+    "options": [
+      "Service worker can't access the DOM directly. But it can communicate with the pages it",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "How do you reuse information across service worker restarts",
+    "short_answer": "The problem with service worker is that it gets terminated when not in use, and restarted when it's next needed, so you cannot rely on global state within a service worker's onfetch and onmessage handlers.",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 152,
+    "is_top": true,
+    "options": [
+      "The problem with service worker is that it gets terminated when not in use, and restarted when",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is IndexedDB",
+    "short_answer": "IndexedDB is a low-level API for client-side storage of larger amounts of structured data, including files/blobs.",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 153,
+    "is_top": true,
+    "options": [
+      "IndexedDB is a low-level API for client-side storage of larger amounts of structured data",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is web storage",
+    "short_answer": "Web storage is an API that provides a mechanism by which browsers can store key/value pairs locally within the user's browser, in a much more intuitive fashion than using cookies.",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 154,
+    "is_top": true,
+    "options": [
+      "Web storage is an API that provides a mechanism by which browsers can store key/value pairs",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is a post message",
+    "short_answer": "Post message is a method that enables cross-origin communication between Window objects.(i.e, between a page and a pop-up that it spawned, or between a page and an iframe embedded within it).",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 155,
+    "is_top": true,
+    "options": [
+      "Post message is a method that enables cross-origin communication between Window objects.(i.e",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What is a Cookie",
+    "short_answer": "A cookie is a piece of data that is stored on your computer to be accessed by your browser.",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 156,
+    "is_top": true,
+    "options": [
+      "A cookie is a piece of data that is stored on your computer to be accessed by your browser.",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "Why do you need a Cookie",
+    "short_answer": "Cookies are used to remember information about the user profile(such as username). It basically involves two steps, 1.",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 157,
+    "is_top": true,
+    "options": [
+      "Cookies are used to remember information about the user profile(such as username). It",
+      "Alternative runtime specification handled differently across specialized non-standard virtual",
+      "Legacy platform behavior that was officially deprecated and completely",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during"
+    ],
+    "tags": [
+      "top"
+    ]
+  },
+  {
+    "question_text": "What are the options in a cookie",
+    "short_answer": "There are few below options available for a cookie, 1. By default, the cookie is deleted when the browser is closed but you can change this behavior by setting expiry date (in UTC time).",
+    "category": "JavaScript Core",
+    "difficulty": "Senior",
+    "language": "JavaScript",
+    "top_rank": 158,
+    "is_top": true,
+    "options": [
+      "There are few below options available for a cookie, 1. By default, the cookie is deleted when",
+      "Alternative runtime specification handled differently across specialized non-standard virtual machine",
+      "Legacy platform behavior that was officially deprecated and completely superseded",
+      "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
+    ],
+    "tags": [
+      "top"
+    ]
+  }
+]

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   TrendingUp, Menu, GraduationCap, Bug,
-  Zap, Mic, Link, Braces, X, ChevronUp, Lock,
+  Zap, Mic, Link, Braces, X, ChevronUp, Lock, Flame, SlidersHorizontal,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore, { readinessFromStats } from '../store/useStore';
@@ -20,10 +20,31 @@ const MODES = [
 ];
 const BOTTOM_VISIBLE = 4;
 
-const Header = ({ onSettingsClick, onProgressClick, onTrackClick }) => {
+const Header = ({ onSettingsClick, onProgressClick, onTrackClick, onTopClick, onFilterClick }) => {
   const { t } = useTranslation();
-  const { stats, learningMode, setLearningMode, canAccessMode, requestPaywall, todaySeen, dailyGoal, dailyDone } = useStore();
+  const {
+    stats,
+    learningMode,
+    setLearningMode,
+    canAccessMode,
+    requestPaywall,
+    todaySeen,
+    dailyGoal,
+    dailyDone,
+    selectedCategories,
+    selectedFrameworks,
+    selectedTopics,
+    selectedDifficulties,
+    filterOnlyTop,
+  } = useStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const activeFiltersCount =
+    (selectedCategories?.length || 0) +
+    (selectedFrameworks?.length || 0) +
+    (selectedTopics?.length || 0) +
+    (selectedDifficulties?.length || 0) +
+    (filterOnlyTop ? 1 : 0);
 
   const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
   const { readiness } = readinessFromStats(stats);
@@ -43,6 +64,16 @@ const Header = ({ onSettingsClick, onProgressClick, onTrackClick }) => {
               <span className="header-brand">Prep-It</span>
             </div>
             <div className="header-actions">
+              <button
+                className={`action-btn filter-btn ${activeFiltersCount > 0 ? 'has-active' : ''}`}
+                onClick={onFilterClick}
+                type="button"
+                aria-label={t('common.filters', 'Filters')}
+                title={t('common.filters', 'Filters')}
+              >
+                <SlidersHorizontal size={20} />
+                {activeFiltersCount > 0 && <span className="filter-badge">{activeFiltersCount}</span>}
+              </button>
               <button
                 className="action-btn"
                 onClick={onSettingsClick}
@@ -80,6 +111,16 @@ const Header = ({ onSettingsClick, onProgressClick, onTrackClick }) => {
           <button className="drawer-close" onClick={() => setDrawerOpen(false)} type="button"><X size={18} /></button>
         </div>
         <div className="drawer-modes">
+          <button
+            className="drawer-mode-btn"
+            style={{ gridColumn: '1 / -1', background: 'var(--cream)', border: '2px solid var(--ink)' }}
+            onClick={() => { setDrawerOpen(false); onTopClick?.(); }}
+            type="button"
+          >
+            <div className="drawer-mode-icon"><Flame size={22} color="#ff6b4a" /></div>
+            <span className="drawer-mode-label" style={{ fontWeight: 800 }}>{t('top.title', 'Top Questions')}</span>
+            <span className="pro-tag" style={{ background: 'var(--lime)', color: 'var(--ink)' }}>HOT</span>
+          </button>
           {MODES.map(({ id, icon: Icon, titleKey }) => {
             const locked = !canAccessMode(id);
             return (

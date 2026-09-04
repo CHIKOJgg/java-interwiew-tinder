@@ -147,12 +147,12 @@ async function checkCounter(userId, counterField, limits) {
   if (redis) {
     try {
       const val = await redis.get(`counter:${userId}:${counterField}`);
-      currentCount = val ? parseInt(val) : limits[counterField];
+      currentCount = val ? parseInt(val) : (limits[counterField] ?? 0);
     } catch {
-      currentCount = limits[counterField];
+      currentCount = limits[counterField] ?? 0;
     }
   } else {
-    currentCount = limits[counterField];
+    currentCount = limits[counterField] ?? 0;
   }
   const maxKey = MAX_FIELD[counterField];
   const max = Number((maxKey && limits[maxKey]) || (maxKey && FREE_DEFAULTS[maxKey]) || FREE_DEFAULTS.requests_per_day) || 0;

@@ -91,6 +91,16 @@ function auditQuestion(row, seenTexts) {
     flags.push('stub_only_options');
   }
 
+  // Length bias: correct answer option (options[0]) is an extreme length outlier (> 2.5x average of other options)
+  if (options.length >= 3) {
+    const correctLen = options[0].length;
+    const distractorLens = options.slice(1).map(o => o.length);
+    const avgDistractor = distractorLens.reduce((a, b) => a + b, 0) / distractorLens.length;
+    if (avgDistractor > 0 && correctLen > 2.5 * avgDistractor && correctLen - avgDistractor > 40) {
+      flags.push('options_length_bias');
+    }
+  }
+
   // Exact duplicate question text within the same language.
   if (seenTexts.has(key)) flags.push('duplicate_question');
   else seenTexts.add(key);

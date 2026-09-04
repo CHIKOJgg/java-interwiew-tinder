@@ -1670,7 +1670,201 @@ const migrations = [
       CROSS JOIN (SELECT id FROM learning_tracks WHERE name = 'TypeScript + React / Node' AND language = 'TypeScript' LIMIT 1) lt
       WHERE NOT EXISTS (SELECT 1 FROM track_steps WHERE track_id = lt.id);
     `
-  }
+  },
+  // ── 049: Frameworks, Topics & Tags schema and classification ────────
+  {
+    id: '049_frameworks_topics_tags',
+    sql: `
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS framework VARCHAR(100);
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
+      CREATE INDEX IF NOT EXISTS idx_questions_framework ON questions(framework);
+      CREATE INDEX IF NOT EXISTS idx_questions_topic ON questions(topic);
+      CREATE INDEX IF NOT EXISTS idx_questions_tags ON questions USING GIN(tags);
+
+      ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS selected_frameworks TEXT[];
+      ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS selected_topics TEXT[];
+
+      -- Spring Boot
+      UPDATE questions
+      SET framework = 'Spring Boot', tags = ARRAY['spring', 'spring-boot', 'web', 'microservices']
+      WHERE (question_text ILIKE '%spring boot%' OR question_text ILIKE '%actuator%' OR question_text ILIKE '%application.properties%' OR question_text ILIKE '%starter%')
+        AND (framework IS NULL OR framework = '');
+
+      -- Spring Framework (Core / IoC / DI / MVC)
+      UPDATE questions
+      SET framework = 'Spring Framework', tags = ARRAY['spring', 'ioc', 'di', 'beans', 'aop']
+      WHERE (category ILIKE '%spring%' OR question_text ILIKE '%@Autowired%' OR question_text ILIKE '%@Component%' OR question_text ILIKE '%@Bean%' OR question_text ILIKE '%ApplicationContext%')
+        AND (framework IS NULL OR framework = '');
+
+      -- Hibernate / JPA
+      UPDATE questions
+      SET framework = 'Hibernate / JPA', tags = ARRAY['hibernate', 'jpa', 'orm', 'database', 'sql']
+      WHERE (question_text ILIKE '%hibernate%' OR question_text ILIKE '%jpa%' OR question_text ILIKE '%@Entity%' OR question_text ILIKE '%criteria%' OR question_text ILIKE '%session%' OR question_text ILIKE '%lazy loading%')
+        AND (framework IS NULL OR framework = '');
+
+      -- Kafka / Messaging
+      UPDATE questions
+      SET framework = 'Kafka / Messaging', tags = ARRAY['kafka', 'messaging', 'mq', 'event-driven']
+      WHERE (question_text ILIKE '%kafka%' OR question_text ILIKE '%rabbit%' OR question_text ILIKE '%message queue%' OR question_text ILIKE '%consumer%' OR question_text ILIKE '%producer%')
+        AND (framework IS NULL OR framework = '');
+
+      -- Docker / Kubernetes
+      UPDATE questions
+      SET framework = 'Docker / K8s', tags = ARRAY['docker', 'kubernetes', 'container', 'devops']
+      WHERE (question_text ILIKE '%docker%' OR question_text ILIKE '%kubernetes%' OR question_text ILIKE '%k8s%' OR question_text ILIKE '%container%')
+        AND (framework IS NULL OR framework = '');
+
+      -- Testing frameworks
+      UPDATE questions
+      SET framework = 'JUnit / Mockito', tags = ARRAY['testing', 'junit', 'mockito', 'unit-test']
+      WHERE (category ILIKE '%test%' OR question_text ILIKE '%junit%' OR question_text ILIKE '%mockito%' OR question_text ILIKE '%@Test%')
+        AND (framework IS NULL OR framework = '');
+
+      -- Python Frameworks
+      UPDATE questions
+      SET framework = 'FastAPI', tags = ARRAY['fastapi', 'python', 'async', 'api']
+      WHERE language = 'Python' AND (question_text ILIKE '%fastapi%' OR category ILIKE '%fastapi%');
+
+      UPDATE questions
+      SET framework = 'Django', tags = ARRAY['django', 'python', 'orm', 'web']
+      WHERE language = 'Python' AND (question_text ILIKE '%django%' OR category ILIKE '%django%');
+
+      UPDATE questions
+      SET framework = 'PyTest', tags = ARRAY['pytest', 'python', 'testing']
+      WHERE language = 'Python' AND (question_text ILIKE '%pytest%' OR category ILIKE '%test%');
+
+      -- React
+      UPDATE questions
+      SET framework = 'React', tags = ARRAY['react', 'frontend', 'hooks', 'jsx']
+      WHERE (language = 'React' OR category ILIKE '%react%')
+        AND (framework IS NULL OR framework = '');
+
+      -- Topic classification
+      UPDATE questions
+      SET topic = 'Concurrency & Threads'
+      WHERE (category ILIKE '%multithread%' OR category ILIKE '%concurr%' OR question_text ILIKE '%thread%' OR question_text ILIKE '%synchronized%' OR question_text ILIKE '%volatile%' OR question_text ILIKE '%deadlock%')
+        AND (topic IS NULL OR topic = '');
+
+      UPDATE questions
+      SET topic = 'Collections & Data Structures'
+      WHERE (category ILIKE '%collection%' OR question_text ILIKE '%hashmap%' OR question_text ILIKE '%arraylist%' OR question_text ILIKE '%linkedlist%' OR question_text ILIKE '%treemap%')
+        AND (topic IS NULL OR topic = '');
+
+      UPDATE questions
+      SET topic = 'Memory & GC'
+      WHERE (category ILIKE '%jvm%' OR question_text ILIKE '%garbage collection%' OR question_text ILIKE '%heap%' OR question_text ILIKE '%metaspace%' OR question_text ILIKE '%g1%')
+        AND (topic IS NULL OR topic = '');
+
+      UPDATE questions
+      SET topic = 'OOP & Design Patterns'
+      WHERE (category ILIKE '%oop%' OR category ILIKE '%design pattern%' OR question_text ILIKE '%solid%' OR question_text ILIKE '%singleton%' OR question_text ILIKE '%factory%')
+        AND (topic IS NULL OR topic = '');
+
+      UPDATE questions
+      SET topic = 'Stream API & Functional'
+      WHERE (category ILIKE '%stream%' OR question_text ILIKE '%stream api%' OR question_text ILIKE '%lambda%' OR question_text ILIKE '%optional%')
+        AND (topic IS NULL OR topic = '');
+
+      UPDATE questions
+      SET topic = 'Database & SQL'
+      WHERE (category ILIKE '%database%' OR question_text ILIKE '%sql%' OR question_text ILIKE '%acid%' OR question_text ILIKE '%transaction%' OR question_text ILIKE '%index%')
+        AND (topic IS NULL OR topic = '');
+
+      UPDATE questions
+      SET topic = 'Exceptions & Error Handling'
+      WHERE (category ILIKE '%exception%' OR question_text ILIKE '%try-catch%' OR question_text ILIKE '%throwable%')
+        AND (topic IS NULL OR topic = '');
+
+      -- Fallback topic for any unclassified questions
+      UPDATE questions
+      SET topic = category
+      WHERE (topic IS NULL OR topic = '');
+    `
+  },
+  {
+    id: '050_top_interview_questions',
+    sql: `
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS is_top BOOLEAN DEFAULT FALSE;
+      ALTER TABLE questions ADD COLUMN IF NOT EXISTS top_rank INT;
+      CREATE INDEX IF NOT EXISTS idx_questions_is_top ON questions(is_top) WHERE is_top = TRUE;
+      CREATE INDEX IF NOT EXISTS idx_questions_top_rank ON questions(language, top_rank ASC) WHERE is_top = TRUE;
+
+      -- Mark prominent fundamental questions as top questions with rank
+      WITH ranked_seeds AS (
+        SELECT id, ROW_NUMBER() OVER (PARTITION BY language ORDER BY id ASC) as rank
+        FROM questions
+        WHERE is_active = TRUE
+          AND (
+            category ILIKE '%core%'
+            OR category ILIKE '%oop%'
+            OR category ILIKE '%collection%'
+            OR category ILIKE '%multithread%'
+            OR category ILIKE '%spring%'
+            OR category ILIKE '%concurr%'
+            OR question_text ILIKE '%equals%'
+            OR question_text ILIKE '%hashmap%'
+            OR question_text ILIKE '%jvm%'
+            OR question_text ILIKE '%deadlock%'
+            OR question_text ILIKE '%thread%'
+            OR question_text ILIKE '%interface%'
+            OR question_text ILIKE '%singleton%'
+          )
+      )
+      UPDATE questions q
+      SET is_top = TRUE,
+          top_rank = rs.rank,
+          tags = array_append(COALESCE(tags, '{}'), 'top')
+      FROM ranked_seeds rs
+      WHERE q.id = rs.id AND rs.rank <= 100;
+    `
+  },
+  {
+    id: '051_curated_modern_questions_and_balanced_options',
+    sql: `
+      INSERT INTO questions (
+        category, difficulty, question_text, short_answer, options,
+        language, framework, topic, is_top, top_rank, tags, is_active
+      )
+      VALUES
+        ('Multithreading', 'Senior', 'Почему в Java 21 виртуальный поток может «запиниться» (pinning) на carrier thread, и как этого избежать?', 'Поток пинится внутри блока synchronized или нативного вызова; для решения synchronized заменяют на ReentrantLock.', '["При входе в блок synchronized или вызове native-кода; для решения synchronized заменяют на ReentrantLock","При выполнении блокирующего сокетного I/O; для решения сокеты оборачивают в асинхронные каналы NIO","При превышении лимита размера стека фреймов; для решения увеличивают параметр JVM -XX:ThreadStackSize","При обращении к объектам в Old Generation GC; для решения включают флаг -XX:+UseZGCGenerational"]'::jsonb, 'Java', 'Virtual Threads', 'Concurrency', TRUE, 1, '["top","modern","Virtual Threads","Concurrency"]'::text[], TRUE),
+        ('Multithreading', 'Senior', 'В чем главное преимущество StructuredTaskScope по сравнению с CompletableFuture в Java 21?', 'Гарантирует объединение жизненного цикла дочерних задач в единый синтаксический блок с отменой при сбое.', '["Объединяет жизненный цикл дочерних подзадач в единый блок, отменяя остальные при первом сбое или таймауте","Автоматически переносит выполнение всех вычислительных потоков с CPU-ядер на GPU для ускорения вычислений","Полностью устраняет необходимость выделения оперативной памяти под стек вызовов для дочерних потоков","Позволяет передавать неизменяемые контекстные переменные между микросервисами без сериализации в JSON"]'::jsonb, 'Java', 'Structured Concurrency', 'Concurrency', TRUE, 2, '["top","modern","Structured Concurrency","Concurrency"]'::text[], TRUE),
+        ('Java Core', 'Middle', 'Как работает проверка исчерпываемости (exhaustiveness) в switch expressions с sealed-иерархиями в Java 21?', 'Компилятор знает все прямые подклассы sealed-типа и требует либо покрытия каждого из них, либо ветки default.', '["Компилятор знает всех прямых наследников sealed-типа и требует покрыть каждый класс либо указать default","JVM во время выполнения генерирует ветку default через динамический байт-код при обнаружении неизвестного типа","Разработчик обязан объявить специальную аннотацию @Exhaustive над выражением switch для контроля компилятора","Исчерпываемость проверяется только для enum-типов, а для sealed-классов всегда обязательна ветка default"]'::jsonb, 'Java', 'Modern Java', 'Language Features', TRUE, 3, '["top","modern","Modern Java","Language Features"]'::text[], TRUE),
+        ('JVM', 'Senior', 'Какое ключевое архитектурное улучшение получил Generational ZGC в Java 21 по сравнению с классическим ZGC?', 'Разделение кучи на поколения позволяет чаще собирать короткоживущие объекты, снижая нагрузку на CPU.', '["Разделение кучи на поколения позволяет чаще собирать молодые объекты, существенно снижая расход CPU","Переход на синхронный Stop-The-World алгоритм для ускорения освобождения непрерывных блоков памяти","Полный отказ от использования цветных указателей (colored pointers) и барьеров чтения (load barriers)","Интеграция со сжатием указателей (Compressed OOPs) для куч размером свыше 32 терабайт оперативной памяти"]'::jsonb, 'Java', 'Garbage Collection', 'Memory & GC', TRUE, 4, '["top","modern","Garbage Collection","Memory & GC"]'::text[], TRUE),
+        ('Spring', 'Senior', 'Зачем в Spring Boot 3 при компиляции в GraalVM Native Image необходим этап Ahead-Of-Time (AOT) генерации?', 'GraalVM требует закрытого мира: AOT заранее вычисляет граф бинов и регистрирует метаданные для рефлексии.', '["AOT заранее анализирует конфигурацию бинов и создает подсказки для рефлексии, нужные закрытому миру GraalVM","AOT выполняет предварительное шифрование байт-кода приложения для защиты от декомпиляции в облачной среде","AOT компилирует все входящие SQL-запросы в бинарные функции драйвера базы данных для исключения сетевых задержек","AOT запускает встроенный контейнер Tomcat во время сборки и замораживает его состояние в оперативной памяти"]'::jsonb, 'Java', 'Spring Boot 3', 'Native Compilation', TRUE, 5, '["top","modern","Spring Boot 3","Native Compilation"]'::text[], TRUE),
+        ('Spring', 'Middle', 'Что представляют собой HTTP Interfaces (@HttpExchange), появившиеся в Spring Framework 6 / Spring Boot 3?', 'Декларативные интерфейсы HTTP-клиентов с аннотациями обмена, генерируемые через HttpServiceProxyFactory.', '["Декларативное описание HTTP-клиентов через интерфейс с аннотациями, проксируемое поверх WebClient или RestClient","Специальные контроллеры для автоматической генерации Swagger-документации без использования аннотаций OpenAPI","Новый механизм маршрутизации входящих веб-сокетов с поддержкой аппаратного ускорения сетевых протоколов HTTP/3","Фильтры безопасности для проверки валидности JWT-токенов на уровне сетевого драйвера операционной системы"]'::jsonb, 'Java', 'Spring Boot 3', 'Web & REST', TRUE, 6, '["top","modern","Spring Boot 3","Web & REST"]'::text[], TRUE),
+        ('Microservices', 'Senior', 'Чем Cooperative Sticky Assignor в Apache Kafka отличается от классического Eager Rebalance?', 'Не отзывает все партиции у консьюмеров при ребалансировке, отзывая только перемещаемые партиции без простоя.', '["Отзывает только те партиции, которые нужно перенести на другой консьюмер, исключая общий stop-the-world простой","Назначает все партиции одному лидер-консьюмеру, а остальные инстансы держит в горячем резерве без чтения данных","Блокирует отправку новых сообщений брокером до тех пор, пока все консьюмеры группы не подтвердят получение оффсетов","Переносит партиции между консьюмерами только в момент плановой перезагрузки брокера Apache Kafka по протоколу Raft"]'::jsonb, 'Java', 'Kafka', 'Messaging', TRUE, 7, '["top","modern","Kafka","Messaging"]'::text[], TRUE),
+        ('Microservices', 'Middle', 'Как Kafka продюсер гарантирует идемпотентность (enable.idempotence=true) при повторных сетевых отправках?', 'Брокер присваивает продюсеру уникальный Producer ID, а сообщениям порядковые номера в рамках партиции.', '["Брокер выделяет продюсеру Producer ID (PID) и отслеживает порядковые Sequence Number для каждой партиции","Продюсер перед каждой отправкой выполняет распределенную блокировку партиции в координаторе кластера KRaft","Брокер сохраняет SHA-256 хеш каждого сообщения в оперативной памяти на протяжении ровно двадцати четырех часов","Продюсер ожидает синхронного ответа от всех брокеров кластера перед переходом к сериализации следующего батча"]'::jsonb, 'Java', 'Kafka', 'Messaging', TRUE, 8, '["top","modern","Kafka","Messaging"]'::text[], TRUE),
+        ('Microservices', 'Senior', 'Какую проблему в распределенных системах решает шаблон Transactional Outbox?', 'Гарантирует атомарность между изменением данных в БД и публикацией события в брокер сообщений.', '["Гарантирует атомарность обновления локальной базы данных и отправки сообщения в брокер без двухфазного коммита","Обеспечивает автоматическое горизонтальное масштабирование очередей сообщений при пиковых всплесках трафика","Шифрует заголовки сетевых пакетов между микросервисами для защиты от атак типа man-in-the-middle в сети","Предотвращает возникновение циклических зависимостей между сервисами при использовании протокола gRPC"]'::jsonb, 'Java', 'Architecture', 'Distributed Systems', TRUE, 9, '["top","modern","Architecture","Distributed Systems"]'::text[], TRUE),
+        ('Microservices', 'Senior', 'В чем главное преимущество оркестрируемой Saga над хореографической при сложных бизнес-процессах?', 'Централизованная логика координации, простота мониторинга состояния и отсутствие запутанных циклических связей.', '["Централизованный контроль шагов процесса и компенсирующих транзакций, предотвращающий запутанные циклические связи","Полное отсутствие сетевых вызовов между микросервисами благодаря выполнению всего кода в общей разделяемой памяти","Автоматическая изоляция уровня Serializable для распределенных транзакций без использования блокировок строк","Возможность отката уже закоммиченных локальных транзакций в реляционных базах данных без компенсирующих действий"]'::jsonb, 'Java', 'Architecture', 'Distributed Systems', TRUE, 10, '["top","modern","Architecture","Distributed Systems"]'::text[], TRUE),
+        ('TypeScript Core', 'Middle', 'Чем оператор satisfies в TypeScript 5 отличается от явной аннотации типа (const obj: Type = ...)?', 'Проверяет соответствие типу Type, но сохраняет наиболее узкий (литеральный) выведенный тип выражения.', '["Проверяет соответствие типу, но сохраняет точный литеральный выведенный тип объекта без расширения до общего типа","Выполняет динамическую валидацию схемы данных в рантайме JavaScript аналогично библиотекам Zod и Yup","Принудительно приводит тип выражения к any во время выполнения для обхода строгих проверок компилятора","Создает глубокую неизменяемую копию переданного объекта с блокировкой добавления новых свойств в Object"]'::jsonb, 'TypeScript', 'TypeScript 5', 'Type System', TRUE, 11, '["top","modern","TypeScript 5","Type System"]'::text[], TRUE),
+        ('TypeScript Core', 'Senior', 'Зачем в TypeScript 5 добавили const модификатор для type parameters (<const T>)?', 'Заставляет компилятор автоматически выводить литеральные и readonly-типы для аргументов без as const.', '["Заставляет TypeScript по умолчанию выводить глубокие литеральные типы аргументов без явного указания as const","Запрещает переопределение дженерик-типа в классах-наследниках на уровне синтаксического анализатора кода","Оптимизирует компиляцию больших проектов, кэшируя абстрактное синтаксическое дерево неизменяемых функций","Гарантирует, что переданная в функцию переменная не может быть переприсвоена внутри тела самой функции"]'::jsonb, 'TypeScript', 'TypeScript 5', 'Generics', TRUE, 12, '["top","modern","TypeScript 5","Generics"]'::text[], TRUE),
+        ('React', 'Senior', 'Какое ограничение накладывается на пропсы, передаваемые из Server Component в Client Component (''use client'') в React 19?', 'Пропсы должны быть сериализуемыми значениями (JSON-подобными или Promise), функции передавать нельзя.', '["Пропсы должны быть сериализуемыми (примитивы, простые объекты, Promise), обычные функции передавать нельзя","Client Component может принимать исключительно строковые значения, а числа должны передаваться в URL-параметрах","Размер всех пропсов клиентского компонента жестко ограничен шестнадцатью килобайтами в сжатом виде gzip","Все передаваемые объекты обязаны быть экземплярами классов, унаследованных от базового класса React.Component"]'::jsonb, 'TypeScript', 'React 19', 'Server Components', TRUE, 13, '["top","modern","React 19","Server Components"]'::text[], TRUE),
+        ('React', 'Middle', 'Для чего в React 19 предназначен новый хук useActionState (ранее useFormState)?', 'Управляет состоянием асинхронного Action, возвращая текущее состояние, функцию запуска и статус isPending.', '["Управляет состоянием асинхронных Server/Client Actions, возвращая результат, функцию вызова и флаг isPending","Заменяет глобальный Redux-стор на легковесный контекст с автоматической синхронизацией через LocalStorage","Перехватывает необработанные ошибки в дочернем дереве компонентов вместо стандартного метода componentDidCatch","Оптимизирует отрисовку тяжелых списков с помощью виртуализации узлов DOM-дерева в фоновом web-worker"]'::jsonb, 'TypeScript', 'React 19', 'Hooks & Forms', TRUE, 14, '["top","modern","React 19","Hooks & Forms"]'::text[], TRUE),
+        ('TypeScript Core', 'Middle', 'В каком порядке и когда в JavaScript Event Loop очищается очередь микротасок (microtask queue)?', 'Очередь микротасок выполняется полностью сразу после текущего синхронного стека перед любой макротаской.', '["Выполняется полностью сразу после завершения текущего синхронного кода перед следующей макротаской и рендером","Выполняется строго один раз в секунду по системному таймеру операционной системы параллельно с макротасками","Обрабатывается порциями по 10 задач исключительно после завершения всех таймеров setTimeout и сетевых запросов","Запускается только тогда, когда стек вызовов и очередь макротасок одновременно становятся абсолютно пустыми"]'::jsonb, 'TypeScript', 'Node.js', 'Event Loop', TRUE, 15, '["top","modern","Node.js","Event Loop"]'::text[], TRUE),
+        ('Python Core', 'Senior', 'Что представляет собой инициатива Free-threaded CPython (PEP 703), представленная в Python 3.12/3.13?', 'Опциональная сборка CPython без глобальной блокировки интерпретатора (GIL) с потокобезопасным подсчетом ссылок.', '["Возможность запуска CPython без GIL (--disable-gil) с параллельным исполнением байт-кода на нескольких CPU","Автоматическая трансляция Python-скриптов в машинный бинарный код LLVM без участия стандартного интерпретатора","Замена механизма подсчета ссылок на сборщик мусора Mark-and-Sweep для полного устранения циклических ссылок","Встроенная поддержка асинхронного выполнения синхронных блокирующих функций через технологию eBPF в ядре Linux"]'::jsonb, 'Python', 'Python 3.12+', 'GIL & Concurrency', TRUE, 16, '["top","modern","Python 3.12+","GIL & Concurrency"]'::text[], TRUE),
+        ('Python Core', 'Senior', 'Почему в современном Python (3.11+) рекомендуется использовать asyncio.TaskGroup вместо asyncio.gather?', 'TaskGroup реализует structured concurrency: при исключении в одной задаче остальные надежно отменяются.', '["TaskGroup гарантирует отмену всех остальных подзадач при падении одной из них и выбрасывает ExceptionGroup","TaskGroup выполняет корутины в отдельных системных процессах операционной системы для обхода ограничений GIL","TaskGroup автоматически преобразует синхронные блокирующие вызовы библиотек requests и time в асинхронные","TaskGroup исключает накладные расходы на создание контекстных менеджеров за счет раннего выделения стека"]'::jsonb, 'Python', 'Async/Await', 'Structured Concurrency', TRUE, 17, '["top","modern","Async/Await","Structured Concurrency"]'::text[], TRUE),
+        ('Python Core', 'Middle', 'В чем преимущество нового оператора `type` (PEP 695), появившегося в Python 3.12, для создания type aliases?', 'Синтаксис объявляет лениво вычисляемые псевдонимы типов со встроенной поддержкой generic параметров.', '["Создает лениво вычисляемый псевдоним типа с лаконичным синтаксисом дженериков без TypeVar и импорта TypeAlias","Проверяет типы переданных параметров функции во время выполнения и бросает исключение TypeError при несовпадении","Компилирует аннотации типов в C-структуры для существенного ускорения работы математических вычислений NumPy","Позволяет создавать множественное наследование от встроенных примитивных типов int и str без ограничений метаклассов"]'::jsonb, 'Python', 'Modern Python', 'Type Hints', TRUE, 18, '["top","modern","Modern Python","Type Hints"]'::text[], TRUE),
+        ('Python Core', 'Middle', 'В чем разница в выполнении эндпоинта в FastAPI, если объявить его как `def endpoint()` вместо `async def endpoint()`?', 'Обычный def запускается в отдельном потоке из threadpool, а async def выполняется напрямую в event loop.', '["Обычный def запускается во внешнем пуле потоков (threadpool), а async def выполняется прямо в главном event loop","Обычный def не поддерживает валидацию входящих моделей Pydantic и возвращает сырой HTTP-ответ клиенту","Функция async def выполняется в отдельном системном процессе операционной системы через модуль multiprocessing","Между ними нет никакой разницы, так как компилятор AnyIO автоматически преобразует def в корутину async def"]'::jsonb, 'Python', 'FastAPI', 'Web Frameworks', TRUE, 19, '["top","modern","FastAPI","Web Frameworks"]'::text[], TRUE),
+        ('Go Core', 'Senior', 'Как устроена модель M:P:N (G-M-P) планировщика Go, и какую роль в ней играет абстракция P (Processor)?', 'P представляет логический контекст исполнения с локальной очередью горутин, привязываемый к системному потоку M.', '["P представляет логический контекст выполнения с локальной очередью горутин, связывающий поток ОС (M) и горутину (G)","P отвечает за предварительную компиляцию байт-кода горутины в процессорные инструкции непосредственно перед запуском","P является физическим ядром процессора, на которое Go runtime жестко привязывает системные прерывания операционной системы","P хранит глобальный стек вызовов всех горутин и синхронизирует выделение блоков памяти между потоками без блокировок"]'::jsonb, 'Go', 'Go Runtime', 'Concurrency', TRUE, 20, '["top","modern","Go Runtime","Concurrency"]'::text[], TRUE),
+        ('Go Core', 'Senior', 'Какая ключевая структура данных лежит в основе канала в Go runtime, и как она защищена от гонок?', 'Структура hchan содержит кольцевой буфер, очереди ожидающих горутин recvq/sendq и встроенный мьютекс lock.', '["Структура hchan с кольцевым циклическим буфером, очередями ожидания горутин (waitq) и встроенным мьютексом lock","Атомарный lock-free связный список на базе CAS-инструкций процессора без использования внутренних мьютексов","Специальный кольцевой буфер операционной системы Linux pipe с разделяемой памятью между потоками процесса","Двусвязный список указателей на стек горутин, защищенный RCU (Read-Copy-Update) блокировкой ядра runtime"]'::jsonb, 'Go', 'Go Runtime', 'Channels', TRUE, 21, '["top","modern","Go Runtime","Channels"]'::text[], TRUE),
+        ('Go Core', 'Middle', 'В каких случаях компилятор Go при Escape Analysis принимает решение выделить переменную в куче (heap), а не на стеке?', 'Когда указатель на переменную выходит за пределы функции, передается в interface{} или ее размер неизвестен.', '["Когда ссылка на переменную покидает область видимости функции, передается в interface{} или размер неизвестен","Когда функция содержит более трех циклов for или содержит вызов любой стандартной функции из пакета math","Когда локальная переменная объявлена с использованием оператора := вместо явного ключевого слова var в коде","Исключительно тогда, когда объем доступной оперативной памяти превышает восемьдесят процентов от общего объема"]'::jsonb, 'Go', 'Go Runtime', 'Memory & Performance', TRUE, 22, '["top","modern","Go Runtime","Memory & Performance"]'::text[], TRUE),
+        ('Microservices', 'Middle', 'Как правильно реализовать паттерн Idempotency Key в платежных или критических REST API?', 'Клиент передает уникальный UUID в заголовке, сервер атомарно фиксирует статус обработки и кэширует ответ.', '["Клиент шлет уникальный UUID в заголовке, сервер атомарно резервирует ключ в БД/Redis и кэширует готовый ответ","Сервер вычисляет MD5-хеш IP-адреса клиента и отклоняет любые повторные сетевые пакеты в течение одного часа","Клиент отправляет запрос строго по протоколу UDP с подтверждением доставки через контрольную сумму заголовка","Сервер выполняет блокировку всей таблицы заказов в базе данных до завершения обработки сетевого соединения"]'::jsonb, 'Java', 'Architecture', 'Distributed Systems', TRUE, 23, '["top","modern","Architecture","Distributed Systems"]'::text[], TRUE),
+        ('Java Core', 'Junior', 'Какими свойствами по умолчанию обладает класс типа record в современном синтаксисе Java?', 'Является final классом, все поля final и private, генерирует канонический конструктор, equals, hashCode и toString.', '["Класс является final, все поля private final, автоматически создаются геттеры, equals(), hashCode() и toString()","Класс может наследоваться от абстрактных классов и позволяет динамически мутировать свои поля через сеттеры","Все поля записи автоматически сохраняются в постоянное дисковое хранилище при завершении виртуальной машины","Экземпляр записи всегда сериализуется исключительно в бинарный формат Protobuf без поддержки JSON-сериализации"]'::jsonb, 'Java', 'Modern Java', 'OOP & Records', TRUE, 24, '["top","modern","Modern Java","OOP & Records"]'::text[], TRUE),
+        ('Database', 'Middle', 'Как наиболее эффективно предотвратить проблему N+1 SELECT в Spring Data JPA при выборке связанных сущностей?', 'Использовать JOIN FETCH в JPQL запросе или аннотацию @EntityGraph для жадной загрузки за один SQL запрос.', '["Использовать предложение JOIN FETCH в JPQL-запросе либо декларативную аннотацию @EntityGraph над методом репозитория","Установить глобальный параметр FetchType.EAGER на все связи @OneToMany в доменных сущностях проекта","Увеличить размер пула соединений HikariCP в конфигурационном файле application.properties в четыре раза","Отключить кэш первого уровня Hibernate в свойствах EntityManagerFactory перед выполнением выборки из базы"]'::jsonb, 'Java', 'Spring Data JPA', 'JPA & Hibernate', TRUE, 25, '["top","modern","Spring Data JPA","JPA & Hibernate"]'::text[], TRUE)
+      ON CONFLICT (question_text, language)
+      DO UPDATE SET
+        category = EXCLUDED.category,
+        difficulty = EXCLUDED.difficulty,
+        short_answer = EXCLUDED.short_answer,
+        options = EXCLUDED.options,
+        framework = EXCLUDED.framework,
+        topic = EXCLUDED.topic,
+        is_top = TRUE,
+        top_rank = EXCLUDED.top_rank,
+        tags = ARRAY(SELECT DISTINCT unnest(array_cat(COALESCE(questions.tags, '{}'), EXCLUDED.tags))),
+        is_active = TRUE;
+    `
+  },
 ];
 
 async function runMigrations(dbPool) {

@@ -112,7 +112,8 @@ describe('Auth Integration Tests', () => {
       pool.query
         .mockResolvedValueOnce({ rows: [{ known_count: 5, unknown_count: 10, total_seen: 15 }] }) // result
         .mockResolvedValueOnce({ rows: [{ total: 100 }] }) // totalResult
-        .mockResolvedValueOnce({ rows: [{ current_streak: 2, longest_streak: 5 }] }); // userStreak
+        .mockResolvedValueOnce({ rows: [{ current_streak: 2, longest_streak: 5 }] }) // userStreak
+        .mockResolvedValueOnce({ rows: [{ language: 'Java', known_count: 5, unknown_count: 10, total_seen: 15 }] }); // langBreakdown
 
       const response = await request(app)
         .get('/api/stats')

@@ -15,7 +15,9 @@ const TrackDetail = lazy(() => import('./components/TrackDetail'));
 const CompaniesScreen = lazy(() => import('./components/CompaniesScreen'));
 const PeerInterviewScreen = lazy(() => import('./components/PeerInterviewScreen'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
+const TopQuestionsScreen = lazy(() => import('./components/TopQuestionsScreen'));
 import CategorySelection from './components/CategorySelection';
+import QuickFilterBar from './components/QuickFilterBar';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import LanguageSelection from './components/LanguageSelection';
 import ReportSheet from './components/ReportSheet';
@@ -412,7 +414,7 @@ if (initState === 'landing') {
   />;
 if (screen === 'track-detail') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TrackDetail trackId={currentTrackId} onStart={() => { useStore.getState().startTrack(currentTrackId); setScreen('main'); }} onBack={() => setScreen('tracks')} /></Suspense>;
    if (screen === 'companies') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><CompaniesScreen onBack={() => setScreen('main')} /></Suspense>;
-   if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('language')} />;
+   if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('main')} />;
   if (screen === 'resume') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ResumeAnalyzer onBack={() => setScreen('main')} onStartPractice={() => { useStore.getState().setLearningMode('swipe'); setScreen('main'); }} /></Suspense>;
   if (screen === 'vacancy') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><VacancyPrep onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'trends') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><MarketTrends onBack={() => setScreen('main')} /></Suspense>;
@@ -424,6 +426,7 @@ if (screen === 'track-detail') return <Suspense fallback={<div className="app-lo
 if (screen === 'achievements') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AchievementScreen onBack={() => setScreen('main')} /></Suspense>;
    if (screen === 'profile') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProfileScreen onBack={() => setScreen('main')} onSettingsClick={() => setScreen('settings')} /></Suspense>;
    if (screen === 'settings') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><Settings onBack={() => setScreen('main')} onNavigate={(s) => setScreen(s)} onExport={exportProgress} onHelp={handleHelp} /></Suspense>;
+   if (screen === 'top-questions') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TopQuestionsScreen onBack={() => setScreen('main')} onPractice={() => setScreen('main')} /></Suspense>;
    if (screen === 'peer-interview') {
      if (!useStore.getState().canAccessMode('peer-interview')) {
        return (
@@ -567,8 +570,13 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
          onProfileClick={() => setScreen('profile')}
          onPeerInterviewClick={() => setScreen('peer-interview')}
          onCompaniesClick={() => setScreen('companies')}
+         onTopClick={() => setScreen('top-questions')}
+         onFilterClick={() => setScreen('category')}
          />
       <div className="card-container">
+        {['swipe', 'test', 'bug-hunting', 'blitz', 'code-completion'].includes(learningMode) && (
+          <QuickFilterBar onOpenFilters={() => setScreen('category')} />
+        )}
         <Suspense fallback={<SkeletonCard />}>
           {renderMode()}
         </Suspense>

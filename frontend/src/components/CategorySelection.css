@@ -428,6 +428,122 @@
   border-color: var(--ink);
 }
 
+/* ─── Search and Filter Tabs ─── */
+.filter-search-box {
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.filter-search-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ink);
+  outline: none;
+  box-sizing: border-box;
+  transition: box-shadow 0.15s;
+}
+
+.filter-search-input:focus {
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-tab {
+  flex: 1;
+  min-width: 90px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 2px solid var(--ink);
+  background: var(--cream);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.filter-tab.active {
+  background: var(--ink);
+  color: #ffffff;
+  border-color: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.filter-tab:active {
+  transform: scale(0.97);
+}
+
+.filter-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--lime);
+  color: var(--ink);
+}
+
+.filter-tab.active .filter-tab-badge {
+  background: var(--lime);
+  color: var(--ink);
+}
+
+.empty-filter-state {
+  text-align: center;
+  padding: 30px 16px;
+  color: var(--ink-soft);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+}
+
+.filter-footer-btns {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.filter-reset-btn {
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.filter-reset-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
 @media (max-width: 600px) {
   .category-selection { padding: 14px; }
   .category-header h1 { font-size: 22px; }

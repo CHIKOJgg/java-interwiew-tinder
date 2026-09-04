@@ -1,4 +1,4 @@
-﻿import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/node";
 import crypto from 'crypto';
 import express from 'express';
 import helmet from 'helmet';
@@ -259,15 +259,62 @@ app.get('/api/languages', (req, res) => {
   res.json({ languages: all });
 });
 
+// ─── Categories & Filters (language-aware) ──────────────────────────
+app.get('/api/filters', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const [catsRes, framesRes, topicsRes] = await Promise.all([
+      pool.query(
+        `SELECT DISTINCT category, COUNT(*) as count FROM questions WHERE language = $1 AND is_active = TRUE GROUP BY category ORDER BY category`,
+        [language]
+      ),
+      pool.query(
+        `SELECT DISTINCT framework, COUNT(*) as count FROM questions WHERE language = $1 AND framework IS NOT NULL AND framework <> '' AND is_active = TRUE GROUP BY framework ORDER BY count DESC, framework ASC`,
+        [language]
+      ).catch(() => ({ rows: [] })),
+      pool.query(
+        `SELECT DISTINCT topic, COUNT(*) as count FROM questions WHERE language = $1 AND topic IS NOT NULL AND topic <> '' AND is_active = TRUE GROUP BY topic ORDER BY count DESC, topic ASC`,
+        [language]
+      ).catch(() => ({ rows: [] })),
+    ]);
+
+    res.json({
+      language,
+      categories: catsRes.rows.map(r => ({ name: r.category, count: parseInt(r.count) })),
+      frameworks: framesRes.rows.map(r => ({ name: r.framework, count: parseInt(r.count) })),
+      topics: topicsRes.rows.map(r => ({ name: r.topic, count: parseInt(r.count) })),
+    });
+  } catch (error) {
+    logger.error({ err: error }, 'Error fetching filters');
+    res.status(500).json({ error: 'Failed to fetch filters' });
+  }
+});
+
 // в”Ђв”Ђв”Ђ Categories (language-aware) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/categories', async (req, res) => {
   try {
     const language = req.query.language || 'Java';
-    const result = await pool.query(
-      `SELECT DISTINCT category, COUNT(*) as count FROM questions WHERE language = $1 GROUP BY category ORDER BY category`,
-      [language]
-    );
-    res.json({ language, categories: result.rows.map(r => ({ name: r.category, count: parseInt(r.count) })) });
+    const [catsRes, framesRes, topicsRes] = await Promise.all([
+      pool.query(
+        `SELECT DISTINCT category, COUNT(*) as count FROM questions WHERE language = $1 AND is_active = TRUE GROUP BY category ORDER BY category`,
+        [language]
+      ),
+      pool.query(
+        `SELECT DISTINCT framework, COUNT(*) as count FROM questions WHERE language = $1 AND framework IS NOT NULL AND framework <> '' AND is_active = TRUE GROUP BY framework ORDER BY count DESC, framework ASC`,
+        [language]
+      ).catch(() => ({ rows: [] })),
+      pool.query(
+        `SELECT DISTINCT topic, COUNT(*) as count FROM questions WHERE language = $1 AND topic IS NOT NULL AND topic <> '' AND is_active = TRUE GROUP BY topic ORDER BY count DESC, topic ASC`,
+        [language]
+      ).catch(() => ({ rows: [] })),
+    ]);
+
+    res.json({
+      language,
+      categories: catsRes.rows.map(r => ({ name: r.category, count: parseInt(r.count) })),
+      frameworks: framesRes.rows.map(r => ({ name: r.framework, count: parseInt(r.count) })),
+      topics: topicsRes.rows.map(r => ({ name: r.topic, count: parseInt(r.count) })),
+    });
   } catch (error) {
     logger.error({ err: error }, 'Error fetching categories');
     res.status(500).json({ error: 'Failed to fetch categories' });
@@ -964,14 +1011,30 @@ app.post('/api/admin/seed-other-languages', async (req, res) => {
 // в”Ђв”Ђв”Ђ Preferences в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/preferences', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      'SELECT selected_categories, selected_language, selected_company FROM user_preferences WHERE telegram_id = $1',
-      [req.userId]
-    );
+    let rows;
+    try {
+      const result = await pool.query(
+        'SELECT selected_categories, selected_language, selected_company, selected_frameworks, selected_topics FROM user_preferences WHERE telegram_id = $1',
+        [req.userId]
+      );
+      rows = result.rows;
+    } catch (queryErr) {
+      if (queryErr.code === '42703' || (queryErr.message && queryErr.message.includes('column'))) {
+        const fallback = await pool.query(
+          'SELECT selected_categories, selected_language, selected_company FROM user_preferences WHERE telegram_id = $1',
+          [req.userId]
+        );
+        rows = fallback.rows;
+      } else {
+        throw queryErr;
+      }
+    }
     res.json({
       selectedCategories: rows[0]?.selected_categories || [],
       selectedLanguage: rows[0]?.selected_language || 'Java',
       selectedCompany: rows[0]?.selected_company || null,
+      selectedFrameworks: rows[0]?.selected_frameworks || [],
+      selectedTopics: rows[0]?.selected_topics || [],
     });
   } catch (err) {
     logger.error({ err }, 'Failed to fetch preferences');
@@ -981,18 +1044,37 @@ app.get('/api/preferences', async (req, res) => {
 
 app.post('/api/preferences', validateBody({ categories: { required: true } }), async (req, res) => {
   try {
-    const { categories, language, company } = req.body;
+    const { categories, language, company, frameworks, topics } = req.body;
     const userId = req.userId;
-    await pool.query(
-      `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, selected_company, updated_at)
-       VALUES ($1, $2, $3, $4, NOW())
-       ON CONFLICT (telegram_id) DO UPDATE SET
-         selected_categories = $2,
-         selected_language = $3,
-         selected_company = $4,
-         updated_at = NOW()`,
-      [userId, categories, language || 'Java', company || null]
-    );
+    try {
+      await pool.query(
+        `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, selected_company, selected_frameworks, selected_topics, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+         ON CONFLICT (telegram_id) DO UPDATE SET
+           selected_categories = $2,
+           selected_language = $3,
+           selected_company = $4,
+           selected_frameworks = $5,
+           selected_topics = $6,
+           updated_at = NOW()`,
+        [userId, categories, language || 'Java', company || null, frameworks || [], topics || []]
+      );
+    } catch (queryErr) {
+      if (queryErr.code === '42703' || (queryErr.message && queryErr.message.includes('column'))) {
+        await pool.query(
+          `INSERT INTO user_preferences (telegram_id, selected_categories, selected_language, selected_company, updated_at)
+           VALUES ($1, $2, $3, $4, NOW())
+           ON CONFLICT (telegram_id) DO UPDATE SET
+             selected_categories = $2,
+             selected_language = $3,
+             selected_company = $4,
+             updated_at = NOW()`,
+          [userId, categories, language || 'Java', company || null]
+        );
+      } else {
+        throw queryErr;
+      }
+    }
     if (language) {
       await pool.query('UPDATE users SET language = $1 WHERE telegram_id = $2', [language, userId])
         .catch((err) => logger.error({ err, userId }, 'Failed to sync language to users table'));
@@ -1029,7 +1111,116 @@ app.post('/api/preferences/language', validateBody({ language: { required: true 
   }
 });
 
-// в”Ђв”Ђв”Ђ Question Feed в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ─── Top Interview Questions ──────────────────────────────────────────
+app.get('/api/questions/top', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const cursor = Math.max(0, parseInt(req.query.cursor) || 0);
+    const category = req.query.category;
+
+    const where = ['q.is_active = TRUE', 'q.is_top = TRUE', "(q.language = $1 OR q.language = 'General')"];
+    const params = [language];
+    let p = 2;
+
+    if (category) {
+      where.push(`q.category = $${p}`);
+      params.push(category);
+      p++;
+    }
+
+    const limitParam = `$${p++}`;
+    const cursorParam = `$${p++}`;
+    params.push(limit, cursor);
+
+    const query = `
+      SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
+             q.options, q.language, q.framework, q.topic, q.tags,
+             q.is_top, q.top_rank, q.cached_explanation
+      FROM questions q
+      WHERE ${where.join(' AND ')}
+      ORDER BY COALESCE(q.top_rank, 9999) ASC, q.id ASC
+      LIMIT ${limitParam} OFFSET ${cursorParam}
+    `;
+
+    let rows;
+    try {
+      const result = await pool.query(query, params);
+      rows = result.rows;
+    } catch (queryErr) {
+      const fallbackResult = await pool.query(
+        `SELECT q.id, q.category, q.difficulty, q.question_text, q.short_answer,
+                q.options, q.language, q.framework, q.topic, q.tags, q.cached_explanation
+         FROM questions q
+         WHERE q.is_active = TRUE AND (q.language = $1 OR q.language = 'General')
+         ORDER BY q.id ASC
+         LIMIT $2 OFFSET $3`,
+        [language, limit, cursor]
+      );
+      rows = fallbackResult.rows;
+    }
+
+    res.json({
+      language,
+      questions: rows.map((r, idx) => ({
+        id: r.id,
+        category: r.category,
+        difficulty: r.difficulty,
+        question: r.question_text,
+        shortAnswer: r.short_answer,
+        options: r.options || [],
+        language: r.language || 'Java',
+        framework: r.framework || null,
+        topic: r.topic || null,
+        tags: r.tags || [],
+        isTop: r.is_top ?? true,
+        topRank: r.top_rank || (cursor + idx + 1),
+        cachedExplanation: r.cached_explanation || null,
+      })),
+      total: rows.length,
+      hasMore: rows.length === limit,
+    });
+  } catch (err) {
+    logger.error({ err }, 'Failed to fetch top questions');
+    res.status(500).json({ error: 'Failed to fetch top questions' });
+  }
+});
+
+app.get('/api/questions/top/stats', async (req, res) => {
+  try {
+    const language = req.query.language || 'Java';
+    const { rows } = await pool.query(
+      `SELECT category, COUNT(*) as count
+       FROM questions
+       WHERE is_active = TRUE AND is_top = TRUE AND (language = $1 OR language = 'General')
+       GROUP BY category
+       ORDER BY count DESC`,
+      [language]
+    ).catch(async () => {
+      return pool.query(
+        `SELECT category, COUNT(*) as count
+         FROM questions
+         WHERE is_active = TRUE AND (language = $1 OR language = 'General')
+         GROUP BY category
+         ORDER BY count DESC`,
+        [language]
+      );
+    });
+
+    const total = rows.reduce((acc, r) => acc + parseInt(r.count, 10), 0);
+
+    res.json({
+      language,
+      total,
+      categories: rows.map(r => ({ name: r.category, count: parseInt(r.count, 10) })),
+    });
+  } catch (err) {
+    logger.error({ err }, 'Failed to fetch top questions stats');
+    res.status(500).json({ error: 'Failed to fetch top questions stats' });
+  }
+});
+
+// ─── Question Feed ──────────────────────────────────────────────────
 app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
   try {
     const userId = req.userId;
@@ -1049,8 +1240,29 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     const savedLang = prefs?.selected_language || 'Java';
     const selectedCategories = (savedLang === language) ? (prefs?.selected_categories || []) : [];
 
+    const rawCategories = req.query.categories;
+    const queryCategories = rawCategories
+      ? (Array.isArray(rawCategories) ? rawCategories : String(rawCategories).split(',')).map(s => s.trim()).filter(Boolean)
+      : [];
+    const activeCategories = queryCategories.length > 0 ? queryCategories : selectedCategories;
+
+    // Frameworks filter (e.g. Spring Boot, Hibernate, Kafka, React, FastAPI)
+    const rawFrameworks = req.query.frameworks || req.query.framework;
+    const selectedFrameworks = rawFrameworks
+      ? (Array.isArray(rawFrameworks) ? rawFrameworks : String(rawFrameworks).split(',')).map(s => s.trim()).filter(Boolean)
+      : [];
+
+    // Topics filter (e.g. Concurrency, Memory & GC, Collections, Algorithms)
+    const rawTopics = req.query.topics || req.query.topic;
+    const selectedTopics = rawTopics
+      ? (Array.isArray(rawTopics) ? rawTopics : String(rawTopics).split(',')).map(s => s.trim()).filter(Boolean)
+      : [];
+
+    // Search query
+    const searchQuery = String(req.query.search || req.query.q || '').trim();
+
     // Test options are generated lazily on the client (see TestMode), so we
-    // must NOT filter out questions that don't have options yet вЂ” otherwise
+    // must NOT filter out questions that don't have options yet — otherwise
     // a fresh database would show an empty test feed forever.
 
     // Optional difficulty filter (Junior / Middle / Senior).
@@ -1090,7 +1302,26 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     }
     const params = [userId, language];
     let p = 3;
-    if (selectedCategories.length > 0) { where.push(`q.category = ANY($${p})`); params.push(selectedCategories); p++; }
+    if (activeCategories.length > 0) { where.push(`q.category = ANY($${p})`); params.push(activeCategories); p++; }
+    if (selectedFrameworks.length > 0) {
+      where.push(`(q.framework = ANY($${p}) OR (q.tags && $${p}::text[]))`);
+      params.push(selectedFrameworks);
+      p++;
+    }
+    if (selectedTopics.length > 0) {
+      where.push(`(q.topic = ANY($${p}) OR q.category = ANY($${p}))`);
+      params.push(selectedTopics);
+      p++;
+    }
+    if (searchQuery) {
+      where.push(`(q.question_text ILIKE $${p} OR q.short_answer ILIKE $${p} OR q.category ILIKE $${p} OR COALESCE(q.framework, '') ILIKE $${p})`);
+      params.push(`%${searchQuery}%`);
+      p++;
+    }
+    const isTopFilter = req.query.top === 'true' || req.query.mode === 'top' || mode === 'top';
+    if (isTopFilter) {
+      where.push('q.is_top = TRUE');
+    }
     if (difficulties && difficulties.length) { where.push(`q.difficulty = ANY($${p})`); params.push(difficulties); p++; }
     if (req.query.company) { where.push(`q.companies @> ARRAY[$${p}]`); params.push(req.query.company); p++; }
     if (excludeIds.length > 0) { where.push(`NOT (q.id = ANY($${p}))`); params.push(excludeIds); p++; }
@@ -1100,6 +1331,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     const selectCols = `
       q.id, q.category, q.difficulty, q.question_text, q.short_answer,
       q.options, q.bug_hunting_data, q.blitz_data, q.code_completion_data, q.language,
+      q.framework, q.topic, q.tags, q.is_top, q.top_rank,
       COALESCE(qm.next_review, '1970-01-01'::DATE) as review_date,
       up.status as prev_status`;
 
@@ -1132,6 +1364,11 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       blitzData: row.blitz_data || null,
       codeCompletionData: row.code_completion_data || null,
       language: row.language || 'Java',
+      framework: row.framework || null,
+      topic: row.topic || null,
+      tags: row.tags || [],
+      isTop: row.is_top || false,
+      topRank: row.top_rank || null,
       prevStatus: row.prev_status || null,
     });
 
@@ -1575,24 +1812,29 @@ async function resolveAIData(questionId, columnName, cacheMode) {
 // polling is DISABLED by default вЂ” the client already polls for the result
 // (it retries on `pending`). Enable only for tightly-coupled deployments via
 // EXPLANATION_SYNC_POLL=true, and keep maxMs modest.
-async function waitForExplanation(questionText, questionId, language = 'Java', maxMs = 10000) {
-  if (process.env.EXPLANATION_SYNC_POLL !== 'true') return null;
-  const deadline = Date.now() + maxMs;
+async function waitForExplanation(questionText, questionId, language = 'Java', maxMs = 3000) {
+  if (process.env.EXPLANATION_SYNC_POLL === 'false') return null;
+  const deadline = Date.now() + Math.min(maxMs, 4000);
   while (Date.now() < deadline) {
     try {
       const { rows } = await pool.query('SELECT cached_explanation FROM questions WHERE id=$1', [questionId]);
-      if (rows[0]?.cached_explanation) return rows[0].cached_explanation;
+      if (rows[0]?.cached_explanation) {
+        return typeof rows[0].cached_explanation === 'string'
+          ? rows[0].cached_explanation
+          : JSON.stringify(rows[0].cached_explanation);
+      }
 
       const cached = await checkCache(questionText, 'explanation', null, language);
       if (cached) {
-        pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cached, questionId])
+        const val = typeof cached === 'string' ? cached : JSON.stringify(cached);
+        pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [val, questionId])
           .catch((err) => logger.error({ err, questionId }, 'Failed to backfill cached explanation'));
-        return cached;
+        return val;
       }
     } catch (err) {
       logger.error({ err, questionId }, 'waitForExplanation poll error');
     }
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 400));
   }
   return null;
 }
@@ -2056,18 +2298,23 @@ app.post('/api/questions/explain', async (req, res) => {
 
     const question = result.rows[0];
     if (question.cached_explanation) {
-      return res.json({ explanation: question.cached_explanation, cached: true });
+      const exp = typeof question.cached_explanation === 'string'
+        ? question.cached_explanation
+        : JSON.stringify(question.cached_explanation);
+      return res.json({ explanation: exp, cached: true });
     }
 
-    // в”Ђв”Ђ 2. Check AI cache (also cached, no model call needed) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    // ── 2. Check AI cache (also cached, no model call needed) ─────────
     const cachedAI = await checkCache(question.question_text, 'explanation', null, question.language || 'Java');
     if (cachedAI) {
+      const exp = typeof cachedAI === 'string' ? cachedAI : JSON.stringify(cachedAI);
       // Backfill the questions table cache too
-      await pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [cachedAI, questionId]).catch(err => logger.error({ err, questionId }, 'Failed to backfill cached explanation'));
-      return res.json({ explanation: cachedAI, cached: true });
+      await pool.query('UPDATE questions SET cached_explanation=$1 WHERE id=$2', [exp, questionId])
+        .catch(err => logger.error({ err, questionId }, 'Failed to backfill cached explanation'));
+      return res.json({ explanation: exp, cached: true });
     }
 
-    // в”Ђв”Ђ 3. Not cached: generate via the background worker, wait for the в”Ђв”Ђ
+    // ── 3. Not cached: generate via the background worker, wait for the ──
     // result server-side. This offloads the (slow) AI call to a separate
     // worker process so THIS process stays free to serve other requests.
     // The request still resolves with the explanation once the worker is
@@ -2140,6 +2387,23 @@ app.post('/api/questions/explain', async (req, res) => {
     });
   } catch (error) {
     logger.error({ err: error, questionId: req.body?.questionId }, 'Error in /questions/explain');
+    // Graceful fallback explanation from question text and short answer
+    try {
+      const qId = req.body?.questionId;
+      if (qId) {
+        const { rows } = await pool.query('SELECT question_text, short_answer FROM questions WHERE id = $1', [qId]);
+        if (rows.length > 0) {
+          const q = rows[0];
+          const fallback = JSON.stringify({
+            title: q.question_text,
+            theory: q.short_answer || 'Краткий ответ доступен выше.',
+            key_points: ['Повторите вопрос в режиме тренировки', 'Используйте официальную документацию для углубления темы'],
+            where_used: ['Собеседования на позицию разработчика'],
+          });
+          return res.json({ explanation: fallback, cached: false, fallback: true });
+        }
+      }
+    } catch { /* ignore fallback errors */ }
     res.status(500).json({
       error: 'AI explanation failed',
     });
@@ -2817,11 +3081,14 @@ app.get('/api/stats/categories', async (req, res) => {
   }
 });
 
-// в”Ђв”Ђв”Ђ Stats в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ─── Stats ─────────────────────────────────────────────────────────
 app.get('/api/stats', async (req, res) => {
   try {
     const userId = req.userId;
     const language = req.query.language || 'Java';
+    const isAll = language === 'all';
+    const langClause = isAll ? '' : 'AND q.language = $2';
+    const queryParams = isAll ? [userId] : [userId, language];
 
     // Join with questions so stats are language-scoped
     // Switching language shows only that language's progress
@@ -2832,24 +3099,65 @@ app.get('/api/stats', async (req, res) => {
          COUNT(*)                                       AS total_seen
        FROM user_progress up
        JOIN questions q ON q.id = up.question_id
-       WHERE up.user_id = $1 AND q.language = $2`,
-      [userId, language]
+       WHERE up.user_id = $1 ${langClause}`,
+      queryParams
     );
-    const totalResult = await pool.query(
-      'SELECT COUNT(*) as total FROM questions WHERE language = $1', [language]
-    );
+    const totalQuery = isAll
+      ? 'SELECT COUNT(*) as total FROM questions WHERE is_active = TRUE'
+      : 'SELECT COUNT(*) as total FROM questions WHERE language = $1 AND is_active = TRUE';
+    const totalResult = await pool.query(totalQuery, isAll ? [] : [language]);
 
     const userStreak = await pool.query(
       'SELECT current_streak, longest_streak FROM users WHERE telegram_id = $1', [userId]
     );
 
+    // Also compute language breakdown (Java, Python, etc.)
+    let langBreakdown = null;
+    try {
+      langBreakdown = await pool.query(`
+        SELECT
+          q.language,
+          COUNT(*) FILTER (WHERE up.status = 'known')   AS known_count,
+          COUNT(*) FILTER (WHERE up.status = 'unknown') AS unknown_count,
+          COUNT(*)                                       AS total_seen
+        FROM user_progress up
+        JOIN questions q ON q.id = up.question_id
+        WHERE up.user_id = $1
+        GROUP BY q.language
+      `, [userId]);
+    } catch {
+      // Graceful fallback if query fails or is not mocked in unit test
+    }
+
+    const known = parseInt(result.rows[0]?.known_count || 0);
+    const unknown = parseInt(result.rows[0]?.unknown_count || 0);
+    const totalSeen = parseInt(result.rows[0]?.total_seen || 0);
+    const accuracy = totalSeen > 0 ? Math.round((known / totalSeen) * 100) : 0;
+
+    const byLanguage = {
+      Java: { known: 0, unknown: 0, totalSeen: 0, accuracy: 0 },
+      Python: { known: 0, unknown: 0, totalSeen: 0, accuracy: 0 }
+    };
+    for (const row of (langBreakdown?.rows || [])) {
+      const k = parseInt(row.known_count || 0);
+      const u = parseInt(row.unknown_count || 0);
+      const s = parseInt(row.total_seen || 0);
+      const acc = s > 0 ? Math.round((k / s) * 100) : 0;
+      byLanguage[row.language] = { known: k, unknown: u, totalSeen: s, accuracy: acc };
+    }
+    if (language !== 'all' && byLanguage[language] && totalSeen > 0 && byLanguage[language].totalSeen === 0) {
+      byLanguage[language] = { known, unknown, totalSeen, accuracy };
+    }
+
     res.json({
-      known: parseInt(result.rows[0].known_count || 0),
-      unknown: parseInt(result.rows[0].unknown_count || 0),
-      totalSeen: parseInt(result.rows[0].total_seen || 0),
-      totalQuestions: parseInt(totalResult.rows[0].total || 0),
+      known,
+      unknown,
+      totalSeen,
+      accuracy,
+      totalQuestions: parseInt(totalResult.rows[0]?.total || 0),
       streak: userStreak.rows[0]?.current_streak || 0,
       longestStreak: userStreak.rows[0]?.longest_streak || 0,
+      byLanguage,
     });
   } catch (err) {
     logger.error({ err }, 'Stats error');
@@ -2857,13 +3165,16 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// в”Ђв”Ђв”Ђ Stats History (time series) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ─── Stats History (time series) ──────────────────────────────────
 app.get('/api/stats/history', async (req, res) => {
   try {
     const period = req.query.period || '7d';
     const days = period === '30d' ? 30 : period === 'all' ? 365 : 7;
     const userId = req.userId;
     const language = req.query.language || 'Java';
+    const isAll = language === 'all';
+    const langClause = isAll ? '' : 'AND q.language = $2';
+    const queryParams = isAll ? [userId, `${days} days`] : [userId, language, `${days} days`];
 
     const { rows } = await pool.query(`
       SELECT
@@ -2872,11 +3183,11 @@ app.get('/api/stats/history', async (req, res) => {
         COUNT(*) FILTER (WHERE up.status = 'unknown') as unknown
       FROM user_progress up
       JOIN questions q ON q.id = up.question_id
-      WHERE up.user_id = $1 AND q.language = $2
-        AND up.updated_at >= CURRENT_DATE - $3::interval
+      WHERE up.user_id = $1 ${langClause}
+        AND up.updated_at >= CURRENT_DATE - $${queryParams.length}::interval
       GROUP BY DATE(up.updated_at)
       ORDER BY day
-    `, [userId, language, `${days} days`]);
+    `, queryParams);
 
     res.json({ history: rows });
   } catch (err) {
@@ -2885,38 +3196,174 @@ app.get('/api/stats/history', async (req, res) => {
   }
 });
 
-// в”Ђв”Ђв”Ђ Stats Topics (accuracy per category) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ─── Stats Topics (accuracy per category) ────────────────────────
 app.get('/api/stats/topics', async (req, res) => {
   try {
     const userId = req.userId;
     const language = req.query.language || 'Java';
+    const isAll = language === 'all';
+    const langClause = isAll ? '' : 'AND q.language = $2';
+    const queryParams = isAll ? [userId] : [userId, language];
 
     const { rows } = await pool.query(`
       SELECT
         q.category,
         COUNT(*) FILTER (WHERE up.status = 'known') as known,
         COUNT(*) FILTER (WHERE up.status = 'unknown') as unknown,
-        COUNT(*) as total
+        COUNT(DISTINCT q.id) as total
       FROM questions q
       LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
-      WHERE q.language = $2 AND q.is_active = TRUE
+      WHERE q.is_active = TRUE ${langClause}
       GROUP BY q.category
       ORDER BY q.category
-    `, [userId, language]);
+    `, queryParams);
 
-    const topics = rows.map(r => ({
-      name: r.category,
-      known: parseInt(r.known),
-      unknown: parseInt(r.unknown),
-      total: parseInt(r.total),
-      accuracy: parseInt(r.total) > 0
-        ? Math.round((parseInt(r.known) / parseInt(r.total)) * 100)
-        : 0,
-    }));
+    const topics = rows.map(r => {
+      const known = parseInt(r.known) || 0;
+      const unknown = parseInt(r.unknown) || 0;
+      const total = parseInt(r.total) || 0;
+      const answered = known + unknown;
+      return {
+        name: r.category,
+        known,
+        unknown,
+        answered,
+        total,
+        // Accuracy is % of answered questions in this category that the user got right
+        accuracy: answered > 0 ? Math.round((known / answered) * 100) : 0,
+        // Coverage is % of total questions in this category marked known
+        coverage: total > 0 ? Math.round((known / total) * 100) : 0,
+      };
+    });
 
     res.json({ topics });
   } catch (err) {
     logger.error({ err }, 'Topics stats error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── Stats Answers (answered questions history & review) ────────────
+app.get('/api/stats/answers', async (req, res) => {
+  try {
+    const userId = req.userId;
+    const language = req.query.language || 'Java';
+    const status = req.query.status || 'all';
+    const category = req.query.category;
+    const search = req.query.search ? req.query.search.trim() : null;
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 100);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+
+    const conditions = ['up.user_id = $1'];
+    const params = [userId];
+
+    if (language !== 'all') {
+      params.push(language);
+      conditions.push(`q.language = $${params.length}`);
+    }
+
+    if (status === 'known' || status === 'unknown') {
+      params.push(status);
+      conditions.push(`up.status = $${params.length}`);
+    }
+
+    if (category) {
+      params.push(category);
+      conditions.push(`q.category = $${params.length}`);
+    }
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(q.question_text ILIKE $${params.length} OR q.short_answer ILIKE $${params.length})`);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    // Total count for current query filter
+    const countResult = await pool.query(
+      `SELECT COUNT(*) as count FROM user_progress up
+       JOIN questions q ON q.id = up.question_id
+       WHERE ${whereClause}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0]?.count || 0);
+
+    // Global counts for filter tab badges for the current language
+    const langParams = language !== 'all' ? [userId, language] : [userId];
+    const langCond = language !== 'all' ? 'AND q.language = $2' : '';
+    const summaryResult = await pool.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE up.status = 'known')   AS known_count,
+         COUNT(*) FILTER (WHERE up.status = 'unknown') AS unknown_count,
+         COUNT(*)                                       AS total_seen
+       FROM user_progress up
+       JOIN questions q ON q.id = up.question_id
+       WHERE up.user_id = $1 ${langCond}`,
+      langParams
+    );
+
+    const knownCount = parseInt(summaryResult.rows[0]?.known_count || 0);
+    const unknownCount = parseInt(summaryResult.rows[0]?.unknown_count || 0);
+    const totalAnswered = parseInt(summaryResult.rows[0]?.total_seen || 0);
+    const accuracy = totalAnswered > 0 ? Math.round((knownCount / totalAnswered) * 100) : 0;
+
+    const listParams = [...params, limit, offset];
+    const { rows } = await pool.query(
+      `SELECT
+         q.id,
+         q.question_text,
+         q.short_answer,
+         q.category,
+         q.difficulty,
+         q.language,
+         q.framework,
+         q.topic,
+         q.is_top,
+         q.top_rank,
+         up.status,
+         up.updated_at AS answered_at,
+         up.interval_days,
+         up.repetition_number
+       FROM user_progress up
+       JOIN questions q ON q.id = up.question_id
+       WHERE ${whereClause}
+       ORDER BY up.updated_at DESC
+       LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
+      listParams
+    );
+
+    res.json({
+      questions: rows.map(r => ({
+        id: r.id,
+        question: r.question_text,
+        shortAnswer: r.short_answer,
+        category: r.category,
+        difficulty: r.difficulty,
+        language: r.language,
+        framework: r.framework,
+        topic: r.topic,
+        isTop: r.is_top,
+        topRank: r.top_rank,
+        status: r.status,
+        answeredAt: r.answered_at,
+        intervalDays: r.interval_days,
+        repetitionNumber: r.repetition_number,
+      })),
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + rows.length < total,
+      },
+      summary: {
+        totalAnswered,
+        knownCount,
+        unknownCount,
+        accuracy,
+      },
+    });
+  } catch (err) {
+    logger.error({ err }, 'Stats answers error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

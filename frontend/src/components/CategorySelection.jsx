@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Check, ArrowLeft, Inbox } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonGrid } from './Skeleton';
@@ -27,32 +27,73 @@ function saveCategoriesCache(data) {
 
 const CategorySelection = ({ onComplete, onBack }) => {
   const { t } = useTranslation();
-  const { setSelectedCategories, setSelectedDifficulties, setSelectedCompany, selectedDifficulties: savedDiffs, selectedCompany: savedCompany, user } = useStore();
+  const {
+    setSelectedCategories,
+    setSelectedDifficulties,
+    setSelectedCompany,
+    setSelectedFrameworks,
+    setSelectedTopics,
+    setTopicSearchQuery,
+    selectedDifficulties: savedDiffs,
+    selectedCompany: savedCompany,
+    selectedFrameworks: savedFrameworks,
+    selectedTopics: savedTopics,
+    topicSearchQuery: savedSearch,
+    user
+  } = useStore();
+
+  const [activeTab, setActiveTab] = useState('categories'); // 'categories' | 'frameworks' | 'topics'
+  const [searchQuery, setSearchQuery] = useState(savedSearch || '');
   const [categories, setCategories] = useState([]);
-  const [selectedCategories, setLocalSelected] = useState([]);
+  const [frameworks, setFrameworks] = useState([]);
+  const [topics, setTopics] = useState([]);
+  const [selectedCategories, setLocalCategories] = useState([]);
+  const [selectedFrameworks, setLocalFrameworks] = useState(savedFrameworks || []);
+  const [selectedTopics, setLocalTopics] = useState(savedTopics || []);
   const [selectedDifficulties, setLocalDifficulties] = useState(savedDiffs || []);
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setLocalCompany] = useState(savedCompany || null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const applyData = (filtersData, companiesData, prefsData) => {
+    if (filtersData?.categories) setCategories(filtersData.categories);
+    if (filtersData?.frameworks) setFrameworks(filtersData.frameworks);
+    if (filtersData?.topics) setTopics(filtersData.topics);
+    if (companiesData?.companies) setCompanies(companiesData.companies);
+    if (prefsData?.selectedCategories?.length) setLocalCategories(prefsData.selectedCategories);
+    if (prefsData?.selectedFrameworks?.length) setLocalFrameworks(prefsData.selectedFrameworks);
+    if (prefsData?.selectedTopics?.length) setLocalTopics(prefsData.selectedTopics);
+    if (prefsData?.selectedCompany) setLocalCompany(prefsData.selectedCompany);
+  };
+
   useEffect(() => {
     const cached = loadCategoriesCache();
     if (cached) {
       setCategories(cached.categories || []);
+      setFrameworks(cached.frameworks || []);
+      setTopics(cached.topics || []);
       if (cached.companies) setCompanies(cached.companies);
-      if (cached.prefs?.selectedCategories?.length) setLocalSelected(cached.prefs.selectedCategories);
+      if (cached.prefs?.selectedCategories?.length) setLocalCategories(cached.prefs.selectedCategories);
+      if (cached.prefs?.selectedFrameworks?.length) setLocalFrameworks(cached.prefs.selectedFrameworks);
+      if (cached.prefs?.selectedTopics?.length) setLocalTopics(cached.prefs.selectedTopics);
       if (cached.prefs?.selectedCompany) setLocalCompany(cached.prefs.selectedCompany);
       setLoading(false);
-      // Refresh cache in background — don't block UI
+
+      // Refresh cache in background
       Promise.all([
-        api.getCategories(),
+        api.getFilters().catch(() => api.getCategories()),
         api.getCompanies().catch(() => null),
         api.getPreferences().catch(() => null),
-      ]).then(([categoriesData, companiesData, prefsData]) => {
-        const cats = categoriesData?.categories || [];
-        setCategories(cats);
-        saveCategoriesCache({ categories: cats, companies: companiesData?.companies || [], prefs: prefsData || {} });
+      ]).then(([filtersData, companiesData, prefsData]) => {
+        applyData(filtersData, companiesData, prefsData);
+        saveCategoriesCache({
+          categories: filtersData?.categories || [],
+          frameworks: filtersData?.frameworks || [],
+          topics: filtersData?.topics || [],
+          companies: companiesData?.companies || [],
+          prefs: prefsData || {}
+        });
       }).catch(() => {});
     } else {
       loadData();
@@ -62,40 +103,80 @@ const CategorySelection = ({ onComplete, onBack }) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [categoriesData, companiesData, prefsData] = await Promise.all([
-        api.getCategories(),
+      const [filtersData, companiesData, prefsData] = await Promise.all([
+        api.getFilters().catch(() => api.getCategories()),
         api.getCompanies().catch(() => null),
         api.getPreferences().catch(() => null),
       ]);
 
-      const cats = categoriesData?.categories || [];
-      setCategories(cats);
-      if (companiesData?.companies) setCompanies(companiesData.companies);
-      if (prefsData?.selectedCategories?.length) setLocalSelected(prefsData.selectedCategories);
-      if (prefsData?.selectedCompany) setLocalCompany(prefsData.selectedCompany);
-      saveCategoriesCache({ categories: cats, companies: companiesData?.companies || [], prefs: prefsData || {} });
+      applyData(filtersData, companiesData, prefsData);
+      saveCategoriesCache({
+        categories: filtersData?.categories || [],
+        frameworks: filtersData?.frameworks || [],
+        topics: filtersData?.topics || [],
+        companies: companiesData?.companies || [],
+        prefs: prefsData || {}
+      });
     } catch (error) {
-      console.error('Error loading categories:', error);
+      console.error('Error loading filters:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // useCallback so the reference is stable — avoids re-renders
-  const toggleCategory = useCallback((categoryName) => {
-    setLocalSelected((prev) =>
-      prev.includes(categoryName)
-        ? prev.filter((c) => c !== categoryName)
-        : [...prev, categoryName]
-    );
-  }, []);
+  // Get current list based on active tab
+  const currentItems = useMemo(() => {
+    let list = [];
+    if (activeTab === 'categories') list = categories;
+    else if (activeTab === 'frameworks') list = frameworks;
+    else if (activeTab === 'topics') list = topics;
 
-  const selectAll = () => setLocalSelected(categories.map((c) => c.name));
-  const deselectAll = () => setLocalSelected([]);
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase().trim();
+    return list.filter(item => item.name && item.name.toLowerCase().includes(q));
+  }, [activeTab, categories, frameworks, topics, searchQuery]);
+
+  const toggleItem = useCallback((name) => {
+    if (activeTab === 'categories') {
+      setLocalCategories(prev =>
+        prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]
+      );
+    } else if (activeTab === 'frameworks') {
+      setLocalFrameworks(prev =>
+        prev.includes(name) ? prev.filter(f => f !== name) : [...prev, name]
+      );
+    } else if (activeTab === 'topics') {
+      setLocalTopics(prev =>
+        prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name]
+      );
+    }
+  }, [activeTab]);
+
+  const selectAll = () => {
+    const itemNames = currentItems.map(i => i.name);
+    if (activeTab === 'categories') {
+      setLocalCategories(prev => Array.from(new Set([...prev, ...itemNames])));
+    } else if (activeTab === 'frameworks') {
+      setLocalFrameworks(prev => Array.from(new Set([...prev, ...itemNames])));
+    } else if (activeTab === 'topics') {
+      setLocalTopics(prev => Array.from(new Set([...prev, ...itemNames])));
+    }
+  };
+
+  const deselectAll = () => {
+    const itemNames = new Set(currentItems.map(i => i.name));
+    if (activeTab === 'categories') {
+      setLocalCategories(prev => prev.filter(name => !itemNames.has(name)));
+    } else if (activeTab === 'frameworks') {
+      setLocalFrameworks(prev => prev.filter(name => !itemNames.has(name)));
+    } else if (activeTab === 'topics') {
+      setLocalTopics(prev => prev.filter(name => !itemNames.has(name)));
+    }
+  };
 
   const toggleDifficulty = useCallback((diff) => {
-    setLocalDifficulties((prev) =>
-      prev.includes(diff) ? prev.filter((d) => d !== diff) : [...prev, diff]
+    setLocalDifficulties(prev =>
+      prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]
     );
   }, []);
 
@@ -107,19 +188,27 @@ const CategorySelection = ({ onComplete, onBack }) => {
     }
   };
 
+  const handleResetFilters = () => {
+    setLocalCategories([]);
+    setLocalFrameworks([]);
+    setLocalTopics([]);
+    setLocalDifficulties([]);
+    setLocalCompany(null);
+    setSearchQuery('');
+  };
+
   const handleSave = async () => {
-    if (selectedCategories.length === 0) {
-      showPopup(t('category.select_at_least_one', 'Please select at least one category'));
-      return;
-    }
-      try {
-        setSaving(true);
-        await api.updatePreferences(selectedCategories, undefined, selectedCompany);
-        setSelectedCategories(selectedCategories);
-        setSelectedDifficulties(selectedDifficulties);
-        setSelectedCompany(selectedCompany || null);
-        onComplete();
-      } catch (error) {
+    try {
+      setSaving(true);
+      await api.updatePreferences(selectedCategories, undefined, selectedCompany, selectedFrameworks, selectedTopics);
+      setSelectedCategories(selectedCategories);
+      setSelectedFrameworks(selectedFrameworks);
+      setSelectedTopics(selectedTopics);
+      setSelectedDifficulties(selectedDifficulties);
+      setSelectedCompany(selectedCompany || null);
+      setTopicSearchQuery(searchQuery);
+      onComplete();
+    } catch (error) {
       console.error('Error saving preferences:', error);
       showPopup(t('category.save_error', 'Error saving preferences'));
     } finally {
@@ -138,7 +227,7 @@ const CategorySelection = ({ onComplete, onBack }) => {
     );
   }
 
-  // ── Empty state — language has no questions yet (e.g. TypeScript) ──
+  // Empty state — language has no questions yet (e.g. TypeScript)
   if (!loading && categories.length === 0) {
     return (
       <div className="category-selection" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16, padding: 24 }}>
@@ -156,6 +245,13 @@ const CategorySelection = ({ onComplete, onBack }) => {
     );
   }
 
+  const isCurrentItemSelected = (name) => {
+    if (activeTab === 'categories') return selectedCategories.includes(name);
+    if (activeTab === 'frameworks') return selectedFrameworks.includes(name);
+    if (activeTab === 'topics') return selectedTopics.includes(name);
+    return false;
+  };
+
   return (
     <div className="category-selection">
       <div className="category-header">
@@ -163,7 +259,50 @@ const CategorySelection = ({ onComplete, onBack }) => {
           <ArrowLeft size={24} />
         </button>
         <h1>{t('common.choose_topics')}</h1>
-        <p>{t('common.choose_topics_desc', 'Select categories for study')}</p>
+        <p>{t('common.choose_topics_desc', 'Select categories, frameworks, and topics for study')}</p>
+      </div>
+
+      <div className="filter-search-box">
+        <input
+          type="text"
+          className="filter-search-input"
+          placeholder={t('common.search_placeholder', 'Search topics, frameworks...')}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      <div className="filter-tabs">
+        <button
+          type="button"
+          className={`filter-tab ${activeTab === 'categories' ? 'active' : ''}`}
+          onClick={() => setActiveTab('categories')}
+        >
+          {t('common.categories', 'Categories')}
+          {selectedCategories.length > 0 && (
+            <span className="filter-tab-badge">{selectedCategories.length}</span>
+          )}
+        </button>
+        <button
+          type="button"
+          className={`filter-tab ${activeTab === 'frameworks' ? 'active' : ''}`}
+          onClick={() => setActiveTab('frameworks')}
+        >
+          {t('common.frameworks', 'Frameworks')}
+          {selectedFrameworks.length > 0 && (
+            <span className="filter-tab-badge">{selectedFrameworks.length}</span>
+          )}
+        </button>
+        <button
+          type="button"
+          className={`filter-tab ${activeTab === 'topics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('topics')}
+        >
+          {t('common.topics', 'Topics')}
+          {selectedTopics.length > 0 && (
+            <span className="filter-tab-badge">{selectedTopics.length}</span>
+          )}
+        </button>
       </div>
 
       <div className="category-actions">
@@ -219,31 +358,51 @@ const CategorySelection = ({ onComplete, onBack }) => {
         </div>
       )}
 
-      <div className="categories-grid">
-        {categories.map((category) => {
-          const isSelected = selectedCategories.includes(category.name);
-          return (
-            <CategoryCard
-              key={category.name}
-              category={category}
-              isSelected={isSelected}
-              onToggle={toggleCategory}
-            />
-          );
-        })}
-      </div>
+      {currentItems.length === 0 ? (
+        <div className="empty-filter-state">
+          {searchQuery
+            ? t('common.no_matching_filters', 'No items matching your search')
+            : t('common.no_items_in_tab', 'No items available in this section')}
+        </div>
+      ) : (
+        <div className="categories-grid">
+          {currentItems.map((item) => {
+            const isSelected = isCurrentItemSelected(item.name);
+            return (
+              <CategoryCard
+                key={item.name}
+                category={item}
+                isSelected={isSelected}
+                onToggle={toggleItem}
+              />
+            );
+          })}
+        </div>
+      )}
 
       <div className="category-footer">
         <div className="selected-count">
-          {t('common.selected')}: {selectedCategories.length} / {categories.length}
+          {activeTab === 'categories' && `${t('common.selected')}: ${selectedCategories.length} / ${categories.length}`}
+          {activeTab === 'frameworks' && `${t('common.selected')}: ${selectedFrameworks.length} / ${frameworks.length}`}
+          {activeTab === 'topics' && `${t('common.selected')}: ${selectedTopics.length} / ${topics.length}`}
         </div>
-        <button
-          className="start-button"
-          onClick={handleSave}
-          disabled={selectedCategories.length === 0 || saving}
-        >
-          {saving ? t('common.saving') : t('common.done')}
-        </button>
+        <div className="filter-footer-btns">
+          <button
+            type="button"
+            className="filter-reset-btn"
+            onClick={handleResetFilters}
+            title={t('common.reset_filters', 'Reset all filters')}
+          >
+            {t('common.reset', 'Reset')}
+          </button>
+          <button
+            className="start-button"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? t('common.saving') : t('common.apply', 'Apply')}
+          </button>
+        </div>
       </div>
     </div>
   );

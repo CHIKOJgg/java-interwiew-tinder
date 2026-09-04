@@ -4,7 +4,7 @@ import useStore from '../store/useStore';
 import {
   ArrowLeft, Bell, Globe, Info, HelpCircle, Mail, MessageCircle,
   ChevronRight, Shield, Star, FileText, Target, TrendingUp, Award,
-  Download, User, Video, Building2, Languages, Smartphone,
+  Download, User, Video, Building2, Languages, Smartphone, Flame,
 } from 'lucide-react';
 import Mascot from './Mascot';
 import './Settings.css';
@@ -25,6 +25,7 @@ function Settings({ onBack, onNavigate, onExport, onHelp }) {
   const isPremium = user?.plan && user.plan !== 'free';
 
   const quickLinks = [
+    { key: 'top.title', icon: Flame, screen: 'top-questions' },
     { key: 'header.subscription', icon: Star, screen: 'subscriptions', highlight: !isPremium, tag: isPremium ? 'PRO' : null },
     { key: 'header.resume', icon: FileText, screen: 'resume' },
     { key: 'header.vacancy', icon: Target, screen: 'vacancy' },

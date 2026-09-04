@@ -51,10 +51,14 @@ Language: ${lang}
 Question: ${q}
 Correct answer: ${correct}
 
-Generate exactly 3 WRONG but plausible distractor answers. Example format:
-{"options": ["ArrayList потокобезопасен", "LinkedList имеет O(1) случайный доступ", "Vector устарел"]}
+КРИТИЧЕСКИ ВАЖНЫЕ ПРАВИЛА ПРОТИВ LENGTH-BIAS:
+1. Длина каждого из 3 неверных вариантов ДОЛЖНА БЫТЬ ПРИБЛИЗИТЕЛЬНО ТАКОЙ ЖЕ, как у правильного ответа (±20% символов).
+2. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО делать правильный ответ длинным и подробным, а неправильные — короткими отписками из 2-3 слов.
+3. Неправильные варианты должны быть правдоподобными техническими заблуждениями или альтернативными реализациями в том же профессиональном тоне.
+4. Длина правильного ответа: ${correct.length} символов. Каждый сгенерированный вариант должен содержать примерно столько же символов.
 
-Now generate 3 wrong answers for the question above. Return only the JSON.`,
+Return exactly 3 wrong but plausible answers matching the structure and length of the correct answer.
+Return only the JSON: {"options": ["неверный 1", "неверный 2", "неверный 3"]}`,
   },
 
   bug: {

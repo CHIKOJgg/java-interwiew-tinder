@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import apiClient from '../api/client';
 import logger from '../utils/logger';
 
@@ -86,6 +86,13 @@ const useStore = create((set, get) => ({
   selectedDifficulties: [],
   // Company filter — null = all companies.
   selectedCompany: null,
+  selectedFrameworks: [],
+  selectedTopics: [],
+  topicSearchQuery: '',
+  topQuestions: [],
+  isLoadingTopQuestions: false,
+  topStats: null,
+  filterOnlyTop: false,
 
   // ─── Saved / bookmarked questions ────────────────────────────────
   savedIds: {},          // { [questionId]: true }
@@ -265,6 +272,47 @@ const useStore = create((set, get) => ({
     set({ selectedCompany: company });
   },
 
+  setSelectedFrameworks: (frameworks) => {
+    set({ selectedFrameworks: frameworks });
+  },
+
+  setSelectedTopics: (topics) => {
+    set({ selectedTopics: topics });
+  },
+
+  setTopicSearchQuery: (query) => {
+    set({ topicSearchQuery: query });
+  },
+
+  setFilterOnlyTop: (onlyTop) => {
+    set({ filterOnlyTop: !!onlyTop });
+  },
+
+  loadTopQuestions: async (language, category) => {
+    const lang = language || get().language;
+    set({ isLoadingTopQuestions: true });
+    try {
+      const [res, stats] = await Promise.all([
+        apiClient.getTopQuestions({ language: lang, category, limit: 100 }),
+        apiClient.getTopStats(lang).catch(() => null),
+      ]);
+      set({
+        topQuestions: res?.questions || [],
+        topStats: stats || null,
+        isLoadingTopQuestions: false,
+      });
+      return res?.questions || [];
+    } catch {
+      set({ topQuestions: [], isLoadingTopQuestions: false });
+      return [];
+    }
+  },
+
+  startTopPractice: () => {
+    set({ filterOnlyTop: true, learningMode: 'swipe', currentIndex: 0 });
+    get().loadQuestions({ resetCursor: true });
+  },
+
   // ─── Saved / bookmarked questions ─────────────────────────────────
   loadSaved: async () => {
     try {
@@ -398,6 +446,11 @@ const useStore = create((set, get) => ({
         seed: feedSeed,
         difficulties: get().selectedDifficulties,
         company: get().selectedCompany,
+        categories: get().selectedCategories,
+        frameworks: get().selectedFrameworks,
+        topics: get().selectedTopics,
+        search: get().topicSearchQuery,
+        top: get().filterOnlyTop || mode === 'top',
         exclude: seen.slice(-300),
       });
       const newQs = response.questions || [];
@@ -535,6 +588,14 @@ const useStore = create((set, get) => ({
 
      if (direction === 'left' && get().learningMode === 'swipe' && q) {
         get().openMissed(q);
+        // Intra-session retention: re-queue missed card 4 cards later with isRepeat flag
+        set(s => {
+          const repeatCard = { ...q, isRepeat: true };
+          const insertPos = Math.min(s.questions.length, s.currentIndex + 4);
+          const newQuestions = [...s.questions];
+          newQuestions.splice(insertPos, 0, repeatCard);
+          return { questions: newQuestions };
+        });
       }
       get().bumpDaily();
       if (get().learningMode === 'swipe' && get().questions.length - get().currentIndex <= 5) get().loadQuestions(true);
@@ -557,6 +618,9 @@ const useStore = create((set, get) => ({
     }
     if (direction === 'left') {
       get().closeMissed();
+      set(s => ({
+        questions: s.questions.filter((item, idx) => !(idx > s.currentIndex && item.id === questionId && item.isRepeat))
+      }));
     }
   },
 
@@ -675,7 +739,7 @@ const useStore = create((set, get) => ({
     const { user } = get();
     if (!user) return true; // not loaded yet — don't block the default flow
     if (user.plan === 'admin' || user.plan === 'pro' || user.plan === 'annual_pro' || user.plan === 'pro_max') return true;
-    const modes = get().availableModes || user.available_modes || ['swipe', 'test'];
+    const modes = get().availableModes || user.available_modes || ['swipe', 'test', 'review'];
     return modes.includes(mode);
   },
 
@@ -963,8 +1027,12 @@ const useStore = create((set, get) => ({
         if (pollId !== get()._pollRequestId) return;
         return get().loadExplanation(questionId, _attempt + 1);
       }
+      let expText = response.explanation;
+      if (typeof expText === 'object' && expText !== null) {
+        expText = JSON.stringify(expText);
+      }
       set({
-        currentExplanation: response.explanation ||
+        currentExplanation: expText ||
           '⚠️ Объяснение всё ещё генерируется. Попробуйте открыть его ещё раз через несколько секунд.',
         isLoadingExplanation: false,
       });

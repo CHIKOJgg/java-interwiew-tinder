@@ -11,9 +11,11 @@ import { sendTelegramMessage } from './services/billing/starsService.js';
 
 const BACKFILL = {
   explanation: async (qId, result) => {
+    if (!result) return;
+    const value = typeof result === 'string' ? result : JSON.stringify(result);
     await pool.query(
       'UPDATE questions SET cached_explanation=$1 WHERE id=$2',
-      [result, qId]
+      [value, qId]
     );
   },
   test: async (qId, result) => {

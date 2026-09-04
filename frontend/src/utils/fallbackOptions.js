@@ -26,20 +26,49 @@ export function buildTestOptions(question, distractorPool = []) {
   if (wrongs.length >= 3) return shuffle([correct, ...wrongs]);
 
   const correctNorm = norm(correct);
+  const correctLen = correct.length || 40;
   const picked = [];
   const used = new Set([correctNorm]);
-  const order = (distractorPool || []).map((_, i) => i);
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-  for (const idx of order) {
+
+  // Anti-bias: filter and sort distractorPool candidates by character length similarity
+  // to avoid making the correct answer an obvious length outlier.
+  const candidates = (distractorPool || [])
+    .filter(item => {
+      const n = norm(item?.text);
+      return n && n.length >= 8 && !used.has(n);
+    })
+    .map(item => ({
+      text: item.text,
+      lenDiff: Math.abs(item.text.length - correctLen),
+      ratio: item.text.length / (correctLen || 1),
+    }))
+    // Prefer candidates whose length is within 0.5x to 1.8x of correct answer
+    .filter(c => c.ratio >= 0.4 && c.ratio <= 2.2);
+
+  // Shuffle within buckets to keep variety while matching lengths
+  const sorted = candidates.sort((a, b) => (a.lenDiff - b.lenDiff) + (Math.random() * 20 - 10));
+
+  for (const item of sorted) {
     if (picked.length >= 3) break;
-    const n = norm(distractorPool[idx]?.text);
-    if (!n || n.length < 3 || used.has(n)) continue;
-    used.add(n);
-    picked.push(distractorPool[idx].text);
+    const n = norm(item.text);
+    if (!used.has(n)) {
+      used.add(n);
+      picked.push(item.text);
+    }
   }
+
+  // Fallback: if pool is small, take any remaining valid items
+  if (picked.length < 3) {
+    for (const item of distractorPool || []) {
+      if (picked.length >= 3) break;
+      const n = norm(item?.text);
+      if (n && n.length >= 5 && !used.has(n)) {
+        used.add(n);
+        picked.push(item.text);
+      }
+    }
+  }
+
   if (picked.length < 3) return [];
   return shuffle([correct, ...picked]);
 }

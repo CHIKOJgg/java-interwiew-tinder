@@ -175,16 +175,56 @@ export async function peekQuota(userId, limitType = 'requests') {
 // Check quota AND consume one unit. Returns { allowed:false, ... } with
 // status 429 already sent when exhausted (pass res), or { allowed:true }.
 export async function consumeQuota(userId, limitType = 'requests', res = null) {
+  if (!userId || isAdmin(userId)) return { allowed: true, admin: true };
+  const counterField = COUNTER_FIELD[limitType];
+  if (!counterField) return { allowed: true };
+
   const peek = await peekQuota(userId, limitType);
-  if (peek.admin || peek.allowed) {
-    if (!peek.admin && peek.counterField) await incrementCounter(userId, peek.counterField);
-    return { allowed: true, max: peek.max, used: (peek.used || 0) + 1 };
+  if (peek.admin) return { allowed: true, admin: true };
+  if (!peek.allowed) {
+    if (res) {
+      rateLimitExceeded(res, limitType);
+      return { allowed: false, responded: true, max: peek.max, used: peek.used };
+    }
+    return { allowed: false, max: peek.max, used: peek.used };
   }
-  if (res) {
-    rateLimitExceeded(res, limitType);
-    return { allowed: false, responded: true };
+
+  // Atomic reservation to prevent race conditions during concurrent bursts
+  if (redis && typeof redis.incr === 'function') {
+    try {
+      const redisKey = `counter:${userId}:${counterField}`;
+      const newCount = await redis.incr(redisKey);
+      const ttl = counterField.includes('month') ? 2592000 : 86400;
+      if (typeof redis.expire === 'function') await redis.expire(redisKey, ttl);
+
+      if (newCount > peek.max) {
+        // Rollback over-increment
+        if (typeof redis.decr === 'function') await redis.decr(redisKey).catch(() => {});
+        if (res) {
+          rateLimitExceeded(res, limitType);
+          return { allowed: false, responded: true, max: peek.max, used: peek.max };
+        }
+        return { allowed: false, max: peek.max, used: peek.max };
+      }
+
+      // Persist to DB without calling incrementCounter again (avoids double INCR in Redis)
+      await pool.query(`
+        INSERT INTO user_rate_limits (user_id, ${counterField}, last_request_at)
+        VALUES ($1, 1, CURRENT_TIMESTAMP)
+        ON CONFLICT (user_id) DO UPDATE
+        SET ${counterField} = user_rate_limits.${counterField} + 1,
+            last_request_at = CURRENT_TIMESTAMP
+      `, [userId]).catch(err => logger.error({ err }, 'Error persisting rate limit to DB'));
+
+      if (typeof redis.del === 'function') redis.del(`limits:${userId}`).catch(() => {});
+      return { allowed: true, max: peek.max, used: newCount };
+    } catch (err) {
+      logger.warn({ err }, 'Redis atomic increment error, falling back to standard increment');
+    }
   }
-  return { allowed: false, max: peek.max, used: peek.used };
+
+  await incrementCounter(userId, counterField);
+  return { allowed: true, max: peek.max, used: (peek.used || 0) + 1 };
 }
 
 export function rateLimitExceeded(res, limitType) {

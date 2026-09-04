@@ -300,65 +300,69 @@ async function callAI({ questionText, mode, language = 'Java', isJson, maxTokens
   const dedupKey = `${clusterId}:${mode}:${language}`;
   const model = getModelForMode(mode);
 
-  // 1. DB cache hit
-  const cached = await readCache(clusterId, mode, language);
-  if (cached) {
-    logger.info({ mode, language }, '📦 Cache hit');
-    if (isJson) {
-      try {
-        const parsed = parseAIResponse(cached);
-        validateParsed(mode, parsed);
-        return parsed;
-      } catch (err) {
-        // Cached response is invalid (old bad entry) — log and re-generate
-        logger.error({ err, mode }, 'Cached JSON invalid, regenerating');
-        // Delete the bad cache entry so it doesn't block future good responses
-        const cid = generateClusterId(questionText, language);
-        pool.query(
-          `DELETE FROM ai_cache WHERE cluster_id=$1 AND mode=$2 AND prompt_version=$3 AND language=$4`,
-          [cid, mode, PROMPT_VERSION, language]
-        ).catch((err) => logger.error({ err, cid, mode }, 'Failed to delete invalid cache entry'));
-      }
-    } else {
-      return cached;
-    }
-  }
-
-  // 2. Dedup concurrent identical requests
-  // Local dedup (same instance)
+  // 1. Dedup concurrent identical in-flight requests (same instance)
   if (pendingRequests.has(dedupKey)) {
     logger.info({ dedupKey }, '⏳ Joining in-flight (local)');
     return pendingRequests.get(dedupKey);
   }
 
-  // Distributed dedup hint (other instances)
-  // We use a short-lived key in Redis to signal that this is being generated
-  if (redis) {
-    const lockKey = `lock:${dedupKey}`;
-    const isLocked = await redis.get(lockKey);
-    if (isLocked) {
-       logger.info({ dedupKey }, '⏳ Joining in-flight (distributed wait)');
-       // Poll for result for 3 seconds max, then fall through to generate if still missing
-       for (let i = 0; i < 6; i++) {
-         await new Promise(r => setTimeout(r, 500));
-         const result = await readCache(clusterId, mode, language);
-         if (result) return isJson ? parseAIResponse(result) : result;
-       }
+  const executionPromise = (async () => {
+    // 2. DB / Redis cache hit
+    const cached = await readCache(clusterId, mode, language);
+    if (cached) {
+      logger.info({ mode, language }, '📦 Cache hit');
+      if (isJson) {
+        try {
+          const parsed = parseAIResponse(cached);
+          validateParsed(mode, parsed);
+          return parsed;
+        } catch (err) {
+          // Cached response is invalid (old bad entry) — log and re-generate
+          logger.error({ err, mode }, 'Cached JSON invalid, regenerating');
+          // Delete the bad cache entry so it doesn't block future good responses
+          const cid = generateClusterId(questionText, language);
+          pool.query(
+            `DELETE FROM ai_cache WHERE cluster_id=$1 AND mode=$2 AND prompt_version=$3 AND language=$4`,
+            [cid, mode, PROMPT_VERSION, language]
+          ).catch((err) => logger.error({ err, cid, mode }, 'Failed to delete invalid cache entry'));
+        }
+      } else {
+        return cached;
+      }
     }
-    // Set lock for 60s
-    redis.setex(lockKey, 60, '1').catch(err => logger.warn({ err }, 'Redis lock set failed'));
-  }
 
-  // 3. Call AI, validate, cache
-  const promise = (async () => {
+    // 3. Distributed dedup hint (other instances)
+    if (redis && typeof redis.get === 'function') {
+      const lockKey = `lock:${dedupKey}`;
+      try {
+        const isLocked = await redis.get(lockKey);
+        if (isLocked) {
+          logger.info({ dedupKey }, '⏳ Joining in-flight (distributed wait)');
+          // Poll for result for 3 seconds max, then fall through to generate if still missing
+          for (let i = 0; i < 6; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            const result = await readCache(clusterId, mode, language);
+            if (result) return isJson ? parseAIResponse(result) : result;
+          }
+        }
+        // Set lock for 60s
+        if (typeof redis.setex === 'function') {
+          redis.setex(lockKey, 60, '1').catch(err => logger.warn({ err }, 'Redis lock set failed'));
+        }
+      } catch (lockErr) {
+        logger.warn({ lockErr }, 'Redis lock check failed');
+      }
+    }
+
+    // 4. Call AI, validate, cache
     const content = await callOpenRouter(systemPrompt, userPrompt, maxTokens, temperature, model);
     await writeCache(clusterId, mode, language, content, isJson, model);
     return isJson ? parseAIResponse(content) : content;
   })();
 
-  pendingRequests.set(dedupKey, promise);
+  pendingRequests.set(dedupKey, executionPromise);
   try {
-    return await promise;
+    return await executionPromise;
   } finally {
     pendingRequests.delete(dedupKey);
   }

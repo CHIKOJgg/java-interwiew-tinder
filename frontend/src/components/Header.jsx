@@ -2,21 +2,22 @@ import React, { useState, useEffect } from 'react';
 import {
   TrendingUp, Menu, GraduationCap, Bug,
   Zap, Mic, Link, Braces, X, ChevronUp, Lock, Flame, SlidersHorizontal,
+  Layers, CheckSquare, Cpu, Compass,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore, { readinessFromStats } from '../store/useStore';
 import './Header.css';
 
 const MODES = [
-  { id: 'swipe', icon: GraduationCap, titleKey: 'modes.swipe', shortKey: 'modes.swipe' },
-  { id: 'test', icon: GraduationCap, titleKey: 'modes.test', shortKey: 'modes.test' },
-  { id: 'system-design', icon: TrendingUp, titleKey: 'modes.system_design', shortKey: 'modes.system_design' },
+  { id: 'swipe', icon: Layers, titleKey: 'modes.swipe', shortKey: 'modes.swipe' },
+  { id: 'test', icon: CheckSquare, titleKey: 'modes.test', shortKey: 'modes.test' },
+  { id: 'system-design', icon: Cpu, titleKey: 'modes.system_design', shortKey: 'modes.system_design' },
   { id: 'bug-hunting', icon: Bug, titleKey: 'modes.bug_hunting', shortKey: 'modes.bug_hunting' },
   { id: 'blitz', icon: Zap, titleKey: 'modes.blitz', shortKey: 'modes.blitz' },
   { id: 'mock-interview', icon: Mic, titleKey: 'modes.mock_interview', shortKey: 'modes.mock_interview' },
   { id: 'concept-linker', icon: Link, titleKey: 'modes.concept_linker', shortKey: 'modes.concept_linker' },
   { id: 'code-completion', icon: Braces, titleKey: 'modes.code_completion', shortKey: 'modes.code_completion' },
-  { id: 'track', icon: GraduationCap, titleKey: 'modes.track_mode', shortKey: 'modes.track_mode' },
+  { id: 'track', icon: Compass, titleKey: 'modes.track_mode', shortKey: 'modes.track_mode' },
 ];
 const BOTTOM_VISIBLE = 4;
 

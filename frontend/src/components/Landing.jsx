@@ -191,6 +191,11 @@ export default function Landing({ onStart, onLogin }) {
             <a className="hide-m" href="#pricing">Pricing</a>
             <a className="hide-m" href="#faq">FAQ</a>
             <a className="hide-m" href="#b2b">B2B</a>
+            {onLogin && (
+              <button className="btn sm ghost" onClick={onLogin} type="button" id="landLoginBtn" style={{ background: 'transparent' }}>
+                Log in
+              </button>
+            )}
             <a className="btn sm lime" href={miniAppUrl} target="_blank" rel="noopener">Start free</a>
           </nav>
         </div>
@@ -225,7 +230,10 @@ export default function Landing({ onStart, onLogin }) {
 
           <div className="mascot-wrap">
             <div className="swipe-frame" id="liveWidget">
-              <div className="fh"><span><span className="dot"></span>live from the question bank</span><span id="liveUpdated">{liveQ ? 'from the ' + liveLang + ' bank' : 'loading…'}</span></div>
+              <div className="fh">
+                <span><span className="dot"></span>Live question</span>
+                <span id="liveUpdated" className="live-lang-badge">{liveQ ? liveLang : 'loading…'}</span>
+              </div>
               <div id="liveBody">
                 {liveQ ? (
                   <div className="qcard">

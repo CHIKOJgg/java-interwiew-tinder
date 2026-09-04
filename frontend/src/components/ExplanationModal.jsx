@@ -241,7 +241,7 @@ const ExplanationModal = ({ isOpen, explanation, isLoading, onClose, onUpgrade }
 
         {!isLoading && !aiLimitReached && (
           <div className="modal-footer">
-            <button className="action-button" onClick={onClose}>{t('common.next', 'Next')} →</button>
+            <button className="action-button" onClick={onClose}>{t('explanation.got_it', 'Понятно')}</button>
           </div>
         )}
       </div>

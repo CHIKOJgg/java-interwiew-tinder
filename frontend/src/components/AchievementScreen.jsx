@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
-import { Target, Award, Trophy, Crown, Flame, Gem, Bug, Zap, Calendar, Hand, Check, RotateCcw } from 'lucide-react';
+import { Target, Award, Trophy, Crown, Flame, Gem, Bug, Zap, Calendar, Hand, Check, ArrowLeft } from 'lucide-react';
 import './AchievementScreen.css';
 
 const BADGE_MAP = {
@@ -38,7 +38,7 @@ function AchievementScreen({ onBack }) {
     <div className="achievement-screen">
       <div className="achievement-header">
         <button className="back-btn" onClick={onBack} type="button">
-          <RotateCcw size={20} />
+          <ArrowLeft size={20} />
         </button>
         <h1>{t('achievements.title', 'Achievements')}</h1>
         <div className="achievement-count">

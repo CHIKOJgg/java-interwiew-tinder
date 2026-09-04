@@ -392,15 +392,37 @@ if (initState === 'landing') {
   }
   if (initState === 'error') {
     return (
-      <div className="app-loading">
-        <p style={{ fontSize: 16, fontWeight: 600 }}>{t('auth.startup_error')}</p>
-        <p style={{ fontSize: 11, opacity: 0.6, marginTop: 8, textAlign: 'center', padding: '0 24px' }}>{authError}</p>
-        <button
-          onClick={() => window.location.reload()}
-          style={{ marginTop: 20, padding: '12px 24px', borderRadius: 12, background: '#5c7cfa', color: '#fff', border: 'none', fontSize: 15, cursor: 'pointer' }}
-        >
-          {t('auth.restart')}
-        </button>
+      <div className="app-loading" style={{ maxWidth: 380, margin: '0 auto', padding: 24 }}>
+        <div style={{
+          width: 56, height: 56, borderRadius: '50%',
+          border: '2.5px solid var(--ink)', background: 'var(--coral-soft, #ffe7e2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26
+        }}>
+          ⚠️
+        </div>
+        <p style={{ fontSize: 18, fontWeight: 800, fontFamily: 'JetBrains Mono, monospace', margin: '8px 0 0' }}>
+          {t('auth.startup_error', 'Сбой запуска')}
+        </p>
+        <p style={{ fontSize: 12, opacity: 0.75, textAlign: 'center', margin: '4px 0 16px', lineHeight: 1.5 }}>
+          {authError}
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+          <button
+            className="start-button"
+            onClick={() => window.location.reload()}
+            type="button"
+          >
+            {t('auth.restart', 'Перезапустить')}
+          </button>
+          <button
+            className="start-button ghost"
+            onClick={() => setInitState('demo')}
+            type="button"
+            style={{ background: 'var(--cream2)', border: '2px solid var(--ink)', color: 'var(--ink)' }}
+          >
+            {t('demo.title', 'Открыть демо-режим')}
+          </button>
+        </div>
       </div>
     );
   }

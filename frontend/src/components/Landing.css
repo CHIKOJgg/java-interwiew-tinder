@@ -12,6 +12,11 @@
 
 /* ── Landing page ── spec token override for standalone page */
 .landing-wrap {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   --cream: #F7F3E6; --cream2: #EFE9D8; --paper: #FFFDF7;
   --ink: #181510; --ink-soft: #5B5647;
   --line: #181510; /* same as --ink */
@@ -27,6 +32,16 @@
   background: var(--cream);
   color: var(--ink);
   line-height: 1.6;
+}
+
+.landing-wrap .live-lang-badge {
+  background: var(--blue-soft);
+  color: var(--blue);
+  border: 1.5px solid var(--blue);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .landing-wrap * { box-sizing: border-box; margin: 0; padding: 0; }

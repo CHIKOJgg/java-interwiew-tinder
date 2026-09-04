@@ -271,6 +271,29 @@ const QuestionCard = forwardRef(
                 </div>
               )}
 
+              {onSwipeLeft && onSwipeRight && (
+                <div className="card-swipe-actions">
+                  <button
+                    className="card-swipe-btn card-swipe-btn-left"
+                    onClick={(e) => { e.stopPropagation(); try { navigator.vibrate(10); } catch { /* optional haptic */ } onSwipeLeft(); }}
+                    disabled={swipeDisabled}
+                    type="button"
+                  >
+                    <X size={20} />
+                    <span>{t('swipe.dont_know')}</span>
+                  </button>
+                  <button
+                    className="card-swipe-btn card-swipe-btn-right"
+                    onClick={(e) => { e.stopPropagation(); try { navigator.vibrate(10); } catch { /* optional haptic */ } onSwipeRight(); }}
+                    disabled={swipeDisabled}
+                    type="button"
+                  >
+                    <Check size={20} />
+                    <span>{t('swipe.know')}</span>
+                  </button>
+                </div>
+              )}
+
               {isRepeat && (
                 <p className="sr-note">
                   <RotateCcw size={13} style={{marginRight: 5, flexShrink: 0}} /> {t('card.sr_note', 'Spaced repetition: this card came back because it\'s due for review — that\'s how it sticks in memory.')}

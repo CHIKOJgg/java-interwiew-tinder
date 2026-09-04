@@ -352,6 +352,27 @@ const useStore = create((set, get) => ({
     set({ theme: next });
   },
 
+  // ─── Interface language (ru/en) ────────────────────────────────────
+  // Switching the UI language also switches the question pool language:
+  // the feed is filtered server-side by `lng`, so stale cards must go.
+  setInterfaceLanguage: async (lng) => {
+    const { default: i18n } = await import('../i18n/config');
+    if (i18n.language === lng) return;
+    await i18n.changeLanguage(lng);
+    set({
+      questions: [],
+      currentIndex: 0,
+      hasMore: true,
+      feedCursor: 0,
+      feedSeed: '',
+      feedRefresher: false,
+      _loadingLock: false,
+      isLoadingQuestions: false,
+    });
+    get().loadQuestions().catch(() => {});
+    get().loadDistractors(true).catch(() => {});
+  },
+
   // ─── Questions ─────────────────────────────────────────────────────
   loadQuestions: async (append = false) => {
     if (get()._loadingLock) return;

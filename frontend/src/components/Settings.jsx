@@ -20,7 +20,7 @@ const FAQ_ITEMS = [
 
 function Settings({ onBack, onNavigate, onExport, onHelp }) {
   const { t, i18n } = useTranslation();
-  const { language, switchLanguage, user } = useStore();
+  const { language, switchLanguage, setInterfaceLanguage, user } = useStore();
   const [notifications, setNotifications] = useState(true);
   const isPremium = user?.plan && user.plan !== 'free';
 
@@ -73,12 +73,12 @@ function Settings({ onBack, onNavigate, onExport, onHelp }) {
               <button
                 type="button"
                 className={`settings-chip ${i18n.language === 'ru' ? 'active' : ''}`}
-                onClick={() => i18n.changeLanguage('ru')}
+                onClick={() => setInterfaceLanguage('ru')}
               >RU</button>
               <button
                 type="button"
                 className={`settings-chip ${i18n.language === 'en' ? 'active' : ''}`}
-                onClick={() => i18n.changeLanguage('en')}
+                onClick={() => setInterfaceLanguage('en')}
               >EN</button>
             </div>
           </div>

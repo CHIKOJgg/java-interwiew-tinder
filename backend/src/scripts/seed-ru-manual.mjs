@@ -5,6 +5,7 @@ import { questions as ts3 } from './seed-ru-ts3.mjs';
 import { questions as go1 } from './seed-ru-go1.mjs';
 import { questions as go2 } from './seed-ru-go2.mjs';
 import { questions as go3 } from './seed-ru-go3.mjs';
+import { questions as go4 } from './seed-ru-go4.mjs';
 import { questions as rust1 } from './seed-ru-rust1.mjs';
 import { questions as rust2 } from './seed-ru-rust2.mjs';
 import { questions as rust3 } from './seed-ru-rust3.mjs';
@@ -18,7 +19,7 @@ import { questions as kotlin3 } from './seed-ru-kotlin3.mjs';
 // ─── One-command seeder for all hand-authored RU batches ─────────────────
 // Railway Shell:  node src/scripts/seed-ru-manual.mjs
 // Idempotent: ON CONFLICT (question_text, language) DO NOTHING.
-const all = [ts1, ts2, ts3, go1, go2, go3, rust1, rust2, rust3, react1, react2, react3, kotlin1, kotlin2, kotlin3].flat();
+const all = [ts1, ts2, ts3, go1, go2, go3, go4, rust1, rust2, rust3, react1, react2, react3, kotlin1, kotlin2, kotlin3].flat();
 
 try {
   let inserted = 0, skipped = 0;

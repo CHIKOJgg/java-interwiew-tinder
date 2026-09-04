@@ -510,8 +510,8 @@ app.get('/api/demo/questions', demoLimiter, async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 10, 15);
     // Random-but-cheap sampling; a per-request seed keeps repeat visits fresh.
     const seed = String(req.query.seed || Math.random().toString(36).slice(2));
-    // RU-first + EN fallback: RU pool first (Cyrillic in SQL for speed),
-    // then top up with EN so the deck is never empty for Go/TS/Rust/React/Kotlin (~3 RU each).
+    // Interface-language pool: RU-first + EN top-up for lng=ru (thin RU pools
+    // in Go/TS/Rust/React/Kotlin), EN-only for lng=en so EN users never see RU.
     // Low-quality one-liners (short_answer < 20) are deprioritized via length ordering.
     const baseCols = `id, category, difficulty, question_text, short_answer, language`;
     // Cross-language pool: 'General' (System Design / DevOps / Architecture)
@@ -562,10 +562,12 @@ app.get('/api/demo/questions', demoLimiter, async (req, res) => {
         questions = [...questions, ...enQs];
       }
     } else {
+      // EN interface: strictly EN questions (no Cyrillic in either field).
       const { rows } = await pool.query(
         `SELECT ${baseCols}
        FROM questions
        WHERE ${baseWhere}
+         AND question_text !~ '[^ -~]' AND short_answer !~ '[^ -~]'
        ORDER BY CASE WHEN length(short_answer) < 20 THEN 1 ELSE 0 END ASC,
          md5(id::text || $2) ASC
        LIMIT $3`,
@@ -574,7 +576,7 @@ app.get('/api/demo/questions', demoLimiter, async (req, res) => {
       questions = rows.map(mapDemo);
       enCount = questions.length;
     }
-    res.json({ questions, meta: { language, total: questions.length, ruCount, enCount, fallback: interfaceLang === 'ru' && enCount > 0 } });
+    res.json({ questions, meta: { language, interfaceLang, total: questions.length, ruCount, enCount, fallback: interfaceLang === 'ru' && enCount > 0 } });
   } catch (err) {
     logger.error({ err }, 'Error in /demo/questions');
     res.status(500).json({ error: 'Internal server error' });
@@ -1080,6 +1082,11 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     if (interfaceLang === 'ru') {
       where.push(`q.question_text ~ '[^ -~]'`);
       where.push(`q.short_answer ~ '[^ -~]'`);
+    } else if (interfaceLang === 'en') {
+      // EN interface: strictly EN questions so switching UI to English
+      // switches the deck to English too.
+      where.push(`q.question_text !~ '[^ -~]'`);
+      where.push(`q.short_answer !~ '[^ -~]'`);
     }
     const params = [userId, language];
     let p = 3;
@@ -1144,6 +1151,9 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       if (interfaceLang === 'ru') {
         fWhere.push(`q.question_text ~ '[^ -~]'`);
         fWhere.push(`q.short_answer ~ '[^ -~]'`);
+      } else if (interfaceLang === 'en') {
+        fWhere.push(`q.question_text !~ '[^ -~]'`);
+        fWhere.push(`q.short_answer !~ '[^ -~]'`);
       }
       const fParams = [userId, language];
       let fp = 3;
@@ -1221,7 +1231,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     res.json({
       questions,
       meta: {
-        language, mode, total: questions.length, cursor,
+        language, mode, interfaceLang, total: questions.length, cursor,
         // Advance the cursor by EVERY row consumed (base + refresher filler),
         // not just the base rows — otherwise the refresher re-serves the same
         // known questions on every next page (repeated questions in the deck).
@@ -1298,7 +1308,9 @@ app.get('/api/questions/distractors', async (req, res) => {
     if (excludeIds.length > 0) { baseWhere.push(`NOT (q.id = ANY($${p}))`); params.push(excludeIds); p++; }
     const ruWhere = interfaceLang === 'ru'
       ? [...baseWhere, `q.short_answer ~ '[^ -~]'`, `q.question_text ~ '[^ -~]'`]
-      : baseWhere;
+      : interfaceLang === 'en'
+        ? [...baseWhere, `q.short_answer !~ '[^ -~]'`, `q.question_text !~ '[^ -~]'`]
+        : baseWhere;
     const result = await pool.query(
       `SELECT q.id, q.short_answer
        FROM questions q

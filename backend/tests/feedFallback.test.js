@@ -123,6 +123,31 @@ describe('GET /api/demo/questions — RU+EN fallback', () => {
     expect(pool.query).toHaveBeenCalledTimes(1);
   });
 
+  it('serves EN-only deck for lng=en with interfaceLang in meta', async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 201, category: 'Go Core', difficulty: 'Junior',
+          question_text: 'What is a goroutine?', short_answer: 'Lightweight thread managed by Go runtime.',
+          language: 'Go',
+        },
+        {
+          id: 202, category: 'Go Core', difficulty: 'Junior',
+          question_text: 'What is a channel?', short_answer: 'Typed conduit for goroutine communication.',
+          language: 'Go',
+        },
+      ],
+    });
+    const res = await request(app).get(
+      '/api/demo/questions?language=Go&limit=10&lng=en&seed=abc'
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.meta.interfaceLang).toBe('en');
+    expect(res.body.meta.fallback).toBe(false);
+    expect(res.body.meta.enCount).toBe(2);
+    expect(res.body.meta.ruCount).toBe(0);
+  });
+
   it('serves the shared General pool inside a language deck', async () => {
     pool.query.mockResolvedValueOnce({
       rows: [

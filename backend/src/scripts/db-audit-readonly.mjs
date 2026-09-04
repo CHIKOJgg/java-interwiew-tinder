@@ -50,6 +50,15 @@ const queries = {
     FROM questions WHERE is_active = TRUE AND question_text IS NOT NULL
     GROUP BY 1,2 HAVING COUNT(*) > 1 ORDER BY n DESC LIMIT 20`,
   tracks: `SELECT language, COUNT(*) AS tracks FROM learning_tracks WHERE is_active = TRUE GROUP BY 1 ORDER BY 1`,
+  track_steps: `
+    SELECT lt.language, lt.name AS track, COUNT(ts.id) AS steps,
+     COUNT(*) FILTER (WHERE q.id IS NULL OR q.is_active = FALSE) AS dead_steps
+    FROM learning_tracks lt
+    LEFT JOIN track_steps ts ON ts.track_id = lt.id
+    LEFT JOIN questions q ON q.id = ts.question_id
+    WHERE lt.is_active = TRUE
+    GROUP BY 1,2 ORDER BY 1,2`,
+  sd_per_lang: `SELECT language, COUNT(*) AS n FROM system_design_topics WHERE is_active = TRUE GROUP BY 1 ORDER BY 1`,
   companies: `SELECT COUNT(*) AS n FROM company_list`,
   totals: `SELECT COUNT(*) AS all_rows, COUNT(*) FILTER (WHERE is_active = TRUE) AS active FROM questions`,
 };

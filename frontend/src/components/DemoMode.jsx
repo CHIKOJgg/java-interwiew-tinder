@@ -51,7 +51,7 @@ const FALLBACK_QUESTIONS = {
 };
 
 export default function DemoMode({ onSignup, onExit, referralId }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState('Java');
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +90,9 @@ export default function DemoMode({ onSignup, onExit, referralId }) {
     }
   }, []);
 
-  useEffect(() => { load(language); }, [language, load]);
+  // getDemoQuestions reads i18n.language at call time, so reload the deck
+  // when the interface language changes (RU pool <-> EN pool).
+  useEffect(() => { load(language); }, [language, i18n.language, load]);
 
   const total = questions.length || DEMO_SIZE;
   const score = total > 0 ? Math.round((known / Math.max(total, 1)) * 100) : 0;

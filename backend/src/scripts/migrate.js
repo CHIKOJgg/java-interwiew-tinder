@@ -1445,6 +1445,27 @@ const migrations = [
          100, 1000, 'quality', 2400, 21600)
       ON CONFLICT (id) DO NOTHING;
     `
+  },
+  {
+    id: '047_sd_python_topics',
+    sql: `
+      -- Python System Design track parity with Java (15 Java topics, 0 Python).
+      -- Guarded: runs once via schema_migrations, plus NOT EXISTS for safety.
+      INSERT INTO system_design_topics (language, topic, title, description, difficulty, requirements, constraints, expected_components)
+      SELECT * FROM (VALUES
+        ('Python', 'design-tinyurl', 'Design TinyURL', 'Design a URL shortening service with a Python stack.', 'Junior', ARRAY['Generate short unique URLs', 'Redirect short URL to original', 'Track click analytics'], ARRAY['10M new URLs/month', '100M redirects/day', 'Low latency (<10ms redirect)'], ARRAY['Load Balancer', 'FastAPI Service', 'PostgreSQL', 'Redis Cache']),
+        ('Python', 'design-chat', 'Design WhatsApp / Messenger', 'Design a real-time messaging system with Django Channels / FastAPI WebSockets.', 'Middle', ARRAY['Send/receive messages in real-time', 'Support group chats', 'Message delivery status', 'Media sharing'], ARRAY['1B users', '100M messages/day', '<100ms delivery latency'], ARRAY['WebSocket Server (Django Channels)', 'Celery + Redis Queue', 'PostgreSQL', 'S3 for media']),
+        ('Python', 'design-newsfeed', 'Design Facebook / Instagram Feed', 'Design a social media newsfeed with fan-out.', 'Middle', ARRAY['Generate personalized feed', 'Support posts, photos, videos', 'Like/comment/share'], ARRAY['500M DAU', 'Feed loads in <500ms'], ARRAY['Load Balancer', 'Feed Service (FastAPI)', 'Cassandra', 'Redis', 'Celery Workers']),
+        ('Python', 'design-uber', 'Design Uber / Rider App', 'Design a ride-hailing service with geo matching.', 'Senior', ARRAY['Match riders with drivers', 'Real-time location tracking', 'ETA calculation', 'Payment processing'], ARRAY['100M users', '10M rides/day', '<1s matching latency'], ARRAY['FastAPI Gateway', 'Geo Service (Redis Geo)', 'Matching Engine (Celery)', 'PostgreSQL', 'Kafka']),
+        ('Python', 'design-ecommerce', 'Design Amazon / E-commerce', 'Design an e-commerce platform with Django.', 'Middle', ARRAY['Product catalog with search', 'Shopping cart', 'Order management', 'Payment processing'], ARRAY['200M products', '1M orders/day', 'Support flash sales (100K req/s)'], ARRAY['Django + DRF', 'Elasticsearch', 'PostgreSQL (sharded)', 'Redis', 'Celery Workers']),
+        ('Python', 'design-rate-limiter', 'Design Rate Limiter', 'Design a distributed rate limiter with Redis.', 'Middle', ARRAY['Rate limit API requests per user/IP', 'Support multiple rules', 'Low latency decisions'], ARRAY['100K req/s', '<1ms overhead'], ARRAY['Redis Cluster', 'FastAPI Middleware', 'Prometheus Metrics']),
+        ('Python', 'design-crawler', 'Design Web Crawler', 'Design a distributed crawler with Scrapy.', 'Middle', ARRAY['Crawl billions of pages', 'Detect duplicates', 'Respect robots.txt'], ARRAY['10B pages', 'Politeness delays', '100PB storage'], ARRAY['URL Frontier (Redis)', 'Scrapy Cluster', 'Bloom Filter', 'S3']),
+        ('Python', 'design-notifications', 'Design Notification System', 'Design multi-channel notifications with Celery.', 'Middle', ARRAY['Push/email/SMS notifications', 'Preference management', 'Scheduled sending'], ARRAY['10M notifications/day', '<1s delivery'], ARRAY['Celery Beat', 'Redis Queue', 'FCM/APNS Connectors', 'PostgreSQL']),
+        ('Python', 'design-ml-features', 'Design ML Feature Store', 'Design an ML feature platform with Feast.', 'Senior', ARRAY['Serve online/offline features', 'Point-in-time correctness', 'Feature monitoring'], ARRAY['10M predictions/day', '<50ms online serving'], ARRAY['Feast Registry', 'Redis Online Store', 'Parquet Offline Store', 'Airflow Pipelines']),
+        ('Python', 'design-kvstore', 'Design Distributed Key-Value Store', 'Design a consistent-hash KV store.', 'Senior', ARRAY['Get/put with replication', 'Fault tolerance', 'Tunable consistency'], ARRAY['1M QPS', '100TB data', '99.999% availability'], ARRAY['Consistent Hashing Ring', 'Replication Manager', 'RocksDB Storage'])
+      ) AS v(language, topic, title, description, difficulty, requirements, constraints, expected_components)
+      WHERE NOT EXISTS (SELECT 1 FROM system_design_topics WHERE language = 'Python');
+    `
   }
 ];
 

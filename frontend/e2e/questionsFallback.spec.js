@@ -78,6 +78,39 @@ test.describe('Questions fallback (RU+EN)', () => {
     await expect(page.locator('.demo-card-shell').first()).toBeVisible();
   });
 
+  test('EN interface requests the EN pool (lng=en flows to API)', async ({ page }) => {
+    await page.addInitScript(() => window.localStorage.setItem('app_language', 'en'));
+    let requestedLng = null;
+    await page.route(
+      (url) => url.pathname.startsWith('/api/'),
+      async (route) => {
+        const url = new URL(route.request().url());
+        if (url.pathname.endsWith('/demo/questions')) {
+          requestedLng = url.searchParams.get('lng');
+          const lang = url.searchParams.get('language') || 'Java';
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              questions: enQuestions(lang, 5),
+              meta: { language: lang, total: 5, ruCount: 0, enCount: 5, fallback: false },
+            }),
+          });
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ questions: [], tracks: [] }),
+        });
+      }
+    );
+    await page.goto('/');
+    await page.locator('#ctaHero').click();
+    await expect(page.locator('.demo-card-shell').first()).toBeVisible();
+    expect(requestedLng).toBe('en');
+  });
+
   test('switching demo language reloads the deck', async ({ page }) => {
     await mockDemo(page, (url) => {
       const lang = url.searchParams.get('language') || 'Java';

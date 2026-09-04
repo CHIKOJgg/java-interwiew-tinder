@@ -9,11 +9,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import pool, { rbPool } from './config/database.js';
 import { resolveAuth, upsertUser, issueEmailCode, verifyEmailCode } from './utils/authProviders.js';
-import { evaluateInterviewAnswer, analyzeResume, checkCache } from './services/aiService.js';
+import { evaluateInterviewAnswer, analyzeResume, checkCache, evictCache } from './services/aiService.js';
 import { enqueueJob } from './services/queueService.js';
 import { getAvailableLanguages } from './services/languageRegistry.js';
 import { requestLogger, validateBody, sanitizeBody } from './middleware/logging.js';
-import { rateLimit, requireEntitlement } from './middleware/rateLimiter.js';
+import { rateLimit, requireEntitlement, consumeQuota } from './middleware/rateLimiter.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { billingService } from './services/billingService.js';
 import { sendStarsInvoice, getStarsAmount, answerPreCheckout, sendTelegramMessage, activateStarsSubscription } from './services/billing/starsService.js';
@@ -1353,7 +1353,7 @@ const JSON_GENERATION_MODES = new Set(['test', 'bug', 'blitz', 'code']);
 // Warm several questions with one authenticated request. The server resolves
 // every question by id, so the browser cannot make a worker backfill data into
 // a different question by sending a forged text/id pair.
-app.post('/api/generate/batch', rateLimit('ai_generation'), async (req, res) => {
+app.post('/api/generate/batch', async (req, res) => {
   try {
     const { type, questionIds, language = 'Java' } = req.body || {};
     if (!GENERATION_TYPES.has(type) || type === 'explanation') {
@@ -1388,7 +1388,8 @@ app.post('/api/generate/batch', rateLimit('ai_generation'), async (req, res) => 
       if (!data || (Array.isArray(data) && data.length === 0)) {
         const cachedRaw = await checkCache(question.question_text, type, null, question.language || language);
         if (cachedRaw) {
-          try { data = JSON_GENERATION_MODES.has(type) ? JSON.parse(cachedRaw) : cachedRaw; } catch { data = null; }
+          try { data = JSON_GENERATION_MODES.has(type) ? JSON.parse(cachedRaw) : cachedRaw; }
+          catch { data = null; evictAiCache(question.question_text, type, question.language || language).catch(() => {}); }
         }
       }
       const hasData = type === 'test'
@@ -1399,6 +1400,17 @@ app.post('/api/generate/batch', rateLimit('ai_generation'), async (req, res) => 
         continue;
       }
 
+      // Quota is consumed only for genuinely new generations — cache hits
+      // and status polls above are free (previously every poll burned quota).
+      const quota = await consumeQuota(req.userId, 'ai_generation');
+      if (!quota.allowed) {
+        return res.status(429).json({
+          error: 'Rate limit exceeded',
+          type: 'ai_generation',
+          message: 'Upgrade your plan for higher limits',
+          items,
+        });
+      }
       await enqueueJob(type, {
         questionId: id,
         questionText: question.question_text,
@@ -1415,7 +1427,7 @@ app.post('/api/generate/batch', rateLimit('ai_generation'), async (req, res) => 
   }
 });
 
-app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => {
+app.post('/api/generate/:type', async (req, res) => {
   try {
     const { type } = req.params;
     let { questionText, shortAnswer, category, questionId, language = 'Java' } = req.body;
@@ -1444,14 +1456,30 @@ app.post('/api/generate/:type', rateLimit('ai_generation'), async (req, res) => 
     if (cachedRaw) {
       // Bug 2 fix: parse JSON modes before sending so the client gets a real object,
       // not a string. Text modes (explanation) are sent as-is.
+      // Stale non-JSON entries (pre-validation cache) are evicted so the next
+      // poll regenerates instead of looping on garbage forever.
       const JSON_MODES = new Set(['test', 'bug', 'blitz', 'code']);
       let data = cachedRaw;
       if (JSON_MODES.has(mode)) {
-        try { data = JSON.parse(cachedRaw); } catch (err) { logger.error({ err, questionId }, 'Failed to parse cached AI data'); /* keep raw string */ }
+        try { data = JSON.parse(cachedRaw); } catch (err) {
+          logger.error({ err, questionId }, 'Failed to parse cached AI data — evicting');
+          await evictAiCache(questionText, mode, language);
+          data = null;
+        }
+        if (data === null) {
+          const quota = await consumeQuota(userId, 'ai_generation', res);
+          if (!quota.allowed) return; // 429 already sent
+          await enqueueJob(type, { questionText, shortAnswer, category, questionId, language });
+          return res.json({ status: 'pending' });
+        }
       }
       return res.json({ status: 'ready', data });
     }
 
+    // Quota is consumed only for genuinely new generations — polls that find
+    // cached data above are free (previously every poll burned quota).
+    const quota = await consumeQuota(userId, 'ai_generation', res);
+    if (!quota.allowed) return; // 429 already sent
     // userId is intentionally excluded from deterministic question jobs. The
     // generated artifact is shared by users through the AI cache.
     await enqueueJob(type, { questionText, shortAnswer, category, questionId, language });
@@ -1484,10 +1512,20 @@ app.post('/api/execute',
 
 // в”Ђв”Ђв”Ђ Helpers в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
+// Evict a poisoned AI cache entry (DB + best-effort Redis) so the caller
+// regenerates instead of looping on garbage.
+async function evictAiCache(questionText, mode, language) {
+  try {
+    await evictCache(questionText, mode, language);
+  } catch (err) {
+    logger.error({ err, mode, language }, 'evictAiCache failed');
+  }
+}
+
 // Resolve AI-generated data for a question.
 // Priority: questions table column (fast, backfilled by worker)
-//           в†’ ai_cache (slower, direct lookup)
-//           в†’ null (not yet generated)
+//           → ai_cache (slower, direct lookup)
+//           → null (not yet generated)
 async function resolveAIData(questionId, columnName, cacheMode) {
   // Whitelist AI data columns вЂ” callers pass constants today, but this
   // prevents any future refactor from opening a SQL injection path.
@@ -1518,7 +1556,8 @@ async function resolveAIData(questionId, columnName, cacheMode) {
         // Opportunistically backfill so next hit is fast
         await pool.query(`UPDATE questions SET ${columnName}=$1 WHERE id=$2`, [JSON.stringify(data), questionId]).catch(err => logger.error({ err, questionId }, 'Failed to backfill AI data'));
       } catch (err) {
-        logger.error({ err, questionId }, 'Failed to parse cached AI data');
+        logger.error({ err, questionId }, 'Failed to parse cached AI data — evicting');
+        await evictAiCache(row.question_text, cacheMode, row.language || 'Java');
         data = null;
       }
     }
@@ -2002,7 +2041,7 @@ function setEnqueueLock(key, value) {
 function getEnqueueLock(key) { return explanationEnqueueLock.get(key); }
 function delEnqueueLock(key) { explanationEnqueueLock.delete(key); }
 
-app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) => {
+app.post('/api/questions/explain', async (req, res) => {
   try {
     const { questionId } = req.body;
     const userId = req.userId;
@@ -2059,6 +2098,12 @@ app.post('/api/questions/explain', rateLimit('ai_generation'), async (req, res) 
     }
 
     logger.info({ questionId, language }, 'рџ¤– Generating explanation (queued)');
+
+    // Monthly AI quota is consumed only for genuinely new generations —
+    // cached explanations above are free (previously every call, cached or
+    // not, burned one unit of the monthly quota).
+    const quota = await consumeQuota(userId, 'ai_generation', res);
+    if (!quota.allowed) return; // 429 already sent
 
     // De-dupe: only enqueue a fresh generation job if we haven't already
     // enqueued one for this question in the last ~20s (rapid polling would

@@ -121,9 +121,16 @@ function validateParsed(mode, parsed) {
   return true;
 }
 
+// Redis keys are versioned with PROMPT_VERSION: entries written before cache
+// validation existed (or under an older prompt) are never read back, so they
+// can't poison responses with unparseable data. Old keys expire via TTL.
+function redisKeyFor(mode, language, clusterId) {
+  return `ai:${PROMPT_VERSION}:${mode}:${language}:${clusterId}`;
+}
+
 // ─── Cache — read ─────────────────────────────────────────────────────
 async function readCache(clusterId, mode, language) {
-  const redisKey = `ai:${mode}:${language}:${clusterId}`;
+  const redisKey = redisKeyFor(mode, language, clusterId);
   
   // 1. Check Redis first
   if (redis) {
@@ -186,11 +193,26 @@ async function writeCache(clusterId, mode, language, content, isJson, model = ge
 
     // 2. Write to Redis (fast, 30 days TTL)
     if (redis) {
-      const redisKey = `ai:${mode}:${language}:${clusterId}`;
+      const redisKey = redisKeyFor(mode, language, clusterId);
       await redis.setex(redisKey, 2592000, content);
     }
   } catch (err) {
     logger.error({ err, clusterId, mode }, 'Cache write error');
+  }
+}
+
+// ─── Cache — evict ──────────────────────────────────────────────────────
+// Removes a poisoned cache entry (both PostgreSQL and Redis) so the next
+// request regenerates instead of looping on unparseable data forever.
+export async function evictCache(questionText, mode, language = 'Java') {
+  const clusterId = generateClusterId(questionText, language);
+  await pool.query(
+    `DELETE FROM ai_cache WHERE cluster_id=$1 AND mode=$2 AND prompt_version=$3 AND language=$4`,
+    [clusterId, mode, PROMPT_VERSION, language]
+  ).catch((err) => logger.error({ err, clusterId, mode }, 'Cache evict error'));
+  if (redis) {
+    await redis.del(redisKeyFor(mode, language, clusterId))
+      .catch((err) => logger.warn({ err }, 'Redis evict failed'));
   }
 }
 

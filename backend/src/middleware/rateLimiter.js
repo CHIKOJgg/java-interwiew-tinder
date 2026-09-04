@@ -118,100 +118,141 @@ export async function incrementCounter(userId, field) {
   }
 }
 
+const COUNTER_FIELD = {
+  requests: 'requests_today',
+  ai_generation: 'ai_generations_this_month',
+  resume: 'resume_analyses_this_month',
+  interview: 'interview_evals_this_month',
+  code_executions: 'code_executions_today',
+  sd_evaluation: 'sd_evaluations_today',
+};
+
+// Counter field → corresponding max-capacity column. The DB column
+// names are not a simple suffix swap, so map explicitly to avoid
+// resolving `max` to `undefined` (which would disable the limiter).
+const MAX_FIELD = {
+  requests_today: 'requests_per_day',
+  ai_generations_this_month: 'ai_generations_per_month',
+  resume_analyses_this_month: 'resume_analysis_limit',
+  interview_evals_this_month: 'interview_eval_limit',
+  code_executions_today: 'requests_per_day',
+  sd_evaluations_today: 'sd_evaluation_limit',
+};
+
+// Read the live counter value (Redis first, DB fallback) and compare with
+// the max. Single place where counter semantics live — peekQuota,
+// consumeQuota and the middleware all go through here.
+async function checkCounter(userId, counterField, limits) {
+  let currentCount = 0;
+  if (redis) {
+    try {
+      const val = await redis.get(`counter:${userId}:${counterField}`);
+      currentCount = val ? parseInt(val) : limits[counterField];
+    } catch {
+      currentCount = limits[counterField];
+    }
+  } else {
+    currentCount = limits[counterField];
+  }
+  const maxKey = MAX_FIELD[counterField];
+  const max = Number((maxKey && limits[maxKey]) || (maxKey && FREE_DEFAULTS[maxKey]) || FREE_DEFAULTS.requests_per_day) || 0;
+  const used = Number(currentCount) || 0;
+  return { allowed: used < max, max, used, counterField };
+}
+
+// Check quota WITHOUT consuming it. Used by endpoints that serve cached
+// results for free and only spend quota when actually generating.
+export async function peekQuota(userId, limitType = 'requests') {
+  if (!userId || isAdmin(userId)) return { allowed: true, admin: true };
+  const counterField = COUNTER_FIELD[limitType];
+  if (!counterField) return { allowed: true };
+  let limits = await getUserLimits(userId);
+  if (!limits) return { allowed: true };
+  limits = await resetStaleCounters(userId, limits);
+  return checkCounter(userId, counterField, limits);
+}
+
+// Check quota AND consume one unit. Returns { allowed:false, ... } with
+// status 429 already sent when exhausted (pass res), or { allowed:true }.
+export async function consumeQuota(userId, limitType = 'requests', res = null) {
+  const peek = await peekQuota(userId, limitType);
+  if (peek.admin || peek.allowed) {
+    if (!peek.admin && peek.counterField) await incrementCounter(userId, peek.counterField);
+    return { allowed: true, max: peek.max, used: (peek.used || 0) + 1 };
+  }
+  if (res) {
+    rateLimitExceeded(res, limitType);
+    return { allowed: false, responded: true };
+  }
+  return { allowed: false, max: peek.max, used: peek.used };
+}
+
+export function rateLimitExceeded(res, limitType) {
+  return res.status(429).json({
+    error: 'Rate limit exceeded',
+    type: limitType,
+    message: 'Upgrade your plan for higher limits',
+  });
+}
+
+// Reset stale daily/monthly counters. Called by both the middleware and the
+// explicit consume paths so counters can't grow forever on routes that only
+// use peekQuota/consumeQuota.
+export async function resetStaleCounters(userId, limits) {
+  if (!limits) return limits;
+  const now = new Date();
+  if (limits.daily_reset_at && new Date(limits.daily_reset_at).getDate() !== now.getDate()) {
+    await pool.query(
+      'UPDATE user_rate_limits SET requests_today = 0, daily_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1',
+      [userId]
+    ).catch(err => logger.error({ err }, 'Failed to reset daily rate limits'));
+    if (redis) {
+      redis.del(`limits:${userId}`).catch(err => logger.warn({ err }, 'Redis del failed'));
+      redis.del(`counter:${userId}:requests_today`).catch(err => logger.warn({ err }, 'Redis counter del failed'));
+    }
+    limits = await getUserLimits(userId);
+  }
+  if (limits.monthly_reset_at && new Date(limits.monthly_reset_at).getMonth() !== now.getMonth()) {
+    await pool.query(
+      `UPDATE user_rate_limits SET ai_generations_this_month = 0, resume_analyses_this_month = 0,
+       interview_evals_this_month = 0, monthly_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
+      [userId]
+    ).catch(err => logger.error({ err }, 'Failed to reset monthly rate limits'));
+    if (redis) {
+      redis.del(`limits:${userId}`).catch(err => logger.warn({ err }, 'Redis del failed'));
+      redis.keys(`counter:${userId}:*_month`).then(keys => {
+        if (keys.length > 0) redis.del(...keys);
+      }).catch(err => logger.warn({ err }, 'Redis monthly keys cleanup failed'));
+    }
+    limits = await getUserLimits(userId);
+  }
+  return limits;
+}
+
 export function rateLimit(limitType = 'requests') {
   return async (req, res, next) => {
     const userId = req.userId;
     if (!userId || isAdmin(userId)) return next();
 
-    const limits = await getUserLimits(userId);
+    let limits = await getUserLimits(userId);
     if (!limits) return next(); // admin or error — let through
 
     // Reset stale counters in DB
-    const now = new Date();
-    if (limits.daily_reset_at && new Date(limits.daily_reset_at).getDate() !== now.getDate()) {
-      await pool.query(
-        'UPDATE user_rate_limits SET requests_today = 0, daily_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1',
-        [userId]
-      ).catch(err => logger.error({ err }, 'Failed to reset daily rate limits'));
-      if (redis) {
-        redis.del(`limits:${userId}`).catch(err => logger.warn({ err }, 'Redis del failed'));
-        redis.del(`counter:${userId}:requests_today`).catch(err => logger.warn({ err }, 'Redis counter del failed'));
-      }
-    }
-    if (limits.monthly_reset_at && new Date(limits.monthly_reset_at).getMonth() !== now.getMonth()) {
-      await pool.query(
-        `UPDATE user_rate_limits SET ai_generations_this_month = 0, resume_analyses_this_month = 0,
-         interview_evals_this_month = 0, monthly_reset_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
-        [userId]
-      ).catch(err => logger.error({ err }, 'Failed to reset monthly rate limits'));
-      if (redis) {
-        redis.del(`limits:${userId}`).catch(err => logger.warn({ err }, 'Redis del failed'));
-        redis.keys(`counter:${userId}:*_month`).then(keys => {
-          if (keys.length > 0) redis.del(...keys);
-        }).catch(err => logger.warn({ err }, 'Redis monthly keys cleanup failed'));
-      }
-    }
+    limits = await resetStaleCounters(userId, limits);
 
-    // 2. Check current counter value (prefer Redis for distributed accuracy)
-    let currentCount = 0;
+    // 2. Check current counter value (prefer Redis for distributed accuracy).
+    // NOTE: checkCounter is the single place for counter semantics —
+    // peekQuota/consumeQuota share it; keep them in sync.
+    const counterField = COUNTER_FIELD[limitType];
     let exceeded = false;
-    let counterField;
-
-    switch (limitType) {
-      case 'requests':
-        counterField = 'requests_today';
-        break;
-      case 'ai_generation':
-        counterField = 'ai_generations_this_month';
-        break;
-      case 'resume':
-        counterField = 'resume_analyses_this_month';
-        break;
-      case 'interview':
-        counterField = 'interview_evals_this_month';
-        break;
-      case 'code_executions':
-        counterField = 'code_executions_today';
-        break;
-      case 'sd_evaluation':
-        counterField = 'sd_evaluations_today';
-        break;
-    }
 
     if (counterField) {
-      if (redis) {
-        try {
-          const val = await redis.get(`counter:${userId}:${counterField}`);
-          currentCount = val ? parseInt(val) : limits[counterField];
-        } catch {
-          currentCount = limits[counterField];
-        }
-      } else {
-        currentCount = limits[counterField];
-      }
-
-      // Counter field → corresponding max-capacity column. The DB column
-      // names are not a simple suffix swap, so map explicitly to avoid
-      // resolving `max` to `undefined` (which would disable the limiter).
-      const MAX_FIELD = {
-        requests_today: 'requests_per_day',
-        ai_generations_this_month: 'ai_generations_per_month',
-        resume_analyses_this_month: 'resume_analysis_limit',
-        interview_evals_this_month: 'interview_eval_limit',
-        code_executions_today: 'requests_per_day',
-        sd_evaluations_today: 'sd_evaluation_limit',
-      };
-    const maxKey = MAX_FIELD[counterField];
-      const max = (maxKey && limits[maxKey]) || (maxKey && FREE_DEFAULTS[maxKey]) || FREE_DEFAULTS.requests_per_day;
-      exceeded = currentCount >= max;
+      const peek = await checkCounter(userId, counterField, limits);
+      exceeded = !peek.allowed;
     }
 
     if (exceeded) {
-      return res.status(429).json({
-        error: 'Rate limit exceeded',
-        type: limitType,
-        message: 'Upgrade your plan for higher limits',
-      });
+      return rateLimitExceeded(res, limitType);
     }
 
     if (counterField) await incrementCounter(userId, counterField);

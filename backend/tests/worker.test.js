@@ -145,14 +145,14 @@ describe('worker — BACKFILL guards', () => {
     pool.query = orig;
   });
 
-  it('test backfill writes non-empty options', async () => {
+  it('test backfill writes non-empty options as JSON string', async () => {
     const q = vi.fn().mockResolvedValue(undefined);
     const orig = pool.query;
     pool.query = q;
     await BACKFILL.test(5, [{ text: 'a' }]);
     expect(q).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE questions'),
-      [[{ text: 'a' }], 5],
+      ['[{"text":"a"}]', 5],
     );
     pool.query = orig;
   });

@@ -839,16 +839,12 @@ describe('POST /api/questions/explain', () => {
   });
 
   it('404 unknown question', async () => {
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: getUserLimits
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: incrementCounter
     pool.query.mockResolvedValueOnce({ rows: [] }); // question SELECT
     const res = await request(app).post('/api/questions/explain').set('Authorization', `Bearer ${userToken}`).send({ questionId: '999' });
     expect(res.status).toBe(404);
   });
 
   it('cached_explanation -> cached', async () => {
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: getUserLimits
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: incrementCounter
     pool.query.mockResolvedValueOnce({ rows: [{ id: 1, question_text: 'q', short_answer: 'a', cached_explanation: 'expl', language: 'Java' }] });
     const res = await request(app).post('/api/questions/explain').set('Authorization', `Bearer ${userToken}`).send({ questionId: '1' });
     expect(res.status).toBe(200);
@@ -856,8 +852,6 @@ describe('POST /api/questions/explain', () => {
   });
 
   it('ai cache hit -> cached', async () => {
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: getUserLimits
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: incrementCounter
     pool.query.mockResolvedValueOnce({ rows: [{ id: 1, question_text: 'q', short_answer: 'a', cached_explanation: null, language: 'Java' }] });
     checkCache.mockResolvedValueOnce('cached ai');
     const res = await request(app).post('/api/questions/explain').set('Authorization', `Bearer ${userToken}`).send({ questionId: '1' });
@@ -866,8 +860,6 @@ describe('POST /api/questions/explain', () => {
   });
 
   it('free daily limit -> 403 DAILY_AI_LIMIT', async () => {
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: getUserLimits
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: incrementCounter
     pool.query.mockResolvedValueOnce({ rows: [{ id: 1, question_text: 'q', short_answer: 'a', cached_explanation: null, language: 'Java' }] });
     checkCache.mockResolvedValueOnce(null);
     pool.query.mockResolvedValueOnce({ rows: [{ subscription_plan: 'free' }] });
@@ -879,22 +871,20 @@ describe('POST /api/questions/explain', () => {
   });
 
   it('pending when not cached (free under limit)', async () => {
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: getUserLimits
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: incrementCounter
     pool.query.mockResolvedValueOnce({ rows: [{ id: 1, question_text: 'q', short_answer: 'a', cached_explanation: null, language: 'Java' }] });
     checkCache.mockResolvedValueOnce(null);
     pool.query.mockResolvedValueOnce({ rows: [{ subscription_plan: 'free' }] });
     pool.query.mockResolvedValueOnce({ rows: [] }); // upsert
     pool.query.mockResolvedValueOnce({ rows: [{ ai_explanations_today: 0 }] }); // select
     pool.query.mockResolvedValueOnce({ rows: [] }); // increment
+    pool.query.mockResolvedValueOnce({ rows: [] }); // consumeQuota: getUserLimits (FREE_DEFAULTS)
+    pool.query.mockResolvedValueOnce({ rows: [] }); // consumeQuota: incrementCounter
     const res = await request(app).post('/api/questions/explain').set('Authorization', `Bearer ${userToken}`).send({ questionId: '1' });
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('pending');
   });
 
   it('500 on error', async () => {
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: getUserLimits
-    pool.query.mockResolvedValueOnce({ rows: [] }); // rateLimit: incrementCounter
     pool.query.mockRejectedValueOnce(new Error('x')); // question SELECT
     const res = await request(app).post('/api/questions/explain').set('Authorization', `Bearer ${userToken}`).send({ questionId: '1' });
     expect(res.status).toBe(500);

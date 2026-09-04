@@ -22,12 +22,14 @@ const BACKFILL = {
       logger.warn({ qId }, 'Backfill skip [test]: AI returned empty options array');
       return; // Don't save [] to postgres ARRAY column — causes malformed array literal error
     }
+    // options column is JSONB (044): a raw JS array would be sent as a PG
+    // array literal and fail with 22P02 — stringify explicitly.
     await pool.query(
       `UPDATE questions
        SET options=$1,
            test_ready = COALESCE(test_ready, FALSE)
        WHERE id=$2`,
-      [options, qId]
+      [JSON.stringify(options), qId]
     );
   },
   bug: async (qId, result) => {

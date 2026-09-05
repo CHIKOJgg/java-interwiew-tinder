@@ -716,6 +716,12 @@
     "search_placeholder": "Search top questions...",
     "empty": "No matching top questions found.",
     "answer_label": "Answer",
-    "rank": "Rank"
+    "rank": "Rank",
+    "top_100_banner_title": "TOP 100 Interview Questions",
+    "top_100_banner_desc": "High-frequency questions asked in 80% of tech interviews",
+    "top_100_chip": "TOP 100",
+    "enable": "Select",
+    "enabled": "Selected",
+    "view_list": "List"
   }
 }

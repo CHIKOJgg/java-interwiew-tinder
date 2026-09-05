@@ -34,9 +34,24 @@ describe('Question Filters & Anti-Bias Options', () => {
     expect(screen.getByText('Middle')).toBeDefined();
     expect(screen.getByText('Senior')).toBeDefined();
     expect(screen.getByText('Filters')).toBeDefined();
+    expect(screen.getByText(/top 100/i)).toBeDefined();
 
     fireEvent.click(screen.getByText('Filters'));
     expect(onOpenFilters).toHaveBeenCalledTimes(1);
+  });
+
+  it('toggles TOP 100 questions on chip click', () => {
+    render(<QuickFilterBar onOpenFilters={vi.fn()} />);
+
+    expect(useStore.getState().filterOnlyTop).toBe(false);
+
+    const topBtn = screen.getByText(/top 100/i);
+    fireEvent.click(topBtn);
+
+    expect(useStore.getState().filterOnlyTop).toBe(true);
+
+    fireEvent.click(topBtn);
+    expect(useStore.getState().filterOnlyTop).toBe(false);
   });
 
   it('updates selected difficulties on chip click', () => {

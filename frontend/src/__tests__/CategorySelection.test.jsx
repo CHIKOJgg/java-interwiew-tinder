@@ -129,4 +129,38 @@ describe('CategorySelection Component & Scrolling Structure', () => {
     const companyChips = container.querySelector('.company-chips');
     expect(companyChips).toBeInTheDocument();
   });
+
+  it('renders TOP 100 questions banner and toggles selection', async () => {
+    const onOpenTop = vi.fn();
+    const onComplete = vi.fn();
+    render(<CategorySelection onComplete={onComplete} onBack={vi.fn()} onOpenTopQuestions={onOpenTop} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Core Java')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('TOP 100')).toBeInTheDocument();
+    expect(screen.getByText('TOP 100 Interview Questions')).toBeInTheDocument();
+
+    // Toggle TOP 100
+    const toggleBtn = screen.getByText('Select');
+    fireEvent.click(toggleBtn);
+
+    expect(screen.getByText('Selected')).toBeInTheDocument();
+
+    // Click list link
+    const listBtn = screen.getByText(/List/i);
+    fireEvent.click(listBtn);
+    expect(onOpenTop).toHaveBeenCalledTimes(1);
+
+    // Apply saves filterOnlyTop to store
+    const applyBtn = screen.getByText('Apply');
+    fireEvent.click(applyBtn);
+
+    await waitFor(() => {
+      expect(useStore.getState().filterOnlyTop).toBe(true);
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+  });
 });
+

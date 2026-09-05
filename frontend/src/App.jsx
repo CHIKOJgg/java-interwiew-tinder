@@ -436,7 +436,7 @@ if (initState === 'landing') {
   />;
 if (screen === 'track-detail') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TrackDetail trackId={currentTrackId} onStart={() => { useStore.getState().startTrack(currentTrackId); setScreen('main'); }} onBack={() => setScreen('tracks')} /></Suspense>;
    if (screen === 'companies') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><CompaniesScreen onBack={() => setScreen('main')} /></Suspense>;
-   if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('main')} />;
+   if (screen === 'category') return <CategorySelection onComplete={handleCategoryDone} onBack={() => setScreen('main')} onOpenTopQuestions={() => setScreen('top-questions')} />;
   if (screen === 'resume') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ResumeAnalyzer onBack={() => setScreen('main')} onStartPractice={() => { useStore.getState().setLearningMode('swipe'); setScreen('main'); }} /></Suspense>;
   if (screen === 'vacancy') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><VacancyPrep onBack={() => setScreen('main')} /></Suspense>;
   if (screen === 'trends') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><MarketTrends onBack={() => setScreen('main')} /></Suspense>;

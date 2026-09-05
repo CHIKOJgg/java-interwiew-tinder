@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Check, ArrowLeft, Inbox } from 'lucide-react';
+import { Check, ArrowLeft, Inbox, Flame } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonGrid } from './Skeleton';
 import api from '../api/client';
@@ -25,7 +25,7 @@ function saveCategoriesCache(data) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data })); } catch { /* ignore */ }
 }
 
-const CategorySelection = ({ onComplete, onBack }) => {
+const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
   const { t } = useTranslation();
   const {
     setSelectedCategories,
@@ -34,6 +34,8 @@ const CategorySelection = ({ onComplete, onBack }) => {
     setSelectedFrameworks,
     setSelectedTopics,
     setTopicSearchQuery,
+    filterOnlyTop: savedFilterOnlyTop,
+    setFilterOnlyTop: storeSetFilterOnlyTop,
     selectedDifficulties: savedDiffs,
     selectedCompany: savedCompany,
     selectedFrameworks: savedFrameworks,
@@ -44,6 +46,7 @@ const CategorySelection = ({ onComplete, onBack }) => {
 
   const [activeTab, setActiveTab] = useState('categories'); // 'categories' | 'frameworks' | 'topics'
   const [searchQuery, setSearchQuery] = useState(savedSearch || '');
+  const [localFilterOnlyTop, setLocalFilterOnlyTop] = useState(!!savedFilterOnlyTop);
   const [categories, setCategories] = useState([]);
   const [frameworks, setFrameworks] = useState([]);
   const [topics, setTopics] = useState([]);
@@ -195,6 +198,7 @@ const CategorySelection = ({ onComplete, onBack }) => {
     setLocalDifficulties([]);
     setLocalCompany(null);
     setSearchQuery('');
+    setLocalFilterOnlyTop(false);
   };
 
   const handleSave = async () => {
@@ -207,6 +211,7 @@ const CategorySelection = ({ onComplete, onBack }) => {
       setSelectedDifficulties(selectedDifficulties);
       setSelectedCompany(selectedCompany || null);
       setTopicSearchQuery(searchQuery);
+      storeSetFilterOnlyTop(localFilterOnlyTop);
       onComplete();
     } catch (error) {
       console.error('Error saving preferences:', error);
@@ -255,11 +260,50 @@ const CategorySelection = ({ onComplete, onBack }) => {
   return (
     <div className="category-selection">
       <div className="category-header">
-        <button className="back-btn-absolute" onClick={onBack || onComplete}>
-          <ArrowLeft size={24} />
+        <button className="back-btn-absolute" onClick={onBack || onComplete} type="button">
+          <ArrowLeft size={22} />
         </button>
         <h1>{t('common.choose_topics')}</h1>
         <p>{t('common.choose_topics_desc', 'Select categories, frameworks, and topics for study')}</p>
+      </div>
+
+      {/* Prominent TOP 100 interview questions entry point */}
+      <div className={`top-100-banner ${localFilterOnlyTop ? 'active' : ''}`}>
+        <div
+          className="top-100-main"
+          onClick={() => setLocalFilterOnlyTop(prev => !prev)}
+          role="button"
+          tabIndex={0}
+        >
+          <div className="top-100-badge">
+            <Flame size={14} className="top-flame" />
+            <span>{t('top.top_100_chip', 'Top 100')}</span>
+          </div>
+          <div className="top-100-info">
+            <div className="top-100-title">{t('top.top_100_banner_title', 'TOP 100 Interview Questions')}</div>
+            <div className="top-100-desc">{t('top.top_100_banner_desc', 'Curated high-frequency questions most often asked in tech interviews')}</div>
+          </div>
+        </div>
+        <div className="top-100-actions">
+          <button
+            type="button"
+            className={`top-100-toggle-btn ${localFilterOnlyTop ? 'selected' : ''}`}
+            onClick={() => setLocalFilterOnlyTop(prev => !prev)}
+          >
+            {localFilterOnlyTop && <Check size={14} />}
+            {localFilterOnlyTop ? t('top.enabled', 'Selected') : t('top.enable', 'Select')}
+          </button>
+          {onOpenTopQuestions && (
+            <button
+              type="button"
+              className="top-100-list-btn"
+              onClick={onOpenTopQuestions}
+              title={t('top.view_list', 'Список')}
+            >
+              {t('top.view_list', 'Список')} →
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="filter-search-box">

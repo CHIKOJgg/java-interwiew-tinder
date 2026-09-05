@@ -84,6 +84,21 @@ const QuickFilterBar = ({ onOpenFilters }) => {
   return (
     <div className="quick-filter-bar">
       <div className="quick-filter-scroll">
+        {/* Quick TOP 100 Toggle */}
+        <button
+          type="button"
+          className={`quick-top100-chip ${filterOnlyTop ? 'active' : ''}`}
+          onClick={() => {
+            const next = !filterOnlyTop;
+            setFilterOnlyTop(next);
+            loadQuestions(false);
+          }}
+          title={t('top.title', 'Top 100 Questions')}
+        >
+          <Flame size={13} className="quick-flame-icon" />
+          <span>{t('top.top_100_chip', 'Top 100')}</span>
+        </button>
+
         {/* Difficulty Selector */}
         <div className="quick-diff-group">
           <button

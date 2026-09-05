@@ -22,6 +22,50 @@
   display: none;
 }
 
+/* Quick TOP 100 Chip */
+.quick-top100-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--paper, #fff);
+  border: 2px solid var(--ink, #121212);
+  border-radius: 18px;
+  padding: 4px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink, #121212);
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 2px 2px 0 var(--ink, #121212);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.quick-top100-chip .quick-flame-icon {
+  color: #ff6b4a;
+  transition: transform 0.15s ease;
+}
+
+.quick-top100-chip:hover .quick-flame-icon {
+  transform: scale(1.15);
+}
+
+.quick-top100-chip:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink, #121212);
+}
+
+.quick-top100-chip.active {
+  background: #ff6b4a;
+  color: #fff;
+  border-color: var(--ink, #121212);
+}
+
+.quick-top100-chip.active .quick-flame-icon {
+  color: #fff;
+}
+
 /* Difficulty Selector Group */
 .quick-diff-group {
   display: flex;

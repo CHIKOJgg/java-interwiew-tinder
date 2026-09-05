@@ -106,7 +106,7 @@ const QuickFilterBar = ({ onOpenFilters }) => {
             className={`quick-diff-chip ${!hasSpecificDiff ? 'active' : ''}`}
             onClick={() => handleDifficultyClick(null)}
           >
-            {t('common.all', 'All')}
+            {t('common.all_short', 'All')}
           </button>
           {DIFFICULTIES.map((diff) => {
             const active = (selectedDifficulties || []).includes(diff);

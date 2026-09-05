@@ -106,7 +106,7 @@ const Header = ({ onSettingsClick, onProgressClick, onTrackClick, onTopClick, on
       {drawerOpen && <div className="drawer-overlay" onClick={() => setDrawerOpen(false)} />}
 
       <div className={`mode-drawer ${drawerOpen ? 'open' : ''}`}>
-        <div className="drawer-handle" />
+        <div className="drawer-handle" onClick={() => setDrawerOpen(false)} role="button" tabIndex={0} aria-label="Close" />
         <div className="drawer-header">
           <span>{t('header.learning_mode')}</span>
           <button className="drawer-close" onClick={() => setDrawerOpen(false)} type="button"><X size={18} /></button>

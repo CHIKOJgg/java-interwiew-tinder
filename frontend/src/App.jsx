@@ -260,6 +260,16 @@ function App() {
     return () => { cancelled = true; };
   }, []);
 
+  // Safety net: if in swipe/card-based mode and questions buffer is empty while hasMore is true, fetch them!
+  useEffect(() => {
+    if (initState !== 'ready') return;
+    if (['swipe', 'test', 'bug-hunting', 'blitz', 'code-completion'].includes(learningMode)) {
+      if (questions.length === 0 && !isLoadingQuestions && hasMoreQuestions()) {
+        loadQuestions().catch(() => {});
+      }
+    }
+  }, [initState, learningMode, questions.length, isLoadingQuestions]);
+
   const handleCategoryDone = () => {
     useStore.getState().setLearningMode('swipe');
     loadQuestions();
@@ -480,64 +490,71 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
 
    const renderMode = () => {
     switch (learningMode) {
-       case 'swipe':
-         if (isLoadingQuestions) return <SkeletonCard />;
+       case 'swipe': {
+          if (isLoadingQuestions) return <SkeletonCard />;
 
-         if (!hasMoreQuestions()) {
-           // If the feed is exhausted but there are still known cards,
-           // show the refresher/completion screen. If there are zero
-           // questions at all, redirect to language/category selection
-           // so the user can still use the app.
-           if (questions.length === 0) {
-             return (
-               <div className="card-stack" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16, padding: 24 }}>
-                 <p style={{ fontSize: 18, fontWeight: 600 }}>{t('demo.no_questions', 'No questions available yet.')}</p>
-                 <p style={{ textAlign: 'center', opacity: 0.6, maxWidth: 320 }}>{t('demo.no_questions_desc', 'Select a different language or category to get started.')}</p>
-                 <button className="start-button" onClick={() => setScreen('language')} style={{ marginTop: 8 }}>
-                   {t('common.go_back', 'Choose Language')}
-                 </button>
-               </div>
-             );
-           }
-           return (
-             <DeckComplete
-               onChooseOther={() => setScreen('language')}
-               onShare={() => setShowShare(true)}
-             />
-           );
-         }
+          const visibleCards = questions.slice(currentIndex, currentIndex + 3);
 
-        return (
-          <div className="card-stack">
-            {feedRefresher && !isLoadingQuestions && (
-              <div className="refresher-banner">
-                <span>🎉 {t('refresher.banner', 'You\'ve covered all new questions — these are refreshers to lock it in.')}</span>
-                <button onClick={dismissRefresher} type="button" aria-label="dismiss">✕</button>
-              </div>
-            )}
-            {questions.slice(currentIndex, currentIndex + 3).map((q, index) => (
-              <div
-                key={q.id}
-                className={`card-wrapper ${index > 0 ? 'card-behind' : ''}`}
-                style={{ zIndex: 3 - index }}
-              >
-                {index === 0 ? (
-                  <QuestionCard
-                    ref={el => (cardRefs.current[0] = el)}
-                    question={q}
-                    onSwipe={handleSwipe}
-                    canSwipe={true}
-                    onSwipeLeft={() => handleButtonSwipe('left')}
-                    onSwipeRight={() => handleButtonSwipe('right')}
-                    swipeDisabled={!hasMoreQuestions() || isLoadingQuestions}
-                  />
-                ) : (
-                  <div className="card-peek-shell" />
-                )}
-              </div>
-            ))}
-          </div>
-        );
+          if (visibleCards.length === 0) {
+            // Buffer is empty. If more questions are available, show loading card while fetching
+            if (hasMoreQuestions() && !isLoadingQuestions) {
+              return (
+                <div className="card-stack" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+                  <SkeletonCard />
+                </div>
+              );
+            }
+            if (questions.length === 0) {
+              return (
+                <div className="card-stack" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16, padding: 24 }}>
+                  <p style={{ fontSize: 18, fontWeight: 600 }}>{t('demo.no_questions', 'No questions available yet.')}</p>
+                  <p style={{ textAlign: 'center', opacity: 0.6, maxWidth: 320 }}>{t('demo.no_questions_desc', 'Select a different language or category to get started.')}</p>
+                  <button className="start-button" onClick={() => setScreen('language')} style={{ marginTop: 8 }}>
+                    {t('common.go_back', 'Choose Language')}
+                  </button>
+                </div>
+              );
+            }
+            return (
+              <DeckComplete
+                onChooseOther={() => setScreen('language')}
+                onShare={() => setShowShare(true)}
+              />
+            );
+          }
+
+          return (
+            <div className="card-stack">
+              {feedRefresher && !isLoadingQuestions && (
+                <div className="refresher-banner">
+                  <span>🎉 {t('refresher.banner', 'You\'ve covered all new questions — these are refreshers to lock it in.')}</span>
+                  <button onClick={dismissRefresher} type="button" aria-label="dismiss">✕</button>
+                </div>
+              )}
+              {visibleCards.map((q, index) => (
+                <div
+                  key={q.id}
+                  className={`card-wrapper ${index > 0 ? 'card-behind' : ''}`}
+                  style={{ zIndex: 3 - index }}
+                >
+                  {index === 0 ? (
+                    <QuestionCard
+                      ref={el => (cardRefs.current[0] = el)}
+                      question={q}
+                      onSwipe={handleSwipe}
+                      canSwipe={true}
+                      onSwipeLeft={() => handleButtonSwipe('left')}
+                      onSwipeRight={() => handleButtonSwipe('right')}
+                      swipeDisabled={!hasMoreQuestions() || isLoadingQuestions}
+                    />
+                  ) : (
+                    <div className="card-peek-shell" />
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        }
        case 'test':
          if (!hasMoreQuestions()) {
            if (questions.length === 0) return emptyDeck();

@@ -391,6 +391,8 @@ const useStore = create((set, get) => ({
     if (!cachedTracks.length) {
       get().loadTracks().catch(() => {});
     }
+    // Eagerly reload questions for the new language
+    get().loadQuestions().catch(() => {});
     return 'category';
   },
 
@@ -815,10 +817,10 @@ const useStore = create((set, get) => ({
       get().loadSDTopics();
       return;
     }
-    if (mode !== prevMode) {
+    if (mode !== prevMode || get().questions.length === 0) {
       get().loadQuestions().then(() => {
         if (mode === 'mock-interview') get().startInterview();
-      });
+      }).catch(() => {});
     } else if (mode === 'mock-interview') {
       get().startInterview();
     }

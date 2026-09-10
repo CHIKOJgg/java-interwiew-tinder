@@ -261,12 +261,31 @@ app.get('/api/languages', (req, res) => {
 
 // Category aliases and grouping for unified discovery
 export const CATEGORY_ALIASES = {
-  'Database': ['Database', 'Databases'],
-  'Databases': ['Databases', 'Database'],
+  'Database': ['Database', 'Databases', 'JPA & Hibernate', 'Spring Data JPA'],
+  'Databases': ['Databases', 'Database', 'JPA & Hibernate', 'Spring Data JPA'],
+  'Spring': [
+    'Spring', 'Spring Boot', 'Spring Boot 4', 'Spring AI',
+    'Spring Data JPA', 'Spring Security', 'Spring Kafka',
+    'Spring Modulith', 'Spring WebFlux', 'Spring Framework'
+  ],
+  'Spring Framework': [
+    'Spring Framework', 'Spring', 'Spring Boot', 'Spring Boot 4', 'Spring AI',
+    'Spring Data JPA', 'Spring Security', 'Spring Kafka',
+    'Spring Modulith', 'Spring WebFlux'
+  ],
+  'Spring Boot': [
+    'Spring Boot', 'Spring Boot 4', 'Spring', 'Spring Framework', 'Spring AI',
+    'Spring Modulith', 'Spring Data JPA', 'Spring WebFlux',
+    'Spring Security', 'Spring Kafka'
+  ],
+  'Kafka': ['Kafka', 'Spring Kafka', 'Microservices'],
+  'Spring Kafka': ['Spring Kafka', 'Kafka', 'Spring', 'Spring Framework', 'Spring Boot'],
+  'Docker / K8s': ['Docker / K8s', 'DevOps & Tools', 'Testing'],
+  'DevOps & Tools': ['DevOps & Tools', 'Docker / K8s'],
   'Design Patterns': ['Design Patterns', 'Software Architecture & Concepts', 'Java Architecture', 'Microservices'],
   'Software Architecture & Concepts': ['Software Architecture & Concepts', 'Design Patterns', 'Java Architecture', 'Microservices'],
   'Java Architecture': ['Java Architecture', 'Software Architecture & Concepts', 'Design Patterns'],
-  'Microservices': ['Microservices', 'Software Architecture & Concepts', 'Design Patterns'],
+  'Microservices': ['Microservices', 'Software Architecture & Concepts', 'Design Patterns', 'Kafka'],
 };
 
 export function expandCategoryAliases(categories) {
@@ -276,6 +295,27 @@ export function expandCategoryAliases(categories) {
     if (!cat) continue;
     set.add(cat);
     const aliases = CATEGORY_ALIASES[cat];
+    if (aliases) {
+      for (const a of aliases) set.add(a);
+    }
+  }
+  return [...set];
+}
+
+export const FRAMEWORK_ALIASES = {
+  'Spring Framework': ['Spring Framework', 'Spring Boot'],
+  'Spring Boot': ['Spring Boot', 'Spring Framework'],
+  'Kafka': ['Kafka', 'Spring Kafka'],
+  'Docker / K8s': ['Docker / K8s', 'Docker', 'Kubernetes'],
+};
+
+export function expandFrameworkAliases(frameworks) {
+  if (!frameworks || !Array.isArray(frameworks) || frameworks.length === 0) return [];
+  const set = new Set();
+  for (const fw of frameworks) {
+    if (!fw) continue;
+    set.add(fw);
+    const aliases = FRAMEWORK_ALIASES[fw];
     if (aliases) {
       for (const a of aliases) set.add(a);
     }
@@ -1338,9 +1378,10 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     let p = 3;
     const expandedCategories = expandCategoryAliases(activeCategories);
     if (expandedCategories.length > 0) { where.push(`q.category = ANY($${p})`); params.push(expandedCategories); p++; }
-    if (selectedFrameworks.length > 0) {
+    const expandedFrameworks = expandFrameworkAliases(selectedFrameworks);
+    if (expandedFrameworks.length > 0) {
       where.push(`(q.framework = ANY($${p}) OR (q.tags && $${p}::text[]))`);
-      params.push(selectedFrameworks);
+      params.push(expandedFrameworks);
       p++;
     }
     if (selectedTopics.length > 0) {
@@ -1430,6 +1471,8 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       const fParams = [userId, language];
       let fp = 3;
       if (selectedCategories.length > 0) { fWhere.push(`q.category = ANY($${fp})`); fParams.push(selectedCategories); fp++; }
+      if (expandedFrameworks.length > 0) { fWhere.push(`(q.framework = ANY($${fp}) OR (q.tags && $${fp}::text[]))`); fParams.push(expandedFrameworks); fp++; }
+      if (selectedTopics.length > 0) { fWhere.push(`(q.topic = ANY($${fp}) OR q.category = ANY($${fp}))`); fParams.push(selectedTopics); fp++; }
       if (difficulties && difficulties.length) { fWhere.push(`q.difficulty = ANY($${fp})`); fParams.push(difficulties); fp++; }
       if (req.query.company) { fWhere.push(`q.companies @> ARRAY[$${fp}]`); fParams.push(req.query.company); fp++; }
       if (withExclusion && excludeIds.length > 0) { fWhere.push(`NOT (q.id = ANY($${fp}))`); fParams.push(excludeIds); fp++; }

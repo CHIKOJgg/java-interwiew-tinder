@@ -32,3 +32,4 @@ frontend/playwright-report/
 .pnpm-store/
 
 .vercel
+scratch/

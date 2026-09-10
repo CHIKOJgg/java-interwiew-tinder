@@ -11,9 +11,9 @@ import './QuestionNavigatorModal.css';
 const DIFFICULTIES = ['Junior', 'Middle', 'Senior'];
 
 const difficultyColors = {
-  Junior: 'var(--green, #22c55e)',
-  Middle: 'var(--accent, #ffd93d)',
-  Senior: 'var(--purple, #a855f7)',
+  Junior: '#16a34a',
+  Middle: '#b45309',
+  Senior: '#dc2626',
 };
 
 const QuestionNavigatorModal = ({ isOpen, onClose, onSelectQuestion }) => {

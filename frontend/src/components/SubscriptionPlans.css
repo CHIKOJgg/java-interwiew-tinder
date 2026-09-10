@@ -849,7 +849,7 @@
 .ton-amount-val {
   font-size: 18px;
   font-weight: 700;
-  color: var(--amber);
+  color: var(--ink);
   font-family: 'JetBrains Mono', monospace;
 }
 

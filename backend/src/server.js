@@ -4690,7 +4690,7 @@ app.use(errorHandler(isDev, ALLOWED_ORIGINS));
   });
 
   // Static frontend (served at root, before API routes)
-  app.use(express.static(path.join(__dirname, "public")));
+  app.use(express.static(path.join(__dirname, "..", "public")));
 
   // 404 handler must be registered after all routes.
   app.use((req, res) => {

@@ -249,6 +249,7 @@ describe('Auxiliary & Admin Components Deep Coverage', () => {
     it('renders non-intrusive toast and handles click and dismiss', () => {
       const mockOpenMissed = vi.fn();
       const mockDismissMissedToast = vi.fn();
+      const mockLoadExplanation = vi.fn();
 
       useStore.setState({
         learningMode: 'swipe',
@@ -259,15 +260,21 @@ describe('Auxiliary & Admin Components Deep Coverage', () => {
         },
         openMissed: mockOpenMissed,
         dismissMissedToast: mockDismissMissedToast,
+        loadExplanation: mockLoadExplanation,
       });
 
       render(<MissedToast />);
 
       expect(screen.getByText('What is volatile keyword in Java?')).toBeInTheDocument();
 
-      // Click explain
+      // Click explain button directly loads explanation
       const explainBtn = screen.getByRole('button', { name: /разбор|explain/i });
       fireEvent.click(explainBtn);
+      expect(mockLoadExplanation).toHaveBeenCalledWith(404);
+
+      // Clicking toast body opens missed panel
+      const toastText = screen.getByText('What is volatile keyword in Java?');
+      fireEvent.click(toastText);
       expect(mockOpenMissed).toHaveBeenCalledWith(expect.objectContaining({ id: 404 }));
 
       // Click dismiss

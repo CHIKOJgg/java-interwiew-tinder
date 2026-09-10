@@ -6,7 +6,7 @@
   min-height: 0;
   max-height: 100vh;
   padding: 16px 16px 80px 16px;
-  background: var(--bg);
+  background: var(--cream, #F7F3E6);
   box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;

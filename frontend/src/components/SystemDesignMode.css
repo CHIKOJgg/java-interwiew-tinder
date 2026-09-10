@@ -273,10 +273,10 @@
 .sd-result-section ul { margin: 0; padding-left: 18px; }
 .sd-result-section li { font-size: 13px; color: var(--ink-soft); margin-bottom: 4px; line-height: 1.4; }
 .sd-empty { font-size: 13px; color: var(--ink-soft); margin: 0; font-style: italic; opacity: 0.6; }
-.sd-strengths li { color: var(--green); }
-.sd-weaknesses li { color: var(--coral); }
-.sd-architecture { font-size: 13px; color: var(--ink-soft); line-height: 1.6; margin: 0; }
-.sd-followup { font-size: 13px; color: var(--amber); line-height: 1.5; margin: 0; }
+.sd-strengths li { color: #15803d; }
+.sd-weaknesses li { color: #dc2626; }
+.sd-architecture { font-size: 13px; color: var(--ink); line-height: 1.6; margin: 0; }
+.sd-followup { font-size: 13px; color: var(--ink); line-height: 1.5; margin: 0; }
 .sd-result-section.follow-up { border-color: var(--amber); }
 
 .sd-try-another {

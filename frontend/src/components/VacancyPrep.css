@@ -6,7 +6,7 @@
   min-height: 100dvh;
   height: 100dvh;
   overflow-y: auto;
-  background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+  background: var(--cream, #F7F3E6);
 }
 
 .vacancy-container {

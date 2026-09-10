@@ -186,7 +186,13 @@ const QuestionCard = forwardRef(
               </div>
 
               {/* Explicit tap target — gives users a clear affordance on mobile */}
-              <div className="flip-hint">
+              <div
+                className="flip-hint"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClick();
+                }}
+              >
                 <button
                   className={`bookmark-btn ${isSaved ? 'saved' : ''}`}
                   onClick={handleSave}
@@ -196,6 +202,12 @@ const QuestionCard = forwardRef(
                 >
                   {isSaved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
                 </button>
+
+                <div className="flip-hint-label">
+                  <RotateCcw size={14} />
+                  <span>{t('card.tap_for_answer', 'Нажми для ответа')}</span>
+                </div>
+
                 <button
                   className="report-flag"
                   onClick={(e) => {

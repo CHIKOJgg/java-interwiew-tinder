@@ -6,7 +6,7 @@ import './MissedToast.css';
 
 const MissedToast = () => {
   const { t } = useTranslation();
-  const { missedToast, openMissed, dismissMissedToast, learningMode } = useStore();
+  const { missedToast, openMissed, dismissMissedToast, learningMode, loadExplanation } = useStore();
 
   useEffect(() => {
     if (!missedToast) return;
@@ -21,6 +21,15 @@ const MissedToast = () => {
   const handleOpen = (e) => {
     e.stopPropagation();
     openMissed(missedToast);
+  };
+
+  const handleExplain = (e) => {
+    e.stopPropagation();
+    const id = missedToast.id;
+    dismissMissedToast();
+    if (typeof loadExplanation === 'function') {
+      loadExplanation(id);
+    }
   };
 
   const handleDismiss = (e) => {
@@ -42,7 +51,7 @@ const MissedToast = () => {
         </div>
         <button
           className="missed-toast-action"
-          onClick={handleOpen}
+          onClick={handleExplain}
           type="button"
           aria-label={t('missed.explain', 'Разбор')}
         >

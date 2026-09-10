@@ -312,7 +312,7 @@ test.describe('Learning Modes, Quick Filters & Settings E2E Interactions', () =>
     await expect(enChip).toHaveClass(/active/);
 
     // Toggle Notifications
-    const notifToggle = page.locator('.settings-toggle');
+    const notifToggle = page.locator('.settings-toggle').first();
     const initialText = await notifToggle.textContent();
     await notifToggle.click();
     expect(await notifToggle.textContent()).not.toBe(initialText);

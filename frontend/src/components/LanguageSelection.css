@@ -1,11 +1,18 @@
 .language-selection {
   max-width: 600px;
+  width: 100%;
   margin: 0 auto;
-  padding: 40px 20px;
-  min-height: 80vh;
+  padding: 32px 20px calc(40px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+  height: 100%;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: center;
 }
 
 .language-header {

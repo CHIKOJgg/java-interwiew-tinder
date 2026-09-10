@@ -67,17 +67,25 @@ describe('Persona 1: Speed Swiper (Frontend Pipeline)', () => {
     expect(loadQuestionsCalled).toBe(true);
   });
 
-  it('opens MissedPanel on left-swipe ("Don\'t know")', async () => {
+  it('triggers non-intrusive missed toast or MissedPanel on left-swipe ("Don\'t know")', async () => {
     vi.spyOn(apiClient, 'recordSwipe').mockResolvedValue({ success: true });
 
     const q = useStore.getState().questions[0];
     await useStore.getState().swipeCard(q.id, 'left');
 
-    const state = useStore.getState();
+    let state = useStore.getState();
     expect(state.currentIndex).toBe(1);
     expect(state.stats.unknown).toBe(1);
-    expect(state.showMissed).toBe(true);
     expect(state.missed.id).toBe(q.id);
+    expect(state.missedToast.id).toBe(q.id);
+
+    // When user toggles autoOpenMissed
+    useStore.setState({ autoOpenMissed: true });
+    const q2 = useStore.getState().questions[1];
+    await useStore.getState().swipeCard(q2.id, 'left');
+    state = useStore.getState();
+    expect(state.showMissed).toBe(true);
+    expect(state.missed.id).toBe(q2.id);
   });
 
   it('undoSwipe rolls back stats without breaking index bounds', async () => {

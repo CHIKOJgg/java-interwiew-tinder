@@ -53,16 +53,19 @@ describe('User Personas Deep Pipeline Audit (Frontend Pipelines)', () => {
       expect(state.stats.streakIncreased).toBe(true);
       expect(state.stats.streak).toBe(1);
 
-      // 3. Student does NOT know Question 102 (swipes left)
+      // 3. Student does NOT know Question 102 (swipes left) and inspects missed sheet
       await useStore.getState().swipeCard(102, 'left');
 
       state = useStore.getState();
       expect(state.stats.known).toBe(1);
       expect(state.stats.unknown).toBe(1);
       expect(state.stats.totalSeen).toBe(2);
-      expect(state.showMissed).toBe(true);
       expect(state.missed.id).toBe(102);
       expect(state.missed.shortAnswer).toBe('Heap vs Stack vs Metaspace');
+
+      // Student opens missed breakdown
+      useStore.getState().openMissed(state.missed);
+      expect(useStore.getState().showMissed).toBe(true);
 
       // 4. Student bookmarks Question 102 to saved questions
       vi.spyOn(apiClient, 'saveQuestion').mockResolvedValue({ success: true });

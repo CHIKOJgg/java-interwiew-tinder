@@ -5,6 +5,7 @@ import {
   ArrowLeft, Bell, Globe, Info, HelpCircle, Mail, MessageCircle,
   ChevronRight, Shield, Star, FileText, Target, TrendingUp, Award,
   Download, User, Video, Building2, Languages, Smartphone, Flame, BookOpen,
+  Sparkles,
 } from 'lucide-react';
 import Mascot from './Mascot';
 import './Settings.css';
@@ -20,7 +21,7 @@ const FAQ_ITEMS = [
 
 function Settings({ onBack, onNavigate, onExport, onHelp }) {
   const { t, i18n } = useTranslation();
-  const { language, switchLanguage, setInterfaceLanguage, user } = useStore();
+  const { language, switchLanguage, setInterfaceLanguage, user, autoOpenMissed, setAutoOpenMissed } = useStore();
   const [notifications, setNotifications] = useState(true);
   const isPremium = user?.plan && user.plan !== 'free';
 
@@ -112,6 +113,27 @@ function Settings({ onBack, onNavigate, onExport, onHelp }) {
               type="button"
             >
               {notifications ? t('common.on', 'On') : t('common.off', 'Off')}
+            </button>
+          </div>
+
+          <div className="settings-row">
+            <div className="settings-row-label">
+              <Sparkles size={18} />
+              <div>
+                <span>{t('settings.missed_mode', 'Разбор при «Не знаю»')}</span>
+                <p className="settings-row-desc">
+                  {autoOpenMissed
+                    ? t('settings.missed_modal_desc', 'Полноэкранное окно')
+                    : t('settings.missed_toast_desc', 'Ненавязчивая плашка (быстро)')}
+                </p>
+              </div>
+            </div>
+            <button
+              className={`settings-toggle ${autoOpenMissed ? 'on' : 'off'}`}
+              onClick={() => setAutoOpenMissed(!autoOpenMissed)}
+              type="button"
+            >
+              {autoOpenMissed ? t('settings.modal', 'Окно') : t('settings.toast', 'Плашка')}
             </button>
           </div>
         </section>

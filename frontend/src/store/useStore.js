@@ -142,13 +142,29 @@ const useStore = create((set, get) => ({
   // never update state after the user has moved on.
   _pollRequestId: 0,
 
-  // ─── Missed ("don't know") sheet ──────────────────────────────────
+  // ─── Missed ("don't know") sheet & toast ──────────────────────────
   // Populated when the user swipes left in swipe mode so we can show the
   // short answer + a one-tap AI explanation instead of silently advancing.
   missed: null,
   showMissed: false,
-  openMissed: (question) => set({ missed: question, showMissed: true }),
+  missedToast: null,
+  autoOpenMissed: (() => {
+    try {
+      return localStorage.getItem('jit_auto_open_missed') === 'true';
+    } catch {
+      return false;
+    }
+  })(),
+  openMissed: (question) => set({ missed: question, showMissed: true, missedToast: null }),
   closeMissed: () => set({ showMissed: false, missed: null }),
+  showMissedToast: (question) => set({ missedToast: question, missed: question }),
+  dismissMissedToast: () => set({ missedToast: null }),
+  setAutoOpenMissed: (val) => {
+    try {
+      localStorage.setItem('jit_auto_open_missed', String(val));
+    } catch { /* ignore */ }
+    set({ autoOpenMissed: !!val });
+  },
 
   // ─── Auth ──────────────────────────────────────────────────────────
   login: async (initData, referralId) => {
@@ -687,38 +703,50 @@ const useStore = create((set, get) => ({
        currentIndex: s.currentIndex + 1,
      }));
 
-     try {
-       const response = await apiClient.recordSwipe(questionId, status);
-       if (response.streak) {
-         get().applyStreak(response.streak);
-       }
-       if (typeof response.todaySeen === 'number') {
-         saveDaily(response.todaySeen);
-         set({
-           todaySeen: response.todaySeen,
-           dailyGoal: response.dailyGoal ?? get().dailyGoal,
-           dailyDone: response.dailyDone ?? (response.todaySeen >= (response.dailyGoal ?? get().dailyGoal)),
-         });
-       }
-     } catch (err) {
-       logger.error('Store: swipe recording failed', err.message);
-       set({ currentIndex: prevIndex, stats: prevStats });
-       return;
-     }
+     // Fire swipe recording asynchronously so UI never pauses or lags
+     const swipePromise = apiClient.recordSwipe(questionId, status)
+       .then(response => {
+         if (response?.streak) {
+           get().applyStreak(response.streak);
+         }
+         if (typeof response?.todaySeen === 'number') {
+           saveDaily(response.todaySeen);
+           set({
+             todaySeen: response.todaySeen,
+             dailyGoal: response.dailyGoal ?? get().dailyGoal,
+             dailyDone: response.dailyDone ?? (response.todaySeen >= (response.dailyGoal ?? get().dailyGoal)),
+           });
+         }
+         return response;
+       })
+       .catch(err => {
+         logger.error('Store: swipe recording failed', err.message);
+         set({ currentIndex: prevIndex, stats: prevStats });
+         return null;
+       });
 
      if (direction === 'left' && get().learningMode === 'swipe' && q) {
-        get().openMissed(q);
-        // Intra-session retention: re-queue missed card 4 cards later with isRepeat flag
-        set(s => {
-          const repeatCard = { ...q, isRepeat: true };
-          const insertPos = Math.min(s.questions.length, s.currentIndex + 4);
-          const newQuestions = [...s.questions];
-          newQuestions.splice(insertPos, 0, repeatCard);
-          return { questions: newQuestions };
-        });
-      }
-      get().bumpDaily();
-      if (get().learningMode === 'swipe' && get().questions.length - get().currentIndex <= 5) get().loadQuestions(true);
+       if (get().autoOpenMissed) {
+         get().openMissed(q);
+       } else {
+         get().showMissedToast(q);
+       }
+       // Intra-session retention: re-queue missed card 4 cards later with isRepeat flag
+       set(s => {
+         const repeatCard = { ...q, isRepeat: true };
+         const insertPos = Math.min(s.questions.length, s.currentIndex + 4);
+         const newQuestions = [...s.questions];
+         newQuestions.splice(insertPos, 0, repeatCard);
+         return { questions: newQuestions };
+       });
+     } else if (direction === 'right') {
+       get().dismissMissedToast();
+     }
+
+     get().bumpDaily();
+     if (get().learningMode === 'swipe' && get().questions.length - get().currentIndex <= 5) get().loadQuestions(true);
+
+     return swipePromise;
    },
 
   undoSwipe: async (questionId, direction) => {
@@ -738,6 +766,7 @@ const useStore = create((set, get) => ({
     }
     if (direction === 'left') {
       get().closeMissed();
+      get().dismissMissedToast();
       set(s => ({
         questions: s.questions.filter((item, idx) => !(idx > s.currentIndex && item.id === questionId && item.isRepeat))
       }));

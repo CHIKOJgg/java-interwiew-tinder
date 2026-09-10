@@ -5,6 +5,7 @@ import AdminPanel from '../components/AdminPanel';
 import ReportSheet from '../components/ReportSheet';
 import ProNudge from '../components/ProNudge';
 import MissedPanel from '../components/MissedPanel';
+import MissedToast from '../components/MissedToast';
 import PwaInstallPrompt from '../components/PwaInstallPrompt';
 import DebugOverlay from '../components/DebugOverlay';
 import DebugScreen from '../components/DebugScreen';
@@ -241,6 +242,44 @@ describe('Auxiliary & Admin Components Deep Coverage', () => {
       const nextBtn = screen.getByText(/missed\.next/i);
       fireEvent.click(nextBtn);
       expect(mockCloseMissed).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('MissedToast Component', () => {
+    it('renders non-intrusive toast and handles click and dismiss', () => {
+      const mockOpenMissed = vi.fn();
+      const mockDismissMissedToast = vi.fn();
+
+      useStore.setState({
+        learningMode: 'swipe',
+        missedToast: {
+          id: 404,
+          question: 'What is volatile keyword in Java?',
+          shortAnswer: 'Prevents instruction reordering and ensures visibility across threads.',
+        },
+        openMissed: mockOpenMissed,
+        dismissMissedToast: mockDismissMissedToast,
+      });
+
+      render(<MissedToast />);
+
+      expect(screen.getByText('What is volatile keyword in Java?')).toBeInTheDocument();
+
+      // Click explain
+      const explainBtn = screen.getByRole('button', { name: /разбор|explain/i });
+      fireEvent.click(explainBtn);
+      expect(mockOpenMissed).toHaveBeenCalledWith(expect.objectContaining({ id: 404 }));
+
+      // Click dismiss
+      const closeBtn = screen.getByRole('button', { name: /закрыть|close/i });
+      fireEvent.click(closeBtn);
+      expect(mockDismissMissedToast).toHaveBeenCalled();
+    });
+
+    it('returns null when learningMode is not swipe or no missedToast', () => {
+      useStore.setState({ learningMode: 'test', missedToast: { id: 1 } });
+      const { container } = render(<MissedToast />);
+      expect(container.firstChild).toBeNull();
     });
   });
 

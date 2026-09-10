@@ -19,6 +19,11 @@
   position: relative;
   width: 100%;
   max-width: 380px;
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
   background: var(--paper);
   border: 2.5px solid var(--ink);
   border-radius: 22px;

@@ -43,6 +43,7 @@ import PaywallModal from './components/PaywallModal';
 import ProNudge from './components/ProNudge';
 import Onboarding, { ONBOARD_KEY } from './components/Onboarding';
 import MissedPanel from './components/MissedPanel';
+import MissedToast from './components/MissedToast';
 import useStore from './store/useStore';
 import apiClient from './api/client';
 import { useTranslation } from 'react-i18next';
@@ -710,6 +711,7 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
         />
       )}
       <MissedPanel />
+      <MissedToast />
       {import.meta.env.DEV && (
         <button type="button" className="debug-fab" onClick={() => setDebugOpen(true)} title="Debug">Debug</button>
       )}

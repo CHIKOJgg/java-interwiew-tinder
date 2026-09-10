@@ -42,6 +42,9 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  overflow-y: auto;
+  max-height: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .challenge-q-category {

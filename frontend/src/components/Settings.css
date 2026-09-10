@@ -139,6 +139,13 @@
   font-size: 15px;
 }
 
+.settings-row-desc {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  margin: 2px 0 0;
+  font-weight: 500;
+}
+
 .settings-toggle {
   background: var(--cream);
   border: 2px solid var(--ink);

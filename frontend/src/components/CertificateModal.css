@@ -16,6 +16,11 @@
   padding: 32px;
   max-width: 380px;
   width: 100%;
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
   text-align: center;
   position: relative;
   box-shadow: 8px 8px 0 var(--ink);

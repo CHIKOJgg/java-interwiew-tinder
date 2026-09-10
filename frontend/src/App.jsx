@@ -237,8 +237,48 @@ function App() {
   // Telegram auth.  The context never changes after mount, so this effect
   // has no dependencies.
   useEffect(() => {
-    if (context === 'web') return;
     let cancelled = false;
+
+    if (context === 'web') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const syncToken = urlParams.get('sync_token');
+      if (syncToken) {
+        apiClient.verifySyncCode({ syncToken })
+          .then(res => {
+            if (cancelled) return;
+            loginWithToken(res.user, res.token, { tracks: res.tracks, stats: res.stats });
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+            setInitState('ready');
+            setScreen(localStorage.getItem(ONBOARD_KEY) ? 'tracks' : 'onboarding');
+          })
+          .catch(err => {
+            logger.warn('Failed auto-login via sync_token', err.message);
+          });
+        return () => { cancelled = true; };
+      }
+
+      // Check if user has an existing valid session in localStorage
+      const storeState = useStore.getState();
+      if (storeState.isAuthenticated && storeState.token) {
+        apiClient.request('/me')
+          .then(meRes => {
+            if (cancelled) return;
+            if (meRes?.user) {
+              useStore.setState({ user: meRes.user });
+              setInitState('ready');
+              setScreen('tracks');
+              useStore.getState().loadStats().catch(() => {});
+              useStore.getState().loadTracks().catch(() => {});
+            }
+          })
+          .catch(() => {
+            if (cancelled) return;
+            useStore.getState().logout();
+          });
+      }
+      return () => { cancelled = true; };
+    }
 
     const startApp = async () => {
       try {

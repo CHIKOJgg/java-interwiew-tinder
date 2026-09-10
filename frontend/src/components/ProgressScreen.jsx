@@ -26,7 +26,16 @@ const formatAnsweredDate = (isoString, isRu) => {
 const ProgressScreen = ({ onBack, onReview, onUpgrade, onSavedClick }) => {
   const { t, i18n } = useTranslation();
   const isRu = i18n.language === 'ru';
-  const { stats: storeStats, language: storeLanguage, canAccessMode, savedIds } = useStore();
+  const {
+    stats: storeStats,
+    language: storeLanguage,
+    canAccessMode,
+    savedIds,
+    todaySeen: storeTodaySeen,
+    dailyGoal: storeDailyGoal,
+    dailyDone: storeDailyDone,
+    setDailyGoal,
+  } = useStore();
 
   // Stack filter tab: 'Java' | 'Python' | 'all'
   const [selectedLang, setSelectedLang] = useState(storeLanguage || 'Java');
@@ -178,6 +187,12 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade, onSavedClick }) => {
     : 0;
   const { readiness, tier: readinessTier } = readinessFromStats(statsData || storeStats);
 
+  const todaySeen = statsData?.todaySeen ?? storeTodaySeen ?? 0;
+  const dailyGoal = statsData?.dailyGoal ?? storeDailyGoal ?? 20;
+  const dailyDone = todaySeen >= dailyGoal;
+  const dailyPct = Math.min(100, Math.round((todaySeen / Math.max(1, dailyGoal)) * 100));
+  const retention = statsData?.retention || { dueCount: 0, masteredCount: 0, learningCount: 0 };
+
   const bars = [
     { label: t('progress.known', 'Known'), value: statsData?.known || 0, color: '#51cf66' },
     { label: t('progress.unknown', 'Weak'), value: statsData?.unknown || 0, color: '#ff6b6b' },
@@ -305,6 +320,89 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade, onSavedClick }) => {
             <Trophy size={18} /> {t('progress.brag', 'You know more than {{p}}% of learners. Share your result!', { p: percentile })}
           </div>
         )}
+
+        {/* Daily Goal & Streak Card */}
+        <div className="progress-card daily-goal-card" style={{ borderLeft: '4px solid var(--primary, #2b8a3e)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 16 }}>
+              <Target size={20} color="var(--primary, #2b8a3e)" />
+              <span>{t('progress.daily_goal_title', 'Цель на день')}</span>
+            </div>
+            <span style={{
+              fontSize: 12,
+              fontWeight: 700,
+              padding: '3px 8px',
+              borderRadius: 12,
+              background: dailyDone ? 'rgba(43, 138, 62, 0.15)' : 'rgba(0,0,0,0.06)',
+              color: dailyDone ? '#2b8a3e' : 'inherit'
+            }}>
+              {dailyDone ? '🎉 ' + t('progress.goal_done', 'Выполнено!') : `${todaySeen} / ${dailyGoal}`}
+            </span>
+          </div>
+
+          <div className="bar-track" style={{ height: 10, borderRadius: 5, marginTop: 6, marginBottom: 12 }}>
+            <div
+              className="bar-fill"
+              style={{
+                width: `${dailyPct}%`,
+                background: dailyDone ? 'linear-gradient(90deg, #51cf66, #2b8a3e)' : 'var(--primary, #2b8a3e)',
+                transition: 'width 0.4s ease'
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--ink-soft, #666)' }}>
+              {t('progress.set_daily_goal', 'Изменить цель:')}
+            </span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[10, 20, 30, 50].map(val => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setDailyGoal(val)}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: 12,
+                    fontWeight: dailyGoal === val ? 700 : 500,
+                    borderRadius: 6,
+                    border: dailyGoal === val ? '1.5px solid var(--primary, #2b8a3e)' : '1px solid var(--border, #ccc)',
+                    background: dailyGoal === val ? 'rgba(43, 138, 62, 0.1)' : 'transparent',
+                    color: dailyGoal === val ? 'var(--primary, #2b8a3e)' : 'inherit',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Retention & Spaced Repetition (SM-2) Card */}
+        <div className="progress-card retention-card" style={{ borderLeft: '4px solid #7048e8' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 16, marginBottom: 10 }}>
+            <RotateCcw size={18} color="#7048e8" />
+            <span>{t('progress.retention_title', 'Интервальное повторение (SM-2)')}</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center', marginBottom: 10 }}>
+            <div style={{ padding: '8px 4px', background: 'rgba(255, 107, 107, 0.1)', borderRadius: 8 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#ff6b6b' }}>{retention.dueCount || 0}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft, #666)', marginTop: 2 }}>{t('progress.retention_due', 'К повторению')}</div>
+            </div>
+            <div style={{ padding: '8px 4px', background: 'rgba(51, 154, 240, 0.1)', borderRadius: 8 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#339af0' }}>{retention.learningCount || 0}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft, #666)', marginTop: 2 }}>{t('progress.retention_learning', 'В процессе')}</div>
+            </div>
+            <div style={{ padding: '8px 4px', background: 'rgba(81, 207, 102, 0.1)', borderRadius: 8 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#51cf66' }}>{retention.masteredCount || 0}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft, #666)', marginTop: 2 }}>{t('progress.retention_mastered', 'Закреплено')}</div>
+            </div>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--ink-soft, #666)', lineHeight: 1.4, margin: 0 }}>
+            {t('progress.retention_hint', 'Алгоритм плавно подмешивает вопросы, когда подходит срок повторения, чтобы вы не забывали изученный материал.')}
+          </p>
+        </div>
 
         {/* Known / Weak overview bars */}
         <div className="progress-card">
@@ -508,6 +606,16 @@ const ProgressScreen = ({ onBack, onReview, onUpgrade, onSavedClick }) => {
                         )}
                         {item.category && (
                           <span className="category-pill">{item.category}</span>
+                        )}
+                        {item.intervalDays > 1 && (
+                          <span className="diff-pill" style={{ background: 'rgba(112, 72, 232, 0.12)', color: '#7048e8', fontWeight: 600 }}>
+                            🔄 {isRu ? `${item.intervalDays} дн.` : `${item.intervalDays}d`}
+                          </span>
+                        )}
+                        {item.repetitionNumber > 0 && (
+                          <span className="diff-pill" style={{ background: 'rgba(0,0,0,0.05)', color: 'var(--ink-soft)' }}>
+                            №{item.repetitionNumber}
+                          </span>
                         )}
                         <span className="date-pill">{formatAnsweredDate(item.answeredAt, isRu)}</span>
                       </div>

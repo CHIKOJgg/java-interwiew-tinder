@@ -43,16 +43,18 @@ function saveTheme(theme) {
   try { localStorage.setItem(`${CACHE_KEY}_theme`, theme); } catch { /* ignore */ }
 }
 
-// Restore persisted token to apiClient on module load
-const _savedToken = loadFromSession('token');
+// Restore persisted token & user to apiClient on module load (support localStorage for PC persistence)
+const _savedToken = loadFromLocal('token') || loadFromSession('token');
+const _savedUser = loadFromLocal('user');
 if (_savedToken) apiClient.setToken(_savedToken);
+if (_savedUser?.telegram_id) apiClient.setUserId(_savedUser.telegram_id);
 
 const useStore = create((set, get) => ({
-  user: null,
-  token: _savedToken,
+  user: _savedUser || null,
+  token: _savedToken || null,
   isAuthenticated: !!_savedToken,
   isLoading: true,
-  language: 'Java',
+  language: _savedUser?.language || 'Java',
   theme: getTheme(),
 
   questions: [],
@@ -110,6 +112,7 @@ const useStore = create((set, get) => ({
   dailyGoal: 20,
   todaySeen: 0,
   dailyDone: false,
+  retention: { dueCount: 0, masteredCount: 0, learningCount: 0 },
 
   blitzScore: 0,
   blitzTimeLeft: 60,
@@ -160,6 +163,8 @@ const useStore = create((set, get) => ({
       if (initData) apiClient.setInitData(initData);
 
         saveToSession('token', token);
+        saveToLocal('token', token);
+        saveToLocal('user', user);
         const tracksCacheKey = `tracks_${lang}`;
         set({
           user,
@@ -172,6 +177,10 @@ const useStore = create((set, get) => ({
           tracks: initTracks || [],
           tracksCache: { [tracksCacheKey]: { tracks: initTracks || [], timestamp: Date.now() } },
           stats: initStats || { known: 0, unknown: 0, totalSeen: 0, totalQuestions: 0, streak: 0, longestStreak: 0 },
+          ...(initStats?.todaySeen !== undefined ? { todaySeen: initStats.todaySeen } : {}),
+          ...(initStats?.dailyGoal !== undefined ? { dailyGoal: initStats.dailyGoal } : {}),
+          ...(initStats?.dailyDone !== undefined ? { dailyDone: initStats.dailyDone } : {}),
+          ...(initStats?.retention ? { retention: initStats.retention } : {}),
         });
          logger.info('Store: login ok', `plan=${user.plan || 'free'}`, `modes=${(user.available_modes || []).join(',')}`);
 
@@ -203,6 +212,8 @@ const useStore = create((set, get) => ({
     apiClient.setLanguage(lang);
     apiClient.setUserId(user.telegram_id);
     saveToSession('token', token);
+    saveToLocal('token', token);
+    saveToLocal('user', user);
     const initTracks = extras?.tracks || [];
     const initStats = extras?.stats || null;
     const tracksCacheKey = `tracks_${lang}`;
@@ -216,7 +227,13 @@ const useStore = create((set, get) => ({
       availableLanguages: user.available_languages || ['Java', 'Python', 'TypeScript'],
       tracks: initTracks,
       tracksCache: { [tracksCacheKey]: { tracks: initTracks, timestamp: Date.now() } },
-      ...(initStats ? { stats: initStats } : {}),
+      ...(initStats ? {
+        stats: initStats,
+        ...(initStats.todaySeen !== undefined ? { todaySeen: initStats.todaySeen } : {}),
+        ...(initStats.dailyGoal !== undefined ? { dailyGoal: initStats.dailyGoal } : {}),
+        ...(initStats.dailyDone !== undefined ? { dailyDone: initStats.dailyDone } : {}),
+        ...(initStats.retention ? { retention: initStats.retention } : {}),
+      } : {}),
     });
     get().loadQuestions().catch(console.error);
     if (!initStats) get().loadStats();
@@ -591,12 +608,53 @@ const useStore = create((set, get) => ({
     saveDaily(next);
     set({ todaySeen: next, dailyDone: next >= get().dailyGoal });
   },
+  setDailyGoal: async (dailyGoal) => {
+    try {
+      const parsed = Math.max(5, Math.min(100, parseInt(dailyGoal) || 20));
+      set({ dailyGoal: parsed, dailyDone: get().todaySeen >= parsed });
+      await apiClient.setDailyGoal(parsed);
+    } catch (err) {
+      logger.warn('Store: setDailyGoal failed', err.message);
+    }
+  },
+
+  // ─── Cross-device sync ─────────────────────────────────────────────
+  createSyncCode: async () => {
+    return await apiClient.createSyncCode();
+  },
+
+  loginWithSyncCode: async (code) => {
+    set({ isLoading: true });
+    try {
+      const response = await apiClient.verifySyncCode({ code });
+      const { user, token, tracks, stats } = response;
+      get().loginWithToken(user, token, { tracks, stats });
+      return response;
+    } catch (err) {
+      set({ isLoading: false });
+      throw err;
+    }
+  },
 
   loadStats: async () => {
     try {
       const { selectedCategories, language } = get();
       const stats = await apiClient.getStats(language);
-      set({ stats });
+      const updates = { stats };
+      if (typeof stats.todaySeen === 'number') {
+        updates.todaySeen = stats.todaySeen;
+        saveDaily(stats.todaySeen);
+      }
+      if (typeof stats.dailyGoal === 'number') {
+        updates.dailyGoal = stats.dailyGoal;
+      }
+      if (typeof stats.dailyDone === 'boolean') {
+        updates.dailyDone = stats.dailyDone;
+      }
+      if (stats.retention) {
+        updates.retention = stats.retention;
+      }
+      set(updates);
       saveToLocal('stats', stats);
 
       // Refresh difficulty counts
@@ -633,6 +691,14 @@ const useStore = create((set, get) => ({
        const response = await apiClient.recordSwipe(questionId, status);
        if (response.streak) {
          get().applyStreak(response.streak);
+       }
+       if (typeof response.todaySeen === 'number') {
+         saveDaily(response.todaySeen);
+         set({
+           todaySeen: response.todaySeen,
+           dailyGoal: response.dailyGoal ?? get().dailyGoal,
+           dailyDone: response.dailyDone ?? (response.todaySeen >= (response.dailyGoal ?? get().dailyGoal)),
+         });
        }
      } catch (err) {
        logger.error('Store: swipe recording failed', err.message);

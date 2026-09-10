@@ -1865,7 +1865,16 @@ const migrations = [
         is_active = TRUE;
     `
   },
+
+  // ── 050: User daily goal in preferences ────────────────────────────
+  {
+    id: '050_user_daily_goal',
+    sql: `
+      ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS daily_goal INTEGER DEFAULT 20;
+    `
+  },
 ];
+
 
 async function runMigrations(dbPool) {
   const client = await dbPool.connect();

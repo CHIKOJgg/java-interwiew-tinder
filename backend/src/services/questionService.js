@@ -81,18 +81,49 @@ export async function updateMastery(userId, questionId, quality) {
 
 export async function getDueCount(userId, language = 'Java') {
   try {
+    const isAll = language === 'all';
+    const langClause = isAll ? '' : "AND (q.language = $2 OR q.language = 'General')";
+    const params = isAll ? [userId] : [userId, language];
     const { rows } = await pool.query(
       `SELECT COUNT(*) 
        FROM question_mastery qm
        JOIN questions q ON q.id = qm.question_id
        WHERE qm.user_id = $1 
-         AND q.language = $2
-         AND qm.next_review <= CURRENT_DATE`,
-      [userId, language]
+         ${langClause}
+         AND qm.next_review <= CURRENT_TIMESTAMP`,
+      params
     );
-    return parseInt(rows[0].count);
+    return parseInt(rows[0].count) || 0;
   } catch (err) {
     logger.error({ err, userId }, 'Failed to get due count');
     return 0;
+  }
+}
+
+export async function getRetentionStats(userId, language = 'Java') {
+  try {
+    const isAll = language === 'all';
+    const langClause = isAll ? '' : "AND (q.language = $2 OR q.language = 'General')";
+    const params = isAll ? [userId] : [userId, language];
+    const { rows } = await pool.query(
+      `SELECT 
+         COUNT(*) FILTER (WHERE qm.next_review <= CURRENT_TIMESTAMP) as due_count,
+         COUNT(*) FILTER (WHERE qm.repetitions >= 3 OR qm.interval_days >= 14) as mastered_count,
+         COUNT(*) FILTER (WHERE qm.repetitions > 0 AND qm.repetitions < 3 AND qm.interval_days < 14) as learning_count
+       FROM question_mastery qm
+       JOIN questions q ON q.id = qm.question_id
+       WHERE qm.user_id = $1 
+         ${langClause}`,
+      params
+    );
+    const row = rows[0] || {};
+    return {
+      dueCount: parseInt(row.due_count) || 0,
+      masteredCount: parseInt(row.mastered_count) || 0,
+      learningCount: parseInt(row.learning_count) || 0,
+    };
+  } catch (err) {
+    logger.error({ err, userId }, 'Failed to get retention stats');
+    return { dueCount: 0, masteredCount: 0, learningCount: 0 };
   }
 }

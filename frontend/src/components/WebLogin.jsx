@@ -7,9 +7,10 @@ import apiClient from '../api/client';
  * Supports Google One Tap (if enabled) and email magic-link.
  * On success calls onAuthenticated(user, token).
  */
-export default function WebLogin({ referralId, onAuthenticated, onBack }) {
-  const { t } = useTranslation();
-  const [mode, setMode] = useState('email'); // 'email' | 'google'
+export default function WebLogin({ referralId, onAuthenticated, onBack, initialMode = 'email' }) {
+  const { t, i18n } = useTranslation();
+  const [mode, setMode] = useState(initialMode || 'email'); // 'email' | 'sync' | 'google'
+  const [syncCode, setSyncCode] = useState('');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState('request'); // 'request' | 'verify'
@@ -26,6 +27,20 @@ export default function WebLogin({ referralId, onAuthenticated, onBack }) {
       return () => { document.head.removeChild(script); };
     }
   }, [mode]);
+
+  const handleSyncVerify = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await apiClient.verifySyncCode({ code: syncCode.trim() });
+      onAuthenticated(res.user, res.token, res);
+    } catch (err) {
+      setError(err.message || (i18n.language === 'ru' ? 'Неверный или просроченный код синхронизации' : 'Invalid or expired sync code'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSendCode = async (e) => {
     e.preventDefault();
@@ -71,15 +86,41 @@ export default function WebLogin({ referralId, onAuthenticated, onBack }) {
       {error && <div className="web-login-error">{error}</div>}
 
       <div className="web-login-tabs">
-        <button className={mode === 'email' ? 'active' : ''} onClick={() => setMode('email')}>
-          {t('auth.by_email', 'Email')}
+        <button className={mode === 'sync' ? 'active' : ''} onClick={() => { setMode('sync'); setError(null); }}>
+          📱 {t('auth.by_sync', 'Код с телефона')}
+        </button>
+        <button className={mode === 'email' ? 'active' : ''} onClick={() => { setMode('email'); setError(null); }}>
+          ✉️ {t('auth.by_email', 'Email')}
         </button>
         {isGoogleEnabled && (
-          <button className={mode === 'google' ? 'active' : ''} onClick={() => setMode('google')}>
+          <button className={mode === 'google' ? 'active' : ''} onClick={() => { setMode('google'); setError(null); }}>
             Google
           </button>
         )}
       </div>
+
+      {mode === 'sync' && (
+        <form onSubmit={handleSyncVerify} className="web-login-sync-form" style={{ marginTop: 16 }}>
+          <p style={{ fontSize: 14, color: 'var(--ink-soft, #666)', marginBottom: 16, lineHeight: 1.5 }}>
+            {t('auth.sync_hint', 'Откройте приложение в Telegram на телефоне: Профиль → Синхронизация с ПК, и введите 6-значный код.')}
+          </p>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={6}
+            required
+            autoFocus
+            style={{ fontSize: 24, letterSpacing: 8, textAlign: 'center', fontWeight: 'bold' }}
+            placeholder="123456"
+            value={syncCode}
+            onChange={(e) => setSyncCode(e.target.value.replace(/\D/g, ''))}
+          />
+          <button type="submit" disabled={loading || syncCode.length < 6} style={{ marginTop: 12 }}>
+            {loading ? t('common.loading', 'Loading…') : t('auth.sync_submit', 'Войти')}
+          </button>
+        </form>
+      )}
 
       {mode === 'email' && (
         step === 'request' ? (

@@ -71,6 +71,29 @@ class ApiClient {
     return response;
   }
 
+  // ─── Cross-device sync ─────────────────────────────────────────────
+  async createSyncCode() {
+    return this.request('/auth/sync-code', {
+      method: 'POST',
+    });
+  }
+
+  async verifySyncCode({ code, syncToken } = {}) {
+    const body = {};
+    if (code) body.code = code;
+    if (syncToken) body.syncToken = syncToken;
+    const response = await this.request('/auth/sync-verify', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    if (response.token) this.setToken(response.token);
+    if (response.user) {
+      this.setUserId(response.user.telegram_id);
+      if (response.user.language) this.setLanguage(response.user.language);
+    }
+    return response;
+  }
+
   // ─── Public demo (zero-login) ──────────────────────────────────────
   async getDemoQuestions(limit = 10, language = 'Java') {
     const params = new URLSearchParams({ limit: String(limit), language, lng: i18n.language || 'en' });
@@ -329,6 +352,13 @@ class ApiClient {
     return this.request('/preferences/language', {
       method: 'POST',
       body: JSON.stringify({ language }),
+    });
+  }
+
+  async setDailyGoal(dailyGoal) {
+    return this.request('/user/preferences/daily-goal', {
+      method: 'PUT',
+      body: JSON.stringify({ dailyGoal: Number(dailyGoal) }),
     });
   }
 
@@ -599,6 +629,10 @@ class ApiClient {
     if (category) params.set('category', category);
     if (search) params.set('search', search);
     return this.request(`/stats/answers?${params.toString()}`);
+  }
+
+  async getAnswerHistory(params) {
+    return this.getAnsweredQuestions(params);
   }
 
   // ─── Challenges ──────────────────────────────────────────────────

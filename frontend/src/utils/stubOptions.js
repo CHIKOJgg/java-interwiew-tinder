@@ -19,9 +19,15 @@ export function isStubOption(option) {
 }
 
 // A question is "test-ready" when it has at least 3 distractors that are
-// neither the correct answer nor placeholders.
+// neither the correct answer nor placeholders, or has 4 unique non-stub options.
 export function hasRealDistractors(options, correctAnswer = '') {
   if (!Array.isArray(options)) return false;
+  if (options.length >= 4) {
+    const four = options.slice(0, 4);
+    const valid = four.every(o => o && typeof o === 'string' && !isStubOption(o));
+    const unique = new Set(four.map(s => String(s || '').trim().toLowerCase()));
+    if (valid && unique.size === 4) return true;
+  }
   const norm = (s) => String(s || '').trim().toLowerCase();
   const correct = norm(correctAnswer);
   let real = 0;

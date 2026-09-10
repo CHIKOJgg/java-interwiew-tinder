@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import './TopQuestionsScreen.css';
 
-const LANGUAGES = ['Java', 'Python', 'JavaScript', 'Go'];
+const LANGUAGES = ['Java', 'Python', 'TypeScript', 'React', 'Go', 'Rust', 'Kotlin'];
 
 const difficultyColors = {
   Junior: 'var(--color-junior, #40c057)',
@@ -77,7 +77,11 @@ const TopQuestionsScreen = ({ onBack, onPractice }) => {
             <Flame size={20} className="flame-icon" />
             {t('top.title', 'Top Interview Questions')}
           </h2>
-          <span className="top-count-pill">{topQuestions.length}</span>
+          <span className="top-count-pill">
+            {filteredQuestions.length !== topQuestions.length
+              ? `${filteredQuestions.length} / ${topQuestions.length}`
+              : topQuestions.length}
+          </span>
         </div>
       </div>
 

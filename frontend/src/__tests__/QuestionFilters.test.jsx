@@ -111,4 +111,44 @@ describe('Question Filters & Anti-Bias Options', () => {
     // The distractors chosen should be substantively matched in length, not the 5-char stub
     expect(options).not.toContain('Short');
   });
+
+  it('buildTestOptions preserves all 4 authored options without injecting shortAnswer or dropping options', () => {
+    const question = {
+      id: 202,
+      shortAnswer: 'This is a long multi-sentence theoretical explanation for card flipping.',
+      options: [
+        'Option A: Concise correct answer',
+        'Option B: Distractor 1',
+        'Option C: Distractor 2',
+        'Option D: Distractor 3',
+      ],
+    };
+
+    const options = buildTestOptions(question);
+    expect(options.length).toBe(4);
+    expect(options).toContain('Option A: Concise correct answer');
+    expect(options).toContain('Option B: Distractor 1');
+    expect(options).toContain('Option C: Distractor 2');
+    expect(options).toContain('Option D: Distractor 3');
+    expect(options).not.toContain(question.shortAnswer);
+  });
+
+  it('buildTestOptions combines shortAnswer with 3 AI distractors when options has 3 items', () => {
+    const question = {
+      id: 203,
+      shortAnswer: 'ReentrantLock provides explicit locking with timeout and condition variables.',
+      options: [
+        'AI Distractor 1',
+        'AI Distractor 2',
+        'AI Distractor 3',
+      ],
+    };
+
+    const options = buildTestOptions(question);
+    expect(options.length).toBe(4);
+    expect(options).toContain(question.shortAnswer);
+    expect(options).toContain('AI Distractor 1');
+    expect(options).toContain('AI Distractor 2');
+    expect(options).toContain('AI Distractor 3');
+  });
 });

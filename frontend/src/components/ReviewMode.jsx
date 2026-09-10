@@ -16,6 +16,10 @@ const categoryColors = {
   'Design Patterns': 'var(--color-design-patterns)',
   Testing: 'var(--color-testing)',
   Database: 'var(--color-database)',
+  Databases: 'var(--color-database)',
+  'Software Architecture & Concepts': 'var(--color-design-patterns)',
+  'Java Architecture': 'var(--color-design-patterns)',
+  Microservices: '#0284c7',
 };
 
 const difficultyColors = {

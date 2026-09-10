@@ -1,23 +1,26 @@
 // Lazy load heavy/optional components
-import { lazy, Suspense, useState, useRef, useEffect } from 'react';
-const MockInterviewMode = lazy(() => import('./components/MockInterviewMode'));
-const ResumeAnalyzer = lazy(() => import('./components/ResumeAnalyzer'));
-const VacancyPrep = lazy(() => import('./components/VacancyPrep'));
-const MarketTrends = lazy(() => import('./components/MarketTrends'));
-const SubscriptionPlans = lazy(() => import('./components/SubscriptionPlans'));
-const AdminPanel = lazy(() => import('./components/AdminPanel'));
-const ReviewMode = lazy(() => import('./components/ReviewMode'));
-const ProgressScreen = lazy(() => import('./components/ProgressScreen'));
-const SavedQuestions = lazy(() => import('./components/SavedQuestions'));
-const AchievementScreen = lazy(() => import('./components/AchievementScreen'));
-const TracksScreen = lazy(() => import('./components/TracksScreen'));
-const TrackDetail = lazy(() => import('./components/TrackDetail'));
-const CompaniesScreen = lazy(() => import('./components/CompaniesScreen'));
-const PeerInterviewScreen = lazy(() => import('./components/PeerInterviewScreen'));
-const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
-const TopQuestionsScreen = lazy(() => import('./components/TopQuestionsScreen'));
+import { Suspense, useState, useRef, useEffect } from 'react';
+import { lazyWithRetry } from './utils/lazyWithRetry';
+const MockInterviewMode = lazyWithRetry(() => import('./components/MockInterviewMode'), 'mock-interview');
+const ResumeAnalyzer = lazyWithRetry(() => import('./components/ResumeAnalyzer'), 'resume');
+const VacancyPrep = lazyWithRetry(() => import('./components/VacancyPrep'), 'vacancy');
+const MarketTrends = lazyWithRetry(() => import('./components/MarketTrends'), 'trends');
+const SubscriptionPlans = lazyWithRetry(() => import('./components/SubscriptionPlans'), 'subscriptions');
+const AdminPanel = lazyWithRetry(() => import('./components/AdminPanel'), 'admin');
+const ReviewMode = lazyWithRetry(() => import('./components/ReviewMode'), 'review');
+const ProgressScreen = lazyWithRetry(() => import('./components/ProgressScreen'), 'progress');
+const SavedQuestions = lazyWithRetry(() => import('./components/SavedQuestions'), 'saved');
+const AchievementScreen = lazyWithRetry(() => import('./components/AchievementScreen'), 'achievements');
+const TracksScreen = lazyWithRetry(() => import('./components/TracksScreen'), 'tracks');
+const TrackDetail = lazyWithRetry(() => import('./components/TrackDetail'), 'track-detail');
+const CompaniesScreen = lazyWithRetry(() => import('./components/CompaniesScreen'), 'companies');
+const PeerInterviewScreen = lazyWithRetry(() => import('./components/PeerInterviewScreen'), 'peer-interview');
+const ProfileScreen = lazyWithRetry(() => import('./components/ProfileScreen'), 'profile');
+const TopQuestionsScreen = lazyWithRetry(() => import('./components/TopQuestionsScreen'), 'top-questions');
+const AbbreviationGlossary = lazyWithRetry(() => import('./components/AbbreviationGlossary'), 'abbreviations');
 import CategorySelection from './components/CategorySelection';
 import QuickFilterBar from './components/QuickFilterBar';
+import QuestionNavigatorModal from './components/QuestionNavigatorModal';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import LanguageSelection from './components/LanguageSelection';
 import ReportSheet from './components/ReportSheet';
@@ -32,9 +35,9 @@ import BlitzMode from './components/BlitzMode';
 import ConceptLinker from './components/ConceptLinker';
 import CodeCompletionMode from './components/CodeCompletionMode';
 import SystemDesignMode from './components/SystemDesignMode';
-const TrackMode = lazy(() => import('./components/LearningModes/TrackMode'));
-const PlaygroundMode = lazy(() => import('./components/LearningModes/PlaygroundMode'));
-const CertificateModal = lazy(() => import('./components/CertificateModal'));
+const TrackMode = lazyWithRetry(() => import('./components/LearningModes/TrackMode'), 'track-mode');
+const PlaygroundMode = lazyWithRetry(() => import('./components/LearningModes/PlaygroundMode'), 'playground-mode');
+import CertificateModal from './components/CertificateModal';
 import DeckComplete from './components/DeckComplete';
 import PaywallModal from './components/PaywallModal';
 import ProNudge from './components/ProNudge';
@@ -74,7 +77,7 @@ const TracksScreenWrapper = ({ onStartTrack, onBack, onSkipToCategories }) => {
 
 import DebugScreen from './components/DebugScreen';
 import WebLogin from './components/WebLogin';
-const Landing = lazy(() => import('./components/Landing'));
+const Landing = lazyWithRetry(() => import('./components/Landing'), 'landing');
 import DemoMode from './components/DemoMode';
 import Settings from './components/Settings';
 import './App.css';
@@ -139,6 +142,7 @@ function App() {
   const [reportingQuestionId, setReportingQuestionId] = useState(null);
   const [currentTrackId, setCurrentTrackId] = useState(null);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [navigatorOpen, setNavigatorOpen] = useState(false);
   const [undoInfo, setUndoInfo] = useState(null);
   const undoTimerRef = useRef(null);
   // When the user re-opens the onboarding from the help button, "done" should
@@ -458,6 +462,7 @@ if (screen === 'track-detail') return <Suspense fallback={<div className="app-lo
 if (screen === 'achievements') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AchievementScreen onBack={() => setScreen('main')} /></Suspense>;
    if (screen === 'profile') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><ProfileScreen onBack={() => setScreen('main')} onSettingsClick={() => setScreen('settings')} /></Suspense>;
    if (screen === 'settings') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><Settings onBack={() => setScreen('main')} onNavigate={(s) => setScreen(s)} onExport={exportProgress} onHelp={handleHelp} /></Suspense>;
+   if (screen === 'abbreviations') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><AbbreviationGlossary onBack={() => setScreen('main')} onPractice={() => { useStore.getState().setLearningMode('test'); setScreen('main'); }} /></Suspense>;
    if (screen === 'top-questions') return <Suspense fallback={<div className="app-loading"><SkeletonCard /></div>}><TopQuestionsScreen onBack={() => setScreen('main')} onPractice={() => setScreen('main')} /></Suspense>;
    if (screen === 'peer-interview') {
      if (!useStore.getState().canAccessMode('peer-interview')) {
@@ -613,7 +618,10 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
          onFilterClick={() => setScreen('category')}
          />
       {['swipe', 'test', 'bug-hunting', 'blitz', 'code-completion'].includes(learningMode) && (
-        <QuickFilterBar onOpenFilters={() => setScreen('category')} />
+        <QuickFilterBar
+          onOpenFilters={() => setScreen('category')}
+          onOpenNavigator={() => setNavigatorOpen(true)}
+        />
       )}
       <div className="card-container">
         <Suspense fallback={<SkeletonCard />}>
@@ -637,6 +645,10 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
         onClose={closeExplanation}
         onUpgrade={() => setScreen('subscriptions')}
       />
+      <QuestionNavigatorModal
+        isOpen={navigatorOpen}
+        onClose={() => setNavigatorOpen(false)}
+      />
       {showShare && (
         <ShareCard 
           stats={stats} 
@@ -650,13 +662,13 @@ if (screen === 'achievements') return <Suspense fallback={<div className="app-lo
         />
       )}
       <PaywallModal onUpgrade={handleUpgrade} />
-      <Suspense fallback={null}>
+      {trackComplete && (
         <CertificateModal
           isOpen={trackComplete}
           onClose={() => useStore.setState({ trackComplete: false, currentCertificate: null })}
           certificate={currentCertificate}
         />
-      </Suspense>
+      )}
       <MissedPanel />
       {import.meta.env.DEV && (
         <button type="button" className="debug-fab" onClick={() => setDebugOpen(true)} title="Debug">Debug</button>

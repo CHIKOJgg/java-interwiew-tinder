@@ -4,7 +4,7 @@
 // so Test mode NEVER waits on the LLM — exactly like Blitz's local fallback.
 // AI options still arrive in the background and are cached for next time.
 
-import { realDistractors } from './stubOptions';
+import { isStubOption, realDistractors } from './stubOptions';
 
 export function shuffle(arr) {
   const a = [...arr];
@@ -21,6 +21,18 @@ const norm = (s) => (s || '').trim().toLowerCase();
 // (real distractors preferred, then the local pool).
 export function buildTestOptions(question, distractorPool = []) {
   if (!question) return [];
+
+  // When 4 hand-authored options exist (options[0] correct, options[1..3] distractors)
+  // use them directly without injecting shortAnswer or dropping option 4.
+  if (Array.isArray(question.options) && question.options.length >= 4) {
+    const four = question.options.slice(0, 4);
+    const valid = four.every(o => o && typeof o === 'string' && !isStubOption(o));
+    const unique = new Set(four.map(norm));
+    if (valid && unique.size === 4) {
+      return shuffle([...four]);
+    }
+  }
+
   const correct = question.shortAnswer || '';
   const wrongs = realDistractors(question.options, correct).slice(0, 3);
   if (wrongs.length >= 3) return shuffle([correct, ...wrongs]);

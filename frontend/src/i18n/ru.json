@@ -55,7 +55,8 @@
     "achievements": "Достижения",
     "companies": "Компании",
     "profile": "Профиль",
-    "peer_interview": "Пировое интервью"
+    "peer_interview": "Пировое интервью",
+    "abbreviations": "Справочник аббревиатур"
   },
   "settings": {
     "preferences": "Настройки",
@@ -725,5 +726,18 @@
     "enable": "Выбрать",
     "enabled": "Выбрано",
     "view_list": "Список"
+  },
+  "navigator": {
+    "title": "Навигатор по вопросам",
+    "subtitle": "Быстрый поиск и выбор вопросов по уровням сложности",
+    "search_placeholder": "Поиск по вопросам, терминам, темам...",
+    "all_levels": "Все уровни",
+    "drill_level": "Тренировать только {{level}}",
+    "drill_all": "Тренировать все уровни",
+    "open_question": "Изучить",
+    "no_questions": "Вопросов не найдено",
+    "no_questions_desc": "Попробуйте изменить параметры поиска или уровень сложности",
+    "question_counter": "Вопрос {{current}} из {{total}}",
+    "questions_count": "{{count}} вопросов"
   }
 }

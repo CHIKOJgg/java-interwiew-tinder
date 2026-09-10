@@ -215,7 +215,9 @@ class ApiClient {
         if (response.status === 401 && endpoint !== '/auth/login') {
           if (this.onUnauthorized) this.onUnauthorized();
           logger.warn(`API 401 Session expired [${endpoint}]`);
-          throw new Error('Session expired. Please log in again.');
+          const authError = new Error('Session expired. Please log in again.');
+          authError.status = 401;
+          throw authError;
         }
 
         if (response.status === 503 && attempt < maxRetries) {

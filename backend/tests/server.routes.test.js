@@ -605,6 +605,46 @@ describe('POST /api/questions/test-answer', () => {
     expect(res.body.isCorrect).toBe(false);
   });
 
+  it('correct answer via options[0] when options has 4 items', async () => {
+    pool.query
+      .mockResolvedValueOnce({
+        rows: [{
+          short_answer: 'Full long explanation sentence here.',
+          options: ['Concise Option A', 'Wrong Distractor B', 'Wrong Distractor C', 'Wrong Distractor D']
+        }]
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ current_streak: 2, last_activity_date: '2000-01-01', longest_streak: 2 }] })
+      .mockResolvedValueOnce({ rows: [] });
+    const res = await request(app)
+      .post('/api/questions/test-answer')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ questionId: '1', answer: 'Concise Option A' });
+    expect(res.status).toBe(200);
+    expect(res.body.isCorrect).toBe(true);
+    expect(res.body.correctAnswer).toBe('Concise Option A');
+  });
+
+  it('rejects wrong distractor and returns options[0] as correctAnswer', async () => {
+    pool.query
+      .mockResolvedValueOnce({
+        rows: [{
+          short_answer: 'Full long explanation sentence here.',
+          options: ['Concise Option A', 'Wrong Distractor B', 'Wrong Distractor C', 'Wrong Distractor D']
+        }]
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ current_streak: 1, last_activity_date: '2000-01-01', longest_streak: 2 }] })
+      .mockResolvedValueOnce({ rows: [] });
+    const res = await request(app)
+      .post('/api/questions/test-answer')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ questionId: '1', answer: 'Wrong Distractor B' });
+    expect(res.status).toBe(200);
+    expect(res.body.isCorrect).toBe(false);
+    expect(res.body.correctAnswer).toBe('Concise Option A');
+  });
+
   it('404 when question missing', async () => {
     pool.query.mockResolvedValueOnce({ rows: [] });
     const res = await request(app)

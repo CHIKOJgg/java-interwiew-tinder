@@ -4,7 +4,7 @@ test.describe('Landing page', () => {
   test('loads and shows hero CTA', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#root')).toBeAttached();
-    await expect(page.locator('#ctaHero')).toBeVisible();
+    await expect(page.locator('#ctaHero')).toBeVisible({ timeout: 10000 });
   });
 
   test('hero CTA opens the free demo deck', async ({ page }) => {

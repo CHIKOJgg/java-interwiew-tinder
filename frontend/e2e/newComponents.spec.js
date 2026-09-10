@@ -36,3 +36,11 @@ test.describe('MarketTrends component', () => {
     await expect(root).toBeAttached();
   });
 });
+
+test.describe('AbbreviationGlossary component', () => {
+  test('page loads', async ({ page }) => {
+    await page.goto('/');
+    const root = page.locator('#root');
+    await expect(root).toBeAttached();
+  });
+});

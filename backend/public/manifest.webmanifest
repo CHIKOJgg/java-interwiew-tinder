@@ -1,12 +1,12 @@
 {
-  "name": "Interview Tinder",
-  "short_name": "ITinder",
-  "description": "Gamified interview prep — swipe, test, bug-hunting and more.",
+  "name": "Prep-It",
+  "short_name": "Prep-It",
+  "description": "Gamified interview prep - swipe, test, bug-hunting and more.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f8f9fa",
-  "theme_color": "#5c7cfa",
+  "theme_color": "#F7F3E6",
   "icons": [
     {
       "src": "/icon-192.png",

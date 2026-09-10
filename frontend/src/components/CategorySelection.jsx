@@ -41,7 +41,7 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
     selectedFrameworks: savedFrameworks,
     selectedTopics: savedTopics,
     topicSearchQuery: savedSearch,
-    user
+    difficultyCounts,
   } = useStore();
 
   const [activeTab, setActiveTab] = useState('categories'); // 'categories' | 'frameworks' | 'topics'
@@ -69,6 +69,30 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
     if (prefsData?.selectedTopics?.length) setLocalTopics(prefsData.selectedTopics);
     if (prefsData?.selectedCompany) setLocalCompany(prefsData.selectedCompany);
   };
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [filtersData, companiesData, prefsData] = await Promise.all([
+        api.getFilters().catch(() => api.getCategories()),
+        api.getCompanies().catch(() => null),
+        api.getPreferences().catch(() => null),
+      ]);
+
+      applyData(filtersData, companiesData, prefsData);
+      saveCategoriesCache({
+        categories: filtersData?.categories || [],
+        frameworks: filtersData?.frameworks || [],
+        topics: filtersData?.topics || [],
+        companies: companiesData?.companies || [],
+        prefs: prefsData || {}
+      });
+    } catch (error) {
+      console.error('Error loading filters:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const cached = loadCategoriesCache();
@@ -101,31 +125,7 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
     } else {
       loadData();
     }
-  }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [filtersData, companiesData, prefsData] = await Promise.all([
-        api.getFilters().catch(() => api.getCategories()),
-        api.getCompanies().catch(() => null),
-        api.getPreferences().catch(() => null),
-      ]);
-
-      applyData(filtersData, companiesData, prefsData);
-      saveCategoriesCache({
-        categories: filtersData?.categories || [],
-        frameworks: filtersData?.frameworks || [],
-        topics: filtersData?.topics || [],
-        companies: companiesData?.companies || [],
-        prefs: prefsData || {}
-      });
-    } catch (error) {
-      console.error('Error loading filters:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [loadData]);
 
   // Get current list based on active tab
   const currentItems = useMemo(() => {
@@ -359,6 +359,7 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
         <div className="difficulty-chips">
           {DIFFICULTIES.map((diff) => {
             const active = selectedDifficulties.includes(diff);
+            const count = difficultyCounts?.[diff];
             return (
               <button
                 key={diff}
@@ -367,7 +368,8 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
                 type="button"
               >
                 {active && <Check size={14} />}
-                {t(`difficulty.${diff}`, diff)}
+                <span>{t(`difficulty.${diff}`, diff)}</span>
+                {count > 0 && <span className="diff-count-pill">({count})</span>}
               </button>
             );
           })}

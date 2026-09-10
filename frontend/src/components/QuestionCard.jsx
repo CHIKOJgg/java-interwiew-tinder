@@ -23,6 +23,10 @@ const categoryColors = {
   'Design Patterns': 'var(--color-design-patterns)',
   Testing: 'var(--color-testing)',
   Database: 'var(--color-database)',
+  Databases: 'var(--color-database)',
+  'Software Architecture & Concepts': 'var(--color-design-patterns)',
+  'Java Architecture': 'var(--color-design-patterns)',
+  Microservices: '#0284c7',
 };
 
 const difficultyColors = {
@@ -33,8 +37,13 @@ const difficultyColors = {
 
 const QuestionCard = forwardRef(
   ({ question, onSwipe, canSwipe = true, onSwipeLeft, onSwipeRight, swipeDisabled }, ref) => {
+  const {
+    learningMode, loadExplanation, savedIds, toggleSave,
+    selectedDifficulties, setSelectedDifficulties,
+    selectedCategories, setSelectedCategories,
+    loadQuestions, currentIndex,
+  } = useStore();
   const { t } = useTranslation();
-  const { learningMode, loadExplanation, savedIds, toggleSave } = useStore();
   const [isFlipped, setIsFlipped] = useState(false);
   const [saving, setSaving] = useState(false);
   const tinderRef = useRef(null);
@@ -43,6 +52,26 @@ const QuestionCard = forwardRef(
 
   const isSaved = !!savedIds[question.id];
   const isRepeat = !!question.prevStatus;
+
+  const handleCategoryBadgeClick = (e) => {
+    e.stopPropagation();
+    const cat = question.category;
+    if (!cat) return;
+    const current = selectedCategories || [];
+    const isSelected = current.includes(cat);
+    setSelectedCategories(isSelected ? current.filter(c => c !== cat) : [cat]);
+    loadQuestions(false);
+  };
+
+  const handleDifficultyBadgeClick = (e) => {
+    e.stopPropagation();
+    const diff = question.difficulty;
+    if (!diff) return;
+    const current = selectedDifficulties || [];
+    const isSelected = current.includes(diff);
+    setSelectedDifficulties(isSelected ? [] : [diff]);
+    loadQuestions(false);
+  };
 
   const handleSave = async (e) => {
     e.stopPropagation();
@@ -116,18 +145,29 @@ const QuestionCard = forwardRef(
             {/* ── Front ─────────────────────────────────────────── */}
             <div className="card-face card-front">
               <div className="badges-container">
+                <span className="card-index-badge" title="Номер вопроса в колоде">
+                  #{currentIndex + 1}
+                </span>
                 <span
-                  className="category-badge"
+                  className="category-badge clickable"
                   style={{ background: categoryColor }}
+                  onClick={handleCategoryBadgeClick}
+                  title={`Фильтровать по теме: ${question.category}`}
+                  role="button"
+                  tabIndex={0}
                 >
                   {question.category}
                 </span>
                 <span
-                  className="difficulty-badge"
+                  className={`difficulty-badge clickable ${(selectedDifficulties || []).includes(question.difficulty) ? 'active' : ''}`}
                   style={{
                     background:
                       difficultyColors[question.difficulty] || '#868e96',
                   }}
+                  onClick={handleDifficultyBadgeClick}
+                  title={`Фильтровать по уровню: ${question.difficulty}`}
+                  role="button"
+                  tabIndex={0}
                 >
                   {question.difficulty}
                 </span>

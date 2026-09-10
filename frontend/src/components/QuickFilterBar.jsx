@@ -1,16 +1,20 @@
 import React from 'react';
-import { SlidersHorizontal, X, Flame, RotateCcw } from 'lucide-react';
+import {
+  SlidersHorizontal, X, Flame, RotateCcw,
+  BookOpen, ChevronLeft, ChevronRight
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../store/useStore';
 import './QuickFilterBar.css';
 
 const DIFFICULTIES = ['Junior', 'Middle', 'Senior'];
 
-const QuickFilterBar = ({ onOpenFilters }) => {
+const QuickFilterBar = ({ onOpenFilters, onOpenNavigator }) => {
   const { t } = useTranslation();
   const {
     selectedDifficulties,
     setSelectedDifficulties,
+    difficultyCounts,
     selectedCategories,
     setSelectedCategories,
     selectedFrameworks,
@@ -20,11 +24,14 @@ const QuickFilterBar = ({ onOpenFilters }) => {
     filterOnlyTop,
     setFilterOnlyTop,
     loadQuestions,
+    questions,
+    currentIndex,
+    jumpToPrevQuestion,
+    jumpToNextQuestion,
   } = useStore();
 
   const handleDifficultyClick = (diff) => {
     if (!diff) {
-      // "All" selected -> clear difficulty filter
       if (!selectedDifficulties || selectedDifficulties.length === 0) return;
       setSelectedDifficulties([]);
       loadQuestions(false);
@@ -81,9 +88,32 @@ const QuickFilterBar = ({ onOpenFilters }) => {
     (selectedTopics || []).length +
     (filterOnlyTop ? 1 : 0);
 
+  const totalQuestionsCount =
+    (difficultyCounts?.Junior || 0) +
+    (difficultyCounts?.Middle || 0) +
+    (difficultyCounts?.Senior || 0) ||
+    difficultyCounts?.total ||
+    0;
+
   return (
     <div className="quick-filter-bar">
       <div className="quick-filter-scroll">
+        {/* Quick Question Navigator Modal Trigger */}
+        {onOpenNavigator && (
+          <button
+            type="button"
+            className="quick-nav-open-btn"
+            onClick={onOpenNavigator}
+            title={t('navigator.title', 'Навигатор по вопросам')}
+          >
+            <BookOpen size={13} />
+            <span>{t('common.questions', 'Вопросы')}</span>
+            {totalQuestionsCount > 0 && (
+              <span className="quick-nav-count-badge">{totalQuestionsCount}</span>
+            )}
+          </button>
+        )}
+
         {/* Quick TOP 100 Toggle */}
         <button
           type="button"
@@ -99,17 +129,21 @@ const QuickFilterBar = ({ onOpenFilters }) => {
           <span>{t('top.top_100_chip', 'Top 100')}</span>
         </button>
 
-        {/* Difficulty Selector */}
+        {/* Difficulty Selector with Real Counts */}
         <div className="quick-diff-group">
           <button
             type="button"
             className={`quick-diff-chip ${!hasSpecificDiff ? 'active' : ''}`}
             onClick={() => handleDifficultyClick(null)}
           >
-            {t('common.all_short', 'All')}
+            <span>{t('common.all_short', 'All')}</span>
+            {totalQuestionsCount > 0 && (
+              <span className="quick-chip-count">{totalQuestionsCount}</span>
+            )}
           </button>
           {DIFFICULTIES.map((diff) => {
             const active = (selectedDifficulties || []).includes(diff);
+            const count = difficultyCounts?.[diff] || 0;
             return (
               <button
                 key={diff}
@@ -117,11 +151,38 @@ const QuickFilterBar = ({ onOpenFilters }) => {
                 className={`quick-diff-chip diff-${diff.toLowerCase()} ${active ? 'active' : ''}`}
                 onClick={() => handleDifficultyClick(diff)}
               >
-                {diff}
+                <span>{diff}</span>
+                {count > 0 && <span className="quick-chip-count">{count}</span>}
               </button>
             );
           })}
         </div>
+
+        {/* Quick Question Stepper (prev/next card) */}
+        {questions && questions.length > 0 && (
+          <div className="quick-stepper-group" title="Быстрое переключение карточек">
+            <button
+              type="button"
+              className="quick-step-btn"
+              onClick={jumpToPrevQuestion}
+              disabled={currentIndex === 0}
+              aria-label="Предыдущий вопрос"
+            >
+              <ChevronLeft size={13} />
+            </button>
+            <span className="quick-step-text">
+              {currentIndex + 1}/{questions.length}
+            </span>
+            <button
+              type="button"
+              className="quick-step-btn"
+              onClick={jumpToNextQuestion}
+              aria-label="Следующий вопрос"
+            >
+              <ChevronRight size={13} />
+            </button>
+          </div>
+        )}
 
         {/* Divider if active filter pills exist */}
         {(activePillsCount > 0 || hasSpecificDiff) && <div className="quick-filter-divider" />}

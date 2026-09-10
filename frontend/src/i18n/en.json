@@ -59,7 +59,8 @@
     "achievements": "Badges",
     "companies": "Companies",
     "profile": "Profile",
-    "peer_interview": "Peer Interview"
+    "peer_interview": "Peer Interview",
+    "abbreviations": "IT Abbreviations"
   },
   "settings": {
     "preferences": "Preferences",
@@ -724,5 +725,18 @@
     "enable": "Select",
     "enabled": "Selected",
     "view_list": "List"
+  },
+  "navigator": {
+    "title": "Question Navigator",
+    "subtitle": "Quickly browse and drill questions by difficulty level",
+    "search_placeholder": "Search questions, concepts, topics...",
+    "all_levels": "All levels",
+    "drill_level": "Practice {{level}}",
+    "drill_all": "Practice all levels",
+    "open_question": "Study",
+    "no_questions": "No questions found",
+    "no_questions_desc": "Try adjusting your search query or choosing a different difficulty level",
+    "question_counter": "Question {{current}} of {{total}}",
+    "questions_count": "{{count}} questions"
   }
 }

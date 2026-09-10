@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  TrendingUp, Menu, GraduationCap, Bug,
+  TrendingUp, Menu, Bug,
   Zap, Mic, Link, Braces, X, ChevronUp, Lock, Flame, SlidersHorizontal,
   Layers, CheckSquare, Cpu, Compass,
 } from 'lucide-react';
@@ -47,7 +47,6 @@ const Header = ({ onSettingsClick, onProgressClick, onTrackClick, onTopClick, on
     (selectedDifficulties?.length || 0) +
     (filterOnlyTop ? 1 : 0);
 
-  const progress = stats.totalQuestions > 0 ? (stats.known / stats.totalQuestions) * 100 : 0;
   const { readiness } = readinessFromStats(stats);
   // The slim bar tracks today's goal (answers today vs dailyGoal), not overall
   // readiness — otherwise it looks "empty" at the start of every day.

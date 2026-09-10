@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trophy, Users, Clock } from 'lucide-react';
-import apiClient from '../../api/client';
-import useStore from '../../store/useStore';
+import apiClient from '../api/client';
+import useStore from '../store/useStore';
 import './ChallengeBanner.css';
 
 const ChallengeBanner = ({ onStartChallenge }) => {

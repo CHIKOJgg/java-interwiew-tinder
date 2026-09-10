@@ -28,6 +28,7 @@ const AdminPanel = ({ onBack }) => {
   const fetchMetrics = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const [metricsData, reportsData] = await Promise.all([
         apiClient.getAdminMetrics(),
         apiClient.getAdminReports().catch(() => ({ reports: [] }))

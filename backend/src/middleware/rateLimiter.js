@@ -310,8 +310,8 @@ export function requireEntitlement(feature, value) {
     if (!limits) return next();
 
     let allowed = true;
-    const requestedLanguage = value || req.body?.language || req.query?.language;
-    const requestedMode = value || req.body?.mode || req.query?.mode;
+    const requestedLanguage = value || req.body?.language || req.query?.language || 'Java';
+    const requestedMode = value || req.body?.mode || req.query?.mode || 'swipe';
 
     switch (feature) {
       case 'language': {

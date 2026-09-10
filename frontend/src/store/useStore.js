@@ -84,6 +84,7 @@ const useStore = create((set, get) => ({
   categoryStats: { known: 0, total: 0 },
   // Difficulty filter (Junior / Middle / Senior) — empty = all difficulties.
   selectedDifficulties: [],
+  difficultyCounts: { Junior: 0, Middle: 0, Senior: 0, total: 0 },
   // Company filter — null = all companies.
   selectedCompany: null,
   selectedFrameworks: [],
@@ -265,6 +266,54 @@ const useStore = create((set, get) => ({
   // Set difficulty filter (Junior / Middle / Senior); empty = all.
   setSelectedDifficulties: (diffs) => {
     set({ selectedDifficulties: diffs });
+  },
+
+  setDifficultyCounts: (counts) => set({ difficultyCounts: counts }),
+
+  loadFilterCounts: async () => {
+    try {
+      const filters = await apiClient.getFilters();
+      if (filters?.difficulties) {
+        const counts = { Junior: 0, Middle: 0, Senior: 0, total: 0 };
+        filters.difficulties.forEach(d => {
+          if (d.name) {
+            counts[d.name] = d.count;
+            counts.total += d.count;
+          }
+        });
+        set({ difficultyCounts: counts });
+      }
+    } catch { /* ignore */ }
+  },
+
+  jumpToQuestion: (questionId, targetQuestion) => {
+    const { questions } = get();
+    const idx = questions.findIndex(q => q.id === questionId);
+    if (idx !== -1) {
+      set({ currentIndex: idx });
+    } else if (targetQuestion) {
+      const newQs = [...questions];
+      newQs.splice(get().currentIndex, 0, targetQuestion);
+      set({ questions: newQs });
+    }
+  },
+
+  jumpToNextQuestion: () => {
+    const { currentIndex, questions, hasMoreQuestions, loadQuestions } = get();
+    if (currentIndex < questions.length - 1) {
+      set({ currentIndex: currentIndex + 1 });
+    } else if (hasMoreQuestions && hasMoreQuestions()) {
+      loadQuestions(true).then(() => {
+        set(s => ({ currentIndex: Math.min(s.questions.length - 1, s.currentIndex + 1) }));
+      });
+    }
+  },
+
+  jumpToPrevQuestion: () => {
+    const { currentIndex } = get();
+    if (currentIndex > 0) {
+      set({ currentIndex: currentIndex - 1 });
+    }
   },
 
   // Set company filter — null = all companies.
@@ -546,9 +595,12 @@ const useStore = create((set, get) => ({
   loadStats: async () => {
     try {
       const { selectedCategories, language } = get();
-      const stats = await apiClient.getStats();
+      const stats = await apiClient.getStats(language);
       set({ stats });
       saveToLocal('stats', stats);
+
+      // Refresh difficulty counts
+      get().loadFilterCounts().catch(() => {});
 
       // Category-scoped stats for the topic counter (§3)
       if (selectedCategories.length > 0) {

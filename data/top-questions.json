@@ -1980,14 +1980,14 @@
   },
   {
     "question_text": "Можно ли объявить метод абстрактным и статическим одновременно?",
-    "short_answer": "Нет. В таком случае компилятор выдаст ошибку: _\"Illegal combination of modifiers: ‘abstract’ and ‘static’\"_.",
+    "short_answer": "Нет. В таком случае компилятор выдаст ошибку: _\"Illegal combination of modifiers: 'abstract' and 'static'\"_.",
     "category": "Java Core",
     "difficulty": "Middle",
     "language": "Java",
     "top_rank": 104,
     "is_top": true,
     "options": [
-      "Нет. В таком случае компилятор выдаст ошибку: _\"Illegal combination of modifiers: ‘abstract’",
+      "Нет. В таком случае компилятор выдаст ошибку: _\"Illegal combination of modifiers: 'abstract'",
       "Альтернативное поведение виртуальной машины, зависящее от конфигурации JIT-компилятора и флагов",
       "Устаревшая спецификация платформы, полностью исключенная и замененная новыми",
       "Конфигурация параметров виртуальной машины, требующая явной передачи флагов запуска при"
@@ -2268,14 +2268,14 @@
   },
   {
     "question_text": "What is a prototype chain",
-    "short_answer": "The prototype chain is a core concept in JavaScript’s inheritance model. It allows objects to inherit properties and methods from other objects.",
+    "short_answer": "The prototype chain is a core concept in JavaScript's inheritance model. It allows objects to inherit properties and methods from other objects.",
     "category": "JavaScript Core",
     "difficulty": "Junior",
     "language": "JavaScript",
     "top_rank": 120,
     "is_top": true,
     "options": [
-      "The prototype chain is a core concept in JavaScript’s inheritance model. It allows objects to",
+      "The prototype chain is a core concept in JavaScript's inheritance model. It allows objects to",
       "Alternative runtime specification handled differently across specialized non-standard virtual machine",
       "Legacy platform behavior that was officially deprecated and completely superseded",
       "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
@@ -2448,14 +2448,14 @@
   },
   {
     "question_text": "What is a first order function",
-    "short_answer": "A first-order function is a function that doesn’t accept another function as an argument and doesn’t return a function as its return value.",
+    "short_answer": "A first-order function is a function that doesn't accept another function as an argument and doesn't return a function as its return value.",
     "category": "JavaScript Core",
     "difficulty": "Junior",
     "language": "JavaScript",
     "top_rank": 130,
     "is_top": true,
     "options": [
-      "A first-order function is a function that doesn’t accept another function as an argument and",
+      "A first-order function is a function that doesn't accept another function as an argument and",
       "Alternative runtime specification handled differently across specialized non-standard virtual machine",
       "Legacy platform behavior that was officially deprecated and completely",
       "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
@@ -2682,14 +2682,14 @@
   },
   {
     "question_text": "What is memoization",
-    "short_answer": "Memoization is a functional programming technique which attempts to increase a function’s performance by caching its previously computed results.",
+    "short_answer": "Memoization is a functional programming technique which attempts to increase a function's performance by caching its previously computed results.",
     "category": "JavaScript Core",
     "difficulty": "Middle",
     "language": "JavaScript",
     "top_rank": 143,
     "is_top": true,
     "options": [
-      "Memoization is a functional programming technique which attempts to increase a function’s",
+      "Memoization is a functional programming technique which attempts to increase a function's",
       "Alternative runtime specification handled differently across specialized non-standard virtual",
       "Legacy platform behavior that was officially deprecated and completely",
       "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed during the"
@@ -2718,14 +2718,14 @@
   },
   {
     "question_text": "What are classes in ES6",
-    "short_answer": "In ES6, JavaScript classes are primarily syntactic sugar over JavaScript’s existing prototype-based inheritance.",
+    "short_answer": "In ES6, JavaScript classes are primarily syntactic sugar over JavaScript's existing prototype-based inheritance.",
     "category": "JavaScript Core",
     "difficulty": "Middle",
     "language": "JavaScript",
     "top_rank": 145,
     "is_top": true,
     "options": [
-      "In ES6, JavaScript classes are primarily syntactic sugar over JavaScript’s existing",
+      "In ES6, JavaScript classes are primarily syntactic sugar over JavaScript's existing",
       "Alternative runtime specification handled differently across specialized non-standard virtual",
       "Legacy platform behavior that was officially deprecated and completely",
       "Runtime configuration parameter requiring explicit opt-in bootstrap flags passed"

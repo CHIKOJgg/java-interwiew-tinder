@@ -87,6 +87,47 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
+.card-index-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--cream2, #eee);
+  border: 1.5px solid var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.category-badge.clickable,
+.difficulty-badge.clickable {
+  cursor: pointer;
+  border: 1.5px solid var(--ink);
+  box-shadow: 1.5px 1.5px 0 var(--ink);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+  user-select: none;
+}
+
+.category-badge.clickable:hover,
+.difficulty-badge.clickable:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 2.5px 2.5px 0 var(--ink);
+  filter: brightness(1.08);
+}
+
+.category-badge.clickable:active,
+.difficulty-badge.clickable:active {
+  transform: translate(1px, 1px);
+  box-shadow: 0.5px 0.5px 0 var(--ink);
+}
+
+.difficulty-badge.clickable.active {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
 /* ── Front: question text ─────────────────────────────────────────── */
 .question-content {
   flex: 1;

@@ -22,6 +22,9 @@ function initTelegramApp() {
   wa.onEvent('safeAreaChanged', applySafeArea);
   wa.onEvent('contentSafeAreaChanged', applySafeArea);
   wa.setBackgroundColor('#F7F3E6');
+  if (typeof wa.setHeaderColor === 'function') {
+    try { wa.setHeaderColor('#F7F3E6'); } catch (_) {}
+  }
   wa.ready();
   wa.expand();
   wa.MainButton.setParams({ color: '#D3FF4D', text_color: '#181510' });
@@ -33,22 +36,52 @@ initTelegramApp();
 // After a deploy the hashed chunk names change. If the shell (index.html)
 // or the service worker cache still references an old chunk, lazy imports
 // fail with "Failed to fetch dynamically imported module". Recovery:
-// wipe the SW cache and reload once — the fresh shell then loads new chunks.
-let chunkReloading = false;
-window.addEventListener('error', (event) => {
-  const msg = event.message || '';
-  if (!msg.includes('Failed to fetch dynamically imported module') && !msg.includes('error loading dynamically imported module')) return;
-  if (chunkReloading) return;
-  chunkReloading = true;
-  const reload = () => { window.location.reload(); };
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    caches.keys()
-      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
-      .catch(() => {})
-      .finally(reload);
-  } else {
-    reload();
+// wipe all caches/SW and reload once — the fresh shell then loads new chunks.
+const handleChunkError = async (err) => {
+  const msg = err?.message || String(err || '');
+  const isChunk =
+    msg.includes('Failed to fetch dynamically imported module') ||
+    msg.includes('error loading dynamically imported module') ||
+    msg.includes('Loading chunk') ||
+    msg.includes('Importing a module script failed') ||
+    err?.name === 'ChunkLoadError';
+
+  if (!isChunk) return;
+
+  const key = 'jit_chunk_main_reload';
+  const lastReload = parseInt(sessionStorage.getItem(key) || '0', 10);
+  const now = Date.now();
+  if (now - lastReload < 15000) return; // Prevent infinite reload loop
+  sessionStorage.setItem(key, String(now));
+
+  if ('caches' in window) {
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    } catch {
+      // Best effort cache purge
+    }
   }
+  if ('serviceWorker' in navigator) {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    } catch {
+      // Best effort SW unregister
+    }
+  }
+  window.location.reload();
+};
+
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault();
+  handleChunkError(event.payload);
+});
+window.addEventListener('unhandledrejection', (event) => {
+  handleChunkError(event.reason);
+});
+window.addEventListener('error', (event) => {
+  handleChunkError(event.error || event.message);
 });
 
 // ─── Sentry (gated, 10% traces) ─────────────────────────────────────────

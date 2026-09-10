@@ -259,21 +259,49 @@ app.get('/api/languages', (req, res) => {
   res.json({ languages: all });
 });
 
+// Category aliases and grouping for unified discovery
+export const CATEGORY_ALIASES = {
+  'Database': ['Database', 'Databases'],
+  'Databases': ['Databases', 'Database'],
+  'Design Patterns': ['Design Patterns', 'Software Architecture & Concepts', 'Java Architecture', 'Microservices'],
+  'Software Architecture & Concepts': ['Software Architecture & Concepts', 'Design Patterns', 'Java Architecture', 'Microservices'],
+  'Java Architecture': ['Java Architecture', 'Software Architecture & Concepts', 'Design Patterns'],
+  'Microservices': ['Microservices', 'Software Architecture & Concepts', 'Design Patterns'],
+};
+
+export function expandCategoryAliases(categories) {
+  if (!categories || !Array.isArray(categories) || categories.length === 0) return [];
+  const set = new Set();
+  for (const cat of categories) {
+    if (!cat) continue;
+    set.add(cat);
+    const aliases = CATEGORY_ALIASES[cat];
+    if (aliases) {
+      for (const a of aliases) set.add(a);
+    }
+  }
+  return [...set];
+}
+
 // ─── Categories & Filters (language-aware) ──────────────────────────
 app.get('/api/filters', async (req, res) => {
   try {
     const language = req.query.language || 'Java';
-    const [catsRes, framesRes, topicsRes] = await Promise.all([
+    const [catsRes, framesRes, topicsRes, diffsRes] = await Promise.all([
       pool.query(
-        `SELECT DISTINCT category, COUNT(*) as count FROM questions WHERE language = $1 AND is_active = TRUE GROUP BY category ORDER BY category`,
+        `SELECT DISTINCT category, COUNT(*) as count FROM questions WHERE (language = $1 OR language = 'General') AND is_active = TRUE GROUP BY category ORDER BY category`,
         [language]
       ),
       pool.query(
-        `SELECT DISTINCT framework, COUNT(*) as count FROM questions WHERE language = $1 AND framework IS NOT NULL AND framework <> '' AND is_active = TRUE GROUP BY framework ORDER BY count DESC, framework ASC`,
+        `SELECT DISTINCT framework, COUNT(*) as count FROM questions WHERE (language = $1 OR language = 'General') AND framework IS NOT NULL AND framework <> '' AND is_active = TRUE GROUP BY framework ORDER BY count DESC, framework ASC`,
         [language]
       ).catch(() => ({ rows: [] })),
       pool.query(
-        `SELECT DISTINCT topic, COUNT(*) as count FROM questions WHERE language = $1 AND topic IS NOT NULL AND topic <> '' AND is_active = TRUE GROUP BY topic ORDER BY count DESC, topic ASC`,
+        `SELECT DISTINCT topic, COUNT(*) as count FROM questions WHERE (language = $1 OR language = 'General') AND topic IS NOT NULL AND topic <> '' AND is_active = TRUE GROUP BY topic ORDER BY count DESC, topic ASC`,
+        [language]
+      ).catch(() => ({ rows: [] })),
+      pool.query(
+        `SELECT DISTINCT difficulty, COUNT(*) as count FROM questions WHERE (language = $1 OR language = 'General') AND difficulty IS NOT NULL AND is_active = TRUE GROUP BY difficulty ORDER BY count DESC`,
         [language]
       ).catch(() => ({ rows: [] })),
     ]);
@@ -283,6 +311,7 @@ app.get('/api/filters', async (req, res) => {
       categories: catsRes.rows.map(r => ({ name: r.category, count: parseInt(r.count) })),
       frameworks: framesRes.rows.map(r => ({ name: r.framework, count: parseInt(r.count) })),
       topics: topicsRes.rows.map(r => ({ name: r.topic, count: parseInt(r.count) })),
+      difficulties: diffsRes.rows.map(r => ({ name: r.difficulty, count: parseInt(r.count) })),
     });
   } catch (error) {
     logger.error({ err: error }, 'Error fetching filters');
@@ -290,21 +319,25 @@ app.get('/api/filters', async (req, res) => {
   }
 });
 
-// в”Ђв”Ђв”Ђ Categories (language-aware) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ——— Categories (language-aware) —————————————————————————————————————
 app.get('/api/categories', async (req, res) => {
   try {
     const language = req.query.language || 'Java';
-    const [catsRes, framesRes, topicsRes] = await Promise.all([
+    const [catsRes, framesRes, topicsRes, diffsRes] = await Promise.all([
       pool.query(
-        `SELECT DISTINCT category, COUNT(*) as count FROM questions WHERE language = $1 AND is_active = TRUE GROUP BY category ORDER BY category`,
+        `SELECT DISTINCT category, COUNT(*) as count FROM questions WHERE (language = $1 OR language = 'General') AND is_active = TRUE GROUP BY category ORDER BY category`,
         [language]
       ),
       pool.query(
-        `SELECT DISTINCT framework, COUNT(*) as count FROM questions WHERE language = $1 AND framework IS NOT NULL AND framework <> '' AND is_active = TRUE GROUP BY framework ORDER BY count DESC, framework ASC`,
+        `SELECT DISTINCT framework, COUNT(*) as count FROM questions WHERE (language = $1 OR language = 'General') AND framework IS NOT NULL AND framework <> '' AND is_active = TRUE GROUP BY framework ORDER BY count DESC, framework ASC`,
         [language]
       ).catch(() => ({ rows: [] })),
       pool.query(
-        `SELECT DISTINCT topic, COUNT(*) as count FROM questions WHERE language = $1 AND topic IS NOT NULL AND topic <> '' AND is_active = TRUE GROUP BY topic ORDER BY count DESC, topic ASC`,
+        `SELECT DISTINCT topic, COUNT(*) as count FROM questions WHERE (language = $1 OR language = 'General') AND topic IS NOT NULL AND topic <> '' AND is_active = TRUE GROUP BY topic ORDER BY count DESC, topic ASC`,
+        [language]
+      ).catch(() => ({ rows: [] })),
+      pool.query(
+        `SELECT DISTINCT difficulty, COUNT(*) as count FROM questions WHERE (language = $1 OR language = 'General') AND difficulty IS NOT NULL AND is_active = TRUE GROUP BY difficulty ORDER BY count DESC`,
         [language]
       ).catch(() => ({ rows: [] })),
     ]);
@@ -314,6 +347,7 @@ app.get('/api/categories', async (req, res) => {
       categories: catsRes.rows.map(r => ({ name: r.category, count: parseInt(r.count) })),
       frameworks: framesRes.rows.map(r => ({ name: r.framework, count: parseInt(r.count) })),
       topics: topicsRes.rows.map(r => ({ name: r.topic, count: parseInt(r.count) })),
+      difficulties: diffsRes.rows.map(r => ({ name: r.difficulty, count: parseInt(r.count) })),
     });
   } catch (error) {
     logger.error({ err: error }, 'Error fetching categories');
@@ -584,7 +618,7 @@ app.get('/api/demo/questions', demoLimiter, async (req, res) => {
         `SELECT ${baseCols}
        FROM questions
        WHERE ${baseWhere}
-         AND question_text ~ '[^ -~]' AND short_answer ~ '[^ -~]'
+         AND question_text ~ '[а-яА-ЯёЁ]' AND short_answer ~ '[а-яА-ЯёЁ]'
        ORDER BY CASE WHEN length(short_answer) < 20 THEN 1 ELSE 0 END ASC,
          md5(id::text || $2) ASC
        LIMIT $3`,
@@ -614,7 +648,7 @@ app.get('/api/demo/questions', demoLimiter, async (req, res) => {
         `SELECT ${baseCols}
        FROM questions
        WHERE ${baseWhere}
-         AND question_text !~ '[^ -~]' AND short_answer !~ '[^ -~]'
+         AND question_text !~ '[а-яА-ЯёЁ]' AND short_answer !~ '[а-яА-ЯёЁ]'
        ORDER BY CASE WHEN length(short_answer) < 20 THEN 1 ELSE 0 END ASC,
          md5(id::text || $2) ASC
        LIMIT $3`,
@@ -1292,17 +1326,18 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       'length(q.short_answer) >= 8',
     ];
     if (interfaceLang === 'ru') {
-      where.push(`q.question_text ~ '[^ -~]'`);
-      where.push(`q.short_answer ~ '[^ -~]'`);
+      where.push(`q.question_text ~ '[а-яА-ЯёЁ]'`);
+      where.push(`q.short_answer ~ '[а-яА-ЯёЁ]'`);
     } else if (interfaceLang === 'en') {
       // EN interface: strictly EN questions so switching UI to English
       // switches the deck to English too.
-      where.push(`q.question_text !~ '[^ -~]'`);
-      where.push(`q.short_answer !~ '[^ -~]'`);
+      where.push(`q.question_text !~ '[а-яА-ЯёЁ]'`);
+      where.push(`q.short_answer !~ '[а-яА-ЯёЁ]'`);
     }
     const params = [userId, language];
     let p = 3;
-    if (activeCategories.length > 0) { where.push(`q.category = ANY($${p})`); params.push(activeCategories); p++; }
+    const expandedCategories = expandCategoryAliases(activeCategories);
+    if (expandedCategories.length > 0) { where.push(`q.category = ANY($${p})`); params.push(expandedCategories); p++; }
     if (selectedFrameworks.length > 0) {
       where.push(`(q.framework = ANY($${p}) OR (q.tags && $${p}::text[]))`);
       params.push(selectedFrameworks);
@@ -1386,11 +1421,11 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
     const runFiller = async (withExclusion) => {
       const fWhere = ['q.is_active = TRUE', "(q.language = $2 OR q.language = 'General')", "up.status = 'known'", 'length(q.short_answer) >= 8'];
       if (interfaceLang === 'ru') {
-        fWhere.push(`q.question_text ~ '[^ -~]'`);
-        fWhere.push(`q.short_answer ~ '[^ -~]'`);
+        fWhere.push(`q.question_text ~ '[а-яА-ЯёЁ]'`);
+        fWhere.push(`q.short_answer ~ '[а-яА-ЯёЁ]'`);
       } else if (interfaceLang === 'en') {
-        fWhere.push(`q.question_text !~ '[^ -~]'`);
-        fWhere.push(`q.short_answer !~ '[^ -~]'`);
+        fWhere.push(`q.question_text !~ '[а-яА-ЯёЁ]'`);
+        fWhere.push(`q.short_answer !~ '[а-яА-ЯёЁ]'`);
       }
       const fParams = [userId, language];
       let fp = 3;
@@ -1544,9 +1579,9 @@ app.get('/api/questions/distractors', async (req, res) => {
     let p = 2;
     if (excludeIds.length > 0) { baseWhere.push(`NOT (q.id = ANY($${p}))`); params.push(excludeIds); p++; }
     const ruWhere = interfaceLang === 'ru'
-      ? [...baseWhere, `q.short_answer ~ '[^ -~]'`, `q.question_text ~ '[^ -~]'`]
+      ? [...baseWhere, `q.short_answer ~ '[а-яА-ЯёЁ]'`, `q.question_text ~ '[а-яА-ЯёЁ]'`]
       : interfaceLang === 'en'
-        ? [...baseWhere, `q.short_answer !~ '[^ -~]'`, `q.question_text !~ '[^ -~]'`]
+        ? [...baseWhere, `q.short_answer !~ '[а-яА-ЯёЁ]'`, `q.question_text !~ '[а-яА-ЯёЁ]'`]
         : baseWhere;
     const result = await pool.query(
       `SELECT q.id, q.short_answer
@@ -2099,11 +2134,23 @@ app.post('/api/questions/test-answer',
     try {
       const { questionId, answer } = req.body;
       const userId = req.userId;
-      const qRes = await pool.query('SELECT short_answer FROM questions WHERE id=$1', [questionId]);
+      const qRes = await pool.query('SELECT short_answer, options FROM questions WHERE id=$1', [questionId]);
       if (!qRes.rows[0]) return res.status(404).json({ error: 'Question not found' });
-      const correctAnswer = qRes.rows[0].short_answer;
+      const row = qRes.rows[0];
+      const shortAnswer = row.short_answer;
+      let options = row.options;
+      if (typeof options === 'string') {
+        try { options = JSON.parse(options); } catch { options = []; }
+      }
+      if (!Array.isArray(options)) options = [];
+
       const norm = s => (s || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
-      const isCorrect = norm(answer) === norm(correctAnswer);
+      const hasAuthoredOptions = options.length >= 4 && Boolean(options[0]);
+      const primaryAnswer = hasAuthoredOptions ? options[0] : shortAnswer;
+      const isCorrect = norm(answer) === norm(primaryAnswer)
+        || norm(answer) === norm(shortAnswer)
+        || (hasAuthoredOptions && norm(answer) === norm(options[0]));
+      const correctAnswer = hasAuthoredOptions ? options[0] : shortAnswer;
       await recordProgress(userId, questionId, isCorrect);
       const streak = await updateStreak(userId);
       res.json({ success: true, isCorrect, correctAnswer, streak });
@@ -3061,6 +3108,7 @@ app.get('/api/stats/categories', async (req, res) => {
     try { cats = JSON.parse(decodeURIComponent(categories || '[]')); } catch (err) { logger.error({ err }, 'Failed to parse categories'); /* ignore */ }
 
     if (cats.length === 0) return res.json({ known: 0, total: 0 });
+    const expandedCats = expandCategoryAliases(cats);
 
     const result = await pool.query(
       `SELECT
@@ -3068,8 +3116,8 @@ app.get('/api/stats/categories', async (req, res) => {
          COUNT(q.id)                                  AS total
        FROM questions q
        LEFT JOIN user_progress up ON q.id = up.question_id AND up.user_id = $1
-       WHERE q.language = $2 AND q.category = ANY($3)`,
-      [userId, language, cats]
+       WHERE (q.language = $2 OR q.language = 'General') AND q.is_active = TRUE AND q.category = ANY($3)`,
+      [userId, language, expandedCats]
     );
     res.json({
       known: parseInt(result.rows[0].known || 0),

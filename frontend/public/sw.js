@@ -1,5 +1,5 @@
-const CACHE = 'jit-v2';
-const STATIC = ['/', '/index.html', '/manifest.webmanifest'];
+const CACHE = 'jit-v3';
+const STATIC = ['/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -10,7 +10,7 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-       caches.keys().then((keys) =>
+    caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
     )
   );
@@ -29,22 +29,42 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (request.mode === 'navigate') {
+  // Navigation & HTML: always Network-First with offline fallback to cached shell
+  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/index.html'))
+      fetch(request)
+        .then((resp) => {
+          if (resp.ok) {
+            const clone = resp.clone();
+            caches.open(CACHE).then((c) => c.put('/index.html', clone));
+          }
+          return resp;
+        })
+        .catch(() => caches.match('/index.html'))
     );
     return;
   }
 
+  // Assets & other static resources: Cache-First with validation
   event.respondWith(
-    caches.match(request).then((cached) =>
-      fetch(request).then((resp) => {
-        if (resp.ok && (request.url.includes('/assets/') || STATIC.includes(new URL(request.url).pathname))) {
-          const clone = resp.clone();
-          caches.open(CACHE).then((c) => c.put(request, clone));
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+
+      return fetch(request).then((resp) => {
+        if (resp.ok) {
+          const contentType = resp.headers.get('content-type') || '';
+          // If a requested JS/CSS asset returns HTML, host SPA rewrite returned index.html for a missing chunk
+          if (request.url.includes('/assets/') && contentType.includes('text/html')) {
+            return new Response('Asset not found', { status: 404, statusText: 'Not Found' });
+          }
+
+          if (request.url.includes('/assets/') || STATIC.includes(url.pathname)) {
+            const clone = resp.clone();
+            caches.open(CACHE).then((c) => c.put(request, clone));
+          }
         }
         return resp;
-      }).catch(() => cached)
-    )
+      });
+    })
   );
 });

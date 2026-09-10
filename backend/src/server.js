@@ -323,6 +323,47 @@ export function expandFrameworkAliases(frameworks) {
   return [...set];
 }
 
+export const TOPIC_ALIASES = {
+  'Collections & Generics': ['Collections & Generics', 'Collections & Data Structures', 'Collections'],
+  'Collections & Data Structures': ['Collections & Data Structures', 'Collections & Generics', 'Collections', 'Data Structures'],
+  'Concurrency & Multithreading': ['Concurrency & Multithreading', 'Concurrency & Threads', 'Multithreading', 'Concurrency', 'AsyncIO & Concurrency'],
+  'AsyncIO & Concurrency': ['AsyncIO & Concurrency', 'AsyncIO', 'AsyncIO & Coroutines', 'Concurrency & Threads', 'Multithreading'],
+  'JVM & Memory Management': ['JVM & Memory Management', 'Memory & GC', 'JVM', 'Memory Management & CPython'],
+  'Memory Management & CPython': ['Memory Management & CPython', 'JVM & Memory Management', 'Memory & GC', 'Python Internals'],
+  'Databases & SQL': ['Databases & SQL', 'Databases', 'Database', 'PostgreSQL & ACID', 'SQLAlchemy & Databases'],
+  'PostgreSQL & ACID': ['PostgreSQL & ACID', 'Databases & SQL', 'Databases', 'Database'],
+  'Exceptions & Error Handling': ['Exceptions & Error Handling', 'Exceptions & Errors', 'Exceptions'],
+  'Design Patterns': ['Design Patterns', 'GoF Design Patterns', 'OOP & Design Patterns', 'Design Patterns & OOP', 'GoF & Pythonic Patterns'],
+  'Design Patterns & OOP': ['Design Patterns & OOP', 'Design Patterns', 'GoF Design Patterns', 'OOP & Design Patterns', 'GoF & Pythonic Patterns'],
+  'Spring Core & IoC': ['Spring Core & IoC', 'Spring', 'Spring Framework', 'Spring Boot'],
+  'Spring Boot Internals': ['Spring Boot Internals', 'Spring Boot', 'Spring'],
+  'Hibernate & JPA': ['Hibernate & JPA', 'ORM & Hibernate', 'JPA & Hibernate', 'Spring Data & JPA', 'Spring Data JPA'],
+  'Spring Data & JPA': ['Spring Data & JPA', 'Spring Data JPA', 'Hibernate & JPA', 'ORM & Hibernate', 'JPA & Hibernate'],
+  'Stream API & Lambdas': ['Stream API & Lambdas', 'Stream API & Functional', 'Stream API'],
+  'Testing & Mocks': ['Testing & Mocks', 'Testing', 'Testing & PyTest', 'JUnit / Mockito'],
+  'Testing & PyTest': ['Testing & PyTest', 'Testing', 'Testing & Mocks', 'PyTest'],
+  'Microservices & Distributed Systems': ['Microservices & Distributed Systems', 'Microservices', 'Distributed Systems'],
+  'Java Core & OOP': ['Java Core & OOP', 'Java Core', 'Java Syntax & OOP', 'OOP'],
+  'Python Core & Syntax': ['Python Core & Syntax', 'Python Core', 'Python Basics', 'OOP'],
+  'Generators & Decorators': ['Generators & Decorators', 'Decorators & Generators'],
+  'Containers & Kubernetes': ['Containers & Kubernetes', 'Docker / K8s', 'Docker', 'DevOps & Tools'],
+  'Message Queues & Kafka': ['Message Queues & Kafka', 'Kafka', 'Spring Kafka'],
+};
+
+export function expandTopicAliases(topics) {
+  if (!topics || !Array.isArray(topics) || topics.length === 0) return [];
+  const set = new Set();
+  for (const t of topics) {
+    if (!t) continue;
+    set.add(t);
+    const aliases = TOPIC_ALIASES[t];
+    if (aliases) {
+      for (const a of aliases) set.add(a);
+    }
+  }
+  return [...set];
+}
+
 // ─── Categories & Filters (language-aware) ──────────────────────────
 app.get('/api/filters', async (req, res) => {
   try {
@@ -1384,9 +1425,10 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       params.push(expandedFrameworks);
       p++;
     }
-    if (selectedTopics.length > 0) {
+    const expandedTopics = expandTopicAliases(selectedTopics);
+    if (expandedTopics.length > 0) {
       where.push(`(q.topic = ANY($${p}) OR q.category = ANY($${p}))`);
-      params.push(selectedTopics);
+      params.push(expandedTopics);
       p++;
     }
     if (searchQuery) {
@@ -1470,9 +1512,9 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       }
       const fParams = [userId, language];
       let fp = 3;
-      if (selectedCategories.length > 0) { fWhere.push(`q.category = ANY($${fp})`); fParams.push(selectedCategories); fp++; }
+      if (expandedCategories.length > 0) { fWhere.push(`q.category = ANY($${fp})`); fParams.push(expandedCategories); fp++; }
       if (expandedFrameworks.length > 0) { fWhere.push(`(q.framework = ANY($${fp}) OR (q.tags && $${fp}::text[]))`); fParams.push(expandedFrameworks); fp++; }
-      if (selectedTopics.length > 0) { fWhere.push(`(q.topic = ANY($${fp}) OR q.category = ANY($${fp}))`); fParams.push(selectedTopics); fp++; }
+      if (expandedTopics.length > 0) { fWhere.push(`(q.topic = ANY($${fp}) OR q.category = ANY($${fp}))`); fParams.push(expandedTopics); fp++; }
       if (difficulties && difficulties.length) { fWhere.push(`q.difficulty = ANY($${fp})`); fParams.push(difficulties); fp++; }
       if (req.query.company) { fWhere.push(`q.companies @> ARRAY[$${fp}]`); fParams.push(req.query.company); fp++; }
       if (withExclusion && excludeIds.length > 0) { fWhere.push(`NOT (q.id = ANY($${fp}))`); fParams.push(excludeIds); fp++; }

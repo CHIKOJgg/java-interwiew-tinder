@@ -8,7 +8,7 @@ import './CategorySelection.css';
 
 const DIFFICULTIES = ['Junior', 'Middle', 'Senior'];
 
-const CACHE_KEY = 'jit_categories_cache';
+const CACHE_KEY = 'jit_categories_cache_v3';
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 function loadCategoriesCache() {

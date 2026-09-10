@@ -45,8 +45,9 @@ export default function AbbreviationGlossary({ onBack, onPractice }) {
 
   return (
     <div className="glossary-screen">
-      {/* Header */}
-      <div className="glossary-header">
+      <div className="glossary-container">
+        {/* Header */}
+        <div className="glossary-header">
         <button className="glossary-back-btn" onClick={onBack} type="button" aria-label="Back">
           <ArrowLeft size={20} />
         </button>
@@ -173,12 +174,13 @@ export default function AbbreviationGlossary({ onBack, onPractice }) {
         )}
       </div>
 
-      {/* Floating or Bottom Practice CTA */}
-      <div className="glossary-footer">
-        <button className="glossary-practice-btn" onClick={handlePractice} type="button">
-          <Sparkles size={18} />
-          <span>{isEn ? 'Practice Abbreviations in Quiz' : 'Тренировать в квиз-режиме'}</span>
-        </button>
+        {/* Floating or Bottom Practice CTA */}
+        <div className="glossary-footer">
+          <button className="glossary-practice-btn" onClick={handlePractice} type="button">
+            <Sparkles size={18} />
+            <span>{isEn ? 'Practice Abbreviations in Quiz' : 'Тренировать в квиз-режиме'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -439,9 +439,18 @@ app.get('/api/categories', async (req, res) => {
 // в”Ђв”Ђв”Ђ Companies в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.get('/api/companies', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      'SELECT name, icon FROM company_list ORDER BY sort_order'
-    );
+    const { rows } = await pool.query(`
+      SELECT cl.name, cl.icon,
+             COALESCE(qc.count, 0)::int as question_count
+      FROM company_list cl
+      LEFT JOIN (
+        SELECT unnest(companies) as name, COUNT(*) as count
+        FROM questions
+        WHERE is_active = TRUE AND companies IS NOT NULL AND array_length(companies, 1) > 0
+        GROUP BY name
+      ) qc ON cl.name = qc.name
+      ORDER BY cl.sort_order
+    `);
     res.json({ companies: rows });
   } catch (error) {
     logger.error({ err: error }, 'Error fetching companies');
@@ -1432,7 +1441,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       p++;
     }
     if (searchQuery) {
-      where.push(`(q.question_text ILIKE $${p} OR q.short_answer ILIKE $${p} OR q.category ILIKE $${p} OR COALESCE(q.framework, '') ILIKE $${p})`);
+      where.push(`(q.question_text ILIKE $${p} OR q.short_answer ILIKE $${p} OR q.category ILIKE $${p} OR COALESCE(q.framework, '') ILIKE $${p} OR COALESCE(q.topic, '') ILIKE $${p})`);
       params.push(`%${searchQuery}%`);
       p++;
     }
@@ -3424,7 +3433,7 @@ app.get('/api/stats/answers', async (req, res) => {
 
     if (search) {
       params.push(`%${search}%`);
-      conditions.push(`(q.question_text ILIKE $${params.length} OR q.short_answer ILIKE $${params.length})`);
+      conditions.push(`(q.question_text ILIKE $${params.length} OR q.short_answer ILIKE $${params.length} OR q.category ILIKE $${params.length} OR COALESCE(q.framework, '') ILIKE $${params.length} OR COALESCE(q.topic, '') ILIKE $${params.length})`);
     }
 
     const whereClause = conditions.join(' AND ');
@@ -4160,21 +4169,7 @@ app.get('/api/progress/export', async (req, res) => {
   }
 });
 
-// в”Ђв”Ђв”Ђ Companies в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
-app.get('/api/companies', async (req, res) => {
-  try {
-    const { rows } = await pool.query(`
-      SELECT DISTINCT unnest(companies) as name
-      FROM questions
-      WHERE companies IS NOT NULL AND array_length(companies, 1) > 0
-      ORDER BY name
-    `);
-    res.json({ companies: rows.map(r => r.name) });
-  } catch (err) {
-    logger.error({ err }, 'Companies list error');
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+
 
 // в”Ђв”Ђв”Ђ UGC Questions в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 app.post('/api/questions/submit', validateBody({ question_text: { required: true }, short_answer: { required: true }, category: { required: true } }), async (req, res) => {

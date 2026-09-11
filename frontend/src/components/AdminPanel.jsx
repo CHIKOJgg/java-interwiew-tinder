@@ -56,7 +56,12 @@ const AdminPanel = ({ onBack }) => {
       <div className="admin-error">
         <AlertCircle size={48} />
         <p>{error}</p>
-        <button className="admin-retry-btn" onClick={fetchMetrics}>{t('admin.retry')}</button>
+        <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+          <button className="admin-retry-btn" onClick={fetchMetrics}>{t('admin.retry')}</button>
+          <button className="admin-retry-btn" style={{ background: 'var(--paper, #fff)', color: 'var(--ink, #000)' }} onClick={onBack}>
+            ← {t('common.back')}
+          </button>
+        </div>
       </div>
     );
   }

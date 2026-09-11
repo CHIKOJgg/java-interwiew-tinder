@@ -5,7 +5,7 @@ import apiClient from '../api/client';
 import { User, CheckCircle2, Download, Trophy, Flame, Settings, ArrowLeft, Edit2, Save, X, BookOpen, Phone, Globe, Laptop, Copy, Check } from 'lucide-react';
 import './ProfileScreen.css';
 
-function ProfileScreen({ onBack, onSettingsClick }) {
+function ProfileScreen({ onBack, onSettingsClick, onExportClick }) {
   const { t } = useTranslation();
   const { user, stats } = useStore();
   const [editing, setEditing] = useState(false);
@@ -151,7 +151,7 @@ function ProfileScreen({ onBack, onSettingsClick }) {
           <Settings size={18} />
           <span>{t('header.settings')}</span>
         </div>
-        <div className="menu-item" onClick={() => {/* export */}}>
+        <div className="menu-item" onClick={onExportClick} role="button" tabIndex={0}>
           <Download size={18} />
           <span>{t('header.export')}</span>
         </div>

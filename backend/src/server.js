@@ -658,6 +658,7 @@ app.use('/api', (req, res, next) => {
     req.path.startsWith('/auth/email/') ||
     req.path === '/languages' ||
     req.path.startsWith('/demo/') ||
+    req.path.startsWith('/trends') ||
     req.path === '/waitlist' ||
     req.path === '/waitlist/unsubscribe' ||
     req.path === '/email/subscribe' ||
@@ -1642,6 +1643,7 @@ app.get('/api/questions/feed', requireEntitlement('mode'), async (req, res) => {
       LEFT JOIN question_mastery qm ON q.id = qm.question_id AND qm.user_id = $1
       WHERE ${where.join(' AND ')}
       ORDER BY 
+        ${(mode === 'bug-hunting' || mode === 'bug') ? 'CASE WHEN q.bug_hunting_data IS NOT NULL THEN 0 ELSE 1 END ASC,' : ''}
         CASE 
           -- Cooldown: cards swiped in last 12h pushed to end so restart doesn't repeat them
           WHEN up.updated_at IS NOT NULL AND up.updated_at > NOW() - INTERVAL '12 hours' THEN 4
@@ -4370,8 +4372,8 @@ app.get('/api/progress/export', async (req, res) => {
     const exportData = {
       generatedAt: new Date().toISOString(),
       language,
-      stats: stats.rows[0] || {},
-      progress: progress.rows.map(r => ({
+      stats: stats[0] || {},
+      progress: progress.map(r => ({
         id: r.id,
         category: r.category,
         question: r.question_text,
@@ -4380,7 +4382,7 @@ app.get('/api/progress/export', async (req, res) => {
         difficulty: r.difficulty,
         lastReviewed: r.updated_at,
       })),
-      badges: badges.rows.map(b => b.badge_key),
+      badges: badges.map(b => b.badge_key),
     };
 
     if (format === 'csv') {
@@ -4395,7 +4397,7 @@ app.get('/api/progress/export', async (req, res) => {
           .map((k) => `"${esc(r[k]).replace(/"/g, '""')}"`)
           .join(',');
       const csv = 'ID,Category,Question,Short Answer,Status,Difficulty,Last Reviewed\n' +
-        progress.rows.map(row).join('\n');
+        progress.map(row).join('\n');
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="progress-${language}-${new Date().toISOString().split('T')[0]}.csv"`);
       return res.send(csv);

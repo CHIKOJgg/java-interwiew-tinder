@@ -38,7 +38,9 @@ function Settings({ onBack, onNavigate, onExport, onHelp }) {
     { key: 'header.peer_interview', icon: Video, screen: 'peer-interview' },
     { key: 'header.help', icon: HelpCircle, action: onHelp },
   ];
-  if (user?.plan === 'admin') quickLinks.push({ key: 'header.admin', icon: Shield, screen: 'admin' });
+  if (user?.is_admin || user?.isAdmin || user?.plan === 'admin') {
+    quickLinks.push({ key: 'header.admin', icon: Shield, screen: 'admin' });
+  }
 
   const linkRow = (item) => (
     <button

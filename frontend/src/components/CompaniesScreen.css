@@ -71,6 +71,21 @@
 
 .company-chip.selected {
   background: var(--lime);
+  font-weight: 700;
+}
+
+.company-count {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+}
+
+.company-chip.selected .company-count {
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .companies-empty {

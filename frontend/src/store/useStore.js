@@ -351,7 +351,15 @@ const useStore = create((set, get) => ({
 
   // Set company filter — null = all companies.
   setSelectedCompany: (company) => {
-    set({ selectedCompany: company });
+    set({
+      selectedCompany: company,
+      currentIndex: 0,
+      feedCursor: 0,
+      questions: [],
+      hasMore: true,
+      _loadingLock: false,
+    });
+    get().loadQuestions().catch(() => {});
   },
 
   setSelectedFrameworks: (frameworks) => {

@@ -36,3 +36,11 @@ scratch/
 
 # Agents internal files
 .agents/
+
+# Coursework & Local Scratch
+docs/coursework/
+__pycache__/
+*.pyc
+scripts/__pycache__/
+scripts/*.py
+TEST_*.md

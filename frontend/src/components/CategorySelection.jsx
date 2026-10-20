@@ -42,6 +42,7 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
     selectedTopics: savedTopics,
     topicSearchQuery: savedSearch,
     difficultyCounts,
+    user,
   } = useStore();
 
   const [activeTab, setActiveTab] = useState('categories'); // 'categories' | 'frameworks' | 'topics'
@@ -63,9 +64,11 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
 
   useEffect(() => {
     // Non-blocking fetch for referral stats
-    api.getReferralStats().then((data) => {
-      if (data) setRefStats(data);
-    }).catch(() => {});
+    if (typeof api?.getReferralStats === 'function') {
+      api.getReferralStats().then((data) => {
+        if (data) setRefStats(data);
+      }).catch(() => {});
+    }
   }, []);
 
   const applyData = (filtersData, companiesData, prefsData) => {
@@ -211,7 +214,7 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
   };
 
   const handleSave = async () => {
-    if (selectedCategories.length === 0) {
+    if (selectedCategories.length === 0 && !localFilterOnlyTop && selectedFrameworks.length === 0 && selectedTopics.length === 0) {
       showPopup(t('category.select_at_least_one', 'Please select at least one category'));
       return;
     }

@@ -2490,14 +2490,12 @@ app.post('/api/questions/blitz-answer',
         const { data } = await resolveAIData(questionId, 'blitz_data', 'blitz');
         if (data) {
           isCorrect = Boolean(answer) === Boolean(data.isCorrect);
-        } else if (clientIsCorrect !== undefined) {
-          isCorrect = Boolean(clientIsCorrect);
         } else {
           return res.status(404).json({ error: 'Blitz data not generated yet — please wait' });
         }
       } catch (err) {
         logger.error({ err, questionId }, 'Blitz answer parse error');
-        isCorrect = clientIsCorrect !== undefined ? Boolean(clientIsCorrect) : false;
+        isCorrect = false;
       }
       await recordProgress(userId, questionId, isCorrect);
       const streak = await updateStreak(userId);

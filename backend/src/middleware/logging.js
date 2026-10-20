@@ -1,11 +1,11 @@
 import pinoHttp from 'pino-http';
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 
 /**
  * HTTP request logging middleware using pino-http
  * Automatically assigns correlation IDs and logs request/response metadata.
  */
-export const httpLogger = pinoHttp({
+export const requestLogger = pinoHttp({
   logger,
   genReqId: (req) =>
     req.headers['x-correlation-id'] ||
@@ -31,6 +31,8 @@ export const httpLogger = pinoHttp({
   customSuccessMessage: (req, res) => `${req.method} ${req.url} completed ${res.statusCode}`,
   customErrorMessage: (req, res, err) => `${req.method} ${req.url} failed: ${err.message}`,
 });
+
+export const httpLogger = requestLogger;
 
 /**
  * Input validation middleware factory
@@ -108,4 +110,4 @@ export function sanitizeBody(req, res, next) {
   next();
 }
 
-export default { httpLogger, validateBody, sanitizeBody, sanitizeText };
+export default { requestLogger, httpLogger, validateBody, sanitizeBody, sanitizeText };

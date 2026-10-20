@@ -444,6 +444,13 @@ class ApiClient {
   }
 
   // sendStarsInvoice: triggers Bot API sendInvoice, returns { sent: true }
+  async createStarsInvoiceLink(planId, interval = 'monthly') {
+    return this.request('/billing/stars/create-invoice', {
+      method: 'POST',
+      body: JSON.stringify({ planId, interval }),
+    });
+  }
+
   async sendStarsInvoice(planId, interval = 'monthly') {
     return this.request('/billing/stars/invoice', {
       method: 'POST',

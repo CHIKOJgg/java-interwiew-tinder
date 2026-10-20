@@ -149,7 +149,12 @@ beforeAll(() => {
 // one-time mocks never leak between tests and offset the query ordering.
 beforeEach(() => {
   pool.query.mockReset();
-  pool.query.mockImplementation(async () => ({ rows: [] }));
+  pool.query.mockImplementation(async (sql, params) => {
+    if (typeof sql === 'string' && sql.includes('FROM subscription_plans WHERE id =')) {
+      return { rows: [{ id: params?.[0] || 'pro' }] };
+    }
+    return { rows: [] };
+  });
   pool.connect.mockReturnValue({ query: vi.fn().mockResolvedValue({ rows: [] }), release: vi.fn() });
   redis.get.mockReset();
   redis.get.mockResolvedValue(null);

@@ -33,3 +33,6 @@ frontend/playwright-report/
 
 .vercel
 scratch/
+
+# Agents internal files
+.agents/

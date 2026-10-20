@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Check, ArrowLeft, Inbox, Flame } from 'lucide-react';
+import { Check, ArrowLeft, Inbox, Flame, Gift, Copy, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonGrid } from './Skeleton';
 import api from '../api/client';
@@ -58,6 +58,15 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
   const [selectedCompany, setLocalCompany] = useState(savedCompany || null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [refStats, setRefStats] = useState({ total: 0, converted: 0, rewardDays: 0 });
+  const [refCopied, setRefCopied] = useState(false);
+
+  useEffect(() => {
+    // Non-blocking fetch for referral stats
+    api.getReferralStats().then((data) => {
+      if (data) setRefStats(data);
+    }).catch(() => {});
+  }, []);
 
   const applyData = (filtersData, companiesData, prefsData) => {
     if (filtersData?.categories) setCategories(filtersData.categories);
@@ -202,6 +211,10 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
   };
 
   const handleSave = async () => {
+    if (selectedCategories.length === 0) {
+      showPopup(t('category.select_at_least_one', 'Please select at least one category'));
+      return;
+    }
     try {
       setSaving(true);
       await api.updatePreferences(selectedCategories, undefined, selectedCompany, selectedFrameworks, selectedTopics);
@@ -219,6 +232,23 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'prep_interview_bot';
+  const referralUrl = user?.telegram_id
+    ? `https://t.me/${botUsername}?start=${user.telegram_id}`
+    : `${window.location.origin}/?ref=${user?.id || ''}`;
+
+  const handleCopyRef = () => {
+    navigator.clipboard.writeText(referralUrl).catch(() => {});
+    setRefCopied(true);
+    setTimeout(() => setRefCopied(false), 2000);
+  };
+
+  const handleShareRef = () => {
+    const text = t('referral.share_msg', 'Готовься к IT-собеседованиям в Prep-it! Держи 7 дней PRO в подарок:');
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralUrl)}&text=${encodeURIComponent(text)}`;
+    window.open(shareUrl, '_blank');
   };
 
   if (loading) {
@@ -425,6 +455,73 @@ const CategorySelection = ({ onComplete, onBack, onOpenTopQuestions }) => {
           })}
         </div>
       )}
+
+      <div className="referral-section">
+        <div className="referral-card">
+          <div className="referral-title">
+            <Gift className="gift-icon" size={20} />
+            <h3>{t('referral.title', 'Приглашайте друзей')}</h3>
+          </div>
+          <p className="referral-text">{t('referral.desc')}</p>
+
+          <div
+            className="referral-link-box"
+            onClick={handleCopyRef}
+            role="button"
+            tabIndex={0}
+            aria-label="Copy referral link"
+          >
+            <span className="ref-url">
+              {user?.telegram_id ? `t.me/${botUsername}?start=${user.telegram_id}` : referralUrl}
+            </span>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {refCopied && <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>{t('referral.copied', 'Скопировано!')}</span>}
+              <Copy size={16} />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <button
+              type="button"
+              onClick={handleShareRef}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                width: '100%',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                color: '#fff',
+                border: 'none',
+                padding: '10px 16px',
+                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize: '14px',
+                cursor: 'pointer',
+              }}
+            >
+              <Share2 size={16} />
+              {t('referral.share_button', 'Отправить в Telegram')}
+            </button>
+          </div>
+
+          <div className="referral-stats">
+            <div className="ref-stat">
+              <span className="ref-val">{refStats.total}</span>
+              <span className="ref-lab">{t('referral.invited', 'Приглашено')}</span>
+            </div>
+            <div className="ref-stat">
+              <span className="ref-val">{refStats.converted}</span>
+              <span className="ref-lab">{t('referral.paid', 'Оформили Pro')}</span>
+            </div>
+            <div className="ref-stat highlight">
+              <span className="ref-val">{refStats.rewardDays}</span>
+              <span className="ref-lab">{t('referral.pro_days', 'Дней PRO')}</span>
+            </div>
+            <p className="referral-note">{t('referral.note', 'PRO получают вы и друг — покупка не нужна, чтобы начать.')}</p>
+          </div>
+        </div>
+      </div>
 
       <div className="category-footer">
         <div className="selected-count">

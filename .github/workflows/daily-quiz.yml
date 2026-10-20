@@ -1,0 +1,48 @@
+name: Daily Telegram Interview Quiz
+
+on:
+  schedule:
+    # Runs at 08:00 and 16:00 UTC every day
+    - cron: '0 8,16 * * *'
+  workflow_dispatch:
+    inputs:
+      language:
+        description: 'Language track (Java, Python, or random)'
+        required: true
+        default: 'random'
+        type: choice
+        options:
+          - random
+          - Java
+          - Python
+      mode:
+        description: 'Post format (card with spoiler or interactive quiz)'
+        required: true
+        default: 'card'
+        type: choice
+        options:
+          - card
+          - quiz
+
+jobs:
+  broadcast:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Broadcast interview question to Telegram Channel
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          VITE_TELEGRAM_BOT_USERNAME: ${{ secrets.VITE_TELEGRAM_BOT_USERNAME || 'prep_interview_bot' }}
+          VITE_WEBAPP_URL: ${{ secrets.VITE_WEBAPP_URL || 'https://solve-it-rho.vercel.app' }}
+        run: |
+          LANG_ARG="${{ github.event.inputs.language || 'random' }}"
+          MODE_ARG="${{ github.event.inputs.mode || 'card' }}"
+          node scripts/telegram-channel-poster.mjs --lang="$LANG_ARG" --mode="$MODE_ARG"

@@ -1,33 +1,28 @@
 /**
- * Centralized Express error handler.
+ * Centralized error handler middleware.
  *
- * Guarantees every unhandled error is logged (via the logger transport, which
- * forwards to Sentry) instead of being swallowed by an empty catch, and returns
- * a consistent JSON envelope. In production the raw error message is never
- * leaked to clients.
+ * Catches unhandled errors from route handlers, logs them with correlation id,
+ * and returns safe error responses to clients (no stack traces in production).
  */
-export function errorHandler(isDev = process.env.NODE_ENV === 'development', allowedOrigins = null) {
+
+export function errorHandler({ isDev = false, allowedOrigins = null } = {}) {
   // eslint-disable-next-line no-unused-vars
   return (err, req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const safeMessage =
-      status >= 500 && !isDev
-        ? 'Internal server error'
-        : (err.message || 'Internal server error');
+      status < 500 || isDev ? err.message : 'Internal Server Error';
 
-    // logger is imported lazily to avoid a hard dependency cycle at module load.
-    import('../config/logger.js')
+    // Lazy load logger to avoid circular dependency
+    import('../utils/logger.js')
       .then(({ default: logger }) => {
-        logger.error({ err, path: req.path, method: req.method }, 'Unhandled error');
+        logger.error({ err, path: req?.path, method: req?.method }, 'Unhandled error');
       })
       .catch(() => {});
 
     if (!res.headersSent) {
-      // Never reflect arbitrary origins in error responses — a preflight-less
-      // error must not grant CORS to an attacker-controlled page.
-      const origin = req.headers?.origin;
+      const origin = req?.headers?.origin;
       const allowOrigin =
-        origin && (isDev || (allowedOrigins && allowedOrigins.has(origin))) ? origin : undefined;
+        origin && (isDev || (allowedOrigins && allowedOrigins.has(origin))) ? origin : (isDev ? '*' : undefined);
       if (typeof res.setHeader === 'function') {
         if (allowOrigin) {
           res.setHeader('Access-Control-Allow-Origin', allowOrigin);

@@ -80,8 +80,8 @@ describe('Auth Integration Tests', () => {
       };
 
       pool.query
-        .mockResolvedValueOnce({ rows: [mockUser] }) // INSERT users
-        .mockResolvedValueOnce({ rows: [] }); // SELECT user_subscriptions
+        .mockResolvedValue({ rows: [], rowCount: 0 })
+        .mockResolvedValueOnce({ rows: [mockUser] });
 
       const response = await request(app)
         .post('/api/auth/login')

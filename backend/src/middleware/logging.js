@@ -1,22 +1,22 @@
-import { v4 as uuidv4 } from 'uuid';
 import pinoHttp from 'pino-http';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 /**
- * Structured logging middleware using pino-http
- * Logs: userId, endpoint, latency, method, status, correlationId
+ * HTTP request logging middleware using pino-http
+ * Automatically assigns correlation IDs and logs request/response metadata.
  */
-export const requestLogger = pinoHttp({
+export const httpLogger = pinoHttp({
   logger,
-  genReqId: (req) => req.headers['x-correlation-id'] || uuidv4(),
-  customProps: (req) => ({
-    userId: req.userId || req.body?.userId || req.query?.userId || null,
-  }),
+  genReqId: (req) =>
+    req.headers['x-correlation-id'] ||
+    req.headers['x-request-id'] ||
+    `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
   serializers: {
     req: (req) => ({
       id: req.id,
       method: req.method,
       url: req.url,
+      remoteAddress: req.remoteAddress,
       // query: req.query, // optionally include
     }),
     res: (res) => ({
@@ -72,14 +72,15 @@ export function validateBody(schema) {
 }
 
 /**
- * Sanitize text input — strip potential prompt injection patterns
+ * Sanitize text input — strip potential script injection patterns & null bytes
  */
 export function sanitizeText(text) {
   if (typeof text !== 'string') return text;
   return text
     .replace(/\r\n/g, '\n')
     .replace(new RegExp(String.fromCharCode(0), 'g'), '')
-    .replace(/<[^>]*>/g, '')
+    .replace(/<script[^>]*>/gi, '')
+    .replace(/<\/script>/gi, '')
     .slice(0, 10000);
 }
 
@@ -106,3 +107,5 @@ export function sanitizeBody(req, res, next) {
   }
   next();
 }
+
+export default { httpLogger, validateBody, sanitizeBody, sanitizeText };

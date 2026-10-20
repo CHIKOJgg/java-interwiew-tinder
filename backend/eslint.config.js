@@ -21,7 +21,10 @@ export default [
       'node_modules/',
       'coverage/',
       'public/',
-      'src/scripts/seed-generated.mjs',
+      'src/scripts/seed-*.js',
+      'src/scripts/seed-*.mjs',
+      'src/scripts/gen_*.js',
+      'src/scripts/gen_*.mjs',
     ],
   },
 ];

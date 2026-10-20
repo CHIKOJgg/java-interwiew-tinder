@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>База вопросов с реальных IT-собеседований | Prep-it</title>
+  <meta name="description" content="Бесплатная база из 800+ вопросов с реальных технических собеседований по Java, Python, Spring, Multithreading, Алгоритмам с готовыми краткими ответами." />
+  <meta property="og:title" content="База вопросов с IT-собеседований — Prep-it" />
+  <meta property="og:description" content="Реальные вопросы с IT-собеседований с понятными ответами. Бесплатно." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://solve-it-rho.vercel.app/q/" />
+  <meta property="og:image" content="https://solve-it-rho.vercel.app/og-image.png" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="canonical" href="https://solve-it-rho.vercel.app/q/" />
+  <style>
+:root {
+  --brand: #4f46e5;
+  --brand-hover: #4338ca;
+  --brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  --bg-main: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.6;
+}
+header {
+  background: var(--brand-gradient);
+  color: #fff;
+  padding: 48px 20px 40px;
+  text-align: center;
+  position: relative;
+}
+header .nav-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255,255,255,0.9);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  background: rgba(255,255,255,0.15);
+  padding: 6px 14px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+}
+header .nav-back:hover { background: rgba(255,255,255,0.25); color: #fff; }
+header h1 {
+  font-size: 26px;
+  font-weight: 800;
+  max-width: 800px;
+  margin: 0 auto 16px;
+  line-height: 1.35;
+}
+.badges {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.badge {
+  background: rgba(255,255,255,0.22);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  color: var(--brand);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 14px 28px;
+  border-radius: 14px;
+  text-decoration: none;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.hero-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px -5px rgba(0,0,0,0.25);
+}
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 36px 20px 80px;
+}
+.crumbs {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+.crumbs a { color: var(--brand); text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 28px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+}
+.answer-box {
+  background: #f1f5f9;
+  border-left: 4px solid var(--brand);
+  padding: 18px 20px;
+  border-radius: 0 12px 12px 0;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #1e293b;
+  margin-bottom: 20px;
+}
+.options-list {
+  list-style: none;
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.option-item {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.option-item.correct {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+  font-weight: 600;
+}
+.cta-banner {
+  background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+  border: 1.5px solid #c7d2fe;
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  margin: 36px 0;
+}
+.cta-banner h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: #1e1b4b;
+}
+.cta-banner p {
+  color: #4338ca;
+  font-size: 15px;
+  max-width: 540px;
+  margin: 0 auto 20px;
+}
+.cta-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #4f46e5;
+  color: #fff;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.btn-primary:hover { background: #4338ca; }
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  color: #4f46e5;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 12px;
+  text-decoration: none;
+  border: 1.5px solid #c7d2fe;
+  transition: background 0.15s ease;
+}
+.btn-secondary:hover { background: #f8fafc; }
+.related-section h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.related-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.related-link {
+  display: block;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 16px 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 15px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.related-link:hover {
+  border-color: var(--brand);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.1);
+  color: var(--brand);
+}
+footer {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 14px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-color);
+  background: #ffffff;
+}
+footer a { color: var(--brand); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+@media (max-width: 600px) {
+  header h1 { font-size: 20px; }
+  .card { padding: 20px; }
+  .cta-actions { flex-direction: column; }
+  .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
+}
+</style>
+</head>
+<body>
+  <header>
+    <h1>База вопросов с реальных IT-собеседований</h1>
+    <p style="max-width:600px;margin:0 auto 20px;opacity:0.95;">
+      Вопросы и разборы для Junior, Middle и Senior разработчиков. Готовьтесь в удобном формате карточек.
+    </p>
+    <a class="hero-cta" href="https://t.me/prep_interview_bot" target="_blank" rel="noopener">
+      🚀 Начать тренировку в Telegram-боте
+    </a>
+  </header>
+
+  <main>
+    <div style="background:#fff;border:1px solid var(--border-color);border-radius:14px;padding:20px;margin-bottom:30px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:20px;">🔍</span>
+      <input type="text" id="filterInput" placeholder="Поиск по вопросам или темам..." style="width:100%;border:none;font-size:16px;outline:none;" />
+    </div>
+
+    
+      <section id="java" style="margin-top:40px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;border-bottom:2px solid #e2e8f0;padding-bottom:10px;">
+          <h2 style="font-size:24px;font-weight:800;color:#0f172a;">Java <span style="font-size:16px;font-weight:600;color:var(--brand);">194 вопросов</span></h2>
+          <a href="https://t.me/prep_interview_bot" target="_blank" style="font-size:14px;color:var(--brand);font-weight:600;text-decoration:none;">Тренировать в боте →</a>
+        </div>
+        
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Java Core <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(25)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/1-kak-rabotaet-mehanizm-try-with-resources-kakie-interfeysy-do.html">Как работает механизм try-with-resources? Какие интерфейсы должны реализовывать ресурсы?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/2-v-chem-raznitsa-mezhdu-classnotfoundexception-i-noclassdeffo.html">В чём разница между ClassNotFoundException и NoClassDefFoundError?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/3-chto-takoe-default-metod-v-interfeyse-i-kak-razreshaetsya-ko.html">Что такое default-метод в интерфейсе и как разрешается конфликт множественного наследования de…</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/4-chto-takoe-sealed-klassy-i-kak-oni-rabotayut.html">Что такое sealed классы и как они работают?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/5-chem-record-klass-otlichaetsya-ot-obychnogo-klassa.html">Чем record класс отличается от обычного класса?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/6-kak-rabotaet-sopostavlenie-s-obraztsom-pattern-matching-dlya.html">Как работает сопоставление с образцом (pattern matching) для instanceof в Java 16+?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/7-chto-takoe-tekstovye-bloki-text-blocks-i-dlya-chego-oni-ispo.html">Что такое текстовые блоки (text blocks) и для чего они используются?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/8-chto-takoe-switch-vyrazheniya-switch-expressions-i-chem-oni.html">Что такое switch-выражения (switch expressions) и чем они отличаются от обычного switch?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/9-chto-takoe-lyambda-vyrazhenie-i-kak-ono-svyazano-s-funktsion.html">Что такое лямбда-выражение и как оно связано с функциональным интерфейсом?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/10-kak-rabotaet-vyvod-tipa-lokalnoy-peremennoy-var-v-java-10.html">Как работает вывод типа локальной переменной (var) в Java 10+?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/11-chto-takoe-api-refleksii-kakovy-ego-plyusy-i-minusy.html">Что такое API рефлексии? Каковы его плюсы и минусы?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/12-chto-takoe-annotatsii-i-kakie-vidy-politiki-uderzhaniya-rete.html">Что такое аннотации и какие виды политики удержания (RetentionPolicy) существуют?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/13-chto-takoe-protsess-zagruzki-klassa-class-loading-i-model-de.html">Что такое процесс загрузки класса (class loading) и модель делегирования?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/14-kakoy-kontrakt-mezhdu-metodami-equals-i-hashcode-chto-budet.html">Какой контракт между методами equals() и hashCode()? Что будет, если его нарушить?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/15-chto-takoe-staticheskiy-i-nestaticheskiy-vlozhennye-klassy-v.html">Что такое статический и нестатический вложенные классы? В чём разница?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/16-chto-takoe-initsializatsionnye-bloki-instance-i-static-i-v-k.html">Что такое инициализационные блоки (instance и static) и в каком порядке они выполняются?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/17-kakie-suschestvuyut-modifikatory-dostupa-v-java-obyasnite-ih.html">Какие существуют модификаторы доступа в Java? Объясните их видимость.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/18-kak-rabotaet-kovariantnost-vozvraschaemogo-tipa-pri-pereopre.html">Как работает ковариантность возвращаемого типа при переопределении методов?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/19-chto-takoe-utinyy-tip-duck-typing-i-podderzhivaet-li-ego-jav.html">Что такое утиный тип (duck typing) и поддерживает ли его Java?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/20-chto-takoe-zahvat-peremennoy-v-lyambda-vyrazhenii-kakie-pere.html">Что такое захват переменной в лямбда-выражении? Какие переменные можно использовать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/21-chto-takoe-diamond-operator-i-dlya-chego-on-nuzhen.html">Что такое diamond operator (&lt;&gt;) и для чего он нужен?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/22-chto-takoe-peregruzka-overloading-i-kak-kompilyator-razresha.html">Что такое перегрузка (overloading) и как компилятор разрешает неоднозначности?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/23-pochemu-stroka-abc-charat-3-vybrasyvaet-isklyuchenie-a-abc-s.html">Почему строка &quot;abc&quot;.charAt(3) выбрасывает исключение, а &quot;abc&quot;.substring(3) возвращает пустую с…</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/24-kak-rabotayut-annotatsii-safevarargs-i-suppresswarnings.html">Как работают аннотации @SafeVarargs и @SuppressWarnings?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/25-chto-takoe-zahvat-tipa-type-inference-v-dzhenerikah-i-kak-ra.html">Что такое захват типа (type inference) в дженериках и как работает механизм улучшенного вывода…</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Collections <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(29)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/26-kak-vnutri-ustroen-linkedhashmap-i-kak-on-podderzhivaet-pory.html">Как внутри устроен LinkedHashMap и как он поддерживает порядок?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/27-chto-takoe-concurrenthashmap-i-kak-izmenilas-ego-realizatsiy.html">Что такое ConcurrentHashMap и как изменилась его реализация в Java 8?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/28-kak-rabotaet-copyonwritearraylist-i-kogda-ego-tselesoobrazno.html">Как работает CopyOnWriteArrayList и когда его целесообразно использовать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/29-chto-takoe-blockingqueue-i-kakie-osnovnye-realizatsii-susche.html">Что такое BlockingQueue и какие основные реализации существуют?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/30-v-chem-raznitsa-mezhdu-synchronousqueue-i-linkedblockingqueu.html">В чём разница между SynchronousQueue и LinkedBlockingQueue ёмкостью 1?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/31-chto-takoe-priorityqueue-i-kak-ona-realizovana.html">Что такое PriorityQueue и как она реализована?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/32-kak-rabotaet-weakhashmap-i-v-chem-ee-otlichie-ot-hashmap.html">Как работает WeakHashMap и в чём её отличие от HashMap?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/33-chto-takoe-enummap-i-pochemu-ona-effektivna.html">Что такое EnumMap и почему она эффективна?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/34-chto-takoe-identityhashmap-i-dlya-chego-ona-primenyaetsya.html">Что такое IdentityHashMap и для чего она применяется?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/35-chto-takoe-predstavleniya-views-v-kollektsiyah-keyset-values.html">Что такое представления (views) в коллекциях: keySet(), values(), entrySet()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/36-kak-mozhno-sinhronizirovat-kollektsii-bez-ispolzovaniya-sync.html">Как можно синхронизировать коллекции без использования synchronized коллекций?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/37-chto-takoe-queue-i-deque-kakie-osnovnye-operatsii-u-deque.html">Что такое Queue и Deque? Какие основные операции у Deque?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/38-kak-rabotaet-metod-computeifabsent-v-map-privedite-primer.html">Как работает метод computeIfAbsent в Map? Приведите пример.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/39-chto-takoe-metod-merge-v-map.html">Что такое метод merge в Map?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/40-chto-takoe-collections-unmodifiablelist-i-v-chem-ego-ogranic.html">Что такое Collections.unmodifiableList() и в чём его ограничения?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/41-chto-takoe-arrays-aslist-i-kakie-u-nego-osobennosti.html">Что такое Arrays.asList() и какие у него особенности?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/42-kak-rabotaet-hashmap-pri-kolliziyah-kogda-i-pochemu-svyazann.html">Как работает HashMap при коллизиях? Когда и почему связанный список превращается в дерево?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/43-chto-takoe-load-factor-i-initial-capacity-v-hashmap-kak-oni.html">Что такое load factor и initial capacity в HashMap? Как они влияют на производительность?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/44-kak-rabotaet-treemap-kakaya-struktura-dannyh-ispolzuetsya.html">Как работает TreeMap? Какая структура данных используется?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/45-chto-takoe-navigableset-i-kakie-metody-navigatsii-on-dobavly.html">Что такое NavigableSet и какие методы навигации он добавляет?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/46-chto-takoe-concurrentskiplistmap-i-v-kakih-sluchayah-ispolzu.html">Что такое ConcurrentSkipListMap и в каких случаях используется?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/47-v-chem-otlichie-fail-fast-i-fail-safe-iteratorov-privedite-p.html">В чём отличие fail-fast и fail-safe итераторов? Приведите примеры.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/48-kak-rabotaet-metod-foreach-v-iterable-i-chem-otlichaetsya-ot.html">Как работает метод forEach в Iterable и чем отличается от for-each?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/49-chto-takoe-spliterator-i-kak-on-ispolzuetsya-v-stream-api.html">Что такое Spliterator и как он используется в Stream API?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/50-chto-takoe-kollektsii-s-podderzhkoy-random-access-privedite.html">Что такое коллекции с поддержкой random access? Приведите пример.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/51-chto-takoe-kollektsii-obolochki-synchronizedxxx-i-pochemu-on.html">Что такое коллекции-оболочки synchronizedXXX и почему они не рекомендуются для высокой конкуре…</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/52-kak-rabotaet-delayqueue-gde-mozhet-primenyatsya.html">Как работает delayQueue? Где может применяться?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/53-chto-takoe-linkedtransferqueue-i-chem-otlichaetsya-ot-linked.html">Что такое LinkedTransferQueue и чем отличается от LinkedBlockingQueue?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/54-kak-rabotayut-kollektsii-iz-list-of-set-of-map-of-chem-oni-o.html">Как работают коллекции из List.of(), Set.of(), Map.of()? Чем они отличаются от unmodifiable ко…</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Multithreading <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(36)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/55-chto-takoe-happens-before-otnoshenie-i-kakie-pravila-ego-soz.html">Что такое happens-before отношение и какие правила его создают?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/56-kak-rabotaet-atomarnyy-klass-atomicinteger-obyasnite-printsi.html">Как работает атомарный класс AtomicInteger? Объясните принцип CAS.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/57-chem-otlichayutsya-atomicinteger-longadder-i-doubleadder.html">Чем отличаются AtomicInteger, LongAdder и DoubleAdder?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/58-chto-takoe-threadlocal-i-kak-on-vnutri-realizovan.html">Что такое ThreadLocal и как он внутри реализован?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/59-kakov-zhiznennyy-tsikl-potoka-i-perehody-mezhdu-sostoyaniyam.html">Каков жизненный цикл потока и переходы между состояниями?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/60-chem-otlichaetsya-metod-interrupt-ot-ustanovki-flaga-ostanov.html">Чем отличается метод interrupt() от установки флага остановки потока?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/61-v-chem-raznitsa-mezhdu-submit-i-execute-v-executorservice.html">В чём разница между submit() и execute() в ExecutorService?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/62-kak-rabotaet-threadpoolexecutor-i-kakie-parametry-konfigurat.html">Как работает ThreadPoolExecutor и какие параметры конфигурации важны?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/63-chto-takoe-rejectedexecutionhandler-kakie-strategii-obrabotk.html">Что такое RejectedExecutionHandler? Какие стратегии обработки отказа существуют?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/64-chto-takoe-forkjoinpool-i-kak-rabotaet-work-stealing.html">Что такое ForkJoinPool и как работает work-stealing?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/65-chto-takoe-completablefuture-i-kak-on-uluchshaet-rabotu-s-as.html">Что такое CompletableFuture и как он улучшает работу с асинхронным кодом?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/66-kak-obrabotat-isklyuchenie-v-completablefuture.html">Как обработать исключение в CompletableFuture?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/67-chto-takoe-stampedlock-i-v-chem-ego-preimuschestva-pered-rea.html">Что такое StampedLock и в чём его преимущества перед ReadWriteLock?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/68-chto-takoe-reentrantlock-v-chem-otlichie-ot-synchronized.html">Что такое ReentrantLock? В чём отличие от synchronized?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/69-chto-takoe-condition-i-kak-on-ispolzuetsya-vmeste-s-lock.html">Что такое Condition и как он используется вместе с Lock?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/70-chto-takoe-phaser-chem-on-otlichaetsya-ot-cyclicbarrier-i-co.html">Что такое Phaser? Чем он отличается от CyclicBarrier и CountDownLatch?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/71-chto-takoe-exchanger-i-v-kakih-stsenariyah-primenyaetsya.html">Что такое Exchanger и в каких сценариях применяется?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/72-chto-takoe-dedlok-deadlock-i-kak-ego-mozhno-obnaruzhit.html">Что такое дедлок (deadlock) и как его можно обнаружить?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/73-chto-takoe-livelock-i-chem-otlichaetsya-ot-deadlock.html">Что такое livelock и чем отличается от deadlock?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/74-chto-takoe-golodanie-starvation-i-kak-ego-izbezhat.html">Что такое голодание (starvation) и как его избежать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/75-chto-takoe-race-condition-privedite-primer.html">Что такое race condition? Приведите пример.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/76-kak-rabotaet-volatile-garantiruet-li-on-atomarnost-sostavnyh.html">Как работает volatile? Гарантирует ли он атомарность составных операций?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/77-chto-takoe-thread-dump-kakuyu-informatsiyu-on-soderzhit.html">Что такое Thread Dump? Какую информацию он содержит?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/78-chto-takoe-pul-potokov-s-fiksirovannym-chislom-i-keshiruyusc.html">Что такое пул потоков с фиксированным числом и кэширующий пул? В чём разница?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/79-chto-takoe-scheduledthreadpoolexecutor-dlya-chego-nuzhen.html">Что такое ScheduledThreadPoolExecutor? Для чего нужен?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/80-chto-takoe-parallelnye-strimy-parallel-streams-kakoy-pul-pot.html">Что такое параллельные стримы (parallel streams)? Какой пул потоков они используют?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/81-kak-pravilno-ostanovit-potok-pochemu-metod-stop-ustarel.html">Как правильно остановить поток? Почему метод stop() устарел?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/82-chto-takoe-readwritelock-i-kogda-ego-primenyat.html">Что такое ReadWriteLock и когда его применять?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/83-chto-takoe-spin-blokirovka-spinlock-i-effektivna-li-ona-v-ja.html">Что такое спин-блокировка (spinlock) и эффективна ли она в Java?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/84-chto-takoe-threadfactory-i-zachem-ona-nuzhna.html">Что такое ThreadFactory и зачем она нужна?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/85-chto-takoe-paket-java-util-concurrent-locks-kakie-osnovnye-k.html">Что такое пакет java.util.concurrent.locks? Какие основные классы?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/86-mozhet-li-konstruktor-zapuskat-potok-korrektno-li-eto.html">Может ли конструктор запускать поток? Корректно ли это?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/87-chto-takoe-threadgroup-aktualna-li-ona-seychas.html">Что такое ThreadGroup? Актуальна ли она сейчас?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/88-chto-takoe-aqs-abstractqueuedsynchronizer-i-kak-on-ispolzuet.html">Что такое AQS (AbstractQueuedSynchronizer) и как он используется?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/89-pochemu-metody-wait-i-notify-opredeleny-v-klasse-object.html">Почему методы wait() и notify() определены в классе Object?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/90-chto-takoe-future-i-kakie-ogranicheniya-imeet-standartnaya-r.html">Что такое Future и какие ограничения имеет стандартная реализация?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Spring <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(34)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/91-kak-rabotaet-annotatsiya-transactional-kakoy-mehanizm-aop-is.html">Как работает аннотация @Transactional? Какой механизм AOP используется?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/92-kakie-urovni-izolyatsii-tranzaktsiy-podderzhivaet-spring.html">Какие уровни изоляции транзакций поддерживает Spring?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/93-chto-takoe-propagation-rasprostranenie-tranzaktsiy-kakie-tip.html">Что такое propagation (распространение) транзакций? Какие типы бывают?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/94-v-chem-raznitsa-mezhdu-component-service-repository-controll.html">В чём разница между @Component, @Service, @Repository, @Controller?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/95-kak-rabotayut-profili-spring-profiles-i-kak-aktivirovat-ih.html">Как работают профили Spring (Profiles) и как активировать их?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/96-chto-takoe-beanpostprocessor-i-kogda-primenyaetsya.html">Что такое BeanPostProcessor и когда применяется?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/97-chto-takoe-qualifier-i-primary-kogda-ih-ispolzovat.html">Что такое @Qualifier и @Primary? Когда их использовать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/98-kak-rabotaet-vnedrenie-zavisimostey-cherez-konstruktor-sette.html">Как работает внедрение зависимостей через конструктор, setter и поле? Плюсы/минусы.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/99-chto-takoe-spring-aop-kakie-klyuchevye-ponyatiya-aspekt-advi.html">Что такое Spring AOP? Какие ключевые понятия: аспект, advice, pointcut?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/100-v-chem-raznitsa-mezhdu-spring-aop-i-aspectj.html">В чём разница между Spring AOP и AspectJ?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/101-chto-takoe-controlleradvice-i-exceptionhandler.html">Что такое @ControllerAdvice и @ExceptionHandler?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/102-chto-takoe-spring-boot-actuator-i-kakie-endpoints-predostavl.html">Что такое Spring Boot Actuator и какие endpoints предоставляет?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/103-chem-otlichaetsya-resttemplate-ot-webclient-pochemu-webclien.html">Чем отличается RestTemplate от WebClient? Почему WebClient предпочтительнее?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/104-kak-rabotaet-avtomaticheskaya-konfiguratsiya-v-spring-boot.html">Как работает автоматическая конфигурация в Spring Boot?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/105-chto-takoe-spring-data-jpa-i-kak-sozdat-zapros-iz-imeni-meto.html">Что такое Spring Data JPA и как создать запрос из имени метода?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/106-chto-takoe-paginatsiya-i-sortirovka-v-spring-data.html">Что такое пагинация и сортировка в Spring Data?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/107-kak-rabotaet-mehanizm-keshirovaniya-v-spring.html">Как работает механизм кэширования в Spring?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/108-chto-takoe-spring-security-kak-rabotaet-tsepochka-filtrov.html">Что такое Spring Security? Как работает цепочка фильтров?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/109-chto-takoe-csrf-zaschita-v-spring-security-i-kak-ona-rabotae.html">Что такое CSRF защита в Spring Security и как она работает?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/110-chto-takoe-preauthorize-i-postauthorize.html">Что такое @PreAuthorize и @PostAuthorize?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/111-chto-takoe-spring-cloud-i-kakie-komponenty-vy-znaete.html">Что такое Spring Cloud и какие компоненты вы знаете?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/112-kak-rabotaet-springboottest-kakie-est-srezy-testirovaniya.html">Как работает SpringBootTest? Какие есть срезы тестирования?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/113-chto-takoe-mockbean-i-spybean-v-testah-spring.html">Что такое @MockBean и @SpyBean в тестах Spring?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/114-chto-takoe-value-i-kak-vnedrit-spisok-znacheniy.html">Что такое @Value и как внедрить список значений?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/115-chto-takoe-configurationproperties-i-chem-luchshe-value.html">Что такое @ConfigurationProperties и чем лучше @Value?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/116-kak-obrabatyvat-isklyucheniya-v-spring-rest-kontrollerah.html">Как обрабатывать исключения в Spring REST контроллерах?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/117-chto-takoe-responseentity-i-kak-s-nim-rabotat.html">Что такое ResponseEntity и как с ним работать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/118-kak-rabotaet-annotatsiya-async-chto-nuzhno-dlya-ee-ispolzova.html">Как работает аннотация @Async? Что нужно для её использования?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/119-chto-takoe-spring-expression-language-spel-gde-ispolzuetsya.html">Что такое Spring Expression Language (SpEL)? Где используется?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/120-kak-rabotaet-event-handling-v-spring.html">Как работает Event Handling в Spring?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/121-chto-takoe-spring-initializr-i-zachem-ispolzuetsya.html">Что такое Spring Initializr и зачем используется?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/122-chto-takoe-cors-i-kak-nastroit-v-spring.html">Что такое CORS и как настроить в Spring?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/123-chto-takoe-validation-v-spring-mvc-kak-ispolzovat-valid.html">Что такое Validation в Spring MVC? Как использовать @Valid?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/124-kak-rabotat-s-zagruzkoy-faylov-v-spring-mvc.html">Как работать с загрузкой файлов в Spring MVC?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">JVM <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(15)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/125-chto-takoe-kod-kesh-code-cache-i-chto-proizoydet-pri-ego-zap.html">Что такое код-кэш (code cache) и что произойдёт при его заполнении?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/126-chto-takoe-metaspace-chem-otlichaetsya-ot-permgen.html">Что такое Metaspace? Чем отличается от PermGen?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/127-kakie-algoritmy-sborki-musora-znaete-opishite-g1.html">Какие алгоритмы сборки мусора знаете? Опишите G1.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/128-chto-takoe-zgc-i-kakovy-ego-klyuchevye-osobennosti.html">Что такое ZGC и каковы его ключевые особенности?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/129-chto-takoe-utechka-pamyati-v-java-i-kak-ee-obnaruzhit.html">Что такое утечка памяти в Java и как её обнаружить?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/130-chto-takoe-heap-dump-i-kak-ego-proanalizirovat.html">Что такое Heap Dump и как его проанализировать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/131-chto-takoe-jit-kompilyatsiya-i-kakie-urovni-kompilyatsii-sus.html">Что такое JIT-компиляция и какие уровни компиляции существуют?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/132-chto-takoe-analiz-ubeganiya-escape-analysis-i-kak-on-pomogae.html">Что такое анализ убегания (escape analysis) и как он помогает?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/133-chto-takoe-bezopasnaya-tochka-safepoint-i-kak-ona-vliyaet-na.html">Что такое безопасная точка (safepoint) и как она влияет на GC?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/134-chto-takoe-thread-local-allocation-buffer-tlab.html">Что такое Thread Local Allocation Buffer (TLAB)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/135-chto-takoe-compressed-oops-i-zachem-nuzhny.html">Что такое Compressed Oops и зачем нужны?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/136-kak-nastroit-razmer-kuchi-jvm-kakie-flagi.html">Как настроить размер кучи JVM? Какие флаги?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/137-chto-takoe-native-memory-tracking-nmt.html">Что такое Native Memory Tracking (NMT)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/138-chem-otlichaetsya-major-gc-ot-minor-gc.html">Чем отличается Major GC от Minor GC?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/139-chto-takoe-java-object-header-i-iz-chego-sostoit.html">Что такое Java Object Header и из чего состоит?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Exceptions <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(7)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/140-chto-takoe-try-with-resources-i-kakie-trebovaniya-k-resursam.html">Что такое try-with-resources и какие требования к ресурсам? Каков порядок закрытия?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/141-mozhno-li-v-bloke-finally-vybrosit-isklyuchenie-chto-proizoy.html">Можно ли в блоке finally выбросить исключение? Что произойдёт с предыдущим исключением?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/142-chto-takoe-tsepochka-isklyucheniy-chained-exceptions-kak-ee.html">Что такое цепочка исключений (chained exceptions)? Как её создать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/143-chem-otlichaetsya-throw-ot-throws.html">Чем отличается throw от throws?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/144-chto-proizoydet-esli-staticheskiy-initsializator-vybrosit-is.html">Что произойдёт, если статический инициализатор выбросит исключение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/145-mozhno-li-perehvatit-outofmemoryerror-i-popytatsya-vosstanov.html">Можно ли перехватить OutOfMemoryError и попытаться восстановиться?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/146-kakie-isklyucheniya-mogut-vozniknut-pri-rabote-s-klassami-i.html">Какие исключения могут возникнуть при работе с классами и рефлексией?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">OOP <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(8)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/147-chto-takoe-printsip-edinoy-otvetstvennosti-srp-privedite-pri.html">Что такое принцип единой ответственности (SRP)? Приведите пример нарушения.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/148-v-chem-raznitsa-mezhdu-kompozitsiey-i-nasledovaniem-chto-pre.html">В чём разница между композицией и наследованием? Что предпочтительнее?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/149-chto-takoe-interfeysy-s-default-metodami-mozhet-li-interfeys.html">Что такое интерфейсы с default-методами? Может ли интерфейс иметь состояние?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/150-chto-takoe-polimorfizm-podtipov-privedite-primer.html">Что такое полиморфизм подтипов? Приведите пример.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/151-kak-izbezhat-narusheniya-printsipa-podstanovki-liskov.html">Как избежать нарушения принципа подстановки Лисков?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/152-chto-takoe-kovariantnost-vozvraschaemogo-tipa-i-kontravarian.html">Что такое ковариантность возвращаемого типа и контравариантность аргументов?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/153-chto-takoe-perechislenie-enum-s-metodami-i-konstruktorami-ka.html">Что такое перечисление (enum) с методами и конструкторами? Как реализовать Singleton через enu…</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/154-chto-takoe-vnutrennie-anonimnye-klassy-kakie-ogranicheniya.html">Что такое внутренние анонимные классы? Какие ограничения?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Stream API <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(20)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/155-kak-rabotaet-reduce-v-chem-raznitsa-mezhdu-reduce-s-identity.html">Как работает reduce()? В чём разница между reduce с identity и без?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/156-chem-otlichaetsya-collect-ot-reduce.html">Чем отличается collect() от reduce()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/157-chto-takoe-collector-kak-sozdat-svoy-kollektor.html">Что такое Collector? Как создать свой коллектор?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/158-kak-rabotaet-groupingby-s-downstream-kollektorom.html">Как работает groupingBy с downstream коллектором?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/159-chto-takoe-flatmap-i-chem-otlichaetsya-ot-map.html">Что такое flatMap и чем отличается от map?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/160-kakie-operatsii-strima-sohranyayut-poryadok-a-kakie-mogut-eg.html">Какие операции стрима сохраняют порядок, а какие могут его нарушить?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/161-chto-takoe-short-circuiting-operatsii-v-strimah.html">Что такое short-circuiting операции в стримах?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/162-kak-rabotaet-parallelnyy-strim-kakie-riski-pri-ispolzovanii.html">Как работает параллельный стрим? Какие риски при использовании?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/163-chto-takoe-optional-i-kak-izbezhat-nullpointerexception.html">Что такое Optional и как избежать NullPointerException?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/164-kak-preobrazovat-optional-v-stream.html">Как преобразовать Optional в Stream?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/165-v-chem-raznitsa-mezhdu-foreach-i-foreachordered.html">В чём разница между forEach и forEachOrdered?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/166-kakie-funktsionalnye-interfeysy-vy-znaete-privedite-primery.html">Какие функциональные интерфейсы вы знаете? Приведите примеры.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/167-chto-delaet-metod-peek-mozhno-li-ispolzovat-ego-dlya-modifik.html">Что делает метод peek()? Можно ли использовать его для модификации элементов?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/168-kak-obedinit-neskolko-strimov-v-odin.html">Как объединить несколько стримов в один?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/169-chto-takoe-intstream-range-i-rangeclosed.html">Что такое IntStream.range() и rangeClosed()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/170-kak-rabotaet-stream-iterate-s-predikatom-java-9.html">Как работает Stream.iterate() с предикатом (Java 9)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/171-chto-takoe-lenivye-vychisleniya-strimov.html">Что такое ленивые вычисления стримов?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/172-chto-takoe-boxed-v-primitivnyh-strimah.html">Что такое boxed() в примитивных стримах?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/173-pochemu-strimy-ne-mogut-byt-ispolzovany-povtorno.html">Почему стримы не могут быть использованы повторно?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/174-chto-takoe-metod-collectors-teeing-java-12.html">Что такое метод Collectors.teeing() (Java 12)?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Design Patterns <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(10)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/175-chto-takoe-pattern-observer-kak-on-realizovan-v-java.html">Что такое паттерн Observer? Как он реализован в Java?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/176-chto-takoe-pattern-strategy-i-kak-ego-primenit.html">Что такое паттерн Strategy и как его применить?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/177-chto-takoe-pattern-decorator-privedite-primer-iz-java.html">Что такое паттерн Decorator? Приведите пример из Java.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/178-chto-takoe-pattern-proxy-chem-otlichaetsya-ot-decorator.html">Что такое паттерн Proxy? Чем отличается от Decorator?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/179-chto-takoe-pattern-chain-of-responsibility-gde-primenyaetsya.html">Что такое паттерн Chain of Responsibility? Где применяется?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/180-chto-takoe-pattern-template-method.html">Что такое паттерн Template Method?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/181-chto-takoe-pattern-builder-kak-realizovat-v-java.html">Что такое паттерн Builder? Как реализовать в Java?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/182-chto-takoe-pattern-singleton-i-kak-bezopasno-realizovat-ego.html">Что такое паттерн Singleton и как безопасно реализовать его?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/183-chto-takoe-pattern-factory-method-chem-otlichaetsya-ot-abstr.html">Что такое паттерн Factory Method? Чем отличается от Abstract Factory?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/184-chto-takoe-pattern-mvc-kak-on-realizuetsya-v-spring.html">Что такое паттерн MVC? Как он реализуется в Spring?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Testing <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(5)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/185-chto-takoe-datajpatest-i-kakie-komponenty-on-zagruzhaet.html">Что такое @DataJpaTest и какие компоненты он загружает?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/186-chem-otlichaetsya-mock-ot-spy-v-mockito-kogda-ispolzovat-spy.html">Чем отличается Mock от Spy в Mockito? Когда использовать Spy?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/187-chto-takoe-testovye-konteynery-testcontainers-i-v-chem-ih-pr.html">Что такое тестовые контейнеры (Testcontainers) и в чём их преимущество?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/188-chto-takoe-transactional-v-testah-i-kak-otkat-rabotaet.html">Что такое @Transactional в тестах и как откат работает?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/189-chto-takoe-bdd-behaviour-driven-development-i-kakie-instrume.html">Что такое BDD (Behaviour-Driven Development) и какие инструменты?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Database <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(5)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/190-chto-takoe-jpql-i-chem-otlichaetsya-ot-sql.html">Что такое JPQL и чем отличается от SQL?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/191-kakie-strategii-nasledovaniya-est-v-jpa-ih-plyusy-i-minusy.html">Какие стратегии наследования есть в JPA? Их плюсы и минусы.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/192-chto-takoe-kesh-vtorogo-urovnya-v-hibernate-kogda-ispolzovat.html">Что такое кэш второго уровня в Hibernate? Когда использовать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/193-chto-takoe-dirty-checking-v-hibernate-i-kak-rabotaet.html">Что такое dirty checking в Hibernate и как работает?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/java/194-chto-takoe-n-1-problema-i-kak-ee-izbezhat-v-jpa.html">Что такое N+1 проблема и как её избежать в JPA?</a></li>
+            </ul>
+          </div>
+        
+      </section>
+    
+      <section id="python" style="margin-top:40px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;border-bottom:2px solid #e2e8f0;padding-bottom:10px;">
+          <h2 style="font-size:24px;font-weight:800;color:#0f172a;">Python <span style="font-size:16px;font-weight:600;color:var(--brand);">471 вопросов</span></h2>
+          <a href="https://t.me/prep_interview_bot" target="_blank" style="font-size:14px;color:var(--brand);font-weight:600;text-decoration:none;">Тренировать в боте →</a>
+        </div>
+        
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Python Core <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(52)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/195-kakie-tipy-dannyh-v-python-yavlyayutsya-izmenyaemymi-a-kakie.html">Какие типы данных в Python являются изменяемыми, а какие неизменяемыми?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/196-v-chem-raznitsa-mezhdu-spiskom-list-i-kortezhem-tuple.html">В чём разница между списком (list) и кортежем (tuple)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/197-chto-takoe-list-comprehension-privedite-primer.html">Что такое list comprehension? Приведите пример.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/198-kak-rabotaet-args-i-kwargs.html">Как работает *args и **kwargs?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/199-chto-takoe-srezy-slicing-kak-zadat-shag.html">Что такое срезы (slicing)? Как задать шаг?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/200-chto-takoe-none-i-mozhno-li-ego-pereopredelit.html">Что такое None и можно ли его переопределить?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/201-kak-rabotaet-operator-is-v-chem-otlichie-ot.html">Как работает оператор is? В чём отличие от ==?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/202-chto-takoe-dinamicheskaya-tipizatsiya.html">Что такое динамическая типизация?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/203-chto-takoe-pep-8-dlya-chego-on-nuzhen.html">Что такое PEP 8? Для чего он нужен?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/204-kak-rabotaet-strogaya-tipizatsiya-v-python-mozhno-li-slozhit.html">Как работает строгая типизация в Python? Можно ли сложить число и строку?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/205-chto-takoe-f-stroki-i-kak-oni-rabotayut.html">Что такое f-строки и как они работают?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/206-kak-rabotaet-pass-continue-break.html">Как работает pass, continue, break?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/207-chto-takoe-lyambda-funktsiya-primer-ispolzovaniya.html">Что такое лямбда-функция? Пример использования.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/208-kak-rabotayut-map-filter-reduce.html">Как работают map, filter, reduce?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/209-chto-takoe-raspakovka-unpacking-a-b-1-2.html">Что такое распаковка (unpacking)? a, b = [1, 2]</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/210-kak-rabotaet-menedzher-konteksta-with-dlya-chego-nuzhen.html">Как работает менеджер контекста with? Для чего нужен?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/211-chto-takoe-mro-method-resolution-order-i-kak-rabotaet.html">Что такое MRO (Method Resolution Order) и как работает?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/212-chto-takoe-main-i-konstruktsiya-if-name-main.html">Что такое __main__ и конструкция if __name__ == &quot;__main__&quot;?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/213-kakovy-oblasti-vidimosti-peremennyh-legb.html">Каковы области видимости переменных (LEGB)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/214-chto-takoe-globalnye-i-lokalnye-peremennye-kak-ih-izmenit-vn.html">Что такое глобальные и локальные переменные? Как их изменить внутри функции?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/215-kak-rabotaet-operator-morzha-walrus-operator.html">Как работает оператор моржа (walrus operator) :=?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/216-chto-takoe-heshiruemost-hashable-kakie-obekty-heshiruemy.html">Что такое хэшируемость (hashable)? Какие объекты хэшируемы?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/217-chto-takoe-gil-global-interpreter-lock-kak-on-vliyaet-na-mno.html">Что такое GIL (Global Interpreter Lock)? Как он влияет на многопоточность?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/218-kak-python-upravlyaet-pamyatyu-chto-takoe-sborschik-musora.html">Как Python управляет памятью? Что такое сборщик мусора?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/219-chto-takoe-mutable-default-argument-i-pochemu-eto-problema.html">Что такое mutable default argument и почему это проблема?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/220-kak-rabotaet-operator-zvezdochka-pri-raspakovke-i-pri-vyzove.html">Как работает оператор * (звёздочка) при распаковке и при вызове функции?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/221-chto-takoe-annotatsii-tipov-type-hints-i-zachem-oni-nuzhny.html">Что такое аннотации типов (type hints) и зачем они нужны?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/222-chto-takoe-bytes-i-str-kak-preobrazovat-mezhdu-nimi.html">Что такое bytes и str? Как преобразовать между ними?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/223-chto-takoe-enumerate-kak-poluchit-indeks-elementa-v-tsikle.html">Что такое enumerate? Как получить индекс элемента в цикле?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/224-kak-rabotaet-funktsiya-zip-chto-budet-esli-posledovatelnosti.html">Как работает функция zip? Что будет, если последовательности разной длины?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/225-kak-sdelat-glubokuyu-kopiyu-obekta-v-chem-raznitsa-copy-vs-d.html">Как сделать глубокую копию объекта? В чём разница copy vs deepcopy?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/226-chto-takoe-docstring-i-kak-ego-ispolzovat.html">Что такое docstring и как его использовать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/227-chto-takoe-modul-i-paket-v-python-init-py.html">Что такое модуль и пакет в Python? __init__.py</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/228-chto-takoe-pycache-i-fayly-pyc.html">Что такое __pycache__ и файлы .pyc?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/229-kakie-est-sposoby-importa-import-x-from-x-import-y-import-x.html">Какие есть способы импорта? import X, from X import Y, import X as Z</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/230-kak-rabotayut-otnositelnye-importy.html">Как работают относительные импорты?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/231-chto-takoe-virtualnoe-okruzhenie-kak-sozdat-i-aktivirovat.html">Что такое виртуальное окружение? Как создать и активировать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/232-chto-takoe-pip-i-kak-ustanovit-paket-requirements-txt-vs-pyp.html">Что такое pip и как установить пакет? requirements.txt vs pyproject.toml?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/233-kak-rabotayut-generatory-spiskov-mnozhestv-i-slovarey-compre.html">Как работают генераторы списков, множеств и словарей (comprehensions)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/234-chto-takoe-ternarnyy-operator-v-python.html">Что такое тернарный оператор в Python?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/235-chto-takoe-none-false-true-yavlyayutsya-li-oni-klyuchevymi-s.html">Что такое None, False, True? Являются ли они ключевыми словами?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/236-kak-rabotaet-funktsiya-help.html">Как работает функция help()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/237-chto-takoe-dir.html">Что такое dir()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/238-chto-takoe-id.html">Что такое id()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/239-kak-rabotaet-funktsiya-isinstance.html">Как работает функция isinstance()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/240-chto-takoe-modul-collections-kakie-tipy-dannyh-predostavlyae.html">Что такое модуль collections? Какие типы данных предоставляет?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/241-kak-rabotaet-modul-itertools.html">Как работает модуль itertools?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/242-chto-takoe-dataclasses-preimuschestva-nad-obychnymi-klassami.html">Что такое dataclasses? Преимущества над обычными классами.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/243-chto-takoe-slots-zachem-nuzhny.html">Что такое __slots__? Зачем нужны?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/244-kak-rabotayut-dekoratory-property-staticmethod-classmethod.html">Как работают декораторы @property, @staticmethod, @classmethod?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/245-chto-takoe-metaklassy-v-python-kak-sozdat-svoy-metaklass.html">Что такое метаклассы в Python? Как создать свой метакласс?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/246-chem-otlichaetsya-new-ot-init.html">Чем отличается __new__ от __init__?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Collections <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(37)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/247-kak-rabotayut-spiski-list-vnutri-slozhnost-operatsiy.html">Как работают списки (list) внутри? Сложность операций.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/248-chto-takoe-kortezh-tuple-i-zachem-on-nuzhen.html">Что такое кортеж (tuple) и зачем он нужен?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/249-kak-ustroen-slovar-dict-pochemu-klyuchi-dolzhny-byt-heshirue.html">Как устроен словарь (dict)? Почему ключи должны быть хешируемыми?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/250-chto-takoe-set-i-frozenset-raznitsa.html">Что такое set и frozenset? Разница.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/251-chto-takoe-deque-collections-deque-kogda-ispolzovat.html">Что такое deque (collections.deque)? Когда использовать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/252-kak-rabotaet-counter.html">Как работает Counter?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/253-chto-takoe-defaultdict-primer-ispolzovaniya.html">Что такое defaultdict? Пример использования.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/254-chto-takoe-ordereddict-i-chem-otlichaetsya-ot-obychnogo-dict.html">Что такое OrderedDict и чем отличается от обычного dict в Python 3.7+?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/255-chto-takoe-namedtuple.html">Что такое namedtuple?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/256-kak-obedinit-dva-slovarya.html">Как объединить два словаря?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/257-chto-takoe-iterator-kak-sdelat-obekt-iteriruemym.html">Что такое итератор? Как сделать объект итерируемым?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/258-chem-otlichaetsya-iterator-ot-iteriruemogo-obekta.html">Чем отличается итератор от итерируемого объекта?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/259-kak-rabotaet-enumerate-kak-poluchit-indeks-pri-obhode.html">Как работает enumerate? Как получить индекс при обходе?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/260-chto-delaet-zip-kak-byt-esli-dlina-raznaya.html">Что делает zip? Как быть, если длина разная?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/261-kak-otsortirovat-spisok-chto-delaet-key.html">Как отсортировать список? Что делает key?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/262-kak-razvernut-spisok.html">Как развернуть список?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/263-kak-udalit-dublikaty-iz-spiska-s-sohraneniem-poryadka.html">Как удалить дубликаты из списка с сохранением порядка?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/264-chto-takoe-chainmap.html">Что такое ChainMap?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/265-kak-rabotaet-modul-array-chem-otlichaetsya-ot-spiska.html">Как работает модуль array? Чем отличается от списка?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/266-chto-takoe-heapq-i-dlya-chego-ispolzuetsya.html">Что такое heapq и для чего используется?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/267-kak-poluchit-peresechenie-obedinenie-raznitsu-mnozhestv.html">Как получить пересечение, объединение, разницу множеств?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/268-kak-rabotaet-raspakovka-s-pomoschyu-i.html">Как работает распаковка с помощью * и **?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/269-chto-takoe-generatornoe-vyrazhenie-chem-otlichaetsya-ot-list.html">Что такое генераторное выражение? Чем отличается от list comprehension?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/270-kak-preobrazovat-spisok-v-stroku-i-obratno.html">Как преобразовать список в строку и обратно?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/271-chto-delaet-metod-get-u-slovarya.html">Что делает метод .get() у словаря?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/272-kak-obedinit-dva-spiska-bez-dublikatov.html">Как объединить два списка без дубликатов?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/273-chto-takoe-slaysing-spiska-s-shagom-primery.html">Что такое слайсинг списка с шагом? Примеры.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/274-kak-rabotaet-metod-pop-u-spiska-i-slovarya.html">Как работает метод .pop() у списка и словаря?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/275-chto-delaet-metod-extend-v-chem-otlichie-ot-append.html">Что делает метод .extend()? В чём отличие от .append()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/276-kak-proverit-nalichie-elementa-v-kollektsii-operator-in.html">Как проверить наличие элемента в коллекции? Оператор in.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/277-kak-sozdat-pustoy-slovar-mnozhestvo-kortezh.html">Как создать пустой словарь, множество, кортеж?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/278-chto-delaet-metod-update-u-slovarya.html">Что делает метод .update() у словаря?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/279-kak-rabotaet-slaysing-s-prisvoeniem-list-2-1-2-3.html">Как работает слайсинг с присвоением (list[::2] = [1,2,3])?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/280-chto-takoe-bytes-i-bytearray-raznitsa.html">Что такое bytes и bytearray? Разница.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/281-kak-otsortirovat-slovar-po-klyucham-po-znacheniyam.html">Как отсортировать словарь по ключам? По значениям?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/282-chto-delaet-metod-clear.html">Что делает метод .clear()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/283-kak-preobrazovat-dva-spiska-v-slovar.html">Как преобразовать два списка в словарь?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">OOP <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(44)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/284-chto-takoe-klass-i-obekt-v-python-kak-sozdat.html">Что такое класс и объект в Python? Как создать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/285-dlya-chego-nuzhen-metod-init.html">Для чего нужен метод __init__?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/286-chto-takoe-self-zachem-peredaetsya-pervym-argumentom.html">Что такое self? Зачем передаётся первым аргументом?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/287-v-chem-raznitsa-mezhdu-atributom-klassa-i-atributom-ekzemply.html">В чём разница между атрибутом класса и атрибутом экземпляра?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/288-chto-takoe-nasledovanie-kak-sozdat-podklass.html">Что такое наследование? Как создать подкласс?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/289-chto-delaet-funktsiya-super.html">Что делает функция super()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/290-chto-takoe-inkapsulyatsiya-v-python-kak-ee-realizovat.html">Что такое инкапсуляция в Python? Как её реализовать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/291-chto-takoe-polimorfizm-primer.html">Что такое полиморфизм? Пример.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/292-kak-rabotayut-miksiny-mixins.html">Как работают миксины (Mixins)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/293-chto-takoe-abstraktnyy-klass-kak-sozdat.html">Что такое абстрактный класс? Как создать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/294-chto-takoe-classmethod-primer-ispolzovaniya.html">Что такое @classmethod? Пример использования.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/295-chto-takoe-staticmethod-kogda-primenyat.html">Что такое @staticmethod? Когда применять?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/296-kak-rabotayut-svoystva-property.html">Как работают свойства (@property)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/297-chto-takoe-magicheskie-metody-primery-str-repr.html">Что такое магические методы? Примеры __str__, __repr__.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/298-chto-takoe-call.html">Что такое __call__?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/299-kak-realizovat-iter-i-next-dlya-svoego-klassa.html">Как реализовать __iter__ и __next__ для своего класса?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/300-v-chem-raznitsa-mezhdu-eq-hash-i-kogda-ih-pereopredelyat.html">В чём разница между __eq__, __hash__ и когда их переопределять?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/301-chto-takoe-slots-i-zachem.html">Что такое __slots__ и зачем?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/302-chto-takoe-metaklass-primer-ispolzovaniya.html">Что такое метакласс? Пример использования.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/303-kak-rabotaet-mro-pri-rombovidnom-nasledovanii.html">Как работает MRO при ромбовидном наследовании?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/304-kak-sozdat-deskriptor-protokol-get-set-delete.html">Как создать дескриптор? Протокол __get__, __set__, __delete__.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/305-chto-takoe-dataclass-chem-on-luchshe-obychnogo-klassa.html">Что такое dataclass? Чем он лучше обычного класса?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/306-kak-rabotaet-slots-s-nasledovaniem.html">Как работает __slots__ с наследованием?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/307-chto-delaet-new-v-sravnenii-s-init.html">Что делает __new__ в сравнении с __init__?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/308-kak-rabotaet-nasledovanie-ot-vstroennyh-tipov-list-dict.html">Как работает наследование от встроенных типов (list, dict)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/309-chto-takoe-interfeysy-v-python-est-li-oni.html">Что такое интерфейсы в Python? Есть ли они?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/310-kak-zapretit-nasledovanie-ot-klassa.html">Как запретить наследование от класса?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/311-chto-takoe-kompozitsiya-protiv-nasledovaniya.html">Что такое композиция против наследования?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/312-kak-sozdat-neizmenyaemyy-klass.html">Как создать неизменяемый класс?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/313-chto-takoe-del-kogda-vyzyvaetsya.html">Что такое __del__? Когда вызывается?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/314-kak-rabotaet-proverka-isinstance-s-uchetom-nasledovaniya.html">Как работает проверка isinstance() с учётом наследования?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/315-chto-takoe-utinaya-tipizatsiya-duck-typing.html">Что такое утиная типизация (duck typing)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/316-kak-rabotayut-getattr-i-getattribute-raznitsa.html">Как работают __getattr__ и __getattribute__? Разница.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/317-kak-sozdat-singlton-v-python.html">Как создать синглтон в Python?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/318-chto-takoe-protokol-iteratora-kak-sdelat-obekt-iteratorom.html">Что такое протокол итератора? Как сделать объект итератором?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/319-kak-sozdat-kontekstnyy-menedzher-na-osnove-klassa.html">Как создать контекстный менеджер на основе класса?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/320-chto-takoe-destruktor-v-python-problemy-s-nim.html">Что такое деструктор в Python? Проблемы с ним.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/321-chto-takoe-dataclass-kakie-parametry-prinimaet.html">Что такое @dataclass? Какие параметры принимает?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/322-chto-takoe-dunder-metody-privedite-5-primerov.html">Что такое dunder-методы? Приведите 5 примеров.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/323-kak-rabotaet-slots-pri-nasledovanii.html">Как работает __slots__ при наследовании?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/324-chto-takoe-property-setter.html">Что такое @property.setter?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/325-kak-proverit-yavlyaetsya-li-klass-podklassom-drugogo.html">Как проверить, является ли класс подклассом другого?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/326-chto-takoe-peregruzka-operatorov-primer.html">Что такое перегрузка операторов? Пример.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/327-chto-proishodit-pri-vyzove-metoda-u-ekzemplyara-kak-rabotaet.html">Что происходит при вызове метода у экземпляра? Как работает поиск атрибутов?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Exceptions <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(29)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/328-kak-obrabatyvat-isklyucheniya-try-except-else-finally.html">Как обрабатывать исключения? try-except-else-finally.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/329-kak-podnyat-isklyuchenie-raise.html">Как поднять исключение? raise.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/330-kak-sozdat-sobstvennoe-isklyuchenie.html">Как создать собственное исключение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/331-chto-delaet-except-exception-as-e.html">Что делает except Exception as e?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/332-v-chem-raznitsa-mezhdu-except-valueerror-i-except-valueerror.html">В чём разница между except ValueError и except (ValueError, TypeError)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/333-chto-delaet-finally-garantiruetsya-li-ego-vypolnenie.html">Что делает finally? Гарантируется ли его выполнение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/334-kak-perehvatit-vse-isklyucheniya-pochemu-eto-ploho.html">Как перехватить все исключения? Почему это плохо?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/335-chto-takoe-kontekst-isklyucheniya-context.html">Что такое контекст исключения (__context__)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/336-chto-delaet-raise-from-none.html">Что делает raise from None?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/337-kak-rabotaet-try-except-else-kogda-polezen-else.html">Как работает try/except/else? Когда полезен else?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/338-kakoe-isklyuchenie-voznikaet-pri-delenii-na-nol.html">Какое исключение возникает при делении на ноль?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/339-chto-takoe-assertionerror-kak-ispolzovat-assert.html">Что такое AssertionError? Как использовать assert?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/340-kak-perehvatit-isklyuchenie-po-tsepochke-iz-modulya-vyzvavsh.html">Как перехватить исключение по цепочке из модуля, вызвавшего ваш код?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/341-chto-takoe-preduprezhdeniya-warnings-kak-ih-generirovat.html">Что такое предупреждения (warnings)? Как их генерировать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/342-v-chem-raznitsa-mezhdu-try-with-resources-v-java-i-with-v-py.html">В чём разница между try-with-resources в Java и with в Python?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/343-kak-poluchit-stek-treys-isklyucheniya.html">Как получить стек-трейс исключения?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/344-chto-proishodit-s-pamyatyu-pri-perehvate-isklyucheniya.html">Что происходит с памятью при перехвате исключения?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/345-mozhno-li-ispolzovat-except-bez-ukazaniya-tipa.html">Можно ли использовать except без указания типа?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/346-chto-delaet-sys-exc-info.html">Что делает sys.exc_info()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/347-mozhno-li-ispolzovat-return-vnutri-finally.html">Можно ли использовать return внутри finally?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/348-kak-povtorno-podnyat-to-zhe-isklyuchenie.html">Как повторно поднять то же исключение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/349-kak-proignorirovat-isklyuchenie.html">Как проигнорировать исключение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/350-chto-takoe-kontekstnyy-protokol-i-svyaz-s-isklyucheniyami.html">Что такое контекстный протокол и связь с исключениями?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/351-chto-delaet-contextlib-suppress.html">Что делает contextlib.suppress?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/352-kakie-est-vstroennye-isklyucheniya-krome-exception.html">Какие есть встроенные исключения, кроме Exception?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/353-mozhno-li-opredelit-neskolko-blokov-except-v-kakom-poryadke.html">Можно ли определить несколько блоков except? В каком порядке проверяются?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/354-chto-budet-esli-v-finally-vozniknet-isklyuchenie.html">Что будет, если в finally возникнет исключение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/355-kak-rabotaet-otladka-s-ispolzovaniem-pdb-pri-isklyucheniyah.html">Как работает отладка с использованием pdb при исключениях?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/356-chto-takoe-exceptiongroup-i-except-v-python-3-11.html">Что такое ExceptionGroup и except* в Python 3.11?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Generators &amp; Decorators <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(37)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/357-chto-takoe-generator-kak-rabotaet-yield.html">Что такое генератор? Как работает yield?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/358-kak-sozdat-generator-spiska-list-comprehension-i-chem-on-otl.html">Как создать генератор списка (list comprehension) и чем он отличается от генератора выражения?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/359-chto-delaet-yield-from.html">Что делает yield from?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/360-kak-poluchit-znachenie-iz-generatora-cherez-send.html">Как получить значение из генератора через send()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/361-chto-takoe-dekorator-kak-napisat-prostoy-dekorator.html">Что такое декоратор? Как написать простой декоратор?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/362-kak-napisat-dekorator-s-parametrami.html">Как написать декоратор с параметрами?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/363-chto-delaet-wraps-iz-functools.html">Что делает @wraps из functools?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/364-kak-rabotayut-klassy-dekoratory.html">Как работают классы-декораторы?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/365-chto-takoe-generator-v-vide-klassa-iter-i-next.html">Что такое генератор в виде класса? __iter__ и __next__.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/366-chto-delaet-itertools-chain.html">Что делает itertools.chain?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/367-kak-ostanovit-generator.html">Как остановить генератор?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/368-chto-takoe-korutiny-na-osnove-generatorov.html">Что такое корутины на основе генераторов?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/369-kak-rabotaet-dekorator-property.html">Как работает декоратор @property?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/370-chto-takoe-classmethod-i-staticmethod-kogda-ispolzovat.html">Что такое @classmethod и @staticmethod? Когда использовать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/371-kak-dekorirovat-klass.html">Как декорировать класс?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/372-chto-takoe-kontekstnyy-menedzher-na-osnove-generatora-contex.html">Что такое контекстный менеджер на основе генератора (contextlib.contextmanager)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/373-kak-rabotayut-vlozhennye-dekoratory-poryadok-primeneniya.html">Как работают вложенные декораторы? Порядок применения.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/374-chto-delaet-dekorator-lru-cache.html">Что делает декоратор @lru_cache?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/375-chto-takoe-generator-v-vide-klassa-s-iter.html">Что такое генератор в виде класса с __iter__?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/376-kak-ispolzovat-send-dlya-soprogramm-na-generatorah.html">Как использовать send() для сопрограмм на генераторах?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/377-chto-takoe-vstroennyy-all-i-any-kakoe-otnoshenie-k-generator.html">Что такое встроенный all() и any()? Какое отношение к генераторам?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/378-chto-delaet-enumerate-mozhno-li-zadat-nachalnyy-indeks.html">Что делает enumerate? Можно ли задать начальный индекс?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/379-kak-dekorirovat-metod-klassa-chtoby-sohranit-self.html">Как декорировать метод класса, чтобы сохранить self?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/380-chto-delaet-zip-iterables-s-odnoy-zvezdochkoy.html">Что делает zip(*iterables) с одной звёздочкой?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/381-kak-napisat-beskonechnyy-generator.html">Как написать бесконечный генератор?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/382-chto-takoe-dekorator-kotoryy-izmeryaet-vremya-vypolneniya-fu.html">Что такое декоратор, который измеряет время выполнения функции?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/383-kak-peredat-argumenty-v-dekorator-esli-dekorator-uzhe-napisa.html">Как передать аргументы в декоратор, если декоратор уже написан как функция?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/384-chto-takoe-async-generator.html">Что такое async генератор?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/385-kak-rabotaet-vyrazhenie-generator-vnutri-drugogo-vyrazheniya.html">Как работает выражение-генератор внутри другого выражения?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/386-chto-delaet-iter-i-next-v-generatore.html">Что делает __iter__ и __next__ в генераторе?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/387-kak-ostanovit-generator-s-pomoschyu-close.html">Как остановить генератор с помощью close()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/388-kak-rabotaet-throw-u-generatora.html">Как работает throw() у генератора?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/389-chto-takoe-dekorator-s-sohraneniem-sostoyaniya-klass-dekorat.html">Что такое декоратор с сохранением состояния (класс-декоратор)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/390-kak-napisat-dekorator-kotoryy-prinimaet-argumenty-i-sohranya.html">Как написать декоратор, который принимает аргументы и сохраняет их?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/391-chto-delaet-functools-partial.html">Что делает functools.partial?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/392-kak-sozdavat-tsepochki-generatorov-s-yield-from.html">Как создавать цепочки генераторов с yield from?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/393-chto-takoe-dekorator-singledispatch.html">Что такое декоратор @singledispatch?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">AsyncIO <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(37)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/394-chto-takoe-asyncio-kogda-primenyat.html">Что такое asyncio? Когда применять?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/395-chto-takoe-event-loop.html">Что такое event loop?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/396-kak-sozdat-korutinu-async-def.html">Как создать корутину? async def.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/397-chto-delaet-await.html">Что делает await?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/398-chem-otlichaetsya-asyncio-sleep-ot-time-sleep.html">Чем отличается asyncio.sleep от time.sleep?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/399-kak-zapustit-korutinu-asyncio-run.html">Как запустить корутину? asyncio.run().</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/400-chto-takoe-task-v-asyncio.html">Что такое Task в asyncio?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/401-kak-sozdat-parallelnye-zadachi-asyncio-gather-ili-create-tas.html">Как создать параллельные задачи? asyncio.gather() или create_task().</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/402-kak-obrabatyvat-isklyucheniya-v-asinhronnom-kode.html">Как обрабатывать исключения в асинхронном коде?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/403-chto-takoe-async-for-dlya-chego.html">Что такое async for? Для чего?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/404-chto-takoe-async-with.html">Что такое async with?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/405-kak-napisat-asinhronnyy-generator.html">Как написать асинхронный генератор?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/406-chto-delaet-asyncio-queue.html">Что делает asyncio.Queue?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/407-kak-vypolnit-blokiruyuschuyu-funktsiyu-v-asyncio.html">Как выполнить блокирующую функцию в asyncio?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/408-chto-takoe-asyncio-semaphore.html">Что такое asyncio.Semaphore?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/409-chto-delaet-asyncio-wait-for.html">Что делает asyncio.wait_for?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/410-kak-otmenit-zadachu.html">Как отменить задачу?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/411-chto-takoe-event-loop-policies.html">Что такое event loop policies?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/412-v-chem-raznitsa-mezhdu-asyncio-i-threading.html">В чём разница между asyncio и threading?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/413-chto-takoe-callback-hell-i-kak-asyncio-pomogaet.html">Что такое callback hell и как asyncio помогает?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/414-kak-otlazhivat-asinhronnyy-kod.html">Как отлаживать асинхронный код?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/415-chto-delaet-asyncio-ensure-future.html">Что делает asyncio.ensure_future?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/416-mozhno-li-ispolzovat-asyncio-s-sinhronnymi-bibliotekami.html">Можно ли использовать asyncio с синхронными библиотеками?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/417-chto-takoe-uvloop.html">Что такое uvloop?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/418-chto-delaet-asyncio-shield.html">Что делает asyncio.shield?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/419-kak-pravilno-zavershit-event-loop-s-nezavershennymi-zadacham.html">Как правильно завершить event loop с незавершёнными задачами?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/420-chto-takoe-asinhronnyy-menedzher-konteksta-dlya-blokirovok.html">Что такое асинхронный менеджер контекста для блокировок?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/421-kak-ogranichit-kolichestvo-odnovremennyh-zaprosov.html">Как ограничить количество одновременных запросов?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/422-chto-takoe-aiohttp.html">Что такое aiohttp?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/423-kak-sdelat-asinhronnyy-taymaut-na-vypolnenie-gruppy-zadach.html">Как сделать асинхронный таймаут на выполнение группы задач?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/424-chto-takoe-async-comprehension-list-set-dict.html">Что такое async comprehension (list, set, dict)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/425-kak-testirovat-asinhronnyy-kod.html">Как тестировать асинхронный код?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/426-chto-delat-s-deprecationwarning-there-is-no-current-event-lo.html">Что делать с DeprecationWarning &quot;There is no current event loop&quot;?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/427-chto-takoe-asyncio-to-thread.html">Что такое asyncio.to_thread()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/428-kak-obrabatyvat-signaly-v-asyncio.html">Как обрабатывать сигналы в asyncio?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/429-chto-takoe-structured-concurrency-v-asyncio.html">Что такое structured concurrency в asyncio?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/430-kak-rabotaet-asyncio-sleep-0.html">Как работает asyncio.sleep(0)?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Stdlib <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(51)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/431-kak-rabotat-s-faylami-open-with-rezhimy.html">Как работать с файлами? open, with, режимы.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/432-chto-delaet-modul-os-osnovnye-funktsii.html">Что делает модуль os? Основные функции.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/433-dlya-chego-nuzhen-modul-sys.html">Для чего нужен модуль sys?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/434-kak-prochitat-vse-stroki-fayla-v-spisok.html">Как прочитать все строки файла в список?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/435-chto-delaet-modul-shutil.html">Что делает модуль shutil?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/436-kak-serializovat-obekty-v-python-pickle-json.html">Как сериализовать объекты в Python? pickle/json.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/437-chem-otlichaetsya-json-ot-pickle-bezopasnost.html">Чем отличается json от pickle? Безопасность.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/438-kak-sdelat-zaderzhku-v-programme-time-sleep-vs-sched.html">Как сделать задержку в программе? time.sleep vs sched.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/439-chto-takoe-modul-datetime-kak-poluchit-tekuschee-vremya.html">Что такое модуль datetime? Как получить текущее время?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/440-kak-otformatirovat-datu-vremya-strftime-strptime.html">Как отформатировать дату/время? strftime/strptime.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/441-chto-takoe-modul-math.html">Что такое модуль math?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/442-kak-rabotat-s-sluchaynymi-chislami-random-modul.html">Как работать с случайными числами? random модуль.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/443-chto-takoe-modul-re-osnovnye-funktsii.html">Что такое модуль re? Основные функции.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/444-kak-parsit-argumenty-komandnoy-stroki-argparse.html">Как парсить аргументы командной строки? argparse.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/445-chto-delaet-modul-logging-urovni.html">Что делает модуль logging? Уровни.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/446-kak-zapustit-vneshnyuyu-programmu-subprocess.html">Как запустить внешнюю программу? subprocess.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/447-chto-delaet-modul-pathlib.html">Что делает модуль pathlib?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/448-chto-takoe-modul-unittest-kak-napisat-test.html">Что такое модуль unittest? Как написать тест?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/449-kak-ispolzovat-tempfile-dlya-vremennyh-faylov.html">Как использовать tempfile для временных файлов?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/450-chto-delaet-modul-csv.html">Что делает модуль csv?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/451-kak-rabotat-s-json-faylami.html">Как работать с JSON-файлами?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/452-chto-takoe-urllib.html">Что такое urllib?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/453-chto-delaet-modul-email.html">Что делает модуль email?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/454-kak-vypolnit-http-zapros-bez-storonnih-bibliotek.html">Как выполнить HTTP запрос без сторонних библиотек?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/455-chto-takoe-modul-collections-osnovnye-konteynery.html">Что такое модуль collections? Основные контейнеры.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/456-chto-delaet-modul-itertools.html">Что делает модуль itertools?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/457-kak-ispolzovat-functools-lru-cache.html">Как использовать functools.lru_cache?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/458-chto-delaet-modul-threading.html">Что делает модуль threading?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/459-chto-takoe-multiprocessing-otlichie-ot-threading.html">Что такое multiprocessing? Отличие от threading.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/460-dlya-chego-nuzhen-modul-queue.html">Для чего нужен модуль queue?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/461-chto-takoe-modul-copy.html">Что такое модуль copy?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/462-kak-prochitat-ini-fayl-configparser.html">Как прочитать INI-файл? configparser.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/463-chto-takoe-modul-io-stringio-bytesio.html">Что такое модуль io? StringIO, BytesIO.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/464-kak-zakodirovat-dekodirovat-base64.html">Как закодировать/декодировать base64?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/465-chto-delaet-modul-hashlib.html">Что делает модуль hashlib?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/466-kak-zaarhivirovat-fayly-zipfile-tarfile.html">Как заархивировать файлы? zipfile, tarfile.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/467-chto-delaet-modul-glob.html">Что делает модуль glob?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/468-chto-takoe-modul-struct.html">Что такое модуль struct?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/469-kak-ustanovit-taymer-threading-timer.html">Как установить таймер? threading.Timer.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/470-chto-takoe-atexit.html">Что такое atexit?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/471-kak-sdelat-http-server-na-python-iz-komandnoy-stroki.html">Как сделать HTTP-сервер на Python из командной строки?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/472-chto-delaet-modul-textwrap.html">Что делает модуль textwrap?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/473-kak-ispolzovat-modul-statistics.html">Как использовать модуль statistics?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/474-chto-delaet-modul-secrets.html">Что делает модуль secrets?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/475-chto-takoe-modul-typing.html">Что такое модуль typing?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/476-dlya-chego-nuzhen-modul-importlib.html">Для чего нужен модуль importlib?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/477-chto-delaet-modul-pprint.html">Что делает модуль pprint?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/478-kak-rabotat-s-peremennymi-okruzheniya.html">Как работать с переменными окружения?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/479-chto-takoe-modul-platform.html">Что такое модуль platform?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/480-dlya-chego-nuzhen-modul-gc.html">Для чего нужен модуль gc?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/481-kak-zamerit-vremya-vypolneniya-koda-timeit.html">Как замерить время выполнения кода? timeit.</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Django <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(61)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/482-chto-takoe-django-arhitektura-mtv.html">Что такое Django? Архитектура MTV.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/483-kak-sozdat-proekt-django.html">Как создать проект Django?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/484-chto-takoe-prilozhenie-app-v-django-kak-sozdat.html">Что такое приложение (app) в Django? Как создать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/485-chto-takoe-migratsii-kak-sozdat-i-primenit.html">Что такое миграции? Как создать и применить?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/486-dlya-chego-nuzhen-manage-py.html">Для чего нужен manage.py?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/487-chto-takoe-orm-v-django-primer-zaprosa.html">Что такое ORM в Django? Пример запроса.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/488-kak-sozdat-model-pole-tipy-poley.html">Как создать модель? Поле, типы полей.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/489-chto-takoe-queryset-lenivost.html">Что такое QuerySet? Ленивость.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/490-kak-filtrovat-zapisi-filter-exclude-get.html">Как фильтровать записи? filter, exclude, get.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/491-chto-takoe-metod-save.html">Что такое метод save()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/492-chto-takoe-meta-klass-vnutri-modeli.html">Что такое Meta-класс внутри модели?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/493-chto-takoe-svyazi-foreignkey-manytomanyfield-onetoonefield.html">Что такое связи: ForeignKey, ManyToManyField, OneToOneField?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/494-chto-takoe-related-name.html">Что такое related_name?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/495-kak-sdelat-zapros-s-join-select-related-i-prefetch-related.html">Как сделать запрос с JOIN? select_related и prefetch_related.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/496-chto-takoe-django-admin-kak-zaregistrirovat-model.html">Что такое Django Admin? Как зарегистрировать модель?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/497-chto-takoe-predstavleniya-views-function-based-vs-class-base.html">Что такое представления (views)? Function-based vs Class-based.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/498-kak-rabotayut-marshruty-urlconf-path-re-path.html">Как работают маршруты (URLconf)? path, re_path.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/499-chto-takoe-shablony-templates-i-yazyk-shablonov-django.html">Что такое шаблоны (templates) и язык шаблонов Django?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/500-chto-takoe-kontekst-v-shablonah.html">Что такое контекст в шаблонах?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/501-kak-rabotaet-nasledovanie-shablonov.html">Как работает наследование шаблонов?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/502-chto-takoe-staticheskie-fayly-kak-podklyuchit.html">Что такое статические файлы? Как подключить?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/503-kak-upravlyat-zagruzkoy-faylov-media.html">Как управлять загрузкой файлов (медиа)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/504-chto-takoe-middleware-kak-napisat-svoy.html">Что такое Middleware? Как написать свой?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/505-kak-rabotayut-sessii-i-kuki-v-django.html">Как работают сессии и куки в Django?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/506-chto-takoe-signals-primer.html">Что такое signals? Пример.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/507-kak-vypolnyat-syrye-sql-zaprosy.html">Как выполнять сырые SQL-запросы?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/508-chto-takoe-menedzhery-modeley.html">Что такое менеджеры моделей?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/509-kak-rabotayut-tranzaktsii-v-django.html">Как работают транзакции в Django?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/510-chto-takoe-validatsiya-modeli-full-clean.html">Что такое валидация модели? full_clean().</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/511-chto-takoe-form-i-modelform.html">Что такое Form и ModelForm?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/512-kak-obrabatyvat-zagruzku-faylov-cherez-formu.html">Как обрабатывать загрузку файлов через форму?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/513-chto-takoe-kontekstnyy-protsessor.html">Что такое контекстный процессор?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/514-chto-takoe-csrf-token-kak-on-rabotaet.html">Что такое CSRF-токен? Как он работает?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/515-kak-ispolzovat-keshirovanie-v-django.html">Как использовать кэширование в Django?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/516-chto-takoe-rest-api-v-django-django-rest-framework.html">Что такое REST API в Django? Django REST Framework.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/517-chto-takoe-serializator-v-drf.html">Что такое сериализатор в DRF?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/518-kak-sozdat-viewset-v-drf.html">Как создать ViewSet в DRF?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/519-chto-takoe-autentifikatsiya-i-avtorizatsiya-v-django.html">Что такое аутентификация и авторизация в Django?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/520-kak-rasshirit-model-polzovatelya.html">Как расширить модель пользователя?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/521-chto-takoe-django-rest-framework-simplejwt.html">Что такое Django REST Framework simplejwt?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/522-kak-napisat-kastomnuyu-komandu-manage-py.html">Как написать кастомную команду manage.py?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/523-chto-takoe-generic-views-primery.html">Что такое Generic Views? Примеры.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/524-kak-sdelat-paginatsiyu.html">Как сделать пагинацию?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/525-chto-takoe-versionirovanie-api-v-drf.html">Что такое версионирование API в DRF?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/526-kak-nastroit-logirovanie-v-django.html">Как настроить логирование в Django?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/527-chto-takoe-wsgi-i-asgi-v-kontekste-django.html">Что такое WSGI и ASGI в контексте Django?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/528-kak-deploit-django.html">Как деплоить Django?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/529-chto-takoe-django-channels.html">Что такое Django Channels?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/530-kak-obrabatyvat-oshibki-404-i-500.html">Как обрабатывать ошибки 404 и 500?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/531-chto-takoe-django-debug-toolbar.html">Что такое django-debug-toolbar?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/532-kak-ispolzovat-peremennye-okruzheniya-v-nastroykah.html">Как использовать переменные окружения в настройках?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/533-chto-takoe-queryset-annotate-i-aggregate.html">Что такое QuerySet.annotate() и aggregate()?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/534-kak-rabotayut-q-obekty-i-f-vyrazheniya.html">Как работают Q-объекты и F-выражения?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/535-chto-takoe-contenttype-framework.html">Что такое ContentType Framework?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/536-kak-upravlyat-poryadkom-migratsiy-pri-zavisimostyah-mezhdu-p.html">Как управлять порядком миграций при зависимостях между приложениями?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/537-chto-takoe-dekorator-login-required.html">Что такое декоратор @login_required?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/538-kak-realizovat-mnogoyazychnost-i18n-v-django.html">Как реализовать многоязычность (i18n) в Django?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/539-chto-takoe-static-root-i-staticfiles-dirs.html">Что такое STATIC_ROOT и STATICFILES_DIRS?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/540-kak-ispolzovat-select-related-i-prefetch-related-kogda-chto.html">Как использовать select_related и prefetch_related? Когда что выбрать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/541-chto-takoe-runserver-i-pochemu-ego-nelzya-ispolzovat-v-proda.html">Что такое runserver и почему его нельзя использовать в продакшене?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/542-kak-masshtabirovat-django-prilozhenie.html">Как масштабировать Django приложение?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Flask <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(39)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/543-chto-takoe-flask-kak-sozdat-prilozhenie.html">Что такое Flask? Как создать приложение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/544-kak-rabotayut-marshruty-peremennye-pravila.html">Как работают маршруты? Переменные правила.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/545-chto-takoe-request-i-response.html">Что такое request и response?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/546-kak-otdat-json.html">Как отдать JSON?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/547-kak-obrabatyvat-metody-zaprosa-get-post.html">Как обрабатывать методы запроса (GET, POST)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/548-chto-takoe-shablonizator-jinja2.html">Что такое шаблонизатор Jinja2?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/549-kak-peredat-peremennye-v-shablon.html">Как передать переменные в шаблон?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/550-kak-sdelat-redirekt.html">Как сделать редирект?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/551-chto-takoe-url-for.html">Что такое url_for?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/552-kak-obrabatyvat-staticheskie-fayly.html">Как обрабатывать статические файлы?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/553-chto-takoe-kontekst-prilozheniya-i-kontekst-zaprosa.html">Что такое контекст приложения и контекст запроса?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/554-chto-takoe-flask-blueprint.html">Что такое Flask Blueprint?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/555-kak-sozdat-blueprint.html">Как создать Blueprint?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/556-chto-takoe-flask-extensions-primery.html">Что такое Flask Extensions? Примеры.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/557-kak-rabotat-s-bazoy-dannyh-cherez-flask-sqlalchemy.html">Как работать с базой данных через Flask-SQLAlchemy?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/558-chto-takoe-flask-migrate.html">Что такое Flask-Migrate?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/559-kak-obrabatyvat-formy-flask-wtf.html">Как обрабатывать формы? Flask-WTF.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/560-kak-sdelat-autentifikatsiyu-flask-login.html">Как сделать аутентификацию? Flask-Login.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/561-chto-takoe-sessii-vo-flask.html">Что такое сессии во Flask?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/562-chto-takoe-app-config.html">Что такое app.config?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/563-kak-vklyuchit-rezhim-otladki.html">Как включить режим отладки?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/564-chto-takoe-before-request-i-after-request.html">Что такое before_request и after_request?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/565-kak-obrabatyvat-oshibki-404.html">Как обрабатывать ошибки 404?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/566-kak-prervat-zapros-s-oshibkoy-abort.html">Как прервать запрос с ошибкой? abort().</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/567-kak-sdelat-rest-api-na-flask.html">Как сделать REST API на Flask?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/568-chto-takoe-flask-restful.html">Что такое Flask-RESTful?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/569-kak-zagruzhat-fayly.html">Как загружать файлы?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/570-chto-takoe-application-factory.html">Что такое application factory?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/571-kak-podklyuchat-middleware-wsgi-middleware.html">Как подключать Middleware (WSGI middleware)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/572-chto-takoe-g-obekt.html">Что такое g объект?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/573-kak-sdelat-potokobezopasnyy-dostup-k-dannym.html">Как сделать потокобезопасный доступ к данным?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/574-chto-takoe-flask-socketio.html">Что такое Flask-SocketIO?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/575-kak-napisat-testy-dlya-flask.html">Как написать тесты для Flask?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/576-kak-obrabatyvat-cors.html">Как обрабатывать CORS?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/577-chto-takoe-flask-admin.html">Что такое Flask-Admin?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/578-kak-realizovat-paginatsiyu-vruchnuyu.html">Как реализовать пагинацию вручную?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/579-chto-takoe-konfiguratsiya-flask-app-i-flask-env.html">Что такое конфигурация FLASK_APP и FLASK_ENV?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/580-kak-sdelat-keshirovanie-flask-caching.html">Как сделать кэширование? Flask-Caching.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/581-chto-takoe-testirovanie-s-pomoschyu-pytest-i-fixtures.html">Что такое тестирование с помощью pytest и fixtures?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">FastAPI <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(29)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/582-chto-takoe-fastapi-na-chem-osnovan.html">Что такое FastAPI? На чём основан?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/583-kak-sozdat-minimalnoe-prilozhenie.html">Как создать минимальное приложение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/584-chto-takoe-pydantic-modeli.html">Что такое Pydantic модели?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/585-kak-zadat-parametry-puti-i-zaprosa.html">Как задать параметры пути и запроса?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/586-kak-avtomaticheski-generiruetsya-dokumentatsiya.html">Как автоматически генерируется документация?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/587-chto-takoe-dependency-injection-v-fastapi.html">Что такое Dependency Injection в FastAPI?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/588-kak-nastroit-podklyuchenie-k-bd.html">Как настроить подключение к БД?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/589-chto-takoe-background-tasks.html">Что такое Background Tasks?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/590-kak-rabotat-s-formami-i-faylami.html">Как работать с формами и файлами?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/591-chto-takoe-middleware-v-fastapi.html">Что такое Middleware в FastAPI?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/592-kak-dobavit-autentifikatsiyu.html">Как добавить аутентификацию?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/593-chto-takoe-cors-i-kak-nastroit.html">Что такое CORS и как настроить?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/594-kak-vozvraschat-raznye-status-kody-i-otvety.html">Как возвращать разные статус-коды и ответы?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/595-chto-takoe-websockets-v-fastapi.html">Что такое WebSockets в FastAPI?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/596-kak-testirovat-fastapi-prilozheniya.html">Как тестировать FastAPI приложения?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/597-chto-takoe-openapi-i-json-schema.html">Что такое OpenAPI и JSON Schema?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/598-kak-obrabatyvat-oshibki-httpexception.html">Как обрабатывать ошибки? HTTPException.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/599-chto-takoe-parametry-cookie-i-header.html">Что такое параметры cookie и header?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/600-kak-realizovat-paginatsiyu.html">Как реализовать пагинацию?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/601-chto-takoe-metadannye-prilozheniya-title-description.html">Что такое метаданные приложения (title, description)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/602-chto-takoe-sub-applications-montirovanie.html">Что такое sub-applications (монтирование)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/603-kak-ispolzovat-asinhronnye-zavisimosti.html">Как использовать асинхронные зависимости?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/604-chto-takoe-routery-apirouter.html">Что такое роутеры (APIRouter)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/605-kak-nastroit-logger.html">Как настроить логгер?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/606-chto-takoe-lifespan-sobytiya-zapuska-ostanovki.html">Что такое lifespan (события запуска/остановки)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/607-kak-sdelat-zagruzku-faylov-cherez-uploadfile-s-validatsiey.html">Как сделать загрузку файлов через UploadFile с валидацией?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/608-chto-takoe-dekoratory-app-exception-handler.html">Что такое декораторы @app.exception_handler?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/609-kak-dobavit-podderzhku-graphql.html">Как добавить поддержку GraphQL?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/610-chto-takoe-sqlmodel.html">Что такое SQLModel?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">Testing <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(30)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/611-chto-takoe-pytest-fikstury-i-parametrizatsiya.html">Что такое pytest? Фикстуры и параметризация.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/612-kak-napisat-prostoy-test-s-pytest.html">Как написать простой тест с pytest?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/613-chto-takoe-fikstury-fixtures-scope.html">Что такое фикстуры (fixtures)? scope.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/614-kak-parametrizovat-test-pytest-mark-parametrize.html">Как параметризовать тест? @pytest.mark.parametrize.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/615-chto-takoe-moki-kogda-ispolzovat.html">Что такое моки? Когда использовать?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/616-kak-proverit-chto-isklyuchenie-vyzvano.html">Как проверить, что исключение вызвано?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/617-chto-takoe-pytest-mark.html">Что такое pytest.mark?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/618-kak-zapustit-testy-parallelno.html">Как запустить тесты параллельно?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/619-chto-takoe-unittest-ierarhiya-testcase.html">Что такое unittest? Иерархия TestCase.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/620-chem-pytest-luchshe-unittest.html">Чем pytest лучше unittest?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/621-kak-proverit-soderzhimoe-stdout-ili-logov.html">Как проверить содержимое stdout или логов?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/622-chto-takoe-pokrytie-koda-coverage.html">Что такое покрытие кода (coverage)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/623-kak-propustit-test.html">Как пропустить тест?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/624-chto-takoe-conftest-py.html">Что такое conftest.py?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/625-kak-proverit-chto-mock-vyzvan-s-opredelennymi-argumentami.html">Как проверить, что mock вызван с определёнными аргументами?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/626-chto-takoe-factory-boy.html">Что такое factory boy?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/627-kak-nastroit-bazu-dannyh-dlya-testov.html">Как настроить базу данных для тестов?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/628-chto-takoe-tdd.html">Что такое TDD?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/629-kak-zapuskat-testy-v-ci-cd.html">Как запускать тесты в CI/CD?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/630-chto-takoe-integratsionnye-testy.html">Что такое интеграционные тесты?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/631-kak-testirovat-rest-api.html">Как тестировать REST API?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/632-chto-takoe-hypothesis.html">Что такое hypothesis?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/633-kak-zamerit-vremya-vypolneniya-testa.html">Как замерить время выполнения теста?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/634-kak-sdelat-assert-pochti-s-lyubym-vyrazheniem.html">Как сделать assert почти с любым выражением?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/635-chto-takoe-conftest-py-na-urovne-paketa.html">Что такое conftest.py на уровне пакета?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/636-kak-ispolzovat-moki-v-pytest-cherez-mocker-fixture.html">Как использовать моки в pytest через mocker fixture?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/637-chto-takoe-tox.html">Что такое tox?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/638-kak-testirovat-asinhronnye-funktsii.html">Как тестировать асинхронные функции?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/639-chto-takoe-freeze-gun-freezegun.html">Что такое freeze gun (freezegun)?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/640-kakaya-raznitsa-mezhdu-unit-testami-i-end-to-end-e2e.html">Какая разница между unit-тестами и end-to-end (e2e)?</a></li>
+            </ul>
+          </div>
+        
+
+          <div style="background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <h4 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#1e293b;">DevOps &amp; Tools <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">(25)</span></h4>
+            <ul style="padding-left:18px;margin:0;">
+              <li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/641-chto-takoe-virtualnoe-okruzhenie.html">Что такое виртуальное окружение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/642-kak-upravlyat-zavisimostyami-pip-poetry-pipenv.html">Как управлять зависимостями? pip, Poetry, pipenv.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/643-chto-takoe-docker-kak-ispolzovat-s-python.html">Что такое Docker? Как использовать с Python?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/644-chto-takoe-ci-cd.html">Что такое CI/CD?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/645-kak-rabotayut-logi-v-production.html">Как работают логи в production?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/646-chto-takoe-peremennye-okruzheniya-i-sekrety.html">Что такое переменные окружения и секреты?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/647-chto-takoe-gunicorn.html">Что такое Gunicorn?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/648-chto-takoe-nginx-i-zachem-on-nuzhen.html">Что такое Nginx и зачем он нужен?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/649-kak-monitorit-prilozhenie.html">Как мониторить приложение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/650-chto-takoe-asgi-server-primery.html">Что такое ASGI сервер? Примеры.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/651-kak-razvernut-python-prilozhenie-na-oblake.html">Как развернуть Python-приложение на облаке?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/652-chto-takoe-make-fayl.html">Что такое make файл?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/653-kak-organizovat-konveyer-github-actions.html">Как организовать конвейер GitHub Actions?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/654-chto-takoe-linting-flake8-pylint-black.html">Что такое линтинг? Flake8, pylint, black.</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/655-chto-takoe-pre-commit-hooks.html">Что такое pre-commit hooks?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/656-kak-nastroit-bazu-dannyh-postgresql-v-docker.html">Как настроить базу данных PostgreSQL в Docker?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/657-chto-takoe-12-faktornoe-prilozhenie.html">Что такое 12-факторное приложение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/658-kak-upravlyat-sekretami-v-production.html">Как управлять секретами в production?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/659-chto-takoe-blue-green-deployment.html">Что такое blue-green deployment?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/660-kak-avtomaticheski-masshtabirovat-prilozhenie.html">Как автоматически масштабировать приложение?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/661-chto-takoe-sentry.html">Что такое Sentry?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/662-kak-realizovat-health-check-endpoint.html">Как реализовать health-check эндпоинт?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/663-chto-takoe-docker-compose.html">Что такое docker-compose?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/664-kak-ispolzovat-env-fayly.html">Как использовать .env файлы?</a></li>
+<li style="margin-bottom:8px;"><a style="color:var(--brand);text-decoration:none;font-weight:500;" href="/q/python/665-chto-takoe-terraform.html">Что такое Terraform?</a></li>
+            </ul>
+          </div>
+        
+      </section>
+    
+
+    <div class="cta-banner" style="margin-top:50px;">
+      <h2>Готовы проверить свои знания на практике?</h2>
+      <p>Запустите бота Prep-it в Telegram и проверьте себя прямо сейчас за 5 минут.</p>
+      <div class="cta-actions">
+        <a class="btn-primary" href="https://t.me/prep_interview_bot" target="_blank" rel="noopener">
+          Запустить бота @prep_interview_bot
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2026 <a href="/">Prep-it</a> · Все права защищены</p>
+  </footer>
+
+  <script>
+    const input = document.getElementById('filterInput');
+    input.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase().trim();
+      const listItems = document.querySelectorAll('main li');
+      listItems.forEach(li => {
+        const text = li.textContent.toLowerCase();
+        li.style.display = text.includes(term) ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

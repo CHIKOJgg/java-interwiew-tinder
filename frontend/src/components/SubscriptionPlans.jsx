@@ -300,11 +300,29 @@ const SubscriptionPlans = ({ onBack }) => {
     return () => clearInterval(interval);
   }, [polling, login, t]);
 
-  // Stars: primary payment — sends invoice to Telegram chat, then polls
+  // Stars: primary payment — 1-tap openInvoice in Telegram, fallback to chat invoice
   const handleSubscribeStars = async (planId, interval = 'monthly') => {
     if (purchasing || polling) return;
     try {
       setPurchasing(planId);
+      const tg = window.Telegram?.WebApp;
+      if (tg?.openInvoice) {
+        const res = await apiClient.createStarsInvoiceLink(planId, interval);
+        setPurchasing(null);
+        if (res?.url) {
+          tg.openInvoice(res.url, async (status) => {
+            if (status === 'paid') {
+              setShowSuccess(true);
+              await fetchAll();
+              if (tg.initData) login(tg.initData).catch(() => {});
+            } else if (status === 'failed') {
+              showToast(t('subscription.error_stars', { message: 'Payment failed' }), 'error');
+            }
+          });
+          return;
+        }
+      }
+
       await apiClient.sendStarsInvoice(planId, interval);
       setPurchasing(null);
       setPolling(true);

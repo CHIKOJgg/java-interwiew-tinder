@@ -41,7 +41,11 @@ const USER_ID = '987654321';
 const token = jwt.sign({ userId: USER_ID, plan: 'free' }, 'test_secret');
 
 describe('U-Kassa (bank card) provider', () => {
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    pool.query.mockResolvedValue({ rows: [{ id: 'pro' }], rowCount: 1 });
+  });
+  pool.query.mockResolvedValue({ rows: [{ id: 'pro' }], rowCount: 1 });
 
   describe('enablement gating', () => {
     it('isUkassaEnabled() is true when UKASSA_TOKEN set, false when unset', () => {

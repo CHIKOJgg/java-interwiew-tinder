@@ -67,7 +67,7 @@ describe('Billing Integration Tests', () => {
 
   describe('TON Billing', () => {
     it('POST /api/billing/ton/invoice should create an invoice', async () => {
-      pool.query.mockResolvedValue({ rows: [] });
+      pool.query.mockResolvedValue({ rows: [{ id: 'pro' }] });
 
       const response = await request(app)
         .post('/api/billing/ton/invoice')

@@ -630,10 +630,10 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
       },
       tracks,
       stats: {
-         known: parseInt(statsResult.rows[0]?.known_count || 0),
-         unknown: parseInt(statsResult.rows[0]?.unknown_count || 0),
-         totalSeen: parseInt(statsResult.rows[0]?.total_seen || 0),
-         totalQuestions: parseInt(totalResult.rows[0]?.total || 0),
+        known: parseInt(statsResult.rows[0]?.known_count || 0),
+        unknown: parseInt(statsResult.rows[0]?.unknown_count || 0),
+        totalSeen: parseInt(statsResult.rows[0]?.total_seen || 0),
+        totalQuestions: parseInt(totalResult.rows[0]?.total || 0),
         streak: userStreak.rows[0]?.current_streak || 0,
         longestStreak: userStreak.rows[0]?.longest_streak || 0,
       },
@@ -986,10 +986,10 @@ app.post('/api/auth/email/verify', emailSendLimiter, async (req, res) => {
       user: { telegram_id: user.telegram_id, email: user.email, plan: user.subscription_plan },
       tracks,
       stats: {
-        known: parseInt(statsResult.rows[0].known_count || 0),
-        unknown: parseInt(statsResult.rows[0].unknown_count || 0),
-        totalSeen: parseInt(statsResult.rows[0].total_seen || 0),
-        totalQuestions: parseInt(totalResult.rows[0].total || 0),
+        known: parseInt(statsResult.rows[0]?.known_count || 0),
+        unknown: parseInt(statsResult.rows[0]?.unknown_count || 0),
+        totalSeen: parseInt(statsResult.rows[0]?.total_seen || 0),
+        totalQuestions: parseInt(totalResult.rows[0]?.total || 0),
         streak: userStreak.rows[0]?.current_streak || 0,
         longestStreak: userStreak.rows[0]?.longest_streak || 0,
       },
@@ -2383,7 +2383,7 @@ app.post('/api/questions/:questionId/report', reportLimiter, async (req, res) =>
     if (typeof reason !== 'string' || reason.length > 50) {
       return res.status(400).json({ error: 'reason must be a string with max 50 characters' });
     }
-    if (typeof comment !== 'string' || comment.length > 500) {
+    if (comment !== undefined && comment !== null && (typeof comment !== 'string' || comment.length > 500)) {
       return res.status(400).json({ error: 'comment must be a string with max 500 characters' });
     }
 
@@ -2397,7 +2397,7 @@ app.post('/api/questions/:questionId/report', reportLimiter, async (req, res) =>
       'SELECT COUNT(*) FROM question_reports WHERE question_id = $1 AND resolved = FALSE',
       [questionId]
     );
-    const count = parseInt(countRes.rows[0].count);
+    const count = parseInt(countRes.rows[0]?.count || 0);
 
     if (count >= 5) {
       await pool.query('UPDATE questions SET is_active = FALSE WHERE id = $1', [questionId]);
@@ -2483,19 +2483,21 @@ app.post('/api/questions/blitz-answer',
   validateBody({ questionId: { required: true }, answer: { required: true } }),
   async (req, res) => {
     try {
-      const { questionId, answer } = req.body;
+      const { questionId, answer, clientIsCorrect } = req.body;
       const userId = req.userId;
       let isCorrect;
       try {
         const { data } = await resolveAIData(questionId, 'blitz_data', 'blitz');
         if (data) {
           isCorrect = Boolean(answer) === Boolean(data.isCorrect);
+        } else if (clientIsCorrect !== undefined) {
+          isCorrect = Boolean(clientIsCorrect);
         } else {
-          return res.status(404).json({ error: 'Blitz data not generated yet вЂ” please wait' });
+          return res.status(404).json({ error: 'Blitz data not generated yet — please wait' });
         }
       } catch (err) {
         logger.error({ err, questionId }, 'Blitz answer parse error');
-        isCorrect = false;
+        isCorrect = clientIsCorrect !== undefined ? Boolean(clientIsCorrect) : false;
       }
       await recordProgress(userId, questionId, isCorrect);
       const streak = await updateStreak(userId);
@@ -4427,10 +4429,12 @@ app.post('/api/questions/submit', validateBody({ question_text: { required: true
     if (typeof category !== 'string' || category.length > 100) {
       return res.status(400).json({ error: 'category must be a string with max 100 characters' });
     }
-    if (!['Junior', 'Middle', 'Senior'].includes(difficulty)) {
+    const diff = difficulty || 'Junior';
+    const lang = language || 'Java';
+    if (!['Junior', 'Middle', 'Senior'].includes(diff)) {
       return res.status(400).json({ error: 'difficulty must be one of: Junior, Middle, Senior' });
     }
-    if (typeof language !== 'string' || language.length > 50) {
+    if (typeof lang !== 'string' || lang.length > 50) {
       return res.status(400).json({ error: 'language must be a string with max 50 characters' });
     }
     if (!Array.isArray(options) || options.length > 10) {
@@ -4440,7 +4444,7 @@ app.post('/api/questions/submit', validateBody({ question_text: { required: true
     await pool.query(
       `INSERT INTO user_submitted_questions (user_id, category, difficulty, question_text, short_answer, options, language, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
-       [userId, category, difficulty, question_text, short_answer, options, language]
+        [userId, category, diff, question_text, short_answer, options || [], lang]
     );
     res.json({ success: true, message: 'Question submitted for review.' });
   } catch (err) {

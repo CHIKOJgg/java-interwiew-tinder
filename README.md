@@ -11,10 +11,14 @@
 ---
 
 ### 📚 Статьи и разборы проекта (Live)
-- 📖 [Хабр / Telegra.ph: Как я устал зубрить 500 вопросов к IT-собеседованиям и написал «Tinder для интервью»](https://telegra.ph/Kak-ya-ustal-zubrit-500-voprosov-k-IT-sobesedovaniyam-i-napisal-Tinder-dlya-intervyu-10-20)
-- 💼 [VC.ru / Telegra.ph: Как запустить микро-SaaS в Telegram Mini Apps без бюджета: тренажер IT-собеседований](https://telegra.ph/Kak-zapustit-mikro-SaaS-v-Telegram-Mini-Apps-bez-byudzheta-trenazher-IT-sobesedovanij-10-20)
-- 💡 [Шпаргалка: Топ каверзных вопросов с собеседований по Java и Python с разборами](https://telegra.ph/SHpargalka-Top-kaverznyh-voprosov-s-sobesedovanij-po-Java-i-Python-s-razborami-10-20)
+- 📖 [Хабр: Как я устал зубрить 500 вопросов к IT-собеседованиям и написал «Tinder для интервью»](https://telegra.ph/Kak-ya-ustal-zubrit-500-voprosov-k-IT-sobesedovaniyam-i-napisal-Tinder-dlya-intervyu-10-20-2)
+- 💼 [VC.ru: Как запустить микро-SaaS в Telegram Mini Apps без бюджета: тренажер IT-собеседований](https://telegra.ph/Kak-zapustit-mikro-SaaS-v-Telegram-Mini-Apps-bez-byudzheta-trenazher-IT-sobesedovanij-10-20-2)
+- 💡 [Шпаргалка: Топ каверзных вопросов с собеседований по Java и Python с разборами](https://telegra.ph/SHpargalka-Top-kaverznyh-voprosov-s-sobesedovanij-po-Java-i-Python-s-разборами-10-20-2)
+- ☕ [Гид по Spring Boot, Hibernate и SQL на собеседовании: разбор с примерами](https://telegra.ph/Gid-po-sobesedovaniyu-Voprosy-po-Spring-Boot-Hibernate-i-SQL-s-razborami-10-20)
+- 🐍 [Шпаргалка по Python к собеседованию: GIL, AsyncIO, память и сложные концепции](https://telegra.ph/SHpargalka-po-Python-k-sobesedovaniyu-GIL-AsyncIO-pamyat-i-slozhnye-koncepcii-10-20)
 - 🌐 [SEO Каталог: 665 вопросов с ответами онлайн](https://solve-it-rho.vercel.app/q/)
+- 🤖 [LLMs.txt спецификация для AI-поисковиков](https://solve-it-rho.vercel.app/llms.txt)
+- 📡 [RSS-лента для автопостинга в Telegram-каналы](https://solve-it-rho.vercel.app/rss.xml)
 
 ---
 

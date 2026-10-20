@@ -131,6 +131,14 @@ async function main() {
       file: 'marketing/CONTENT_PACK_30_DAYS.md',
       title: 'Шпаргалка: Топ каверзных вопросов с собеседований по Java и Python с разборами',
     },
+    {
+      file: 'marketing/SPRING_DB_INTERVIEW_GUIDE.md',
+      title: 'Гид по собеседованию: Вопросы по Spring Boot, Hibernate и SQL с разборами',
+    },
+    {
+      file: 'marketing/PYTHON_INTERVIEW_CHEATSHEET.md',
+      title: 'Шпаргалка по Python к собеседованию: GIL, AsyncIO, память и сложные концепции',
+    },
   ];
 
   const publishedResults = [];

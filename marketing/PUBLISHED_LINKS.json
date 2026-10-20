@@ -1,17 +1,27 @@
 [
   {
     "title": "Как я устал зубрить 500 вопросов к IT-собеседованиям и написал «Tinder для интервью»",
-    "url": "https://telegra.ph/Kak-ya-ustal-zubrit-500-voprosov-k-IT-sobesedovaniyam-i-napisal-Tinder-dlya-intervyu-10-20",
+    "url": "https://telegra.ph/Kak-ya-ustal-zubrit-500-voprosov-k-IT-sobesedovaniyam-i-napisal-Tinder-dlya-intervyu-10-20-2",
     "file": "marketing/HABR_ARTICLE.md"
   },
   {
     "title": "Как запустить микро-SaaS в Telegram Mini Apps без бюджета: тренажер IT-собеседований",
-    "url": "https://telegra.ph/Kak-zapustit-mikro-SaaS-v-Telegram-Mini-Apps-bez-byudzheta-trenazher-IT-sobesedovanij-10-20",
+    "url": "https://telegra.ph/Kak-zapustit-mikro-SaaS-v-Telegram-Mini-Apps-bez-byudzheta-trenazher-IT-sobesedovanij-10-20-2",
     "file": "marketing/VC_ARTICLE.md"
   },
   {
     "title": "Шпаргалка: Топ каверзных вопросов с собеседований по Java и Python с разборами",
-    "url": "https://telegra.ph/SHpargalka-Top-kaverznyh-voprosov-s-sobesedovanij-po-Java-i-Python-s-razborami-10-20",
+    "url": "https://telegra.ph/SHpargalka-Top-kaverznyh-voprosov-s-sobesedovanij-po-Java-i-Python-s-razborami-10-20-2",
     "file": "marketing/CONTENT_PACK_30_DAYS.md"
+  },
+  {
+    "title": "Гид по собеседованию: Вопросы по Spring Boot, Hibernate и SQL с разборами",
+    "url": "https://telegra.ph/Gid-po-sobesedovaniyu-Voprosy-po-Spring-Boot-Hibernate-i-SQL-s-razborami-10-20",
+    "file": "marketing/SPRING_DB_INTERVIEW_GUIDE.md"
+  },
+  {
+    "title": "Шпаргалка по Python к собеседованию: GIL, AsyncIO, память и сложные концепции",
+    "url": "https://telegra.ph/SHpargalka-po-Python-k-sobesedovaniyu-GIL-AsyncIO-pamyat-i-slozhnye-koncepcii-10-20",
+    "file": "marketing/PYTHON_INTERVIEW_CHEATSHEET.md"
   }
 ]

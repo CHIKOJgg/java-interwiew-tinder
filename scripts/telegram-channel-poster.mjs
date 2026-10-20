@@ -128,7 +128,7 @@ ${optionsText ? `<b>Варианты ответа:</b>\n${optionsText}\n\n` : ''
     [
       {
         text: '⚡ Открыть вопрос в Prep-it Mini App',
-        url: `https://t.me/${botUsername}/app`,
+        url: `https://t.me/${botUsername}`,
       },
     ],
     [
@@ -183,7 +183,7 @@ function buildQuizPayload(q) {
         [
           {
             text: '🔥 Решать 800+ вопросов в Mini App',
-            url: `https://t.me/${botUsername}/app`,
+            url: `https://t.me/${botUsername}`,
           },
         ],
       ],

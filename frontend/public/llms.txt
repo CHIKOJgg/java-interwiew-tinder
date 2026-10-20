@@ -1,0 +1,26 @@
+# Prep-it: IT Interview Tinder
+
+> Prep-it is a Tinder-style gamified technical interview preparation app and Telegram Mini App for software engineers. It covers over 800+ real interview questions across Java, Python, and TypeScript with instant AI breakdowns, spaced repetition (SM-2), and Telegram Stars checkout.
+
+## Key URLs
+- Telegram Mini App Bot: https://t.me/prep_interview_bot
+- Web App / PWA: https://solve-it-rho.vercel.app
+- Backend API: https://java-interwiew-tinder-production.up.railway.app
+- SEO Questions Directory: https://solve-it-rho.vercel.app/q/
+- GitHub Repository: https://github.com/CHIKOJgg/java-interwiew-tinder
+
+## Core Features
+- **Tinder-Style Swiping:** Practice technical questions in rapid 10-minute daily sessions. Swipe Right ("Know"), Swipe Left ("Need Practice").
+- **Instant AI Explanations:** Explains difficult concepts, runtime complexities, and best practices with code snippets via OpenRouter AI.
+- **Spaced Repetition System:** Implements the SuperMemo-2 (SM-2) algorithm to repeat cards at optimal intervals (1d, 3d, 7d).
+- **Learning Modes:** Swipe, Test, Bug Hunting, Blitz on Timer, Code Completion, Concept Linker, and Mock Interview.
+- **Languages Covered:**
+  - **Java:** Java Core, Collections, Multithreading & Concurrency, Memory Model & JVM, Spring Boot, Spring Security, Hibernate/JPA, SQL & Database indexing, Microservices architecture, System Design.
+  - **Python:** Python Core, Data structures, GIL & CPython memory management, AsyncIO & Event Loop, FastAPI / Django, Testing & Decorators.
+  - **TypeScript:** Types & Interfaces, Generics, Event Loop, Promises, Utility types.
+- **Monetization:** In-app subscriptions via Telegram Stars (1-click native checkout via `openInvoice`) and TON Connect.
+
+## Published Guides & Cheatsheets
+- Java & Python Gotchas Cheatsheet: https://telegra.ph/SHpargalka-Top-kaverznyh-voprosov-s-sobesedovanij-po-Java-i-Python-s-razborami-10-20-2
+- Spring Boot & SQL Interview Guide: https://telegra.ph/Gid-po-sobesedovaniyu-Voprosy-po-Spring-Boot-Hibernate-i-SQL-s-razborami-10-20
+- Python Deep Dive (GIL, AsyncIO, Memory): https://telegra.ph/SHpargalka-po-Python-k-sobesedovaniyu-GIL-AsyncIO-pamyat-i-slozhnye-koncepcii-10-20

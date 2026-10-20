@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Prep-it: Вопросы и шпаргалки к IT-собеседованиям (Java &amp; Python)</title>
+    <link>https://solve-it-rho.vercel.app</link>
+    <description>Ежедневные разборы каверзных вопросов с технических собеседований по Java, Python, Spring и алгоритмам с AI-объяснениями в Telegram-боте @prep_interview_bot.</description>
+    <language>ru-ru</language>
+    <lastBuildDate>Tue, 20 Oct 2026 22:50:00 GMT</lastBuildDate>
+    <atom:link href="https://solve-it-rho.vercel.app/rss.xml" rel="self" type="application/rss+xml"/>
+
+    <item>
+      <title>Гид по собеседованию: Вопросы по Spring Boot, Hibernate и SQL с разборами</title>
+      <link>https://telegra.ph/Gid-po-sobesedovaniyu-Voprosy-po-Spring-Boot-Hibernate-i-SQL-s-razborami-10-20</link>
+      <guid>https://telegra.ph/Gid-po-sobesedovaniyu-Voprosy-po-Spring-Boot-Hibernate-i-SQL-s-razborami-10-20</guid>
+      <pubDate>Tue, 20 Oct 2026 22:50:00 GMT</pubDate>
+      <description><![CDATA[Разбор жизненного цикла Spring бинов, ловушек @Transactional, проблемы N+1 в Hibernate и уровней изоляции транзакций в PostgreSQL. Тренируйте в Telegram @prep_interview_bot]]></description>
+    </item>
+
+    <item>
+      <title>Шпаргалка по Python к собеседованию: GIL, AsyncIO, память и сложные концепции</title>
+      <link>https://telegra.ph/SHpargalka-po-Python-k-sobesedovaniyu-GIL-AsyncIO-pamyat-i-slozhnye-koncepcii-10-20</link>
+      <guid>https://telegra.ph/SHpargalka-po-Python-k-sobesedovaniyu-GIL-AsyncIO-pamyat-i-slozhnye-koncepcii-10-20</guid>
+      <pubDate>Tue, 20 Oct 2026 22:50:00 GMT</pubDate>
+      <description><![CDATA[Как устроен Cyclic GC в CPython, почему блокируется Event Loop при time.sleep, структура параметрических декораторов и подводные камни def f(x=[]).]]></description>
+    </item>
+
+    <item>
+      <title>Шпаргалка: Топ каверзных вопросов с собеседований по Java и Python с разборами</title>
+      <link>https://telegra.ph/SHpargalka-Top-kaverznyh-voprosov-s-sobesedovanij-po-Java-i-Python-s-razborami-10-20-2</link>
+      <guid>https://telegra.ph/SHpargalka-Top-kaverznyh-voprosov-s-sobesedovanij-po-Java-i-Python-s-razborami-10-20-2</guid>
+      <pubDate>Tue, 20 Oct 2026 22:40:00 GMT</pubDate>
+      <description><![CDATA[30 реальных вопросов-ловушек с собеседований Junior/Middle/Senior со скрытыми ответами и AI-наставником.]]></description>
+    </item>
+
+    <item>
+      <title>Как я устал зубрить 500 вопросов к IT-собеседованиям и написал «Tinder для интервью»</title>
+      <link>https://telegra.ph/Kak-ya-ustal-zubrit-500-voprosov-k-IT-sobesedovaniyam-i-napisal-Tinder-dlya-intervyu-10-20-2</link>
+      <guid>https://telegra.ph/Kak-ya-ustal-zubrit-500-voprosov-k-IT-sobesedovaniyam-i-napisal-Tinder-dlya-intervyu-10-20-2</guid>
+      <pubDate>Tue, 20 Oct 2026 22:30:00 GMT</pubDate>
+      <description><![CDATA[История создания Prep-it: почему классическая подготовка по чек-листам не работает и как свайп-механика ускоряет запоминание.]]></description>
+    </item>
+
+    <item>
+      <title>Как запустить микро-SaaS в Telegram Mini Apps без бюджета: тренажер IT-собеседований</title>
+      <link>https://telegra.ph/Kak-zapustit-mikro-SaaS-v-Telegram-Mini-Apps-bez-byudzheta-trenazher-IT-sobesedovanij-10-20-2</link>
+      <guid>https://telegra.ph/Kak-zapustit-mikro-SaaS-v-Telegram-Mini-Apps-bez-byudzheta-trenazher-IT-sobesedovanij-10-20-2</guid>
+      <pubDate>Tue, 20 Oct 2026 22:20:00 GMT</pubDate>
+      <description><![CDATA[Кейс создания Telegram Mini App с платежами Telegram Stars и TON Connect, архитектура с кэшированием AI-запросов и Spaced Repetition.]]></description>
+    </item>
+  </channel>
+</rss>

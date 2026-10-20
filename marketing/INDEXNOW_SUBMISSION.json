@@ -1,26 +1,26 @@
 {
-  "submittedAt": "2026-10-20T19:43:50.642Z",
+  "submittedAt": "2026-10-20T19:48:50.827Z",
   "host": "solve-it-rho.vercel.app",
   "key": "c7b419b48f6c433c945145b23d069b18",
   "urlCount": 671,
   "results": [
     {
       "endpoint": "https://api.indexnow.org/indexnow",
-      "statusCode": 403,
-      "statusMessage": "Forbidden",
-      "response": "{\"errorCode\":\"SiteVerificationNotCompleted\",\"message\":\"Site Verification is not completed. Please wait for some time for the verification to complete and try again.\",\"details\":null}"
+      "statusCode": 200,
+      "statusMessage": "OK",
+      "response": ""
     },
     {
       "endpoint": "https://yandex.com/indexnow",
-      "statusCode": 202,
-      "statusMessage": "Accepted",
-      "response": "{\n  \"success\":true\n}"
+      "statusCode": 403,
+      "statusMessage": "Forbidden",
+      "response": "{\n  \"success\":false,\n  \"message\":\"Invalid key\"\n}"
     },
     {
       "endpoint": "https://www.bing.com/indexnow",
-      "statusCode": 403,
-      "statusMessage": "Forbidden",
-      "response": "{\"errorCode\":\"SiteVerificationNotCompleted\",\"message\":\"Site Verification is not completed. Please wait for some time for the verification to complete and try again.\",\"details\":null}"
+      "statusCode": 200,
+      "statusMessage": "OK",
+      "response": ""
     }
   ],
   "sampleUrls": [

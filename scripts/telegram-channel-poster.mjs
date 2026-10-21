@@ -11,6 +11,23 @@
  */
 
 import https from 'https';
+import fs from 'fs';
+import path from 'path';
+
+// Automatically load BOT_TOKEN from backend/.env if not present in environment
+try {
+  const envPath = path.resolve('backend/.env');
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+    for (let l of lines) {
+      l = l.trim();
+      const match = l.match(/^([A-Za-z0-9_]+)=(.*)$/);
+      if (match && !process.env[match[1]]) {
+        process.env[match[1]] = match[2].trim();
+      }
+    }
+  }
+} catch (e) {}
 
 // Command line arguments parsing
 const args = process.argv.slice(2);
@@ -177,7 +194,7 @@ function buildQuizPayload(q) {
     type: 'quiz',
     correct_option_id: 0, // In seed data, first option is usually the intended correct one
     explanation,
-    is_anonymous: false,
+    is_anonymous: true,
     reply_markup: {
       inline_keyboard: [
         [

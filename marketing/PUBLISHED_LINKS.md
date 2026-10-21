@@ -23,7 +23,18 @@
 ⚡ *Открывается внутри Telegram с Instant View (без задержек)*
 
 
+### 6. Reddit (r/learnprogramming — 4M+ аудитория)
+🔗 **Ссылка:** https://www.reddit.com/r/learnprogramming/comments/1xbift4/i_built_prepit_a_tinderstyle_swipe_app_for/
+👤 **Автор:** u/ChikoJjjj
+⚡ *Опубликовано в открытом доступе в крупнейшем сабреддите программистов*
+
+### 7. VC.ru (Трибуна)
+🔗 **Ссылка на черновик/публикацию:** https://vc.ru/tribuna/3207316-kak-zapustit-mikro-saas-v-telegram-mini-apps-bez-byudzheta-trenazher-it-sobesedovanii-s-oplatoi-cherez-telegram-stars
+👤 **Автор:** Miraslau
+⚡ *36 блоков Editor.js, полностью оформлено и готово к снятию лимита/Pro*
+
 ---
+
 
 ### Где размещать эти ссылки для бесплатного трафика:
 1. **Telegram IT-каналы и чаты** (Java, Python, Собеседования, Junior/Middle вакансии). Ссылки на Telegra.ph не блокируются спам-фильтрами, так как это официальный домен Telegram.

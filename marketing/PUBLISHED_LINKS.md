@@ -23,8 +23,8 @@
 ⚡ *Открывается внутри Telegram с Instant View (без задержек)*
 
 
-### 6. Reddit (r/learnprogramming — 4M+ аудитория)
-🔗 **Ссылка:** https://www.reddit.com/r/learnprogramming/comments/1xbift4/i_built_prepit_a_tinderstyle_swipe_app_for/
+### 6. Reddit (r/SideProject — 4M+ аудитория)
+🔗 **Ссылка:** https://www.reddit.com/r/SideProject/comments/1xbisbc/i_built_tinder_for_tech_interviews_a_gamified/
 👤 **Автор:** u/ChikoJjjj
 ⚡ *Опубликовано в открытом доступе в крупнейшем сабреддите программистов*
 
@@ -38,6 +38,6 @@
 
 ### Где размещать эти ссылки для бесплатного трафика:
 1. **Telegram IT-каналы и чаты** (Java, Python, Собеседования, Junior/Middle вакансии). Ссылки на Telegra.ph не блокируются спам-фильтрами, так как это официальный домен Telegram.
-2. **Reddit:** r/java, r/learnprogramming, r/Python, r/cscareerquestions.
+2. **Reddit:** r/java, r/SideProject, r/Python, r/cscareerquestions.
 3. **LinkedIn & Twitter (X):** Публикация с тегами #Java #Python #InterviewPrep #TelegramMiniApps.
 4. **Хабр & VC.ru:** Готовые тексты лежат в `marketing/HABR_ARTICLE.md` и `marketing/VC_ARTICLE.md`.

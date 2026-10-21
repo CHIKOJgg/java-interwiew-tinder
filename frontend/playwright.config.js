@@ -1,5 +1,3 @@
-/* global process */
-/* eslint-disable no-undef */
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({

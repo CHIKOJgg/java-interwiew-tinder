@@ -51,6 +51,15 @@ export default [
     },
   },
   {
+    files: ['**/*.test.{js,jsx}', '**/__tests__/**/*.{js,jsx}', 'playwright.config.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
+  },
+  {
     ignores: ['node_modules/', 'dist/'],
   },
 ];

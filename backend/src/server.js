@@ -110,7 +110,7 @@ app.use(cors({
     const isExactMatch = ALLOWED_ORIGINS.has(origin);
     if (isExactMatch) return cb(null, true);
     logger.warn({ origin }, 'CORS blocked');
-    cb(new Error('CORS not allowed'));
+    cb(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

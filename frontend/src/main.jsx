@@ -23,7 +23,7 @@ function initTelegramApp() {
   wa.onEvent('contentSafeAreaChanged', applySafeArea);
   wa.setBackgroundColor('#F7F3E6');
   if (typeof wa.setHeaderColor === 'function') {
-    try { wa.setHeaderColor('#F7F3E6'); } catch (_) {}
+    try { wa.setHeaderColor('#F7F3E6'); } catch { /* unsupported in older clients */ }
   }
   wa.ready();
   wa.expand();

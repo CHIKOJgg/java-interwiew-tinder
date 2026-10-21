@@ -24,7 +24,7 @@
 
 
 ### 6. Reddit (r/SideProject — 4M+ аудитория)
-🔗 **Ссылка:** https://www.reddit.com/r/SideProject/comments/1xbiwfr/i_built_tinder_for_tech_interviews_a_gamified/
+🔗 **Ссылка:** https://www.reddit.com/r/SideProject/comments/1xbizfq/i_built_tinder_for_tech_interviews_a_gamified/
 👤 **Автор:** u/ChikoJjjj
 ⚡ *Опубликовано в открытом доступе в крупнейшем сабреддите программистов*
 

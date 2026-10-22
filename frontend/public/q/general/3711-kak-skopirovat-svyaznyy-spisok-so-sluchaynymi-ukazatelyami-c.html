@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Как скопировать связный список со случайными указателями (Copy L… — Вопрос на собеседовании General | Prep-it</title>
+  <meta name="description" content="В три прохода: 1. Создаем клонированные узлы и вставляем их непосредственно за оригинальными: A -&gt; A' -&gt; B -&gt; B'. 2. Копируем случайные указатели: curr.ne…" />
+  <meta name="keywords" content="general вопросы собеседование, linked lists, подготовка к интервью программист, general junior middle senior" />
+  <meta property="og:title" content="Как скопировать связный список со случайными указателями (Copy L… — Вопрос на собеседовании General" />
+  <meta property="og:description" content="В три прохода: 1. Создаем клонированные узлы и вставляем их непосредственно за оригинальными: A -&gt; A' -&gt; B -&gt; B'. 2. Копируем случайные указатели: curr.ne…" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://solve-it-rho.vercel.app/q/general/3711-kak-skopirovat-svyaznyy-spisok-so-sluchaynymi-ukazatelyami-c.html" />
+  <meta property="og:image" content="https://solve-it-rho.vercel.app/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="canonical" href="https://solve-it-rho.vercel.app/q/general/3711-kak-skopirovat-svyaznyy-spisok-so-sluchaynymi-ukazatelyami-c.html" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Как скопировать связный список со случайными указателями (Copy List with Random Pointer) за O(N) времени и O(1) доп. памяти?","acceptedAnswer":{"@type":"Answer","text":"В три прохода: 1. Создаем клонированные узлы и вставляем их непосредственно за оригинальными: A -> A' -> B -> B'. 2. Копируем случайные указатели: curr.next.random = curr.random != null ? curr.random.next : null. 3. Разделяем чередующийся список на два исходных: восстанавливаем оригинальный и извлекаем скопированный."}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"База вопросов","item":"https://solve-it-rho.vercel.app/q/"},{"@type":"ListItem","position":2,"name":"General","item":"https://solve-it-rho.vercel.app/q/#general"},{"@type":"ListItem","position":3,"name":"Как скопировать связный список со случайными указателями (Copy List with Random Pointer) за O(N) времени и O(1) доп. памяти?","item":"https://solve-it-rho.vercel.app/q/general/3711-kak-skopirovat-svyaznyy-spisok-so-sluchaynymi-ukazatelyami-c.html"}]}</script>
+  <style>
+:root {
+  --brand: #4f46e5;
+  --brand-hover: #4338ca;
+  --brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  --bg-main: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.6;
+}
+header {
+  background: var(--brand-gradient);
+  color: #fff;
+  padding: 48px 20px 40px;
+  text-align: center;
+  position: relative;
+}
+header .nav-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255,255,255,0.9);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  background: rgba(255,255,255,0.15);
+  padding: 6px 14px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+}
+header .nav-back:hover { background: rgba(255,255,255,0.25); color: #fff; }
+header h1 {
+  font-size: 26px;
+  font-weight: 800;
+  max-width: 800px;
+  margin: 0 auto 16px;
+  line-height: 1.35;
+}
+.badges {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.badge {
+  background: rgba(255,255,255,0.22);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  color: var(--brand);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 14px 28px;
+  border-radius: 14px;
+  text-decoration: none;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.hero-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px -5px rgba(0,0,0,0.25);
+}
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 36px 20px 80px;
+}
+.crumbs {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+.crumbs a { color: var(--brand); text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 28px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+}
+.answer-box {
+  background: #f1f5f9;
+  border-left: 4px solid var(--brand);
+  padding: 18px 20px;
+  border-radius: 0 12px 12px 0;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #1e293b;
+  margin-bottom: 20px;
+}
+.options-list {
+  list-style: none;
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.option-item {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.option-item.correct {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+  font-weight: 600;
+}
+.cta-banner {
+  background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+  border: 1.5px solid #c7d2fe;
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  margin: 36px 0;
+}
+.cta-banner h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: #1e1b4b;
+}
+.cta-banner p {
+  color: #4338ca;
+  font-size: 15px;
+  max-width: 540px;
+  margin: 0 auto 20px;
+}
+.cta-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #4f46e5;
+  color: #fff;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.btn-primary:hover { background: #4338ca; }
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  color: #4f46e5;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 12px;
+  text-decoration: none;
+  border: 1.5px solid #c7d2fe;
+  transition: background 0.15s ease;
+}
+.btn-secondary:hover { background: #f8fafc; }
+.related-section h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.related-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.related-link {
+  display: block;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 16px 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 15px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.related-link:hover {
+  border-color: var(--brand);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.1);
+  color: var(--brand);
+}
+footer {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 14px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-color);
+  background: #ffffff;
+}
+footer a { color: var(--brand); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+@media (max-width: 600px) {
+  header h1 { font-size: 20px; }
+  .card { padding: 20px; }
+  .cta-actions { flex-direction: column; }
+  .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
+}
+</style>
+</head>
+<body>
+  <header>
+    <a href="/q/" class="nav-back">← Все вопросы по General</a>
+    <div class="badges">
+      <span class="badge">🔥 General</span>
+      <span class="badge">📂 Linked Lists</span>
+      <span class="badge">⚡ Senior</span>
+    </div>
+    <h1>Как скопировать связный список со случайными указателями (Copy List with Random Pointer) за O(N) времени и O(1) доп. памяти?</h1>
+    <a class="hero-cta" href="https://t.me/prep_interview_bot" target="_blank" rel="noopener">
+      Тренировать в Telegram-боте →
+    </a>
+  </header>
+
+  <main>
+    <nav class="crumbs">
+      <a href="/q/">База вопросов</a> › <a href="/q/#general">General</a> › Linked Lists
+    </nav>
+
+    <div class="card">
+      <div class="card-title">
+        <span>💡 Краткий ответ для собеседования</span>
+      </div>
+      <div class="answer-box">
+        В три прохода: 1. Создаем клонированные узлы и вставляем их непосредственно за оригинальными: A -&gt; A' -&gt; B -&gt; B'. 2. Копируем случайные указатели: curr.next.random = curr.random != null ? curr.random.next : null. 3. Разделяем чередующийся список на два исходных: восстанавливаем оригинальный и извлекаем скопированный.
+      </div>
+
+      
+      <div style="margin-top:24px;">
+        <p style="font-size:14px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Варианты ответа в приложении:</p>
+        <ul class="options-list">
+          
+            <li class="option-item correct">
+              <span style="font-weight:700;min-width:20px;">A.</span>
+              <span>Вставить клоны узлов сразу за оригиналами (A-&gt;A'-&gt;B-&gt;B'), скопировать random через curr.random.next, затем расцепить списки (O(1) память)</span>
+              <span style="margin-left:auto;font-size:12px;background:#10b981;color:#fff;padding:2px 8px;border-radius:6px;">Правильный</span>
+            </li>
+          
+            <li class="option-item ">
+              <span style="font-weight:700;min-width:20px;">B.</span>
+              <span>Использовать HashMap&lt;Node, Node&gt; для сопоставления оригинальных и скопированных узлов за O(N) памяти</span>
+              
+            </li>
+          
+            <li class="option-item ">
+              <span style="font-weight:700;min-width:20px;">C.</span>
+              <span>Сериализовать список в массив байт и десериализовать обратно через Java Serialization API</span>
+              
+            </li>
+          
+            <li class="option-item ">
+              <span style="font-weight:700;min-width:20px;">D.</span>
+              <span>Случайные указатели невозможно скопировать без рекурсивного глубокого обхода графа</span>
+              
+            </li>
+          
+        </ul>
+      </div>
+    
+    </div>
+
+    <div class="cta-banner">
+      <h2>Хотите уверенно пройти техническое собеседование?</h2>
+      <p>В приложении Prep-it вы тренируетесь в режиме свайпов за 10 минут в день с мгновенными объяснениями и адаптивным повторением.</p>
+      <div class="cta-actions">
+        <a class="btn-primary" href="https://t.me/prep_interview_bot" target="_blank" rel="noopener">
+          🚀 Открыть Telegram-бот (@prep_interview_bot)
+        </a>
+        <a class="btn-secondary" href="https://solve-it-rho.vercel.app" target="_blank" rel="noopener">
+          💻 Решать в Web-версии
+        </a>
+      </div>
+    </div>
+
+    
+    <div class="related-section">
+      <h3>Похожие вопросы по теме Linked Lists</h3>
+      <div class="related-grid">
+        <a class="related-link" href="/q/general/3700-v-chem-raznitsa-mezhdu-odnosvyaznym-singly-i-dvusvyaznym-dou.html">→ В чем разница между односвязным (Singly) и двусвязным (Doubly) списком?</a>
+        <a class="related-link" href="/q/general/3701-kak-obnaruzhit-tsikl-v-odnosvyaznom-spiske-za-o-n-vremeni-i.html">→ Как обнаружить цикл в односвязном списке за O(N) времени и O(1) памяти (алгоритм Флойда «…</a>
+        <a class="related-link" href="/q/general/3702-kak-nayti-tochku-vhoda-nachalnyy-uzel-tsikla-v-svyaznom-spis.html">→ Как найти точку входа (начальный узел) цикла в связном списке после того, как slow и fast…</a>
+        <a class="related-link" href="/q/general/3703-kak-razvernut-odnosvyaznyy-spisok-reverse-linked-list-iterat.html">→ Как развернуть односвязный список (Reverse Linked List) итеративно за O(N) времени и O(1)…</a>
+        <a class="related-link" href="/q/general/3704-kak-nayti-seredinu-svyaznogo-spiska-za-odin-prohod.html">→ Как найти середину связного списка за один проход?</a>
+        <a class="related-link" href="/q/general/3705-kak-udalit-k-y-uzel-s-kontsa-svyaznogo-spiska-za-odin-prohod.html">→ Как удалить k-й узел с КОНЦА связного списка за один проход (Remove Nth Node From End)?</a>
+      </div>
+    </div>
+    
+  </main>
+
+  <footer>
+    <p>© 2026 <a href="/">Prep-it</a> · Тренажёр IT-собеседований в Telegram Mini Apps</p>
+    <p style="margin-top:8px;"><a href="https://t.me/prep_interview_bot">Telegram-бот</a> · <a href="/privacy.html">Политика конфиденциальности</a> · <a href="/q/">Все вопросы</a></p>
+  </footer>
+</body>
+</html>

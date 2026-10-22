@@ -1,8 +1,8 @@
 {
-  "submittedAt": "2026-10-20T19:53:44.027Z",
+  "submittedAt": "2026-10-22T05:57:27.687Z",
   "host": "solve-it-rho.vercel.app",
   "key": "c7b419b48f6c433c945145b23d069b18",
-  "urlCount": 671,
+  "urlCount": 4501,
   "results": [
     {
       "endpoint": "https://api.indexnow.org/indexnow",
@@ -12,9 +12,9 @@
     },
     {
       "endpoint": "https://yandex.com/indexnow",
-      "statusCode": 403,
-      "statusMessage": "Forbidden",
-      "response": "{\n  \"success\":false,\n  \"message\":\"Invalid key\"\n}"
+      "statusCode": 202,
+      "statusMessage": "Accepted",
+      "response": "{\n  \"success\":true\n}"
     },
     {
       "endpoint": "https://www.bing.com/indexnow",

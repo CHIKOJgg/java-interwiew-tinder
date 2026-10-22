@@ -73,7 +73,43 @@ function callTelegram(method, payload) {
   });
 }
 
-// Load random question from database
+// Intelligent detection of the correct quiz option index
+function detectCorrectOptionId(q) {
+  if (typeof q.correct_option_id === 'number') return q.correct_option_id;
+  if (typeof q.correct_index === 'number') return q.correct_index;
+  if (!Array.isArray(q.options) || q.options.length === 0) return 0;
+  if (!q.short_answer) return 0;
+
+  // In RU hand-authored batches, option 0 is authored as the correct answer
+  if (['Go', 'TypeScript', 'Rust', 'Kotlin', 'React'].includes(q.language)) {
+    return 0;
+  }
+
+  // For Java & Python from seed-db, calculate semantic token overlap against short_answer
+  const normalize = (str) =>
+    str.toLowerCase().replace(/[^a-zа-я0-9s]/gi, ' ').split(/s+/).filter((w) => w.length > 2);
+
+  const answerWords = new Set(normalize(q.short_answer));
+  let bestIdx = 1;
+  let bestScore = -1;
+
+  q.options.forEach((opt, idx) => {
+    const optWords = normalize(opt);
+    let matches = 0;
+    for (const w of optWords) {
+      if (answerWords.has(w)) matches++;
+    }
+    const score = matches * 10 - (optWords.length - matches);
+    if (score > bestScore) {
+      bestScore = score;
+      bestIdx = idx;
+    }
+  });
+
+  return bestIdx >= 0 && bestIdx < q.options.length ? bestIdx : 0;
+}
+
+// Load random question across all available curated languages
 async function getRandomQuestion() {
   let pool = [];
   try {
@@ -85,6 +121,21 @@ async function getRandomQuestion() {
     const { pythonQuestions } = await import('../backend/src/scripts/seed-db-python.js');
     pool.push(...pythonQuestions.map((q) => ({ ...q, language: 'Python' })));
   } catch (e) {}
+
+  const ruBatches = [
+    'seed-ru-ts1.mjs', 'seed-ru-ts2.mjs',
+    'seed-ru-go1.mjs', 'seed-ru-go2.mjs',
+    'seed-ru-rust1.mjs', 'seed-ru-rust2.mjs',
+    'seed-ru-react1.mjs', 'seed-ru-kotlin1.mjs'
+  ];
+  for (const b of ruBatches) {
+    try {
+      const mod = await import('../backend/src/scripts/' + b);
+      if (Array.isArray(mod.questions)) {
+        pool.push(...mod.questions);
+      }
+    } catch (e) {}
+  }
 
   return pool[Math.floor(Math.random() * pool.length)];
 }
@@ -104,12 +155,15 @@ async function runDailyRoutine() {
     let explanation = q.short_answer || 'Правильный ответ!';
     if (explanation.length > 195) explanation = `${explanation.slice(0, 192)}…`;
 
+    const correctOptionId = detectCorrectOptionId(q);
+    console.log(`🎯 Detected correct option index: ${correctOptionId} ("${options[correctOptionId]}")`);
+
     const result = await callTelegram('sendPoll', {
       chat_id: channelId,
       question: truncatedQuestion,
       options,
       type: 'quiz',
-      correct_option_id: 0,
+      correct_option_id: correctOptionId,
       explanation,
       is_anonymous: true,
     });

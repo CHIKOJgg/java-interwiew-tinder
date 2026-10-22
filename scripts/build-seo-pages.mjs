@@ -573,45 +573,84 @@ async function loadQuestions() {
     }
   }
 
-  // 2. Load from seed files
+  // 2. Load from seed files & curated batches
+  const seenTexts = new Set();
+  function addUniqueQuestion(q, defaultLang = 'Java') {
+    const text = (q.question || q.question_text || '').trim();
+    if (!text || text.length < 5) return;
+    const lower = text.toLowerCase();
+    if (seenTexts.has(lower)) return;
+    seenTexts.add(lower);
+    allQuestions.push({
+      id: idCounter++,
+      question: text,
+      short_answer: q.short_answer || '',
+      category: q.category || 'General Core',
+      language: q.language || defaultLang,
+      difficulty: q.difficulty || 'Junior/Middle',
+      options: Array.isArray(q.options) ? q.options : [],
+    });
+  }
+
+  // 2.1 Java 2
   try {
     const { newQuestions } = await import('../backend/src/scripts/seed-db-java-2.js');
     if (Array.isArray(newQuestions)) {
-      for (const q of newQuestions) {
-        allQuestions.push({
-          id: idCounter++,
-          question: q.question,
-          short_answer: q.short_answer,
-          category: q.category || 'Java Core',
-          language: 'Java',
-          difficulty: q.difficulty || 'Junior/Middle',
-          options: q.options || [],
-        });
-      }
+      for (const q of newQuestions) addUniqueQuestion(q, 'Java');
     }
   } catch (err) {
-    console.warn(`⚠️ Error reading seed-db-java-2.js:`, err.message);
+    console.warn('⚠️ Error reading seed-db-java-2.js:', err.message);
   }
 
+  // 2.2 Python
   try {
     const { pythonQuestions } = await import('../backend/src/scripts/seed-db-python.js');
     if (Array.isArray(pythonQuestions)) {
-      for (const q of pythonQuestions) {
-        allQuestions.push({
-          id: idCounter++,
-          question: q.question,
-          short_answer: q.short_answer,
-          category: q.category || 'Python Core',
-          language: 'Python',
-          difficulty: q.difficulty || 'Junior/Middle',
-          options: q.options || [],
-        });
+      for (const q of pythonQuestions) addUniqueQuestion(q, 'Python');
+    }
+  } catch (err) {
+    console.warn('⚠️ Error reading seed-db-python.js:', err.message);
+  }
+
+  // 2.3 Hand-curated RU batches (Go, Rust, TypeScript, Kotlin, React)
+  const ruBatchFiles = [
+    'seed-ru-ts1.mjs', 'seed-ru-ts2.mjs', 'seed-ru-ts3.mjs', 'seed-ru-ts4.mjs',
+    'seed-ru-go1.mjs', 'seed-ru-go2.mjs', 'seed-ru-go3.mjs', 'seed-ru-go4.mjs', 'seed-ru-go5.mjs', 'seed-ru-go6.mjs',
+    'seed-ru-rust1.mjs', 'seed-ru-rust2.mjs', 'seed-ru-rust3.mjs', 'seed-ru-rust4.mjs',
+    'seed-ru-react1.mjs', 'seed-ru-react2.mjs', 'seed-ru-react3.mjs',
+    'seed-ru-kotlin1.mjs', 'seed-ru-kotlin2.mjs', 'seed-ru-kotlin3.mjs'
+  ];
+
+  for (const batchFile of ruBatchFiles) {
+    try {
+      const mod = await import('../backend/src/scripts/' + batchFile);
+      const list = mod.questions || mod.default || [];
+      if (Array.isArray(list)) {
+        for (const q of list) addUniqueQuestion(q);
+      }
+    } catch (err) {
+      console.warn('⚠️ Error loading ' + batchFile + ':', err.message);
+    }
+  }
+
+  // 2.4 Active/top questions from data/questions-data.json
+  try {
+    const dataJsonPath = path.resolve(ROOT_DIR, 'data', 'questions-data.json');
+    if (fs.existsSync(dataJsonPath)) {
+      const raw = JSON.parse(fs.readFileSync(dataJsonPath, 'utf8'));
+      if (Array.isArray(raw)) {
+        for (const q of raw) {
+          if ((q.is_top || q.is_active) && q.short_answer && q.short_answer.trim().length >= 15) {
+            addUniqueQuestion(q, q.language || 'Java');
+          }
+        }
       }
     }
   } catch (err) {
-    console.warn(`⚠️ Error reading seed-db-python.js:`, err.message);
+    console.warn('⚠️ Error loading data/questions-data.json:', err.message);
   }
 
+  console.log('📦 Loaded and deduplicated ' + allQuestions.length + ' total questions across languages.');
   return allQuestions;
 }
 
@@ -685,6 +724,29 @@ Allow: /
 Sitemap: ${BASE_URL}/sitemap.xml
 `;
   fs.writeFileSync(path.join(PUBLIC_DIR, 'robots.txt'), robotsTxt, 'utf8');
+
+  // Write GEO files (llms.txt) for AI search engines (Perplexity, ChatGPT Search, Claude)
+  const llmsTxt = `# Prep-it: IT Interview Preparation Engine
+> Interactive, swipe-based technical interview preparation with 2,000+ curated questions across Java, Python, Go, TypeScript, Rust, Kotlin, and React.
+
+## Question Tracks & Hubs
+- Java: ${BASE_URL}/q/java/
+- Python: ${BASE_URL}/q/python/
+- Go: ${BASE_URL}/q/go/
+- TypeScript: ${BASE_URL}/q/typescript/
+- Rust: ${BASE_URL}/q/rust/
+- Kotlin: ${BASE_URL}/q/kotlin/
+- React: ${BASE_URL}/q/react/
+- All Questions Hub: ${BASE_URL}/q/
+
+## Official Web & Telegram Channels
+- WebApp: ${BASE_URL}
+- Telegram Bot: ${TG_BOT_URL}
+- Daily Channel: https://t.me/prep_interview_daily
+`;
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'llms.txt'), llmsTxt, 'utf8');
+  console.log(`   - Generated ${path.join(PUBLIC_DIR, 'llms.txt')} (GEO AI Engine Optimization)`);
+
 
   console.log(`✅ SEO Generation Complete!`);
   console.log(`   - Generated ${generatedPages} question pages in ${Q_DIR}`);

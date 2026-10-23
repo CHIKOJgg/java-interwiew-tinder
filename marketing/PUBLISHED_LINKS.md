@@ -1,19 +1,29 @@
 # 🚀 Опубликованные статьи и живые ссылки для продвижения
 
-### 🌟 Ключевые внешние публикации с живым трафиком (22 октября 2026):
+### 🌟 Ключевые внешние публикации с живым трафиком:
 
-#### 1. Хабр (Habr — Песочница)
+#### 1. VC.ru (Крипто / Финансы)
+🔗 **Ссылка:** https://vc.ru/crypto/3207280-delta-neytralnyy-arbitrazh-na-kripte  
+📌 **Заголовок:** *«Как зарабатывать 40–120% годовых на крипте без риска падения рынка: Полный гид по дельта-нейтральному арбитражу фандинга»*  
+⚡ *Опубликовано 23 октября 2026 г. Полный лонгрид с расчетами и интеграцией Funding Finder.*
+
+#### 2. Reddit (r/algotrading — 1.8M+ участников)
+🔗 **Ссылка:** https://www.reddit.com/r/algotrading/comments/1xd7ck5/demystifying_perpetual_funding_rate_arbitrage/  
+📌 **Заголовок:** *«Demystifying Perpetual Funding Rate Arbitrage: Math, Real Cross-Exchange Spreads, and Liquidation Risk Frameworks»*  
+⚡ *Опубликовано 23 октября 2026 г. Живой пост с флейром Strategy.*
+
+#### 3. Reddit (r/SideProject — 250k+ участников)
+🔗 **Ссылка:** https://www.reddit.com/r/SideProject/comments/1xccn6c/i_got_tired_of_400question_static_interview_prep/  
+📌 **Заголовок:** *«I got tired of 400-question static interview prep sheets, so I built a swipe-based trainer with 4,500 questions and instant AI explanations (free, no sign-up)»*  
+⚡ *Живой тред с прямыми ссылками на веб-версию Prep-it и каталог вопросов.*
+
+#### 4. Хабр (Habr — Песочница)
 🔗 **Ссылка:** https://habr.com/ru/sandbox/310638/  
 📌 **Заголовок:** *«Как я устал зубрить 500 вопросов по чужим шпаргалкам и написал «Tinder для IT-интервью» с разборами на ИИ»*  
 🏷 **Хабы:** Java, Карьера в IT-индустрии, Разработка приложений, Программирование  
 ⚡ *Опубликовано в открытом доступе в Песочнице Хабра.*
 
-#### 2. Reddit (r/SideProject — 250k+ участников)
-🔗 **Ссылка:** https://www.reddit.com/r/SideProject/comments/1xccn6c/i_got_tired_of_400question_static_interview_prep/  
-📌 **Заголовок:** *«I got tired of 400-question static interview prep sheets, so I built a swipe-based trainer with 4,500 questions and instant AI explanations (free, no sign-up)»*  
-⚡ *Живой тред с прямыми ссылками на веб-версию и каталог вопросов.*
-
-#### 3. Hacker News
+#### 5. Hacker News
 🔗 **Ссылка:** https://news.ycombinator.com/item?id=50192590  
 📌 **Заголовок:** *«Show HN: Prep-It – Swipe-based technical interview trainer with 4,500 questions»*  
 ⚡ *Текстовый submission с описанием архитектуры и ссылкой на проект.*

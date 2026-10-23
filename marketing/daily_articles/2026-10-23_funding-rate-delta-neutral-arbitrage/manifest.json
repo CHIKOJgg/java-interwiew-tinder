@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-23",
+  "id": "funding-rate-delta-neutral-arbitrage",
+  "project": "funding",
+  "titleRu": "Как зарабатывать 40–120% годовых на крипте без риска падения рынка: Полный гид по дельта-нейтральному арбитражу фандинга",
+  "titleEn": "Demystifying Perpetual Funding Rate Arbitrage: Math, Real Cross-Exchange Spreads, and Liquidation Risk Frameworks",
+  "telegraphUrl": "https://telegra.ph/Kak-zarabatyvat-40120-godovyh-na-kripte-bez-riska-padeniya-rynka-Polnyj-gid-po-delta-nejtralnomu-arbitrazhu-fandinga-10-23",
+  "telegramBroadcast": true,
+  "targetSubreddit": "r/algotrading",
+  "hubsRu": [
+    "Криптовалюты",
+    "Финансы в IT",
+    "Алгоритмы",
+    "Инвестиции"
+  ],
+  "tagsRu": [
+    "криптовалюта",
+    "арбитраж",
+    "фандинг",
+    "трейдинг",
+    "деривативы",
+    "quant"
+  ],
+  "files": [
+    "C:\\Users\\Honor\\Desktop\\prep-it\\marketing\\daily_articles\\2026-10-23_funding-rate-delta-neutral-arbitrage\\01_habr_ru.md",
+    "C:\\Users\\Honor\\Desktop\\prep-it\\marketing\\daily_articles\\2026-10-23_funding-rate-delta-neutral-arbitrage\\02_reddit_en.md",
+    "C:\\Users\\Honor\\Desktop\\prep-it\\marketing\\daily_articles\\2026-10-23_funding-rate-delta-neutral-arbitrage\\03_telegram_post.md"
+  ]
+}
